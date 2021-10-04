@@ -183,6 +183,14 @@ class XrplAccount {
         return verified ? verified : false;
     }
 
+    async getTrustLines(currency, issuer) {
+        const lines = await this.rippleAPI.api.getTrustlines(this.address, {
+            currency: currency,
+            counterparty: issuer
+        });
+        return lines;
+    }
+
     async makePayment(toAddr, amount, currency, issuer, memos = null) {
         // Get current ledger.
         const ledger = await (await this.rippleAPI.api.getLedger()).ledgerVersion;

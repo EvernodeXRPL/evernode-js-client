@@ -3,12 +3,19 @@ const { XrplAccount, RippleAPIWrapper, Events, MemoFormats, MemoTypes, ErrorCode
 const REDEEM_TIMEOUT_WINDOW = 24; // Max no. of ledgers within which a redeem operation has to be served.;
 
 export class EvernodeClient {
-    constructor(xrpAddress, xrpSecret) {
+    constructor(xrpAddress, xrpSecret, options = null) {
+
         this.xrpAddress = xrpAddress;
         this.xrpSecret = xrpSecret;
-        this.hookAddress = 'rwGLw5uSGYm2couHZnrbCDKaQZQByvamj8';
-        const rippleServer = 'wss://hooks-testnet.xrpl-labs.com';
-        this.rippleAPI = new RippleAPIWrapper(rippleServer);
+
+        if (!options)
+            options = {};
+
+        options.hookAddress = options.hookAddress || 'rwGLw5uSGYm2couHZnrbCDKaQZQByvamj8';
+        options.rippledServer = options.rippledServer || 'wss://hooks-testnet.xrpl-labs.com';
+        this.options = options;
+
+        this.rippleAPI = new RippleAPIWrapper(options.rippledServer);
     }
 
     async connect() {
@@ -17,7 +24,7 @@ export class EvernodeClient {
 
         this.xrplAcc = new XrplAccount(this.rippleAPI, this.xrpAddress, this.xrpSecret);
         this.accKeyPair = this.xrplAcc.deriveKeypair();
-        this.evernodeHookAcc = new XrplAccount(this.rippleAPI, this.hookAddress);
+        this.evernodeHookAcc = new XrplAccount(this.rippleAPI, this.options.hookAddress);
         this.ledgerSequence = this.rippleAPI.getLedgerVersion();
         this.rippleAPI.events.on(Events.LEDGER, async (e) => {
             this.ledgerSequence = e.ledgerVersion;
@@ -27,9 +34,8 @@ export class EvernodeClient {
     async redeem(hostingToken, hostAddress, amount, requirement) {
         return new Promise(async (resolve, reject) => {
             try {
-                requirement.owner_pubkey = 'ed5cb83404120ac759609819591ef839b7d222c84f1f08b3012f490586159d2b50';
                 // For now we comment EVR reg fee transaction and make XRP transaction instead.
-                const res = await this.xrplAcc.makePayment(this.hookAddress,
+                const res = await this.xrplAcc.makePayment(this.options.hookAddress,
                     amount,
                     hostingToken,
                     hostAddress,
