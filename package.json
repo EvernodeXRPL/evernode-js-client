@@ -1,0 +1,11 @@
+{
+    "name": "evernode-js-client",
+    "scripts": {
+        "build": "ncc build src/index.js -o dist/",
+        "publish": "npm run build && npm publish dist"
+    },
+    "dependencies": {
+        "eccrypto": "^1.1.6",
+        "ripple-lib": "^1.9.8"
+    }
+}

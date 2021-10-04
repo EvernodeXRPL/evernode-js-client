@@ -1,2 +1,2 @@
-# evernode-client-lib
+# Evernode js client
 Javascript client library for Evernode.
