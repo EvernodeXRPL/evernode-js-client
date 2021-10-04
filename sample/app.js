@@ -1,4 +1,4 @@
-const { EvernodeClient } = require("evernode-js-ravinsp");
+const { EvernodeClient } = require("evernode-js-client");
 
 async function app() {
     const client = new EvernodeClient("rfNQEMZwRt8wQnGr3ktuwWKRSXzk8oAFbm", "spyzh41Huy8imGCn1jqYcEPaCA16j");

@@ -1,6 +1,6 @@
 {
     "name": "evernode-js-sample-app",
     "dependencies": {
-        "evernode-js-ravinsp": "0.0.5-alpha"
+        "evernode-js-ravinsp": "0.0.1-alpha"
     }
 }

@@ -1,8 +1,0 @@
-{
-    "name": "evernode-js-ravinsp",
-    "version": "0.0.5-alpha",
-    "dependencies": {
-        "eccrypto": "1.1.6",
-        "ripple-lib": "1.9.8"
-    }
-}

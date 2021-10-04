@@ -1,7 +1,8 @@
 {
     "name": "evernode-js-client",
+    "version": "0.0.1-alpha",
     "scripts": {
-        "build": "ncc build src/index.js -o dist/",
+        "build": "ncc build src/index.js -o dist/ && cp package.json dist/",
         "publish": "npm run build && npm publish dist"
     },
     "dependencies": {
