@@ -1,6 +1,6 @@
 {
     "name": "evernode-js-client",
-    "version": "0.0.4-alpha",
+    "version": "0.0.5-alpha",
     "scripts": {
         "build": "ncc build src/index.js -e eccrypto -e ripple-lib -o dist/",
         "minify": "terser --compress --mangle reserved=['Binary','Buffer'] -- dist/index.js > dist/index.min.js && mv dist/index.min.js dist/index.js",
