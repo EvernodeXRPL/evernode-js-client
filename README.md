@@ -1,6 +1,11 @@
 # Evernode js client
 Javascript client library for Evernode.
 
+# Prerequisites
+```
+npm i -g @vercel/ncc
+```
+
 # Publish to npm
 ```
 npm install
