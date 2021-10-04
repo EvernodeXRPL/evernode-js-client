@@ -5,7 +5,7 @@
         "publish": "npm run build && npm publish dist"
     },
     "dependencies": {
-        "eccrypto": "^1.1.6",
-        "ripple-lib": "^1.9.8"
+        "eccrypto": "1.1.6",
+        "ripple-lib": "1.9.8"
     }
 }

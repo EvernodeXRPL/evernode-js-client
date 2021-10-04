@@ -1,9 +1,9 @@
-class EvernodeClient {
-    test() {
-        console.log("EvernodeClient test!!!")
-    }
-}
+const { EvernodeClient } = require("./evernode-client");
+const { XrplAccount, RippleAPIWrapper, EncryptionHelper } = require('./ripple-handler');
 
 module.exports = {
-    EvernodeClient: EvernodeClient
+    EvernodeClient,
+    XrplAccount,
+    RippleAPIWrapper,
+    EncryptionHelper
 }
