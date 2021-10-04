@@ -1,4 +1,3 @@
-const eccrypto = require("eccrypto");
 const RippleAPI = require('ripple-lib').RippleAPI;
 
 const CONNECTION_RETRY_THREASHOLD = 60;
@@ -6,31 +5,14 @@ const CONNECTION_RETRY_INTERVAL = 1000;
 
 const DISABLE_MASTERKEY = 0x100000;
 
+const DEFAULT_RIPPLED_SERVER = 'wss://hooks-testnet.xrpl-labs.com';
+
 const maxLedgerOffset = 10;
 
-const MemoTypes = {
-    REDEEM: 'evnRedeem',
-    REDEEM_REF: 'evnRedeemRef',
-    REDEEM_RESP: 'evnRedeemResp',
-    REFUND: 'evnRefund',
-    HOST_REG: 'evnHostReg',
-    HOST_DEREG: 'evnHostDereg',
-}
-
-const MemoFormats = {
-    TEXT: 'text/plain',
-    JSON: 'text/json',
-    BINARY: 'binary'
-}
-
-const Events = {
+const RippleAPIEvents = {
     RECONNECTED: 'reconnected',
     LEDGER: 'ledger',
     PAYMENT: 'payment'
-}
-
-const ErrorCodes = {
-    REDEEM_ERR: 'REDEEM_ERR'
 }
 
 const hexToASCII = (hex) => {
@@ -59,18 +41,19 @@ class EventEmitter {
 }
 
 class RippleAPIWrapper {
-    constructor(rippleServer) {
+    constructor(rippledServer = null) {
+
         this.connectionRetryCount = 0;
         this.connected = false;
-        this.rippleServer = rippleServer;
+        this.rippledServer = rippledServer || DEFAULT_RIPPLED_SERVER;
         this.events = new EventEmitter();
 
-        this.api = new RippleAPI({ server: this.rippleServer });
+        this.api = new RippleAPI({ server: this.rippledServer });
         this.api.on('error', (errorCode, errorMessage) => {
             console.log(errorCode + ': ' + errorMessage);
         });
         this.api.on('connected', () => {
-            console.log(`Connected to ${this.rippleServer}`);
+            console.log(`Connected to ${this.rippledServer}`);
             this.connectionRetryCount = 0;
             this.connected = true;
         });
@@ -79,15 +62,15 @@ class RippleAPIWrapper {
                 return;
 
             this.connected = false;
-            console.log(`Disconnected from ${this.rippleServer} code:`, code);
+            console.log(`Disconnected from ${this.rippledServer} code:`, code);
             try {
                 await this.connect();
-                this.events.emit(Events.RECONNECTED, `Reconnected to ${this.rippleServer}`);
+                this.events.emit(RippleAPIEvents.RECONNECTED, `Reconnected to ${this.rippledServer}`);
             }
             catch (e) { console.error(e); };
         });
         this.api.on('ledger', (ledger) => {
-            this.events.emit(Events.LEDGER, ledger);
+            this.events.emit(RippleAPIEvents.LEDGER, ledger);
         });
     }
 
@@ -101,12 +84,12 @@ class RippleAPIWrapper {
         while (this.tryConnecting) {
             try {
                 this.connectionRetryCount++;
-                console.log(`Trying to connect ${this.rippleServer}`);
+                console.log(`Trying to connect ${this.rippledServer}`);
                 await this.api.connect();
                 return;
             }
             catch (e) {
-                console.log(`Couldn't connect ${this.rippleServer} : `, e);
+                console.log(`Couldn't connect ${this.rippledServer} : `, e);
                 // If threashold reaches, increase the retry interval.
                 if (this.connectionRetryCount % CONNECTION_RETRY_THREASHOLD === 0)
                     retryInterval += CONNECTION_RETRY_INTERVAL;
@@ -122,6 +105,7 @@ class RippleAPIWrapper {
         this.tryConnecting = false;
         this.connected = false;
         await this.api.disconnect();
+        console.log(`Disconnected from ${this.rippledServer}`);
     }
 
     deriveAddress(publicKey) {
@@ -343,7 +327,7 @@ class XrplAccount {
 
         // Subscribe to transactions when api is reconnected.
         // Because API will be automatically reconnected if it's disconnected.
-        this.rippleAPI.events.on(Events.RECONNECTED, (e) => {
+        this.rippleAPI.events.on(RippleAPIEvents.RECONNECTED, (e) => {
             this.rippleAPI.api.connection.request(request);
             console.log(message);
         });
@@ -355,40 +339,8 @@ class XrplAccount {
     }
 }
 
-class EncryptionHelper {
-    // Offsets of the properties in the encrypted buffer.
-    static ivOffset = 65;
-    static macOffset = this.ivOffset + 16;
-    static ciphertextOffset = this.macOffset + 32;
-    static contentFormat = 'base64';
-    static keyFormat = 'hex';
-
-    static async encrypt(publicKey, json) {
-        // For the encryption library, both keys and data should be buffers.
-        const encrypted = await eccrypto.encrypt(Buffer.from(publicKey, this.keyFormat), Buffer.from(JSON.stringify(json)));
-        // Concat all the properties of the encrypted object to a single buffer.
-        return Buffer.concat([encrypted.ephemPublicKey, encrypted.iv, encrypted.mac, encrypted.ciphertext]).toString(this.contentFormat);
-    }
-
-    static async decrypt(privateKey, encrypted) {
-        // Extract the buffer from the string and prepare encrypt object from buffer offsets for decryption.
-        const encryptedBuf = Buffer.from(encrypted, this.contentFormat);
-        const encryptedObj = {
-            ephemPublicKey: encryptedBuf.slice(0, this.ivOffset),
-            iv: encryptedBuf.slice(this.ivOffset, this.macOffset),
-            mac: encryptedBuf.slice(this.macOffset, this.ciphertextOffset),
-            ciphertext: encryptedBuf.slice(this.ciphertextOffset)
-        }
-        return JSON.parse((await eccrypto.decrypt(Buffer.from(privateKey, this.keyFormat).slice(1), encryptedObj)).toString());
-    }
-}
-
 module.exports = {
     XrplAccount,
     RippleAPIWrapper,
-    EncryptionHelper,
-    MemoFormats,
-    MemoTypes,
-    Events,
-    ErrorCodes
+    RippleAPIEvents
 }

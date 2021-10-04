@@ -1,9 +1,30 @@
-const { XrplAccount, RippleAPIWrapper, Events, MemoFormats, MemoTypes, ErrorCodes, EncryptionHelper } = require('./ripple-handler');
+const { XrplAccount, RippleAPIWrapper, RippleAPIEvents } = require('./ripple-handler');
+const { EncryptionHelper } = require('./encryption-helper');
 
 const REDEEM_TIMEOUT_WINDOW = 24; // Max no. of ledgers within which a redeem operation has to be served.;
 const MIN_XRP_AMOUNT = 0.000001;
 
-export class EvernodeClient {
+const MemoTypes = {
+    REDEEM: 'evnRedeem',
+    REDEEM_REF: 'evnRedeemRef',
+    REDEEM_RESP: 'evnRedeemResp',
+    HOST_REG: 'evnHostReg',
+    HOST_DEREG: 'evnHostDereg',
+}
+
+const MemoFormats = {
+    TEXT: 'text/plain',
+    JSON: 'text/json',
+    BINARY: 'binary'
+}
+
+const ErrorCodes = {
+    REDEEM_ERR: 'REDEEM_ERR'
+}
+
+const DEFAULT_HOOK_ADDR = 'rwGLw5uSGYm2couHZnrbCDKaQZQByvamj8';
+
+class EvernodeClient {
     constructor(xrpAddress, xrpSecret, options = null) {
 
         this.xrpAddress = xrpAddress;
@@ -12,8 +33,7 @@ export class EvernodeClient {
         if (!options)
             options = {};
 
-        options.hookAddress = options.hookAddress || 'rwGLw5uSGYm2couHZnrbCDKaQZQByvamj8';
-        options.rippledServer = options.rippledServer || 'wss://hooks-testnet.xrpl-labs.com';
+        options.hookAddress = options.hookAddress || DEFAULT_HOOK_ADDR;
         this.options = options;
 
         this.rippleAPI = new RippleAPIWrapper(options.rippledServer);
@@ -27,7 +47,7 @@ export class EvernodeClient {
         this.accKeyPair = this.xrplAcc.deriveKeypair();
         this.evernodeHookAcc = new XrplAccount(this.rippleAPI, this.options.hookAddress);
         this.ledgerSequence = this.rippleAPI.getLedgerVersion();
-        this.rippleAPI.events.on(Events.LEDGER, async (e) => {
+        this.rippleAPI.events.on(RippleAPIEvents.LEDGER, async (e) => {
             this.ledgerSequence = e.ledgerVersion;
         });
     }
@@ -51,7 +71,7 @@ export class EvernodeClient {
                             reject({ reason: `No response within ${REDEEM_TIMEOUT_WINDOW} ledgers time.`, redeemTxHash: res.txHash });
                         }
                     }, 1000);
-                    this.evernodeHookAcc.events.on(Events.PAYMENT, async (data, error) => {
+                    this.evernodeHookAcc.events.on(RippleAPIEvents.PAYMENT, async (data, error) => {
                         if (error)
                             console.error(error);
                         else if (!data)
@@ -124,4 +144,11 @@ export class EvernodeClient {
         try { await this.rippleAPI.disconnect(); }
         catch (e) { throw e; }
     }
+}
+
+module.exports = {
+    EvernodeClient,
+    MemoFormats,
+    MemoTypes,
+    ErrorCodes
 }
