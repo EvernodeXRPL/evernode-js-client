@@ -12,6 +12,7 @@ const MemoTypes = {
     REDEEM: 'evnRedeem',
     REDEEM_REF: 'evnRedeemRef',
     REDEEM_RESP: 'evnRedeemResp',
+    REFUND: 'evnRefund',
     HOST_REG: 'evnHostReg',
     HOST_DEREG: 'evnHostDereg',
 }
@@ -95,8 +96,9 @@ class RippleAPIWrapper {
             return;
 
         let retryInterval = CONNECTION_RETRY_INTERVAL;
+        this.tryConnecting = true;
         // If failed, Keep retrying and increasing the retry timeout.
-        while (true) {
+        while (this.tryConnecting) {
             try {
                 this.connectionRetryCount++;
                 console.log(`Trying to connect ${this.rippleServer}`);
@@ -117,7 +119,7 @@ class RippleAPIWrapper {
     async disconnect() {
         if (!this.connected)
             return;
-
+        this.tryConnecting = false;
         this.connected = false;
         await this.api.disconnect();
     }

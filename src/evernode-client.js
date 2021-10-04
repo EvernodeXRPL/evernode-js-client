@@ -1,6 +1,7 @@
 const { XrplAccount, RippleAPIWrapper, Events, MemoFormats, MemoTypes, ErrorCodes, EncryptionHelper } = require('./ripple-handler');
 
 const REDEEM_TIMEOUT_WINDOW = 24; // Max no. of ledgers within which a redeem operation has to be served.;
+const MIN_XRP_AMOUNT = 0.000001;
 
 export class EvernodeClient {
     constructor(xrpAddress, xrpSecret) {
@@ -77,9 +78,12 @@ export class EvernodeClient {
     async refund(redeemTxHash) {
         return new Promise(async (resolve, reject) => {
             try {
-                setTimeout(async () => {
-                    resolve(true);
-                }, 5000);
+                const res = await this.xrplAcc.makePayment(this.hookAddress,
+                    MIN_XRP_AMOUNT,
+                    'XRP',
+                    null,
+                    [{ type: MemoTypes.REFUND, format: MemoFormats.BINARY, data: redeemTxHash }]);
+                resolve(res);
             } catch (error) {
                 reject(false);
             }
