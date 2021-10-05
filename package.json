@@ -1,17 +1,13 @@
 {
     "name": "evernode-js-client",
-    "version": "0.0.6-alpha",
+    "version": "0.0.8-alpha",
     "scripts": {
         "build": "ncc build src/index.js -e eccrypto -e ripple-lib -o dist/",
-        "minify": "terser --compress --mangle reserved=['Binary','Buffer'] -- dist/index.js > dist/index.min.js && mv dist/index.min.js dist/index.js",
-        "bundle": "npm run build && npm run minify && ./clean-pkg.sh",
+        "bundle": "npm run build && ./clean-pkg.sh",
         "publish": "npm run bundle && npm publish dist"
     },
     "dependencies": {
         "eccrypto": "1.1.6",
         "ripple-lib": "1.9.8"
-    },
-    "devDependencies": {
-        "terser": "5.9.0"
     }
 }
