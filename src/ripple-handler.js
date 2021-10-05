@@ -1,5 +1,6 @@
 const RippleAPI = require('ripple-lib').RippleAPI;
-
+var crypto = require("crypto");
+const decodeAccountID = require('ripple-address-codec').decodeAccountID;
 const CONNECTION_RETRY_THREASHOLD = 60;
 const CONNECTION_RETRY_INTERVAL = 1000;
 
@@ -13,6 +14,10 @@ const RippleAPIEvents = {
     RECONNECTED: 'reconnected',
     LEDGER: 'ledger',
     PAYMENT: 'payment'
+}
+
+const RippleConstants = {
+    MIN_XRP_AMOUNT: 0.000001
 }
 
 const hexToASCII = (hex) => {
@@ -79,8 +84,9 @@ class RippleAPIWrapper {
             return;
 
         let retryInterval = CONNECTION_RETRY_INTERVAL;
+        this.tryConnecting = true;
         // If failed, Keep retrying and increasing the retry timeout.
-        while (true) {
+        while (this.tryConnecting) {
             try {
                 this.connectionRetryCount++;
                 await this.api.connect();
@@ -100,7 +106,7 @@ class RippleAPIWrapper {
     async disconnect() {
         if (!this.connected)
             return;
-
+        this.tryConnecting = false;
         this.connected = false;
         await this.api.disconnect();
         console.log(`Disconnected from ${this.rippledServer}`);
@@ -220,11 +226,11 @@ class XrplAccount {
             allowRippling: allowRippling,
             memos: this.getMemoCollection(memos)
         }]);
-        return res[0];
+        return res ? res[0] : false;
     }
 
     getMemoCollection(memos) {
-        return memos ? memos.filter(m => m.data).map(m => {
+        return memos ? memos.filter(m => m.type).map(m => {
             return {
                 type: m.type,
                 format: m.format,
@@ -263,6 +269,44 @@ class XrplAccount {
 
         const results = await Promise.all(tasks);
         return results;
+    }
+
+    async getChecks(fromAccount) {
+        const account_objects_request = {
+            command: "account_objects",
+            account: fromAccount,
+            ledger_index: "validated",
+            type: "check"
+        }
+        return await this.rippleAPI.api.connection.request(account_objects_request);
+    }
+
+    async cashCheck(check) {
+        const checkIDhasher = crypto.createHash('sha512')
+        checkIDhasher.update(Buffer.from('0043', 'hex'))
+        checkIDhasher.update(Buffer.from(decodeAccountID(check.Account)))
+        const seqBuf = Buffer.alloc(4)
+        seqBuf.writeUInt32BE(check.Sequence, 0)
+        checkIDhasher.update(seqBuf)
+        const checkID = checkIDhasher.digest('hex').slice(0, 64).toUpperCase()
+        console.log("Calculated checkID:", checkID)
+
+        const ledger = await (await this.rippleAPI.api.getLedger()).ledgerVersion;
+        const maxLedger = ledger + maxLedgerOffset;
+        const prep = await this.rippleAPI.api.prepareCheckCash(this.address, {
+            checkID: checkID,
+            amount: {
+                currency: check.SendMax.currency,
+                value: check.SendMax.value,
+                counterparty: check.SendMax.issuer
+            }
+        }, {
+            maxLedgerVersion: maxLedger
+        });
+        const signed = this.rippleAPI.api.sign(prep.txJSON, this.secret);
+        await this.rippleAPI.api.submit(signed.signedTransaction);
+        const verified = await this.verifyTransaction(signed.id, ledger, maxLedger);
+        return verified ? verified : false;
     }
 
     verifyTransaction(txHash, minLedger, maxLedger) {
@@ -345,5 +389,6 @@ class XrplAccount {
 module.exports = {
     XrplAccount,
     RippleAPIWrapper,
-    RippleAPIEvents
+    RippleAPIEvents,
+    RippleConstants
 }
