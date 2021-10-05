@@ -85,7 +85,6 @@ class RippleAPIWrapper {
         while (this.tryConnecting) {
             try {
                 this.connectionRetryCount++;
-                console.log(`Trying to connect ${this.rippledServer}`);
                 await this.api.connect();
                 return;
             }
@@ -210,6 +209,7 @@ class XrplAccount {
         const signed = this.rippleAPI.api.sign(prepared.txJSON, this.secret);
 
         await this.rippleAPI.api.submit(signed.signedTransaction);
+        console.log("Submitted payment.");
         const verified = await this.verifyTransaction(signed.id, ledger, maxLedger);
         return verified ? verified : false;
     }
@@ -308,27 +308,31 @@ class XrplAccount {
     verifyTransaction(txHash, minLedger, maxLedger) {
         console.log("Waiting for verification...");
         return new Promise(resolve => {
-            this.rippleAPI.api.getTransaction(txHash, {
-                minLedgerVersion: minLedger,
-                maxLedgerVersion: maxLedger
-            }).then(data => {
-                console.log(data.outcome.result);
-                if (data.outcome.result !== 'tesSUCCESS')
-                    console.log("Transaction verification failed. Result: " + data.outcome.result);
-                resolve(data.outcome.result === 'tesSUCCESS' ? { txHash: data.id, ledgerVersion: data.outcome.ledgerVersion } : false);
-            }).catch(error => {
-                // If transaction not in latest validated ledger, try again until max ledger is hit.
-                if (error instanceof this.rippleAPI.api.errors.PendingLedgerVersionError || error instanceof this.rippleAPI.api.errors.NotFoundError) {
-                    setTimeout(() => {
-                        this.verifyTransaction(txHash, minLedger, maxLedger).then(result => resolve(result));
-                    }, 1000);
-                }
-                else {
-                    console.log(error);
-                    console.log("Transaction verification failed.");
-                    resolve(false); // give up.
-                }
-            })
+            this.waitForTransactionVerification(txHash, minLedger, maxLedger, resolve);
+        })
+    }
+
+    waitForTransactionVerification(txHash, minLedger, maxLedger, resolve) {
+        this.rippleAPI.api.getTransaction(txHash, {
+            minLedgerVersion: minLedger,
+            maxLedgerVersion: maxLedger
+        }).then(data => {
+            console.log(data.outcome.result);
+            if (data.outcome.result !== 'tesSUCCESS')
+                console.log("Transaction verification failed. Result: " + data.outcome.result);
+            resolve(data.outcome.result === 'tesSUCCESS' ? { txHash: data.id, ledgerVersion: data.outcome.ledgerVersion } : false);
+        }).catch(error => {
+            // If transaction not in latest validated ledger, try again until max ledger is hit.
+            if (error instanceof this.rippleAPI.api.errors.PendingLedgerVersionError || error instanceof this.rippleAPI.api.errors.NotFoundError) {
+                setTimeout(() => {
+                    this.waitForTransactionVerification(txHash, minLedger, maxLedger, resolve);
+                }, 1000);
+            }
+            else {
+                console.log(error);
+                console.log("Transaction verification failed.");
+                resolve(false); // give up.
+            }
         })
     }
 
