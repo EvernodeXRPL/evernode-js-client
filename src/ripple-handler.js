@@ -266,6 +266,7 @@ class XrplAccount {
     }
 
     verifyTransaction(txHash, minLedger, maxLedger) {
+        console.log("Waiting for verification...");
         return new Promise(resolve => {
             this.rippleAPI.api.getTransaction(txHash, {
                 minLedgerVersion: minLedger,
@@ -278,7 +279,6 @@ class XrplAccount {
             }).catch(error => {
                 // If transaction not in latest validated ledger, try again until max ledger is hit.
                 if (error instanceof this.rippleAPI.api.errors.PendingLedgerVersionError || error instanceof this.rippleAPI.api.errors.NotFoundError) {
-                    console.log("Waiting for verification...");
                     setTimeout(() => {
                         this.verifyTransaction(txHash, minLedger, maxLedger).then(result => resolve(result));
                     }, 1000);

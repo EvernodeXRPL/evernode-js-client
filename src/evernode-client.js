@@ -62,9 +62,9 @@ class EvernodeClient {
                     [{ type: MemoTypes.REDEEM, format: MemoFormats.BINARY, data: JSON.stringify(requirement) }]);
                 if (res) {
                     console.log(`Redeem tx hash: ${res.txHash}`);
+                    console.log(`Waiting for redeem response...`);
                     // Handle the transactions on evernode account and filter out redeem operations.
                     const failTimeout = setInterval(() => {
-                        console.log(`Waiting for redeem response...`);
                         if (this.ledgerSequence - res.ledgerVersion >= REDEEM_TIMEOUT_WINDOW) {
                             clearInterval(failTimeout);
                             reject({ reason: `No response within ${REDEEM_TIMEOUT_WINDOW} ledgers time.`, redeemTxHash: res.txHash });
