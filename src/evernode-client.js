@@ -10,6 +10,7 @@ const MemoTypes = {
     HOST_DEREG: 'evnHostDereg',
     REFUND: 'evnRefund',
     AUDIT_REQ: 'evnAuditRequest',
+    AUDIT_SUCCESS: 'evnAuditSuccess'
 }
 
 const MemoFormats = {
@@ -22,6 +23,7 @@ const ErrorCodes = {
     REDEEM_ERR: 'REDEEM_ERR',
     REFUND_ERR: 'REFUND_ERR',
     AUDIT_REQ_ERROR: 'AUDIT_REQ_ERROR',
+    AUDIT_SUCCESS_ERROR: 'AUDIT_SUCCESS_ERROR',
 }
 
 const REDEEM_TIMEOUT_WINDOW = 24; // Max no. of ledgers within which a redeem operation has to be served.;
@@ -146,7 +148,7 @@ class EvernodeClient {
                                         console.log(`No trust lines found for ${check.SendMax.currency}/${check.SendMax.issuer}. Creating one...`);
                                         const ret = await this.xrplAcc.createTrustline(check.SendMax.currency, check.SendMax.issuer, AUDIT_TRUSTLINE_LIMIT, false);
                                         if (!ret)
-                                            reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: 'Creating trustline failed.' });
+                                            reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: `Creating trustline for ${check.SendMax.currency}/${check.SendMax.issuer} failed.` });
                                     }
 
                                     // Cash the check.
@@ -189,11 +191,18 @@ class EvernodeClient {
     async auditSuccess() {
         return new Promise(async (resolve, reject) => {
             try {
-                setTimeout(async () => {
-                    resolve(true);
-                }, 5000);
+                const res = await this.xrplAcc.makePayment(this.options.hookAddress,
+                    MIN_XRP_AMOUNT,
+                    'XRP',
+                    null,
+                    [{ type: MemoTypes.AUDIT_SUCCESS, format: MemoFormats.BINARY, data: '' }]);
+                if (res)
+                    resolve(res);
+                else
+                    reject({ error: ErrorCodes.AUDIT_SUCCESS_ERROR, reason: 'Audit success transaction failed.' });
             } catch (error) {
-                reject(false);
+                console.error(error);
+                reject({ error: ErrorCodes.AUDIT_SUCCESS_ERROR, reason: 'Audit success transaction failed.' });
             }
         });
     }
