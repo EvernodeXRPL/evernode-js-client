@@ -1,4 +1,4 @@
-const { XrplAccount, RippleAPIWrapper, RippleAPIEvents } = require('./ripple-handler');
+const { XrplAccount, RippleAPIWrapper, RippleAPIEvents, RippleConstants } = require('./ripple-handler');
 const { EncryptionHelper } = require('./encryption-helper');
 
 
@@ -27,7 +27,6 @@ const ErrorCodes = {
 }
 
 const REDEEM_TIMEOUT_WINDOW = 24; // Max no. of ledgers within which a redeem operation has to be served.;
-const MIN_XRP_AMOUNT = 0.000001;
 const MOMENT_SIZE = 72;
 const DEFAULT_HOOK_ADDR = 'rwGLw5uSGYm2couHZnrbCDKaQZQByvamj8';
 const AUDIT_TRUSTLINE_LIMIT = 999999999;
@@ -113,7 +112,7 @@ class EvernodeClient {
         return new Promise(async (resolve, reject) => {
             try {
                 const res = await this.xrplAcc.makePayment(this.options.hookAddress,
-                    MIN_XRP_AMOUNT,
+                    RippleConstants.MIN_XRP_AMOUNT,
                     'XRP',
                     null,
                     [{ type: MemoTypes.REFUND, format: MemoFormats.BINARY, data: redeemTxHash }]);
@@ -131,16 +130,17 @@ class EvernodeClient {
         return new Promise(async (resolve, reject) => {
             try {
                 const res = await this.xrplAcc.makePayment(this.options.hookAddress,
-                    MIN_XRP_AMOUNT,
+                    RippleConstants.MIN_XRP_AMOUNT,
                     'XRP',
                     null,
                     [{ type: MemoTypes.AUDIT_REQ, format: MemoFormats.BINARY, data: '' }]);
                 if (res) {
                     const startingLedger = this.ledgerSequence;
-                    const checkForChecksFromHook = () => {
+                    console.log('Waiting for check...');
+                    const getChecksAndProcess = () => {
                         return new Promise(async (resolve, reject) => {
                             try {
-                                const resp = await this.xrplAcc.checkForChecks(this.options.hookAddress);
+                                const resp = await this.xrplAcc.getChecks(this.options.hookAddress);
                                 if (resp && resp.account_objects.length > 0) {
                                     const check = resp.account_objects[0];
                                     const lines = await this.xrplAcc.getTrustLines(check.SendMax.currency, check.SendMax.issuer);
@@ -168,8 +168,7 @@ class EvernodeClient {
                                             clearTimeout(timeout);
                                             reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: `No checks found within moment(${MOMENT_SIZE}) window.` });
                                         }
-                                        console.log('Waiting for check...');
-                                        checkForChecksFromHook().then(result => resolve(result)).catch(error => reject(error));
+                                        getChecksAndProcess().then(result => resolve(result)).catch(error => reject(error));
                                     }, 1000);
                                 }
                             } catch (error) {
@@ -177,7 +176,7 @@ class EvernodeClient {
                             }
                         });
                     }
-                    resolve(await checkForChecksFromHook());
+                    resolve(await getChecksAndProcess());
                 } else {
                     reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: 'Audit request failed.' });
                 }
@@ -192,7 +191,7 @@ class EvernodeClient {
         return new Promise(async (resolve, reject) => {
             try {
                 const res = await this.xrplAcc.makePayment(this.options.hookAddress,
-                    MIN_XRP_AMOUNT,
+                    RippleConstants.MIN_XRP_AMOUNT,
                     'XRP',
                     null,
                     [{ type: MemoTypes.AUDIT_SUCCESS, format: MemoFormats.BINARY, data: '' }]);

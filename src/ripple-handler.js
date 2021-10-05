@@ -16,6 +16,10 @@ const RippleAPIEvents = {
     PAYMENT: 'payment'
 }
 
+const RippleConstants = {
+    MIN_XRP_AMOUNT: 0.000001
+}
+
 const hexToASCII = (hex) => {
     let str = "";
     for (let n = 0; n < hex.length; n += 2) {
@@ -267,7 +271,7 @@ class XrplAccount {
         return results;
     }
 
-    async checkForChecks(fromAccount) {
+    async getChecks(fromAccount) {
         const account_objects_request = {
             command: "account_objects",
             account: fromAccount,
@@ -385,5 +389,6 @@ class XrplAccount {
 module.exports = {
     XrplAccount,
     RippleAPIWrapper,
-    RippleAPIEvents
+    RippleAPIEvents,
+    RippleConstants
 }

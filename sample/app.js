@@ -21,10 +21,11 @@ async function app() {
         // const ret = await client.auditSuccess();
         // console.log(ret);
         
-        await client.disconnect();
-        console.log("Disconnected.");
     } catch (e) {
         console.error(e);
+    } finally {
+        await client.disconnect();
+        console.log("Disconnected.");
     }
 }
 
