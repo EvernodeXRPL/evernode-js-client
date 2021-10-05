@@ -226,7 +226,7 @@ class XrplAccount {
     }
 
     getMemoCollection(memos) {
-        return memos ? memos.filter(m => m.data).map(m => {
+        return memos ? memos.filter(m => m.type).map(m => {
             return {
                 type: m.type,
                 format: m.format,

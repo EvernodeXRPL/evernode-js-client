@@ -8,7 +8,8 @@ const MemoTypes = {
     REDEEM_RESP: 'evnRedeemResp',
     HOST_REG: 'evnHostReg',
     HOST_DEREG: 'evnHostDereg',
-    REFUND: 'evnRefund'
+    REFUND: 'evnRefund',
+    AUDIT_REQ: 'evnAuditRequest',
 }
 
 const MemoFormats = {
@@ -131,7 +132,7 @@ class EvernodeClient {
                     MIN_XRP_AMOUNT,
                     'XRP',
                     null,
-                    [{ type: "MemoTypes.AUDIT_REQ", format: MemoFormats.BINARY, data: '' }]);
+                    [{ type: MemoTypes.AUDIT_REQ, format: MemoFormats.BINARY, data: '' }]);
                 if (res) {
                     const startingLedger = this.ledgerSequence;
                     const checkForChecksFromHook = () => {
@@ -175,6 +176,8 @@ class EvernodeClient {
                         });
                     }
                     resolve(await checkForChecksFromHook());
+                } else {
+                    reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: 'Audit request failed.' });
                 }
             } catch (error) {
                 // Throw the same error object receiving from the above try block. It is already formatted with AUDIT_REQ_FAILED code.
