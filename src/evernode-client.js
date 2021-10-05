@@ -32,10 +32,8 @@ class EvernodeClient {
         if (!options)
             options = {};
 
-        options.hookAddress = options.hookAddress || DEFAULT_HOOK_ADDR;
-        this.options = options;
-
-        this.rippleAPI = new RippleAPIWrapper(options.rippledServer);
+        this.hookAddress = options.hookAddress || DEFAULT_HOOK_ADDR;
+        this.rippleAPI = options.rippleAPI || new RippleAPIWrapper(options.rippledServer);
     }
 
     async connect() {
@@ -44,7 +42,7 @@ class EvernodeClient {
 
         this.xrplAcc = new XrplAccount(this.rippleAPI, this.xrpAddress, this.xrpSecret);
         this.accKeyPair = this.xrplAcc.deriveKeypair();
-        this.evernodeHookAcc = new XrplAccount(this.rippleAPI, this.options.hookAddress);
+        this.evernodeHookAcc = new XrplAccount(this.rippleAPI, this.hookAddress);
         this.ledgerSequence = this.rippleAPI.getLedgerVersion();
         this.rippleAPI.events.on(RippleAPIEvents.LEDGER, async (e) => {
             this.ledgerSequence = e.ledgerVersion;
@@ -55,7 +53,7 @@ class EvernodeClient {
         return new Promise(async (resolve, reject) => {
             try {
                 // For now we comment EVR reg fee transaction and make XRP transaction instead.
-                const res = await this.xrplAcc.makePayment(this.options.hookAddress,
+                const res = await this.xrplAcc.makePayment(this.hookAddress,
                     amount,
                     hostingToken,
                     hostAddress,

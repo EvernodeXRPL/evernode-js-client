@@ -207,7 +207,6 @@ class XrplAccount {
         const signed = this.rippleAPI.api.sign(prepared.txJSON, this.secret);
 
         await this.rippleAPI.api.submit(signed.signedTransaction);
-        console.log("Submitted payment.");
         const verified = await this.verifyTransaction(signed.id, ledger, maxLedger);
         return verified ? verified : false;
     }
@@ -255,7 +254,6 @@ class XrplAccount {
                 const signed = this.rippleAPI.api.sign(prepared.txJSON, this.secret);
 
                 await this.rippleAPI.api.submit(signed.signedTransaction);
-                console.log("Submitted trust line.");
                 const verified = await this.verifyTransaction(signed.id, ledger, maxLedger);
                 verified ? resolve(verified) : resolve(false);
             }));
