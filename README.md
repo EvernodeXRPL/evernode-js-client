@@ -18,3 +18,6 @@ npm run publish
 npm install
 node app.js
 ```
+
+# NPM package
+https://www.npmjs.com/package/evernode-js-client

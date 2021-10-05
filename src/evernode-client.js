@@ -40,10 +40,8 @@ class EvernodeClient {
         if (!options)
             options = {};
 
-        options.hookAddress = options.hookAddress || DEFAULT_HOOK_ADDR;
-        this.options = options;
-
-        this.rippleAPI = new RippleAPIWrapper(options.rippledServer);
+        this.hookAddress = options.hookAddress || DEFAULT_HOOK_ADDR;
+        this.rippleAPI = options.rippleAPI || new RippleAPIWrapper(options.rippledServer);
     }
 
     async connect() {
@@ -52,18 +50,14 @@ class EvernodeClient {
 
         this.xrplAcc = new XrplAccount(this.rippleAPI, this.xrpAddress, this.xrpSecret);
         this.accKeyPair = this.xrplAcc.deriveKeypair();
-        this.evernodeHookAcc = new XrplAccount(this.rippleAPI, this.options.hookAddress);
-        this.ledgerSequence = this.rippleAPI.getLedgerVersion();
-        this.rippleAPI.events.on(RippleAPIEvents.LEDGER, async (e) => {
-            this.ledgerSequence = e.ledgerVersion;
-        });
+        this.evernodeHookAcc = new XrplAccount(this.rippleAPI, this.hookAddress);
     }
 
     async redeem(hostingToken, hostAddress, amount, requirement) {
         return new Promise(async (resolve, reject) => {
             try {
                 // For now we comment EVR reg fee transaction and make XRP transaction instead.
-                const res = await this.xrplAcc.makePayment(this.options.hookAddress,
+                const res = await this.xrplAcc.makePayment(this.hookAddress,
                     amount,
                     hostingToken,
                     hostAddress,
@@ -73,7 +67,7 @@ class EvernodeClient {
                     console.log(`Waiting for redeem response...`);
                     // Handle the transactions on evernode account and filter out redeem operations.
                     const failTimeout = setInterval(() => {
-                        if (this.ledgerSequence - res.ledgerVersion >= REDEEM_TIMEOUT_WINDOW) {
+                        if (this.rippleAPI.ledgerVersion - res.ledgerVersion >= REDEEM_TIMEOUT_WINDOW) {
                             clearInterval(failTimeout);
                             reject({ error: ErrorCodes.REDEEM_ERR, reason: `No response within ${REDEEM_TIMEOUT_WINDOW} ledgers time.`, redeemTxHash: res.txHash });
                         }
@@ -135,7 +129,7 @@ class EvernodeClient {
                     null,
                     [{ type: MemoTypes.AUDIT_REQ, format: MemoFormats.BINARY, data: '' }]);
                 if (res) {
-                    const startingLedger = this.ledgerSequence;
+                    const startingLedger = this.rippleAPI.ledgerVersion;
                     console.log('Waiting for check...');
                     const getChecksAndProcess = () => {
                         return new Promise(async (resolve, reject) => {
@@ -164,7 +158,7 @@ class EvernodeClient {
                                         reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: 'Cashing check failed.' });
                                 } else if (resp && resp.account_objects.length === 0) {
                                     const timeout = setTimeout(() => {
-                                        if (this.ledgerSequence - startingLedger >= MOMENT_SIZE) {
+                                        if (this.rippleAPI.ledgerVersion - startingLedger >= MOMENT_SIZE) {
                                             clearTimeout(timeout);
                                             reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: `No checks found within moment(${MOMENT_SIZE}) window.` });
                                         }

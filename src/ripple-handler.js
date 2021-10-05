@@ -17,7 +17,7 @@ const RippleAPIEvents = {
 }
 
 const RippleConstants = {
-    MIN_XRP_AMOUNT: 0.000001
+    MIN_XRP_AMOUNT: '0.000001'
 }
 
 const hexToASCII = (hex) => {
@@ -75,7 +75,7 @@ class RippleAPIWrapper {
             catch (e) { console.error(e); };
         });
         this.api.on('ledger', (ledger) => {
-            this.events.emit(RippleAPIEvents.LEDGER, ledger);
+            this.ledgerVersion = ledger.ledgerVersion;
         });
     }
 
@@ -90,6 +90,7 @@ class RippleAPIWrapper {
             try {
                 this.connectionRetryCount++;
                 await this.api.connect();
+                this.ledgerVersion = await this.api.getLedgerVersion();
                 return;
             }
             catch (e) {
@@ -120,10 +121,6 @@ class RippleAPIWrapper {
         return (await this.api.request('account_info', { account: address }));
     }
 
-    async getLedgerVersion() {
-        return (await this.api.getLedgerVersion());
-    }
-
     async isValidAddress(publicKey, address) {
         const derivedAddress = this.deriveAddress(publicKey);
         const info = await this.getAccountInfo(address);
@@ -147,6 +144,7 @@ class XrplAccount {
         this.secret = secret;
         this.events = new EventEmitter();
         this.subscribed = false;
+        this.sequence = null;
     }
 
     deriveKeypair() {
@@ -156,20 +154,38 @@ class XrplAccount {
         return this.rippleAPI.api.deriveKeypair(this.secret);
     }
 
+    async getNextSequence() {
+        if (!this.sequence) {
+            const info = await this.rippleAPI.getAccountInfo(this.address);
+            if (!this.sequence)
+                this.sequence = info.account_data.Sequence;
+        }
+        else {
+            this.sequence++;
+        }
+        return this.sequence;
+    }
+
     async setDefaultRippling(enabled) {
 
-        const ledger = await (await this.rippleAPI.api.getLedger()).ledgerVersion;
-        const maxLedger = ledger + maxLedgerOffset;
+        const ledgerVersion = this.rippleAPI.ledgerVersion;
+        const maxLedgerVersion = ledgerVersion + maxLedgerOffset;
 
         const prepared = await this.rippleAPI.api.prepareSettings(this.address, {
             defaultRipple: enabled
         }, {
-            maxLedgerVersion: maxLedger
+            maxLedgerVersion: maxLedgerVersion,
+            sequence: await this.getNextSequence()
         });
         const signed = this.rippleAPI.api.sign(prepared.txJSON, this.secret);
 
         await this.rippleAPI.api.submit(signed.signedTransaction);
-        const verified = await this.verifyTransaction(signed.id, ledger, maxLedger);
+        if (submission.resultCode !== "tesSUCCESS") {
+            console.log("Txn submission failure: " + submission.resultCode)
+            return false;
+        }
+
+        const verified = await this.verifyTransaction(signed.id, ledgerVersion, maxLedgerVersion);
         return verified ? verified : false;
     }
 
@@ -183,8 +199,8 @@ class XrplAccount {
 
     async makePayment(toAddr, amount, currency, issuer, memos = null) {
         // Get current ledger.
-        const ledger = await (await this.rippleAPI.api.getLedger()).ledgerVersion;
-        const maxLedger = ledger + maxLedgerOffset;
+        const ledgerVersion = this.rippleAPI.ledgerVersion;
+        const maxLedgerVersion = ledgerVersion + maxLedgerOffset;
 
         const amountObj = {
             currency: currency,
@@ -207,14 +223,19 @@ class XrplAccount {
             },
             memos: this.getMemoCollection(memos)
         }, {
-            maxLedgerVersion: maxLedger
+            maxLedgerVersion: maxLedgerVersion,
+            sequence: await this.getNextSequence()
         })
 
         const signed = this.rippleAPI.api.sign(prepared.txJSON, this.secret);
 
-        await this.rippleAPI.api.submit(signed.signedTransaction);
-        console.log("Submitted payment.");
-        const verified = await this.verifyTransaction(signed.id, ledger, maxLedger);
+        const submission = await this.rippleAPI.api.submit(signed.signedTransaction);
+        if (submission.resultCode !== "tesSUCCESS") {
+            console.log("Txn submission failure: " + submission.resultCode)
+            return false;
+        }
+
+        const verified = await this.verifyTransaction(signed.id, ledgerVersion, maxLedgerVersion);
         return verified ? verified : false;
     }
 
@@ -241,8 +262,8 @@ class XrplAccount {
 
     async createTrustlines(lines) {
         // Get current ledger.
-        const ledger = await (await this.rippleAPI.api.getLedger()).ledgerVersion;
-        const maxLedger = ledger + maxLedgerOffset;
+        const ledgerVersion = this.rippleAPI.ledgerVersion;
+        const maxLedgerVersion = ledgerVersion + maxLedgerOffset;
 
         // Create and verify multiple trust lines in parallel.
         const tasks = [];
@@ -255,14 +276,19 @@ class XrplAccount {
                     memos: line.memos,
                     ripplingDisabled: !line.allowRippling
                 }, {
-                    maxLedgerVersion: maxLedger
+                    maxLedgerVersion: maxLedgerVersion,
+                    sequence: await this.getNextSequence()
                 })
 
                 const signed = this.rippleAPI.api.sign(prepared.txJSON, this.secret);
 
-                await this.rippleAPI.api.submit(signed.signedTransaction);
-                console.log("Submitted trust line.");
-                const verified = await this.verifyTransaction(signed.id, ledger, maxLedger);
+                const submission = await this.rippleAPI.api.submit(signed.signedTransaction);
+                if (submission.resultCode !== "tesSUCCESS") {
+                    console.log("Txn submission failure: " + submission.resultCode)
+                    resolve(false);
+                }
+
+                const verified = await this.verifyTransaction(signed.id, ledgerVersion, maxLedgerVersion);
                 verified ? resolve(verified) : resolve(false);
             }));
         }
@@ -291,8 +317,8 @@ class XrplAccount {
         const checkID = checkIDhasher.digest('hex').slice(0, 64).toUpperCase()
         console.log("Calculated checkID:", checkID)
 
-        const ledger = await (await this.rippleAPI.api.getLedger()).ledgerVersion;
-        const maxLedger = ledger + maxLedgerOffset;
+        const ledgerVersion = this.rippleAPI.ledgerVersion;
+        const maxLedgerVersion = ledgerVersion + maxLedgerOffset;
         const prep = await this.rippleAPI.api.prepareCheckCash(this.address, {
             checkID: checkID,
             amount: {
@@ -301,11 +327,17 @@ class XrplAccount {
                 counterparty: check.SendMax.issuer
             }
         }, {
-            maxLedgerVersion: maxLedger
+            maxLedgerVersion: maxLedgerVersion,
+            sequence: await this.getNextSequence()
         });
         const signed = this.rippleAPI.api.sign(prep.txJSON, this.secret);
-        await this.rippleAPI.api.submit(signed.signedTransaction);
-        const verified = await this.verifyTransaction(signed.id, ledger, maxLedger);
+        const submission = await this.rippleAPI.api.submit(signed.signedTransaction);
+        if (submission.resultCode !== "tesSUCCESS") {
+            console.log("Txn submission failure: " + submission.resultCode)
+            return false;
+        }
+
+        const verified = await this.verifyTransaction(signed.id, ledgerVersion, maxLedgerVersion);
         return verified ? verified : false;
     }
 
