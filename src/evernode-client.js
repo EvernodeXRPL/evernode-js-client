@@ -105,7 +105,7 @@ class EvernodeClient {
     async refund(redeemTxHash) {
         return new Promise(async (resolve, reject) => {
             try {
-                const res = await this.xrplAcc.makePayment(this.options.hookAddress,
+                const res = await this.xrplAcc.makePayment(this.hookAddress,
                     RippleConstants.MIN_XRP_AMOUNT,
                     'XRP',
                     null,
@@ -123,7 +123,7 @@ class EvernodeClient {
     async requestAudit() {
         return new Promise(async (resolve, reject) => {
             try {
-                const res = await this.xrplAcc.makePayment(this.options.hookAddress,
+                const res = await this.xrplAcc.makePayment(this.hookAddress,
                     RippleConstants.MIN_XRP_AMOUNT,
                     'XRP',
                     null,
@@ -134,7 +134,7 @@ class EvernodeClient {
                     const getChecksAndProcess = () => {
                         return new Promise(async (resolve, reject) => {
                             try {
-                                const resp = await this.xrplAcc.getChecks(this.options.hookAddress);
+                                const resp = await this.xrplAcc.getChecks(this.hookAddress);
                                 if (resp && resp.account_objects.length > 0) {
                                     const check = resp.account_objects[0];
                                     const lines = await this.xrplAcc.getTrustLines(check.SendMax.currency, check.SendMax.issuer);
@@ -184,7 +184,7 @@ class EvernodeClient {
     async auditSuccess() {
         return new Promise(async (resolve, reject) => {
             try {
-                const res = await this.xrplAcc.makePayment(this.options.hookAddress,
+                const res = await this.xrplAcc.makePayment(this.hookAddress,
                     RippleConstants.MIN_XRP_AMOUNT,
                     'XRP',
                     null,
