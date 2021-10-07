@@ -76,6 +76,7 @@ class RippleAPIWrapper {
         });
         this.api.on('ledger', (ledger) => {
             this.ledgerVersion = ledger.ledgerVersion;
+            this.events.emit(RippleAPIEvents.LEDGER, ledger);
         });
     }
 
