@@ -53,47 +53,54 @@ class EvernodeClient {
         this.evernodeHookAcc = new XrplAccount(this.rippleAPI, this.hookAddress);
     }
 
-    async redeem(hostingToken, hostAddress, amount, requirement) {
+    redeemSubmit(hostingToken, hostAddress, amount, requirement) {
+        return this.xrplAcc.makePayment(this.hookAddress,
+            amount,
+            hostingToken,
+            hostAddress,
+            [{ type: MemoTypes.REDEEM, format: MemoFormats.BINARY, data: JSON.stringify(requirement) }]);
+    }
+
+    watchRedeemResponse(redeemTx) {
+        return new Promise(async (resolve, reject) => {
+            console.log(`Waiting for redeem response... (txHash: ${redeemTx.txHash})`);
+            // Handle the transactions on evernode account and filter out redeem operations.
+            const failTimeout = setInterval(() => {
+                if (this.rippleAPI.ledgerVersion - redeemTx.ledgerVersion >= REDEEM_TIMEOUT_WINDOW) {
+                    clearInterval(failTimeout);
+                    reject({ error: ErrorCodes.REDEEM_ERR, reason: `No response within ${REDEEM_TIMEOUT_WINDOW} ledgers time.`, redeemTxHash: redeemTx.txHash });
+                }
+            }, 1000);
+            this.evernodeHookAcc.events.on(RippleAPIEvents.PAYMENT, async (data, error) => {
+                if (error)
+                    console.error(error);
+                else if (!data)
+                    console.log('Invalid transaction.');
+                else {
+                    if (data.Memos && data.Memos.length === 2 && data.Memos[0].format === MemoFormats.BINARY &&
+                        data.Memos[0].type === MemoTypes.REDEEM_REF && data.Memos[0].data === redeemTx.txHash &&
+                        data.Memos[1].type === MemoTypes.REDEEM_RESP && data.Memos[1].data) {
+                        clearInterval(failTimeout);
+                        const payload = data.Memos[1].data;
+                        if (payload === ErrorCodes.REDEEM_ERR)
+                            reject({ error: ErrorCodes.REDEEM_ERR, reason: 'Redeem error occured in host.', redeemTxHash: redeemTx.txHash });
+                        else {
+                            const info = await EncryptionHelper.decrypt(this.accKeyPair.privateKey, data.Memos[1].data);
+                            resolve(info.content);
+                        }
+                    }
+                }
+            });
+            this.evernodeHookAcc.subscribe();
+        });
+    }
+
+    redeem(hostingToken, hostAddress, amount, requirement) {
         return new Promise(async (resolve, reject) => {
             try {
-                // For now we comment EVR reg fee transaction and make XRP transaction instead.
-                const res = await this.xrplAcc.makePayment(this.hookAddress,
-                    amount,
-                    hostingToken,
-                    hostAddress,
-                    [{ type: MemoTypes.REDEEM, format: MemoFormats.BINARY, data: JSON.stringify(requirement) }]);
-                if (res) {
-                    console.log(`Redeem tx hash: ${res.txHash}`);
-                    console.log(`Waiting for redeem response...`);
-                    // Handle the transactions on evernode account and filter out redeem operations.
-                    const failTimeout = setInterval(() => {
-                        if (this.rippleAPI.ledgerVersion - res.ledgerVersion >= REDEEM_TIMEOUT_WINDOW) {
-                            clearInterval(failTimeout);
-                            reject({ error: ErrorCodes.REDEEM_ERR, reason: `No response within ${REDEEM_TIMEOUT_WINDOW} ledgers time.`, redeemTxHash: res.txHash });
-                        }
-                    }, 1000);
-                    this.evernodeHookAcc.events.on(RippleAPIEvents.PAYMENT, async (data, error) => {
-                        if (error)
-                            console.error(error);
-                        else if (!data)
-                            console.log('Invalid transaction.');
-                        else {
-                            if (data.Memos && data.Memos.length === 2 && data.Memos[0].format === MemoFormats.BINARY &&
-                                data.Memos[0].type === MemoTypes.REDEEM_REF && data.Memos[0].data === res.txHash &&
-                                data.Memos[1].type === MemoTypes.REDEEM_RESP && data.Memos[1].data) {
-                                clearInterval(failTimeout);
-                                const payload = data.Memos[1].data;
-                                if (payload === ErrorCodes.REDEEM_ERR)
-                                    reject({ error: ErrorCodes.REDEEM_ERR, reason: 'Redeem error occured in host.', redeemTxHash: res.txHash });
-                                else {
-                                    const info = await EncryptionHelper.decrypt(this.accKeyPair.privateKey, data.Memos[1].data);
-                                    resolve(info.content);
-                                }
-                            }
-                        }
-                    });
-                    this.evernodeHookAcc.subscribe();
-                }
+                const res = await this.redeemSubmit(hostingToken, hostAddress, amount, requirement);
+                if (res)
+                    this.watchRedeemResponse(res.txHash).then(response => resolve(response), error => reject(error));
                 else
                     reject({ error: ErrorCodes.REDEEM_ERR, reason: 'Redeem transaction failed.' });
             } catch (error) {
@@ -102,7 +109,7 @@ class EvernodeClient {
         });
     }
 
-    async refund(redeemTxHash) {
+    refund(redeemTxHash) {
         return new Promise(async (resolve, reject) => {
             try {
                 const res = await this.xrplAcc.makePayment(this.hookAddress,
@@ -120,7 +127,7 @@ class EvernodeClient {
         });
     }
 
-    async requestAudit() {
+    requestAudit() {
         return new Promise(async (resolve, reject) => {
             try {
                 const res = await this.xrplAcc.makePayment(this.hookAddress,
@@ -181,7 +188,7 @@ class EvernodeClient {
         });
     }
 
-    async auditSuccess() {
+    auditSuccess() {
         return new Promise(async (resolve, reject) => {
             try {
                 const res = await this.xrplAcc.makePayment(this.hookAddress,
