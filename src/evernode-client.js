@@ -110,7 +110,7 @@ class EvernodeClient {
             try {
                 const res = await this.redeemSubmit(hostingToken, hostAddress, amount, requirement);
                 if (res)
-                    this.watchRedeemResponse(res.txHash).then(response => resolve(response), error => reject(error));
+                    this.watchRedeemResponse(res).then(response => resolve(response), error => reject(error));
                 else
                     reject({ error: ErrorCodes.REDEEM_ERR, reason: 'Redeem transaction failed.' });
             } catch (error) {
