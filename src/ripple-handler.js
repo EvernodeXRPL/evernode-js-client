@@ -4,8 +4,6 @@ const decodeAccountID = require('ripple-address-codec').decodeAccountID;
 const CONNECTION_RETRY_THREASHOLD = 60;
 const CONNECTION_RETRY_INTERVAL = 1000;
 
-const DISABLE_MASTERKEY = 0x100000;
-
 const DEFAULT_RIPPLED_SERVER = 'wss://hooks-testnet.xrpl-labs.com';
 
 const maxLedgerOffset = 10;
@@ -122,19 +120,18 @@ class RippleAPIWrapper {
         return (await this.api.request('account_info', { account: address }));
     }
 
-    async isValidAddress(publicKey, address) {
-        const derivedAddress = this.deriveAddress(publicKey);
+    async isValidKeyForAddress(publicKey, address) {
         const info = await this.getAccountInfo(address);
-        const accountFlags = info.account_data.Flags;
+        const accountFlags = this.api.parseAccountFlags(info.account_data.Flags);
         const regularKey = info.account_data.RegularKey;
-        const masterKeyDisabled = (DISABLE_MASTERKEY & accountFlags) === DISABLE_MASTERKEY;
+        const derivedPubKeyAddress = this.deriveAddress(publicKey);
 
-        // If the master key is disabled the derived address should be the regular key.
-        // Otherwise it could be master key or the regular key
-        if (masterKeyDisabled)
-            return regularKey && (derivedAddress === regularKey);
+        // If the master key is disabled the derived pubkey address should be the regular key.
+        // Otherwise it could be account address or the regular key
+        if (accountFlags.disableMasterKey)
+            return regularKey && (derivedPubKeyAddress === regularKey);
         else
-            return derivedAddress === address || (regularKey && derivedAddress === regularKey);
+            return derivedPubKeyAddress === address || (regularKey && derivedPubKeyAddress === regularKey);
     }
 }
 
@@ -185,12 +182,30 @@ class XrplAccount {
         return this.rippleAPI.ledgerVersion + maxLedgerOffset;
     }
 
+    async getEncryptionKey() {
+        const info = await this.rippleAPI.getAccountInfo(this.address);
+        const keyHex = info.account_data.MessageKey;
+        return keyHex;
+    }
+
     async getTrustLines(currency, issuer) {
         const lines = await this.rippleAPI.api.getTrustlines(this.address, {
             currency: currency,
             counterparty: issuer
         });
         return lines;
+    }
+
+    async setMessageKey(publicKey) {
+        const prepared = await this.rippleAPI.api.prepareSettings(this.address, {
+            messageKey: publicKey
+        }, {
+            maxLedgerVersion: this.getMaxLedgerVersion(),
+            sequence: await this.getNextSequence()
+        });
+
+        const result = await this.submitAndVerifyTransaction(prepared);
+        return result;
     }
 
     async setDefaultRippling(enabled) {

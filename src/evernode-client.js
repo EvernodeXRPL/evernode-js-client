@@ -53,12 +53,22 @@ class EvernodeClient {
         this.evernodeHookAcc = new XrplAccount(this.rippleAPI, this.hookAddress);
     }
 
-    redeemSubmit(hostingToken, hostAddress, amount, requirement) {
+    async redeemSubmit(hostingToken, hostAddress, amount, requirement) {
+
+        // Encrypt the requirements with the host's encryption key (Specified in MessageKey field of the host account).
+        const hostAcc = new XrplAccount(this.rippleAPI, hostAddress);
+        const encKey = await hostAcc.getEncryptionKey();
+        if (!encKey)
+            throw "Host encryption key not set.";
+
+        const ecrypted = await EncryptionHelper.encrypt(encKey, requirement);
+
+        // We are returning the promise directly without awaiting to let the caller decide what to do with it.
         return this.xrplAcc.makePayment(this.hookAddress,
             amount,
             hostingToken,
             hostAddress,
-            [{ type: MemoTypes.REDEEM, format: MemoFormats.BINARY, data: JSON.stringify(requirement) }]);
+            [{ type: MemoTypes.REDEEM, format: MemoFormats.BINARY, data: ecrypted }]);
     }
 
     watchRedeemResponse(redeemTx) {

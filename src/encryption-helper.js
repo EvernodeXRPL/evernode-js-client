@@ -24,7 +24,14 @@ class EncryptionHelper {
             mac: encryptedBuf.slice(this.macOffset, this.ciphertextOffset),
             ciphertext: encryptedBuf.slice(this.ciphertextOffset)
         }
-        return JSON.parse((await eccrypto.decrypt(Buffer.from(privateKey, this.keyFormat).slice(1), encryptedObj)).toString());
+
+        const decrypted = await eccrypto.decrypt(Buffer.from(privateKey, this.keyFormat).slice(1), encryptedObj)
+            .catch(err => console.log(err));
+
+        if (!decrypted)
+            return null;
+
+        return JSON.parse(decrypted.toString());
     }
 }
 
