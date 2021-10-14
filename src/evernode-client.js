@@ -92,15 +92,11 @@ class EvernodeClient {
                         data.Memos[1].type === MemoTypes.REDEEM_RESP && data.Memos[1].data) {
                         clearInterval(failTimeout);
                         const payload = data.Memos[1].data;
-                        if (payload.includes(ErrorCodes.REDEEM_ERR))
-                        {
-                            let data = {};
-                            if (payload.includes('reason'))
-                                data = JSON.parse(payload);
+                        if (data.Memos[1].format === MemoFormats.JSON) { // Format text/json means this is an error message. 
+                            const data = JSON.parse(payload);
                             reject({ error: ErrorCodes.REDEEM_ERR, reason: 'Redeem error occured in host' + (data.reason ? ` (${data.reason}).` : '.'), redeemTxHash: redeemTx.txHash });
-                        }
-                        else {
-                            const info = await EncryptionHelper.decrypt(this.accKeyPair.privateKey, data.Memos[1].data);
+                        } else {
+                            const info = await EncryptionHelper.decrypt(this.accKeyPair.privateKey, payload);
                             resolve(info.content);
                         }
                     }
