@@ -65,16 +65,7 @@ class EvernodeClient {
         this.accKeyPair = this.xrplAcc.deriveKeypair();
         this.evernodeHookAcc = new XrplAccount(this.rippleAPI, this.hookAddress);
         this.evernodeHook = new EvernodeHook(this.evernodeHookAcc);
-
-        await this.fetchHookConfigValues();
-    }
-
-    async fetchHookConfigValues() {
-        this.evernodeHook = new EvernodeHook(this.evernodeHookAcc);
         this.evernodeHookConf = await this.evernodeHook.getConfig();
-
-        console.log('Hook state configurations are loaded.');
-        console.log(JSON.stringify(this.evernodeHookConf).replace('\\', ''));
     }
 
     async redeemSubmit(hostingToken, hostAddress, amount, requirement) {
@@ -268,12 +259,16 @@ class EvernodeHook {
     readUInt(buf, base = 32, isBE = true) {
         buf = Buffer.from(buf);
         switch (base) {
+            case (8):
+                return buf.readUInt8();
             case (16):
                 return isBE ? buf.readUInt16BE() : buf.readUInt16LE();
+            case (32):
+                return isBE ? buf.readUInt32BE() : buf.readUInt32LE();
             case (64):
                 return isBE ? Number(buf.readBigUInt64BE()) : Number(buf.readBigUInt64LE());
             default:
-                return isBE ? buf.readUInt32BE() : buf.readUInt32LE();
+                throw 'Invalid base value';
         }
     }
 
