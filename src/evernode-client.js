@@ -266,11 +266,12 @@ class EvernodeHook {
     }
 
     readUInt(buf, base = 32, isBE = true) {
+        buf = Buffer.from(buf);
         switch (base) {
             case (16):
                 return isBE ? buf.readUInt16BE() : buf.readUInt16LE();
             case (64):
-                return isBE ? Number(buf.readBigUInt64BE(0)) : Number(buf.readBigUInt64LE(0));
+                return isBE ? Number(buf.readBigUInt64BE()) : Number(buf.readBigUInt64LE());
             default:
                 return isBE ? buf.readUInt32BE() : buf.readUInt32LE();
         }
@@ -289,16 +290,16 @@ class EvernodeHook {
         const states = await this.getHookStates();
         let config = {};
         let buf = this.getStateData(states, HookStateKeys.HOST_REG_FEE);
-        config.hostRegFee = buf ? this.readUInt(Buffer.from(buf), 16) : DEF_HOST_REG_FEE;
+        config.hostRegFee = buf ? this.readUInt(buf, 16) : DEF_HOST_REG_FEE;
 
         buf = this.getStateData(states, HookStateKeys.MOMENT_SIZE);
-        config.momentSize = buf ? this.readUInt(Buffer.from(buf), 16) : DEF_MOMENT_SIZE;
+        config.momentSize = buf ? this.readUInt(buf, 16) : DEF_MOMENT_SIZE;
 
         buf = this.getStateData(states, HookStateKeys.REDEEM_WINDOW);
-        config.redeemWindow = buf ? this.readUInt(Buffer.from(buf), 16) : DEF_REDEEM_WINDOW;
+        config.redeemWindow = buf ? this.readUInt(buf, 16) : DEF_REDEEM_WINDOW;
 
         buf = this.getStateData(states, HookStateKeys.MOMENT_BASE_IDX);
-        config.momentBaseIdx = buf ? this.readUInt(Buffer.from(buf), 64) : DEF_MOMENT_BASE_IDX;
+        config.momentBaseIdx = buf ? this.readUInt(buf, 64) : DEF_MOMENT_BASE_IDX;
 
         return config;
     }
