@@ -94,7 +94,7 @@ class EvernodeClient {
                         const payload = data.Memos[1].data;
                         if (data.Memos[1].format === MemoFormats.JSON) { // Format text/json means this is an error message. 
                             const data = JSON.parse(payload);
-                            reject({ error: ErrorCodes.REDEEM_ERR, reason: 'Redeem error occured in host' + (data.reason ? ` (${data.reason}).` : '.'), redeemTxHash: redeemTx.txHash });
+                            reject({ error: ErrorCodes.REDEEM_ERR, reason: data.reason, redeemTxHash: redeemTx.txHash });
                         } else {
                             const info = await EncryptionHelper.decrypt(this.accKeyPair.privateKey, payload);
                             resolve(info.content);
