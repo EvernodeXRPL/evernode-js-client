@@ -289,6 +289,16 @@ class XrplAccount {
         return await this.rippleAPI.api.connection.request(account_objects_request);
     }
 
+    async getStates() {
+        const account_objects_request = {
+            command: "account_objects",
+            account: this.address,
+            ledger_index: "validated"
+        }
+        const res = await this.rippleAPI.api.connection.request(account_objects_request);
+        return res.account_objects ? res.account_objects : [];
+    }
+
     async cashCheck(check) {
         const checkIDhasher = crypto.createHash('sha512')
         checkIDhasher.update(Buffer.from('0043', 'hex'))
