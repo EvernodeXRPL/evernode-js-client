@@ -1,50 +1,11 @@
 const { XrplAccount, RippleAPIWrapper, RippleAPIEvents, RippleConstants } = require('./ripple-handler');
 const { EncryptionHelper } = require('./encryption-helper');
+const { Global, MemoFormats, MemoTypes, ErrorCodes } = require('./evernode-common');
+const { EvernodeHook } = require('./evernode-hook');
 
+export const AUDIT_TRUSTLINE_LIMIT = 999999999;
 
-const MemoTypes = {
-    REDEEM: 'evnRedeem',
-    REDEEM_REF: 'evnRedeemRef',
-    REDEEM_RESP: 'evnRedeemResp',
-    HOST_REG: 'evnHostReg',
-    HOST_DEREG: 'evnHostDereg',
-    REFUND: 'evnRefund',
-    AUDIT_REQ: 'evnAuditRequest',
-    AUDIT_SUCCESS: 'evnAuditSuccess'
-}
-
-const MemoFormats = {
-    TEXT: 'text/plain',
-    JSON: 'text/json',
-    BINARY: 'binary'
-}
-
-const ErrorCodes = {
-    REDEEM_ERR: 'REDEEM_ERR',
-    REFUND_ERR: 'REFUND_ERR',
-    AUDIT_REQ_ERROR: 'AUDIT_REQ_ERROR',
-    AUDIT_SUCCESS_ERROR: 'AUDIT_SUCCESS_ERROR',
-}
-
-const DEFAULT_HOOK_ADDR = 'rwGLw5uSGYm2couHZnrbCDKaQZQByvamj8';
-const AUDIT_TRUSTLINE_LIMIT = 999999999;
-
-// Default hook config values.
-// If hook's state is empty values are loaded from here.
-// Default values.
-const DEF_MOMENT_SIZE = 72;
-const DEF_HOST_REG_FEE = 5;
-const DEF_REDEEM_WINDOW = 24;
-const DEF_MOMENT_BASE_IDX = 0;
-
-const HookStateKeys = {
-    HOST_REG_FEE: ['E', 'V', 'R', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3],
-    MOMENT_SIZE: ['E', 'V', 'R', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    REDEEM_WINDOW: ['E', 'V', 'R', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
-    MOMENT_BASE_IDX: ['E', 'V', 'R', 52, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-}
-
-class EvernodeClient {
+export class EvernodeClient {
     constructor(xrpAddress, xrpSecret, options = null) {
 
         this.xrpAddress = xrpAddress;
@@ -53,7 +14,7 @@ class EvernodeClient {
         if (!options)
             options = {};
 
-        this.hookAddress = options.hookAddress || DEFAULT_HOOK_ADDR;
+        this.hookAddress = options.hookAddress || Global.DEFAULT_HOOK_ADDR;
         this.rippleAPI = options.rippleAPI || new RippleAPIWrapper(options.rippledServer);
     }
 
@@ -63,8 +24,7 @@ class EvernodeClient {
 
         this.xrplAcc = new XrplAccount(this.rippleAPI, this.xrpAddress, this.xrpSecret);
         this.accKeyPair = this.xrplAcc.deriveKeypair();
-        this.evernodeHookAcc = new XrplAccount(this.rippleAPI, this.hookAddress);
-        this.evernodeHook = new EvernodeHook(this.evernodeHookAcc);
+        this.evernodeHook = new EvernodeHook(this.rippleAPI, this.hookAddress);
         this.evernodeHookConf = await this.evernodeHook.getConfig();
     }
 
@@ -96,7 +56,7 @@ class EvernodeClient {
                     reject({ error: ErrorCodes.REDEEM_ERR, reason: `No response within ${this.evernodeHookConf.redeemWindow} ledgers time.`, redeemTxHash: redeemTx.txHash });
                 }
             }, 1000);
-            this.evernodeHookAcc.events.on(RippleAPIEvents.PAYMENT, async (data, error) => {
+            this.this.evernodeHook.account.events.on(RippleAPIEvents.PAYMENT, async (data, error) => {
                 if (error)
                     console.error(error);
                 else if (!data)
@@ -117,7 +77,7 @@ class EvernodeClient {
                     }
                 }
             });
-            this.evernodeHookAcc.subscribe();
+            this.this.evernodeHook.account.subscribe();
         });
     }
 
@@ -237,73 +197,4 @@ class EvernodeClient {
         try { await this.rippleAPI.disconnect(); }
         catch (e) { throw e; }
     }
-}
-
-class EvernodeHook {
-    constructor(account) {
-        this.account = account;
-    }
-
-    async getHookStates() {
-        let states = await this.account.getStates();
-        states = states.filter(s => s.LedgerEntryType === 'HookState');
-        states = states.map(s => {
-            return {
-                key: Buffer.from(s.HookStateKey, 'hex'),
-                data: Buffer.from(s.HookStateData, 'hex')
-            }
-        });
-        return states;
-    }
-
-    readUInt(buf, base = 32, isBE = true) {
-        buf = Buffer.from(buf);
-        switch (base) {
-            case (8):
-                return buf.readUInt8();
-            case (16):
-                return isBE ? buf.readUInt16BE() : buf.readUInt16LE();
-            case (32):
-                return isBE ? buf.readUInt32BE() : buf.readUInt32LE();
-            case (64):
-                return isBE ? Number(buf.readBigUInt64BE()) : Number(buf.readBigUInt64LE());
-            default:
-                throw 'Invalid base value';
-        }
-    }
-
-    getStateData(states, key) {
-        // If there's any ascii chars, take their ascii value.
-        for (const i in key)
-            if (typeof key[i] === 'string')
-                key[i] = key[i].charCodeAt(0);
-        const state = states.find(s => Buffer.from(key).equals(s.key));
-        return state?.data;
-    }
-
-    async getConfig() {
-        const states = await this.getHookStates();
-        let config = {};
-        let buf = this.getStateData(states, HookStateKeys.HOST_REG_FEE);
-        config.hostRegFee = buf ? this.readUInt(buf, 16) : DEF_HOST_REG_FEE;
-
-        buf = this.getStateData(states, HookStateKeys.MOMENT_SIZE);
-        config.momentSize = buf ? this.readUInt(buf, 16) : DEF_MOMENT_SIZE;
-
-        buf = this.getStateData(states, HookStateKeys.REDEEM_WINDOW);
-        config.redeemWindow = buf ? this.readUInt(buf, 16) : DEF_REDEEM_WINDOW;
-
-        buf = this.getStateData(states, HookStateKeys.MOMENT_BASE_IDX);
-        config.momentBaseIdx = buf ? this.readUInt(buf, 64) : DEF_MOMENT_BASE_IDX;
-
-        return config;
-    }
-}
-
-module.exports = {
-    EvernodeClient,
-    EvernodeHook,
-    MemoFormats,
-    MemoTypes,
-    ErrorCodes
 }
