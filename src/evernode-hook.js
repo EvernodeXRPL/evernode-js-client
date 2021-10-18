@@ -84,7 +84,22 @@ function extractEvernodeHookEvent(tx) {
     if (!tx.Memos || tx.Memos.length === 0)
         return null;
 
-    if (tx.Memos.length >= 2 && tx.Memos[0].format === MemoFormats.BINARY &&
+    if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
+        tx.Memos[0].type === MemoTypes.REDEEM && tx.Memos[0].data) {
+
+        return {
+            name: HookEvents.REDEEM,
+            data: {
+                txHash: tx.hash,
+                user: tx.Account,
+                host: tx.Amount.issuer,
+                token: tx.Amount.currency,
+                moments: parseInt(tx.Amount.value),
+                payload: tx.Memos[0].data
+            }
+        }
+    }
+    else if (tx.Memos.length >= 2 && tx.Memos[0].format === MemoFormats.BINARY &&
         tx.Memos[0].type === MemoTypes.REDEEM_REF && tx.Memos[0].data &&
         tx.Memos[1].type === MemoTypes.REDEEM_RESP && tx.Memos[1].data) {
 
@@ -111,17 +126,54 @@ function extractEvernodeHookEvent(tx) {
         }
     }
     else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
-        tx.Memos[0].type === MemoTypes.REDEEM && tx.Memos[0].data) {
+        tx.Memos[0].type === MemoTypes.REFUND && tx.Memos[0].data) {
 
         return {
-            name: HookEvents.REDEEM,
+            name: HookEvents.HOST_DEREGISTERED,
             data: {
-                txHash: tx.hash,
-                user: tx.Account,
-                host: tx.Amount.issuer,
-                token: tx.Amount.currency,
-                moments: parseInt(tx.Amount.value),
-                payload: tx.Memos[0].data
+                redeemTxHash: tx.Memos[0].data
+            }
+        }
+    }
+    else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.TEXT &&
+        tx.Memos[0].type === MemoTypes.HOST_REG && tx.Memos[0].data) {
+
+        const parts = tx.Memos[0].data.split(';');
+        return {
+            name: HookEvents.HOST_REGISTERED,
+            data: {
+                host: tx.Account,
+                token: parts[0],
+                instanceSize: parts[1],
+                location: parts[2]
+            }
+        }
+    }
+    else if (tx.Memos.length >= 1 && tx.Memos[0].type === MemoTypes.HOST_DEREG) {
+        return {
+            name: HookEvents.HOST_DEREGISTERED,
+            data: {
+                host: tx.Account
+            }
+        }
+    }
+    else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
+        tx.Memos[0].type === MemoTypes.AUDIT_REQ && tx.Memos[0].data) {
+
+        return {
+            name: HookEvents.AUDIT_REQUEST,
+            data: {
+                auditor: tx.Account
+            }
+        }
+    }
+    else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
+        tx.Memos[0].type === MemoTypes.AUDIT_SUCCESS && tx.Memos[0].data) {
+
+        return {
+            name: HookEvents.AUDIT_SUCCESS,
+            data: {
+                auditor: tx.Account
             }
         }
     }

@@ -43,11 +43,16 @@ export const HookStateKeys = {
     MOMENT_BASE_IDX: "4556523400000000000000000000000000000000000000000000000000000000",
 
     // Prefixes
-    HOST_ADDR : "45565203"
+    HOST_ADDR: "45565203"
 }
 
 export const HookEvents = {
+    HOST_REGISTERED: "hostRegistered",
+    HOST_DEREGISTERED: "hostDeregistered",
     REDEEM: "redeem",
     REDEEM_SUCCESS: "redeemSuccess",
-    REDEEM_ERROR: "redeemError"
+    REDEEM_ERROR: "redeemError",
+    REFUND: "refund",
+    AUDIT_REQUEST: "auditRequest",
+    AUDIT_SUCCESS: "auditSuccess"
 }
