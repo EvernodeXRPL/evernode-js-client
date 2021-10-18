@@ -1,10 +1,24 @@
-const { Global, HookStateDefaults, HookStateKeys } = require('./evernode-common')
-const { XrplAccount } = require('./ripple-handler');
-const rippleCodec = require('ripple-address-codec')
+const { Global, MemoTypes, HookStateDefaults, HookStateKeys, HookEvents } = require('./evernode-common')
+const { XrplAccount, RippleAPIEvents } = require('./ripple-handler');
+const { EventEmitter } = require('./event-emitter');
+const rippleCodec = require('ripple-address-codec');
 
 export class EvernodeHook {
     constructor(rippleAPI, hookAddress) {
         this.account = new XrplAccount(rippleAPI, (hookAddress || Global.DEFAULT_HOOK_ADDR));
+        this.events = new EventEmitter();
+
+        this.account.events.on(RippleAPIEvents.PAYMENT, async (data, error) => {
+            if (error)
+                console.error(error);
+            else if (!data)
+                console.log('Invalid transaction.');
+            else {
+                const ev = extractEvernodeHookEvent(data);
+                if (ev)
+                    this.events.emit(ev.name, ev.data);
+            }
+        });
     }
 
     async getHookStates() {
@@ -58,6 +72,43 @@ export class EvernodeHook {
             }
         });
         return hosts;
+    }
+
+    subscribe() {
+        this.account.subscribe();
+    }
+}
+
+function extractEvernodeHookEvent() {
+
+    if (!data.Memos || data.Memos.length === 0)
+        return null;
+
+    if (data.Memos.length === 2 && data.Memos[0].format === MemoFormats.BINARY &&
+        data.Memos[0].type === MemoTypes.REDEEM_REF && data.Memos[0].data &&
+        data.Memos[1].type === MemoTypes.REDEEM_RESP && data.Memos[1].data) {
+
+        const redeemTxHash = data.Memos[0].data;
+        const payload = data.Memos[1].data;
+        if (data.Memos[1].format === MemoFormats.JSON) { // Format text/json means this is an error message. 
+            const error = JSON.parse(payload);
+            return {
+                name: HookEvents.REDEEM_ERROR,
+                data: {
+                    redeemTxHash: redeemTxHash,
+                    reason: error.reason
+                }
+            }
+        }
+        else {
+            return {
+                name: HookEvents.REDEEM_SUCCESS,
+                data: {
+                    redeemTxHash: redeemTxHash,
+                    payload: payload
+                }
+            }
+        }
     }
 }
 

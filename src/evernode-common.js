@@ -45,3 +45,9 @@ export const HookStateKeys = {
     // Prefixes
     HOST_ADDR : "45565203"
 }
+
+export const HookEvents = {
+    REDEEM: "redeem",
+    REDEEM_SUCCESS: "redeemSuccess",
+    REDEEM_ERROR: "redeemError"
+}

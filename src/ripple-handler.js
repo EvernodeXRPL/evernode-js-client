@@ -1,6 +1,7 @@
 const RippleAPI = require('ripple-lib').RippleAPI;
 var crypto = require("crypto");
 const decodeAccountID = require('ripple-address-codec').decodeAccountID;
+const { EventEmitter } = require('./event-emitter');
 const CONNECTION_RETRY_THREASHOLD = 60;
 const CONNECTION_RETRY_INTERVAL = 1000;
 
@@ -24,23 +25,6 @@ const hexToASCII = (hex) => {
         str += String.fromCharCode(parseInt(hex.substr(n, 2), 16));
     }
     return str;
-}
-
-class EventEmitter {
-    constructor() {
-        this.handlers = {};
-    }
-
-    on(event, handler) {
-        if (!this.handlers[event])
-            this.handlers[event] = [];
-        this.handlers[event].push(handler);
-    }
-
-    emit(event, value, error = null) {
-        if (this.handlers[event])
-            this.handlers[event].forEach(handler => handler(value, error));
-    }
 }
 
 class RippleAPIWrapper {

@@ -1,6 +1,6 @@
 const { XrplAccount, RippleAPIWrapper, RippleAPIEvents, RippleConstants } = require('./ripple-handler');
 const { EncryptionHelper } = require('./encryption-helper');
-const { Global, MemoFormats, MemoTypes, ErrorCodes } = require('./evernode-common');
+const { Global, MemoFormats, MemoTypes, ErrorCodes, HookEvents } = require('./evernode-common');
 const { EvernodeHook } = require('./evernode-hook');
 
 export const AUDIT_TRUSTLINE_LIMIT = 999999999;
@@ -53,31 +53,25 @@ export class EvernodeClient {
             const failTimeout = setInterval(() => {
                 if (this.rippleAPI.ledgerVersion - redeemTx.ledgerVersion >= this.evernodeHookConf.redeemWindow) {
                     clearInterval(failTimeout);
-                    reject({ error: ErrorCodes.REDEEM_ERR, reason: `No response within ${this.evernodeHookConf.redeemWindow} ledgers time.`, redeemTxHash: redeemTx.txHash });
+                    reject({ error: ErrorCodes.REDEEM_ERR, reason: `REDEEM_TIMEOUT`, redeemTxHash: redeemTx.txHash });
                 }
             }, 1000);
-            this.this.evernodeHook.account.events.on(RippleAPIEvents.PAYMENT, async (data, error) => {
-                if (error)
-                    console.error(error);
-                else if (!data)
-                    console.log('Invalid transaction.');
-                else {
-                    if (data.Memos && data.Memos.length === 2 && data.Memos[0].format === MemoFormats.BINARY &&
-                        data.Memos[0].type === MemoTypes.REDEEM_REF && data.Memos[0].data === redeemTx.txHash &&
-                        data.Memos[1].type === MemoTypes.REDEEM_RESP && data.Memos[1].data) {
-                        clearInterval(failTimeout);
-                        const payload = data.Memos[1].data;
-                        if (data.Memos[1].format === MemoFormats.JSON) { // Format text/json means this is an error message. 
-                            const data = JSON.parse(payload);
-                            reject({ error: ErrorCodes.REDEEM_ERR, reason: data.reason, redeemTxHash: redeemTx.txHash });
-                        } else {
-                            const info = await EncryptionHelper.decrypt(this.accKeyPair.privateKey, payload);
-                            resolve(info.content);
-                        }
-                    }
+
+            this.evernodeHook.events.on(HookEvents.REDEEM_SUCCESS, async (ev) => {
+                if (ev.redeemTxHash === redeemTx.txHash) {
+                    clearInterval(failTimeout);
+                    const info = await EncryptionHelper.decrypt(this.accKeyPair.privateKey, ev.payload);
+                    resolve(info.content);
                 }
-            });
-            this.this.evernodeHook.account.subscribe();
+            })
+            this.evernodeHook.events.on(HookEvents.REDEEM_ERROR, async (ev) => {
+                if (ev.redeemTxHash === redeemTx.txHash) {
+                    clearInterval(failTimeout);
+                    reject({ error: ErrorCodes.REDEEM_ERR, reason: ev.reason, redeemTxHash: ev.redeemTxHash });
+                }
+            })
+
+            this.evernodeHook.account.subscribe();
         });
     }
 

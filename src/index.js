@@ -1,4 +1,4 @@
-const { MemoFormats, MemoTypes, ErrorCodes } = require('./evernode-common');
+const { MemoFormats, MemoTypes, ErrorCodes, HookEvents } = require('./evernode-common');
 const { EvernodeClient } = require("./evernode-client");
 const { EvernodeHook } = require("./evernode-hook");
 const { EncryptionHelper } = require('./encryption-helper');
@@ -11,6 +11,7 @@ module.exports = {
     MemoFormats,
     MemoTypes,
     ErrorCodes,
+    HookEvents,
     XrplAccount,
     RippleAPIWrapper,
     RippleAPIEvents,
