@@ -375,8 +375,9 @@ class XrplAccount {
                     data.transaction.Memos = data.transaction.Memos.filter(m => m.Memo).map(m => this.deserializeMemo(m.Memo));
                 this.events.emit(eventName, data.transaction);
             }
-            else
+            else {
                 this.events.emit(eventName, null, data.engine_result_message);
+            }
         });
 
         const request = {

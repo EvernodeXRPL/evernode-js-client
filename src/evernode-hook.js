@@ -88,9 +88,9 @@ function extractEvernodeHookEvent(tx) {
         tx.Memos[0].type === MemoTypes.REDEEM && tx.Memos[0].data) {
 
         return {
-            name: HookEvents.REDEEM,
+            name: HookEvents.Redeem,
             data: {
-                txHash: tx.hash,
+                transaction: tx,
                 user: tx.Account,
                 host: tx.Amount.issuer,
                 token: tx.Amount.currency,
@@ -108,8 +108,9 @@ function extractEvernodeHookEvent(tx) {
         if (tx.Memos[1].format === MemoFormats.JSON) { // Format text/json means this is an error message. 
             const error = JSON.parse(payload);
             return {
-                name: HookEvents.REDEEM_ERROR,
+                name: HookEvents.RedeemError,
                 data: {
+                    transaction: tx,
                     redeemTxHash: redeemTxHash,
                     reason: error.reason
                 }
@@ -117,8 +118,9 @@ function extractEvernodeHookEvent(tx) {
         }
         else {
             return {
-                name: HookEvents.REDEEM_SUCCESS,
+                name: HookEvents.RedeemSuccess,
                 data: {
+                    transaction: tx,
                     redeemTxHash: redeemTxHash,
                     payload: payload
                 }
@@ -129,8 +131,9 @@ function extractEvernodeHookEvent(tx) {
         tx.Memos[0].type === MemoTypes.REFUND && tx.Memos[0].data) {
 
         return {
-            name: HookEvents.HOST_DEREGISTERED,
+            name: HookEvents.RefundRequest,
             data: {
+                transaction: tx,
                 redeemTxHash: tx.Memos[0].data
             }
         }
@@ -140,8 +143,9 @@ function extractEvernodeHookEvent(tx) {
 
         const parts = tx.Memos[0].data.split(';');
         return {
-            name: HookEvents.HOST_REGISTERED,
+            name: HookEvents.HostRegistered,
             data: {
+                transaction: tx,
                 host: tx.Account,
                 token: parts[0],
                 instanceSize: parts[1],
@@ -151,8 +155,9 @@ function extractEvernodeHookEvent(tx) {
     }
     else if (tx.Memos.length >= 1 && tx.Memos[0].type === MemoTypes.HOST_DEREG) {
         return {
-            name: HookEvents.HOST_DEREGISTERED,
+            name: HookEvents.HostDeregistered,
             data: {
+                transaction: tx,
                 host: tx.Account
             }
         }
@@ -161,8 +166,9 @@ function extractEvernodeHookEvent(tx) {
         tx.Memos[0].type === MemoTypes.AUDIT_REQ && tx.Memos[0].data) {
 
         return {
-            name: HookEvents.AUDIT_REQUEST,
+            name: HookEvents.AuditRequest,
             data: {
+                transaction: tx,
                 auditor: tx.Account
             }
         }
@@ -171,8 +177,9 @@ function extractEvernodeHookEvent(tx) {
         tx.Memos[0].type === MemoTypes.AUDIT_SUCCESS && tx.Memos[0].data) {
 
         return {
-            name: HookEvents.AUDIT_SUCCESS,
+            name: HookEvents.AuditSuccess,
             data: {
+                transaction: tx,
                 auditor: tx.Account
             }
         }

@@ -1,5 +1,5 @@
 export const Global = {
-    DEFAULT_HOOK_ADDR: 'rwGLw5uSGYm2couHZnrbCDKaQZQByvamj8'
+    DEFAULT_HOOK_ADDR: 'rK4qxNScYAz6rw7rv3tbktMn4Qr2VBLCM9'
 }
 
 export const MemoTypes = {
@@ -47,12 +47,12 @@ export const HookStateKeys = {
 }
 
 export const HookEvents = {
-    HOST_REGISTERED: "hostRegistered",
-    HOST_DEREGISTERED: "hostDeregistered",
-    REDEEM: "redeem",
-    REDEEM_SUCCESS: "redeemSuccess",
-    REDEEM_ERROR: "redeemError",
-    REFUND: "refund",
-    AUDIT_REQUEST: "auditRequest",
-    AUDIT_SUCCESS: "auditSuccess"
+    HostRegistered: "hostRegistered",
+    HostDeregistered: "hostDeregistered",
+    Redeem: "redeem",
+    RedeemSuccess: "redeemSuccess",
+    RedeemError: "redeemError",
+    RefundRequest: "refundRequest",
+    AuditRequest: "auditRequest",
+    AuditSuccess: "auditSuccess"
 }

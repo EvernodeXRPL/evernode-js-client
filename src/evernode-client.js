@@ -1,30 +1,40 @@
-const { XrplAccount, RippleAPIWrapper, RippleAPIEvents, RippleConstants } = require('./ripple-handler');
+const { XrplAccount, RippleAPIWrapper, RippleConstants } = require('./ripple-handler');
 const { EncryptionHelper } = require('./encryption-helper');
+const { EventEmitter } = require('./event-emitter');
 const { Global, MemoFormats, MemoTypes, ErrorCodes, HookEvents } = require('./evernode-common');
 const { EvernodeHook } = require('./evernode-hook');
 
-export const AUDIT_TRUSTLINE_LIMIT = 999999999;
+const AUDIT_TRUSTLINE_LIMIT = 999999999;
+const REDEEM_WATCH_PREFIX = "redeem_";
 
 export class EvernodeClient {
     constructor(xrpAddress, xrpSecret, options = null) {
-
-        this.xrpAddress = xrpAddress;
-        this.xrpSecret = xrpSecret;
 
         if (!options)
             options = {};
 
         this.hookAddress = options.hookAddress || Global.DEFAULT_HOOK_ADDR;
         this.rippleAPI = options.rippleAPI || new RippleAPIWrapper(options.rippledServer);
+
+        this.xrpAddress = xrpAddress;
+        this.xrpSecret = xrpSecret;
+        this.xrplAcc = new XrplAccount(this.rippleAPI, this.xrpAddress, this.xrpSecret);
+        this.accKeyPair = this.xrplAcc.deriveKeypair();
+        this.evernodeHook = new EvernodeHook(this.rippleAPI, this.hookAddress);
+
+        this._events = new EventEmitter();
+        this.evernodeHook.events.on(HookEvents.RedeemSuccess, async (ev) => {
+            this._events.emit(REDEEM_WATCH_PREFIX + ev.redeemTxHash, { success: true, data: ev.payload });
+        })
+        this.evernodeHook.events.on(HookEvents.RedeemError, async (ev) => {
+            this._events.emit(REDEEM_WATCH_PREFIX + ev.redeemTxHash, { success: false, data: ev.reason });
+        })
     }
 
     async connect() {
         try { await this.rippleAPI.connect(); }
         catch (e) { throw e; }
 
-        this.xrplAcc = new XrplAccount(this.rippleAPI, this.xrpAddress, this.xrpSecret);
-        this.accKeyPair = this.xrplAcc.deriveKeypair();
-        this.evernodeHook = new EvernodeHook(this.rippleAPI, this.hookAddress);
         this.evernodeHookConf = await this.evernodeHook.getConfig();
     }
 
@@ -49,25 +59,25 @@ export class EvernodeClient {
     watchRedeemResponse(redeemTx) {
         return new Promise(async (resolve, reject) => {
             console.log(`Waiting for redeem response... (txHash: ${redeemTx.txHash})`);
-            // Handle the transactions on evernode account and filter out redeem operations.
+
+            const watchEvent = REDEEM_WATCH_PREFIX + redeemTx.txHash;
+
             const failTimeout = setInterval(() => {
                 if (this.rippleAPI.ledgerVersion - redeemTx.ledgerVersion >= this.evernodeHookConf.redeemWindow) {
                     clearInterval(failTimeout);
-                    reject({ error: ErrorCodes.REDEEM_ERR, reason: `REDEEM_TIMEOUT`, redeemTxHash: redeemTx.txHash });
+                    this._events.off(watchEvent);
+                    reject({ error: ErrorCodes.REDEEM_ERR, reason: `REDEEM_TIMEOUT` });
                 }
             }, 1000);
 
-            this.evernodeHook.events.on(HookEvents.REDEEM_SUCCESS, async (ev) => {
-                if (ev.redeemTxHash === redeemTx.txHash) {
-                    clearInterval(failTimeout);
-                    const info = await EncryptionHelper.decrypt(this.accKeyPair.privateKey, ev.payload);
+            this._events.once(watchEvent, async (ev) => {
+                clearInterval(failTimeout);
+                if (ev.success) {
+                    const info = await EncryptionHelper.decrypt(this.accKeyPair.privateKey, ev.data);
                     resolve(info.content);
                 }
-            })
-            this.evernodeHook.events.on(HookEvents.REDEEM_ERROR, async (ev) => {
-                if (ev.redeemTxHash === redeemTx.txHash) {
-                    clearInterval(failTimeout);
-                    reject({ error: ErrorCodes.REDEEM_ERR, reason: ev.reason, redeemTxHash: ev.redeemTxHash });
+                else {
+                    reject({ error: ErrorCodes.REDEEM_ERR, reason: ev.data });
                 }
             })
 
