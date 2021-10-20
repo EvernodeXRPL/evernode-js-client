@@ -74,10 +74,6 @@ export class RippleAPIWrapper {
         console.log(`Disconnected from ${this.rippledServer}`);
     }
 
-    deriveAddress(publicKey) {
-        return this.api.deriveAddress(publicKey);
-    }
-
     async getAccountInfo(address) {
         return (await this.api.request('account_info', { account: address }));
     }
@@ -86,7 +82,7 @@ export class RippleAPIWrapper {
         const info = await this.getAccountInfo(address);
         const accountFlags = this.api.parseAccountFlags(info.account_data.Flags);
         const regularKey = info.account_data.RegularKey;
-        const derivedPubKeyAddress = this.deriveAddress(publicKey);
+        const derivedPubKeyAddress = this.api.deriveAddress(publicKey);
 
         // If the master key is disabled the derived pubkey address should be the regular key.
         // Otherwise it could be account address or the regular key

@@ -53,7 +53,7 @@ export class EvernodeClient {
 
         // We are returning the promise directly without awaiting to let the caller decide what to do with it.
         return this.xrplAcc.makePayment(this.hookAddress,
-            amount,
+            amount.toString(),
             hostingToken,
             hostAddress,
             [{ type: MemoTypes.REDEEM, format: MemoFormats.BINARY, data: ecrypted }]);

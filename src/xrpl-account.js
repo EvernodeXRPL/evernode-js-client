@@ -1,6 +1,7 @@
 var crypto = require("crypto");
 const decodeAccountID = require('ripple-address-codec').decodeAccountID;
 const { RippleAPIEvents, RippleConstants } = require('./ripple-common');
+const { TransactionHelper } = require('./transaction-helper');
 const { EventEmitter } = require('./event-emitter');
 
 export class XrplAccount {
@@ -9,6 +10,7 @@ export class XrplAccount {
         this.address = address;
         this.secret = secret;
         this.events = new EventEmitter();
+        this.txHelper = new TransactionHelper(this.rippleAPI);
         this.subscribed = false;
         this.sequence = null;
         this.sequenceCachedOn = null;
@@ -72,7 +74,7 @@ export class XrplAccount {
             sequence: await this.getNextSequence()
         });
 
-        const result = await this.submitAndVerifyTransaction(prepared);
+        const result = await this.txHelper.submitAndVerifyTransaction(prepared);
         return result;
     }
 
@@ -85,16 +87,19 @@ export class XrplAccount {
             sequence: await this.getNextSequence()
         });
 
-        const result = await this.submitAndVerifyTransaction(prepared);
+        const result = await this.txHelper.submitAndVerifyTransaction(prepared);
         return result;
     }
 
     async makePayment(toAddr, amount, currency, issuer, memos = null) {
 
+        if (typeof amount !== 'string')
+            throw "Amount must be a string.";
+
         const amountObj = {
             currency: currency,
             counterparty: issuer,
-            value: amount.toString()
+            value: amount
         }
 
         // Delete counterparty key if issuer is empty.
@@ -116,7 +121,7 @@ export class XrplAccount {
             sequence: await this.getNextSequence()
         })
 
-        const result = await this.submitAndVerifyTransaction(prepared);
+        const result = await this.txHelper.submitAndVerifyTransaction(prepared);
         return result;
     }
 
@@ -133,7 +138,7 @@ export class XrplAccount {
             sequence: await this.getNextSequence()
         })
 
-        const result = await this.submitAndVerifyTransaction(prepared);
+        const result = await this.txHelper.submitAndVerifyTransaction(prepared);
         return result;
     }
 
@@ -189,108 +194,8 @@ export class XrplAccount {
             sequence: await this.getNextSequence()
         });
 
-        const result = await this.submitAndVerifyTransaction(prepared);
+        const result = await this.txHelper.submitAndVerifyTransaction(prepared);
         return result;
-    }
-
-    submitAndVerifyTransaction(preparedTx) {
-
-        // Returned format.
-        // {
-        //     id: txHash, (if signing success)
-        //     submission: submission details, (if signing success)
-        //     ...other tx data... (on successful verification only)
-        //     error: signing error or submission error or ledger error
-        // }
-
-        return new Promise(async (resolve, reject) => {
-
-            let signed = null;
-
-            try {
-                signed = this.rippleAPI.api.sign(preparedTx.txJSON, this.secret);
-            }
-            catch (err) {
-                reject({
-                    error: err
-                });
-            }
-
-            if (signed) {
-                const submission = await this.rippleAPI.api.submit(signed.signedTransaction).catch(errsub => {
-                    reject({
-                        id: signed.id,
-                        error: errsub.data
-                    });
-                });
-
-                if (submission) {
-                    if (submission.resultCode !== "tesSUCCESS") {
-                        console.log("Txn submission failure: " + submission.resultCode)
-                        reject({
-                            id: signed.id,
-                            submission: submission
-                        });
-                    }
-                    else {
-                        const tx = await this.verifyTransaction(signed.id, this.rippleAPI.ledgerVersion, this.getMaxLedgerVersion()).catch(errtx => {
-                            errtx.submission = submission;
-                            reject(errtx);
-                        });
-                        if (tx) {
-                            tx.submission = submission;
-                            resolve(tx);
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    verifyTransaction(txHash, minLedger, maxLedger) {
-        console.log("Waiting for verification...");
-        return new Promise((resolve, reject) => {
-            this.waitForTransactionVerification(txHash, minLedger, maxLedger, resolve, reject);
-        })
-    }
-
-    waitForTransactionVerification(txHash, minLedger, maxLedger, resolve, reject) {
-        this.rippleAPI.api.getTransaction(txHash, {
-            minLedgerVersion: minLedger,
-            maxLedgerVersion: maxLedger
-        }).then(tx => {
-            console.log(tx.outcome.result);
-            if (tx.outcome.result !== 'tesSUCCESS') {
-                console.log("Transaction verification failed. Result: " + tx.outcome.result);
-                reject(tx);
-            }
-            else {
-                resolve(tx);
-            }
-        }).catch(error => {
-            // If transaction not in latest validated ledger, try again until max ledger is hit.
-            if (error instanceof this.rippleAPI.api.errors.PendingLedgerVersionError || error instanceof this.rippleAPI.api.errors.NotFoundError) {
-                setTimeout(() => {
-                    this.waitForTransactionVerification(txHash, minLedger, maxLedger, resolve);
-                }, 1000);
-            }
-            else {
-                console.log(error);
-                console.log("Transaction verification failed.");
-                reject({
-                    id: txHash,
-                    error: error
-                }); // give up.
-            }
-        })
-    }
-
-    deserializeMemo(memo) {
-        return {
-            type: memo.MemoType ? hexToASCII(memo.MemoType) : null,
-            format: memo.MemoFormat ? hexToASCII(memo.MemoFormat) : null,
-            data: memo.MemoData ? hexToASCII(memo.MemoData) : null
-        };
     }
 
     subscribe() {
@@ -304,7 +209,7 @@ export class XrplAccount {
             if (data.engine_result === "tesSUCCESS") {
                 // Convert memo fields to ASCII before emitting the event.
                 if (data.transaction.Memos)
-                    data.transaction.Memos = data.transaction.Memos.filter(m => m.Memo).map(m => this.deserializeMemo(m.Memo));
+                    data.transaction.Memos = data.transaction.Memos.filter(m => m.Memo).map(m => TransactionHelper.deserializeMemo(m.Memo));
                 this.events.emit(eventName, data.transaction);
             }
             else {
@@ -330,12 +235,4 @@ export class XrplAccount {
 
         this.subscribed = true;
     }
-}
-
-function hexToASCII(hex) {
-    let str = "";
-    for (let n = 0; n < hex.length; n += 2) {
-        str += String.fromCharCode(parseInt(hex.substr(n, 2), 16));
-    }
-    return str;
 }
