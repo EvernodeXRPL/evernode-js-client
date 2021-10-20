@@ -1,13 +1,13 @@
 const { MemoFormats, MemoTypes, ErrorCodes, HookEvents } = require('./evernode-common');
 const { EvernodeClient } = require("./evernode-client");
 const { EvernodeHook } = require("./evernode-hook");
-const { EncryptionHelper } = require('./encryption-helper');
-const { XrplAccount, RippleAPIWrapper, RippleAPIEvents, RippleConstants } = require('./ripple-handler');
+const { RippleAPIEvents, RippleConstants } = require('./ripple-common');
+const { RippleAPIWrapper } = require('./ripple-api-wrapper');
+const { XrplAccount } = require('./xrpl-account');
 
 module.exports = {
     EvernodeClient,
     EvernodeHook,
-    EncryptionHelper,
     MemoFormats,
     MemoTypes,
     ErrorCodes,

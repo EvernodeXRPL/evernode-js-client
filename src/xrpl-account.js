@@ -1,126 +1,9 @@
-const RippleAPI = require('ripple-lib').RippleAPI;
 var crypto = require("crypto");
 const decodeAccountID = require('ripple-address-codec').decodeAccountID;
+const { RippleAPIEvents, RippleConstants } = require('./ripple-common');
 const { EventEmitter } = require('./event-emitter');
-const CONNECTION_RETRY_THREASHOLD = 60;
-const CONNECTION_RETRY_INTERVAL = 1000;
 
-const DEFAULT_RIPPLED_SERVER = 'wss://hooks-testnet.xrpl-labs.com';
-
-const maxLedgerOffset = 10;
-
-const RippleAPIEvents = {
-    RECONNECTED: 'reconnected',
-    LEDGER: 'ledger',
-    PAYMENT: 'payment'
-}
-
-const RippleConstants = {
-    XRP: 'XRP',
-    MIN_XRP_AMOUNT: '0.000001'
-}
-
-const hexToASCII = (hex) => {
-    let str = "";
-    for (let n = 0; n < hex.length; n += 2) {
-        str += String.fromCharCode(parseInt(hex.substr(n, 2), 16));
-    }
-    return str;
-}
-
-class RippleAPIWrapper {
-    constructor(rippledServer = null) {
-
-        this.connectionRetryCount = 0;
-        this.connected = false;
-        this.rippledServer = rippledServer || DEFAULT_RIPPLED_SERVER;
-        this.events = new EventEmitter();
-
-        this.api = new RippleAPI({ server: this.rippledServer });
-        this.api.on('error', (errorCode, errorMessage) => {
-            console.log(errorCode + ': ' + errorMessage);
-        });
-        this.api.on('connected', () => {
-            console.log(`Connected to ${this.rippledServer}`);
-            this.connectionRetryCount = 0;
-            this.connected = true;
-        });
-        this.api.on('disconnected', async (code) => {
-            if (!this.connected)
-                return;
-
-            this.connected = false;
-            console.log(`Disconnected from ${this.rippledServer} code:`, code);
-            try {
-                await this.connect();
-                this.events.emit(RippleAPIEvents.RECONNECTED, `Reconnected to ${this.rippledServer}`);
-            }
-            catch (e) { console.error(e); };
-        });
-        this.api.on('ledger', (ledger) => {
-            this.ledgerVersion = ledger.ledgerVersion;
-            this.events.emit(RippleAPIEvents.LEDGER, ledger);
-        });
-    }
-
-    async connect() {
-        if (this.connected)
-            return;
-
-        let retryInterval = CONNECTION_RETRY_INTERVAL;
-        this.tryConnecting = true;
-        // If failed, Keep retrying and increasing the retry timeout.
-        while (this.tryConnecting) {
-            try {
-                this.connectionRetryCount++;
-                await this.api.connect();
-                this.ledgerVersion = await this.api.getLedgerVersion();
-                return;
-            }
-            catch (e) {
-                console.log(`Couldn't connect ${this.rippledServer} : `, e);
-                // If threashold reaches, increase the retry interval.
-                if (this.connectionRetryCount % CONNECTION_RETRY_THREASHOLD === 0)
-                    retryInterval += CONNECTION_RETRY_INTERVAL;
-                // Wait before retry.
-                await new Promise(resolve => setTimeout(resolve, retryInterval));
-            }
-        }
-    }
-
-    async disconnect() {
-        if (!this.connected)
-            return;
-        this.tryConnecting = false;
-        this.connected = false;
-        await this.api.disconnect();
-        console.log(`Disconnected from ${this.rippledServer}`);
-    }
-
-    deriveAddress(publicKey) {
-        return this.api.deriveAddress(publicKey);
-    }
-
-    async getAccountInfo(address) {
-        return (await this.api.request('account_info', { account: address }));
-    }
-
-    async isValidKeyForAddress(publicKey, address) {
-        const info = await this.getAccountInfo(address);
-        const accountFlags = this.api.parseAccountFlags(info.account_data.Flags);
-        const regularKey = info.account_data.RegularKey;
-        const derivedPubKeyAddress = this.deriveAddress(publicKey);
-
-        // If the master key is disabled the derived pubkey address should be the regular key.
-        // Otherwise it could be account address or the regular key
-        if (accountFlags.disableMasterKey)
-            return regularKey && (derivedPubKeyAddress === regularKey);
-        else
-            return derivedPubKeyAddress === address || (regularKey && derivedPubKeyAddress === regularKey);
-    }
-}
-
-class XrplAccount {
+export class XrplAccount {
     constructor(rippleAPI, address, secret = null) {
         this.rippleAPI = rippleAPI;
         this.address = address;
@@ -164,7 +47,7 @@ class XrplAccount {
     }
 
     getMaxLedgerVersion() {
-        return this.rippleAPI.ledgerVersion + maxLedgerOffset;
+        return this.rippleAPI.ledgerVersion + RippleConstants.MAX_LEDGER_OFFSET;
     }
 
     async getEncryptionKey() {
@@ -310,35 +193,80 @@ class XrplAccount {
         return result;
     }
 
-    async submitAndVerifyTransaction(preparedTx) {
+    submitAndVerifyTransaction(preparedTx) {
 
-        const signed = this.rippleAPI.api.sign(preparedTx.txJSON, this.secret);
-        const submission = await this.rippleAPI.api.submit(signed.signedTransaction);
-        if (submission.resultCode !== "tesSUCCESS") {
-            console.log("Txn submission failure: " + submission.resultCode)
-            return false;
-        }
+        // Returned format.
+        // {
+        //     id: txHash, (if signing success)
+        //     submission: submission details, (if signing success)
+        //     ...other tx data... (on successful verification only)
+        //     error: signing error or submission error or ledger error
+        // }
 
-        const verified = await this.verifyTransaction(signed.id, this.rippleAPI.ledgerVersion, this.getMaxLedgerVersion());
-        return verified ? verified : false;
+        return new Promise(async (resolve, reject) => {
+
+            let signed = null;
+
+            try {
+                signed = this.rippleAPI.api.sign(preparedTx.txJSON, this.secret);
+            }
+            catch (err) {
+                reject({
+                    error: err
+                });
+            }
+
+            if (signed) {
+                const submission = await this.rippleAPI.api.submit(signed.signedTransaction).catch(errsub => {
+                    reject({
+                        id: signed.id,
+                        error: errsub.data
+                    });
+                });
+
+                if (submission) {
+                    if (submission.resultCode !== "tesSUCCESS") {
+                        console.log("Txn submission failure: " + submission.resultCode)
+                        reject({
+                            id: signed.id,
+                            submission: submission
+                        });
+                    }
+                    else {
+                        const tx = await this.verifyTransaction(signed.id, this.rippleAPI.ledgerVersion, this.getMaxLedgerVersion()).catch(errtx => {
+                            errtx.submission = submission;
+                            reject(errtx);
+                        });
+                        if (tx) {
+                            tx.submission = submission;
+                            resolve(tx);
+                        }
+                    }
+                }
+            }
+        });
     }
 
     verifyTransaction(txHash, minLedger, maxLedger) {
         console.log("Waiting for verification...");
-        return new Promise(resolve => {
-            this.waitForTransactionVerification(txHash, minLedger, maxLedger, resolve);
+        return new Promise((resolve, reject) => {
+            this.waitForTransactionVerification(txHash, minLedger, maxLedger, resolve, reject);
         })
     }
 
-    waitForTransactionVerification(txHash, minLedger, maxLedger, resolve) {
+    waitForTransactionVerification(txHash, minLedger, maxLedger, resolve, reject) {
         this.rippleAPI.api.getTransaction(txHash, {
             minLedgerVersion: minLedger,
             maxLedgerVersion: maxLedger
-        }).then(data => {
-            console.log(data.outcome.result);
-            if (data.outcome.result !== 'tesSUCCESS')
-                console.log("Transaction verification failed. Result: " + data.outcome.result);
-            resolve(data.outcome.result === 'tesSUCCESS' ? { txHash: data.id, ledgerVersion: data.outcome.ledgerVersion } : false);
+        }).then(tx => {
+            console.log(tx.outcome.result);
+            if (tx.outcome.result !== 'tesSUCCESS') {
+                console.log("Transaction verification failed. Result: " + tx.outcome.result);
+                reject(tx);
+            }
+            else {
+                resolve(tx);
+            }
         }).catch(error => {
             // If transaction not in latest validated ledger, try again until max ledger is hit.
             if (error instanceof this.rippleAPI.api.errors.PendingLedgerVersionError || error instanceof this.rippleAPI.api.errors.NotFoundError) {
@@ -349,7 +277,10 @@ class XrplAccount {
             else {
                 console.log(error);
                 console.log("Transaction verification failed.");
-                resolve(false); // give up.
+                reject({
+                    id: txHash,
+                    error: error
+                }); // give up.
             }
         })
     }
@@ -401,9 +332,10 @@ class XrplAccount {
     }
 }
 
-module.exports = {
-    XrplAccount,
-    RippleAPIWrapper,
-    RippleAPIEvents,
-    RippleConstants
+function hexToASCII(hex) {
+    let str = "";
+    for (let n = 0; n < hex.length; n += 2) {
+        str += String.fromCharCode(parseInt(hex.substr(n, 2), 16));
+    }
+    return str;
 }

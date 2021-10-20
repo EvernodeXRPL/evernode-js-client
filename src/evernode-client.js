@@ -1,11 +1,14 @@
-const { XrplAccount, RippleAPIWrapper, RippleConstants } = require('./ripple-handler');
+const { RippleConstants } = require('./ripple-common');
+const { RippleAPIWrapper } = require('./ripple-api-wrapper');
+const { XrplAccount } = require('./xrpl-account');
 const { EncryptionHelper } = require('./encryption-helper');
 const { EventEmitter } = require('./event-emitter');
-const { Global, MemoFormats, MemoTypes, ErrorCodes, HookEvents } = require('./evernode-common');
+const { EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes, HookEvents } = require('./evernode-common');
 const { EvernodeHook } = require('./evernode-hook');
 
 const AUDIT_TRUSTLINE_LIMIT = 999999999;
-const REDEEM_WATCH_PREFIX = "redeem_";
+const REDEEM_WATCH_PREFIX = 'redeem_';
+const TRANSACTION_FAILURE = 'TRANSACTION_FAILURE';
 
 export class EvernodeClient {
     constructor(xrpAddress, xrpSecret, options = null) {
@@ -13,7 +16,7 @@ export class EvernodeClient {
         if (!options)
             options = {};
 
-        this.hookAddress = options.hookAddress || Global.DEFAULT_HOOK_ADDR;
+        this.hookAddress = options.hookAddress || EvernodeConstants.DEFAULT_HOOK_ADDR;
         this.rippleAPI = options.rippleAPI || new RippleAPIWrapper(options.rippledServer);
 
         this.xrpAddress = xrpAddress;
@@ -56,14 +59,14 @@ export class EvernodeClient {
             [{ type: MemoTypes.REDEEM, format: MemoFormats.BINARY, data: ecrypted }]);
     }
 
-    watchRedeemResponse(redeemTx) {
+    watchRedeemResponse(tx) {
         return new Promise(async (resolve, reject) => {
-            console.log(`Waiting for redeem response... (txHash: ${redeemTx.txHash})`);
+            console.log(`Waiting for redeem response... (txHash: ${tx.id})`);
 
-            const watchEvent = REDEEM_WATCH_PREFIX + redeemTx.txHash;
+            const watchEvent = REDEEM_WATCH_PREFIX + tx.id;
 
             const failTimeout = setInterval(() => {
-                if (this.rippleAPI.ledgerVersion - redeemTx.ledgerVersion >= this.evernodeHookConf.redeemWindow) {
+                if (this.rippleAPI.ledgerVersion - tx.outcome.ledgerVersion >= this.evernodeHookConf.redeemWindow) {
                     clearInterval(failTimeout);
                     this._events.off(watchEvent);
                     reject({ error: ErrorCodes.REDEEM_ERR, reason: `REDEEM_TIMEOUT` });
@@ -74,7 +77,7 @@ export class EvernodeClient {
                 clearInterval(failTimeout);
                 if (ev.success) {
                     const info = await EncryptionHelper.decrypt(this.accKeyPair.privateKey, ev.data);
-                    resolve(info.content);
+                    resolve({ instance: info.content });
                 }
                 else {
                     reject({ error: ErrorCodes.REDEEM_ERR, reason: ev.data });
@@ -87,33 +90,30 @@ export class EvernodeClient {
 
     redeem(hostingToken, hostAddress, amount, requirement) {
         return new Promise(async (resolve, reject) => {
-            try {
-                const res = await this.redeemSubmit(hostingToken, hostAddress, amount, requirement);
-                if (res)
-                    this.watchRedeemResponse(res).then(response => resolve(response), error => reject(error));
-                else
-                    reject({ error: ErrorCodes.REDEEM_ERR, reason: 'Redeem transaction failed.' });
-            } catch (error) {
-                reject({ error: ErrorCodes.REDEEM_ERR, reason: error });
+            const tx = await this.redeemSubmit(hostingToken, hostAddress, amount, requirement).catch(errtx => {
+                reject({ error: ErrorCodes.REDEEM_ERR, reason: TRANSACTION_FAILURE, transcation: errtx });
+            });
+            if (tx) {
+                const response = await this.watchRedeemResponse(tx).catch(error => reject(error));
+                if (response) {
+                    response.redeemTransaction = tx;
+                    resolve(response);
+                }
             }
         });
     }
 
     refund(redeemTxHash) {
         return new Promise(async (resolve, reject) => {
-            try {
-                const res = await this.xrplAcc.makePayment(this.hookAddress,
-                    RippleConstants.MIN_XRP_AMOUNT,
-                    RippleConstants.XRP,
-                    null,
-                    [{ type: MemoTypes.REFUND, format: MemoFormats.BINARY, data: redeemTxHash }]);
-                if (res)
-                    resolve(res);
-                else
-                    reject({ error: ErrorCodes.REFUND_ERR, reason: 'Refund transaction failed.' });
-            } catch (error) {
-                reject({ error: ErrorCodes.REFUND_ERR, reason: error });
-            }
+            const res = await this.xrplAcc.makePayment(this.hookAddress,
+                RippleConstants.MIN_XRP_AMOUNT,
+                RippleConstants.XRP,
+                null,
+                [{ type: MemoTypes.REFUND, format: MemoFormats.BINARY, data: redeemTxHash }]).catch(errtx => {
+                    reject({ error: ErrorCodes.REFUND_ERR, reason: TRANSACTION_FAILURE, transcation: errtx });
+                });
+            if (res)
+                resolve(res);
         });
     }
 
@@ -121,7 +121,7 @@ export class EvernodeClient {
         const memoData = `${hostingToken};${instanceSize};${location}`
         return this.xrplAcc.makePayment(this.hookAddress,
             this.evernodeHookConf.hostRegFee.toString(),
-            Global.EVR,
+            EvernodeConstants.EVR,
             this.hookAddress,
             [{ type: MemoTypes.HOST_REG, format: MemoFormats.TEXT, data: memoData }]);
     }
@@ -153,7 +153,7 @@ export class EvernodeClient {
         const encrypted = await EncryptionHelper.encrypt(userPubKey, instanceInfo);
         memos.push({ type: MemoTypes.REDEEM_RESP, format: MemoFormats.BINARY, data: encrypted });
 
-        return await this.xrplAcc.makePayment(this.hookAddress,
+        return this.xrplAcc.makePayment(this.hookAddress,
             RippleConstants.MIN_XRP_AMOUNT,
             RippleConstants.XRP,
             null,
@@ -200,7 +200,8 @@ export class EvernodeClient {
                                     }
 
                                     // Cash the check.
-                                    const result = await this.xrplAcc.cashCheck(check);
+                                    const result = await this.xrplAcc.cashCheck(check).catch(errtx =>
+                                        reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: TRANSACTION_FAILURE, transaction: errtx }));
                                     if (result)
                                         resolve({
                                             address: check.SendMax.issuer,
@@ -208,8 +209,7 @@ export class EvernodeClient {
                                             amount: check.SendMax.value,
                                             cashTxHash: result.txHash
                                         });
-                                    else
-                                        reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: 'Cashing check failed.' });
+
                                 } else if (resp && resp.account_objects.length === 0) {
                                     const timeout = setTimeout(() => {
                                         if (this.rippleAPI.ledgerVersion - startingLedger >= this.evernodeHookConf.momentSize) {
@@ -226,7 +226,7 @@ export class EvernodeClient {
                     }
                     resolve(await getChecksAndProcess());
                 } else {
-                    reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: 'Audit request failed.' });
+                    reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: TRANSACTION_FAILURE });
                 }
             } catch (error) {
                 // Throw the same error object receiving from the above try block. It is already formatted with AUDIT_REQ_FAILED code.

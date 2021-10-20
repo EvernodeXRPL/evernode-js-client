@@ -1,11 +1,12 @@
-const { Global, MemoTypes, HookStateDefaults, HookStateKeys, HookEvents, MemoFormats } = require('./evernode-common')
-const { XrplAccount, RippleAPIEvents } = require('./ripple-handler');
+const { EvernodeConstants, MemoTypes, HookStateDefaults, HookStateKeys, HookEvents, MemoFormats } = require('./evernode-common')
+const { RippleAPIEvents } = require('./ripple-common');
+const { XrplAccount } = require('./xrpl-account');
 const { EventEmitter } = require('./event-emitter');
 const rippleCodec = require('ripple-address-codec');
 
 export class EvernodeHook {
     constructor(rippleAPI, hookAddress) {
-        this.account = new XrplAccount(rippleAPI, (hookAddress || Global.DEFAULT_HOOK_ADDR));
+        this.account = new XrplAccount(rippleAPI, (hookAddress || EvernodeConstants.DEFAULT_HOOK_ADDR));
         this.events = new EventEmitter();
 
         this.account.events.on(RippleAPIEvents.PAYMENT, async (data, error) => {
