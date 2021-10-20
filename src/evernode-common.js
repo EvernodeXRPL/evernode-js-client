@@ -1,5 +1,6 @@
 export const Global = {
-    DEFAULT_HOOK_ADDR: 'rK4qxNScYAz6rw7rv3tbktMn4Qr2VBLCM9'
+    DEFAULT_HOOK_ADDR: 'rK4qxNScYAz6rw7rv3tbktMn4Qr2VBLCM9',
+    EVR: 'EVR'
 }
 
 export const MemoTypes = {

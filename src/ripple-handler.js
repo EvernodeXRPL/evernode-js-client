@@ -16,6 +16,7 @@ const RippleAPIEvents = {
 }
 
 const RippleConstants = {
+    XRP: 'XRP',
     MIN_XRP_AMOUNT: '0.000001'
 }
 

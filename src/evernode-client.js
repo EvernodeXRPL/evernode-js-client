@@ -104,7 +104,7 @@ export class EvernodeClient {
             try {
                 const res = await this.xrplAcc.makePayment(this.hookAddress,
                     RippleConstants.MIN_XRP_AMOUNT,
-                    'XRP',
+                    RippleConstants.XRP,
                     null,
                     [{ type: MemoTypes.REFUND, format: MemoFormats.BINARY, data: redeemTxHash }]);
                 if (res)
@@ -117,12 +117,69 @@ export class EvernodeClient {
         });
     }
 
+    registerHost(hostingToken, instanceSize, location) {
+        const memoData = `${hostingToken};${instanceSize};${location}`
+        return this.xrplAcc.makePayment(this.hookAddress,
+            this.evernodeHookConf.hostRegFee.toString(),
+            Global.EVR,
+            this.hookAddress,
+            [{ type: MemoTypes.HOST_REG, format: MemoFormats.TEXT, data: memoData }]);
+    }
+
+    deregisterHost() {
+        return this.xrplAcc.makePayment(this.hookAddress,
+            RippleConstants.MIN_XRP_AMOUNT,
+            RippleConstants.XRP,
+            null,
+            [{ type: MemoTypes.HOST_DEREG, format: MemoFormats.TEXT, data: "" }]);
+    }
+
+    async getRedeemRequirements(redeemPayload) {
+        const instanceRequirements = await EncryptionHelper.decrypt(this.accKeyPair.privateKey, redeemPayload);
+        if (!instanceRequirements) {
+            console.log('Failed to decrypt redeem data.');
+            return null;
+        }
+        return instanceRequirements;
+    }
+
+    async redeemSuccess(txHash, userAddress, userPubKey, instanceInfo) {
+        // Verifying the pubkey.
+        if (!(await this.rippleAPI.isValidKeyForAddress(userPubKey, userAddress)))
+            throw 'Invalid public key for redeem response encryption.';
+
+        const memos = [{ type: MemoTypes.REDEEM_REF, format: MemoFormats.BINARY, data: txHash }];
+        // Encrypt response with user pubkey.
+        const encrypted = await EncryptionHelper.encrypt(userPubKey, instanceInfo);
+        memos.push({ type: MemoTypes.REDEEM_RESP, format: MemoFormats.BINARY, data: encrypted });
+
+        return await this.xrplAcc.makePayment(this.hookAddress,
+            RippleConstants.MIN_XRP_AMOUNT,
+            RippleConstants.XRP,
+            null,
+            memos);
+    }
+
+    async redeemError(txHash, reason) {
+
+        const memos = [
+            { type: MemoTypes.REDEEM_REF, format: MemoFormats.BINARY, data: txHash },
+            { type: MemoTypes.REDEEM_RESP, format: MemoFormats.JSON, data: { type: ErrorCodes.REDEEM_ERR, reason: reason } }
+        ];
+
+        return this.xrplAcc.makePayment(this.hookAddress,
+            RippleConstants.MIN_XRP_AMOUNT,
+            RippleConstants.XRP,
+            null,
+            memos);
+    }
+
     requestAudit() {
         return new Promise(async (resolve, reject) => {
             try {
                 const res = await this.xrplAcc.makePayment(this.hookAddress,
                     RippleConstants.MIN_XRP_AMOUNT,
-                    'XRP',
+                    RippleConstants.XRP,
                     null,
                     [{ type: MemoTypes.AUDIT_REQ, format: MemoFormats.BINARY, data: '' }]);
                 if (res) {
@@ -183,7 +240,7 @@ export class EvernodeClient {
             try {
                 const res = await this.xrplAcc.makePayment(this.hookAddress,
                     RippleConstants.MIN_XRP_AMOUNT,
-                    'XRP',
+                    RippleConstants.XRP,
                     null,
                     [{ type: MemoTypes.AUDIT_SUCCESS, format: MemoFormats.BINARY, data: '' }]);
                 if (res)
