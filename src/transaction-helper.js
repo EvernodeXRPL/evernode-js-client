@@ -1,7 +1,10 @@
+const { RippleConstants } = require('./ripple-common');
+
 export class TransactionHelper {
 
-    constructor(rippleAPI) {
+    constructor(rippleAPI, secret) {
         this.rippleAPI = rippleAPI;
+        this.secret = secret;
     }
 
     static deserializeMemo(memo) {
@@ -10,6 +13,10 @@ export class TransactionHelper {
             format: memo.MemoFormat ? hexToASCII(memo.MemoFormat) : null,
             data: memo.MemoData ? hexToASCII(memo.MemoData) : null
         };
+    }
+
+    getMaxLedgerVersion() {
+        return this.rippleAPI.ledgerVersion + RippleConstants.MAX_LEDGER_OFFSET;
     }
 
     submitAndVerifyTransaction(preparedTx) {
@@ -23,6 +30,13 @@ export class TransactionHelper {
         // }
 
         return new Promise(async (resolve, reject) => {
+
+            if (!this.secret) {
+                reject({
+                    error: "NO_SECRET"
+                });
+                return;
+            }
 
             let signed = null;
 

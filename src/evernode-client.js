@@ -11,6 +11,9 @@ const REDEEM_WATCH_PREFIX = 'redeem_';
 const TRANSACTION_FAILURE = 'TRANSACTION_FAILURE';
 
 export class EvernodeClient {
+
+    #events = new EventEmitter();
+
     constructor(xrpAddress, xrpSecret, options = null) {
 
         if (!options)
@@ -25,12 +28,11 @@ export class EvernodeClient {
         this.accKeyPair = this.xrplAcc.deriveKeypair();
         this.evernodeHook = new EvernodeHook(this.rippleAPI, this.hookAddress);
 
-        this._events = new EventEmitter();
         this.evernodeHook.events.on(HookEvents.RedeemSuccess, async (ev) => {
-            this._events.emit(REDEEM_WATCH_PREFIX + ev.redeemTxHash, { success: true, data: ev.payload });
+            this.#events.emit(REDEEM_WATCH_PREFIX + ev.redeemTxHash, { success: true, data: ev.payload });
         })
         this.evernodeHook.events.on(HookEvents.RedeemError, async (ev) => {
-            this._events.emit(REDEEM_WATCH_PREFIX + ev.redeemTxHash, { success: false, data: ev.reason });
+            this.#events.emit(REDEEM_WATCH_PREFIX + ev.redeemTxHash, { success: false, data: ev.reason });
         })
     }
 
@@ -68,12 +70,12 @@ export class EvernodeClient {
             const failTimeout = setInterval(() => {
                 if (this.rippleAPI.ledgerVersion - tx.outcome.ledgerVersion >= this.evernodeHookConf.redeemWindow) {
                     clearInterval(failTimeout);
-                    this._events.off(watchEvent);
+                    this.#events.off(watchEvent);
                     reject({ error: ErrorCodes.REDEEM_ERR, reason: `REDEEM_TIMEOUT` });
                 }
             }, 1000);
 
-            this._events.once(watchEvent, async (ev) => {
+            this.#events.once(watchEvent, async (ev) => {
                 clearInterval(failTimeout);
                 if (ev.success) {
                     const info = await EncryptionHelper.decrypt(this.accKeyPair.privateKey, ev.data);

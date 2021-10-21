@@ -69,7 +69,10 @@ export class EvernodeHook {
         const hosts = states.map(s => {
             return {
                 address: rippleCodec.encodeAccountID(Buffer.from(s.key.slice(-40), 'hex')),
-                token: Buffer.from(s.data.substr(8, 6), 'hex').toString()
+                token: Buffer.from(s.data.substr(8, 6), 'hex').toString(),
+                txHash: s.data.substr(14, 64),
+                instanceSize: Buffer.from(s.data.substr(78, 120), 'hex').toString().replace(/\0/g, ''),
+                location: Buffer.from(s.data.substr(198, 20), 'hex').toString().replace(/\0/g, ''),
             }
         });
         return hosts;

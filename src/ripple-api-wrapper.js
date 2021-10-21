@@ -1,4 +1,4 @@
-const RippleAPI = require('ripple-lib').RippleAPI;
+const { RippleAPI } = require('ripple-lib');
 const { EventEmitter } = require('./event-emitter');
 const { RippleAPIEvents, RippleConstants } = require('./ripple-common');
 

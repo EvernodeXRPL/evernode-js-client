@@ -10,7 +10,7 @@ export class XrplAccount {
         this.address = address;
         this.secret = secret;
         this.events = new EventEmitter();
-        this.txHelper = new TransactionHelper(this.rippleAPI);
+        this.txHelper = new TransactionHelper(this.rippleAPI, this.secret);
         this.subscribed = false;
         this.sequence = null;
         this.sequenceCachedOn = null;
@@ -48,10 +48,6 @@ export class XrplAccount {
         return this.sequence;
     }
 
-    getMaxLedgerVersion() {
-        return this.rippleAPI.ledgerVersion + RippleConstants.MAX_LEDGER_OFFSET;
-    }
-
     async getEncryptionKey() {
         const info = await this.rippleAPI.getAccountInfo(this.address);
         const keyHex = info.account_data.MessageKey;
@@ -70,7 +66,7 @@ export class XrplAccount {
         const prepared = await this.rippleAPI.api.prepareSettings(this.address, {
             messageKey: publicKey
         }, {
-            maxLedgerVersion: this.getMaxLedgerVersion(),
+            maxLedgerVersion: this.txHelper.getMaxLedgerVersion(),
             sequence: await this.getNextSequence()
         });
 
@@ -83,7 +79,7 @@ export class XrplAccount {
         const prepared = await this.rippleAPI.api.prepareSettings(this.address, {
             defaultRipple: enabled
         }, {
-            maxLedgerVersion: this.getMaxLedgerVersion(),
+            maxLedgerVersion: this.txHelper.getMaxLedgerVersion(),
             sequence: await this.getNextSequence()
         });
 
@@ -117,7 +113,7 @@ export class XrplAccount {
             },
             memos: this.getMemoCollection(memos)
         }, {
-            maxLedgerVersion: this.getMaxLedgerVersion(),
+            maxLedgerVersion: this.txHelper.getMaxLedgerVersion(),
             sequence: await this.getNextSequence()
         })
 
@@ -134,7 +130,7 @@ export class XrplAccount {
             memos: this.getMemoCollection(memos),
             ripplingDisabled: !allowRippling
         }, {
-            maxLedgerVersion: this.getMaxLedgerVersion(),
+            maxLedgerVersion: this.txHelper.getMaxLedgerVersion(),
             sequence: await this.getNextSequence()
         })
 
@@ -190,7 +186,7 @@ export class XrplAccount {
                 counterparty: check.SendMax.issuer
             }
         }, {
-            maxLedgerVersion: this.getMaxLedgerVersion(),
+            maxLedgerVersion: this.txHelper.getMaxLedgerVersion(),
             sequence: await this.getNextSequence()
         });
 
