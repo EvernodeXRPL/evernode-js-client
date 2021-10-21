@@ -121,12 +121,15 @@ export class XrplAccount {
         return result;
     }
 
-    async createTrustLine(currency, issuer, limit, allowRippling = false, memos = null) {
+    async setTrustLine(currency, issuer, limit, allowRippling = false, memos = null) {
+
+        if (typeof limit !== 'string')
+            throw "Limit must be a string.";
 
         const prepared = await this.rippleAPI.api.prepareTrustline(this.address, {
             counterparty: issuer,
             currency: currency,
-            limit: limit.toString(),
+            limit: limit,
             memos: this.getMemoCollection(memos),
             ripplingDisabled: !allowRippling
         }, {
