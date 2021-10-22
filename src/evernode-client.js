@@ -1,70 +1,45 @@
-const { XrplAccount, RippleAPIWrapper, RippleAPIEvents, RippleConstants } = require('./ripple-handler');
+const { RippleConstants } = require('./ripple-common');
+const { RippleAPIWrapper } = require('./ripple-api-wrapper');
+const { XrplAccount } = require('./xrpl-account');
 const { EncryptionHelper } = require('./encryption-helper');
+const { EventEmitter } = require('./event-emitter');
+const { EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes, HookEvents } = require('./evernode-common');
+const { EvernodeHook } = require('./evernode-hook');
 
-
-const MemoTypes = {
-    REDEEM: 'evnRedeem',
-    REDEEM_REF: 'evnRedeemRef',
-    REDEEM_RESP: 'evnRedeemResp',
-    HOST_REG: 'evnHostReg',
-    HOST_DEREG: 'evnHostDereg',
-    REFUND: 'evnRefund',
-    AUDIT_REQ: 'evnAuditRequest',
-    AUDIT_SUCCESS: 'evnAuditSuccess'
-}
-
-const MemoFormats = {
-    TEXT: 'text/plain',
-    JSON: 'text/json',
-    BINARY: 'binary'
-}
-
-const ErrorCodes = {
-    REDEEM_ERR: 'REDEEM_ERR',
-    REFUND_ERR: 'REFUND_ERR',
-    AUDIT_REQ_ERROR: 'AUDIT_REQ_ERROR',
-    AUDIT_SUCCESS_ERROR: 'AUDIT_SUCCESS_ERROR',
-}
-
-const DEFAULT_HOOK_ADDR = 'rwGLw5uSGYm2couHZnrbCDKaQZQByvamj8';
 const AUDIT_TRUSTLINE_LIMIT = 999999999;
+const REDEEM_WATCH_PREFIX = 'redeem_';
+const TRANSACTION_FAILURE = 'TRANSACTION_FAILURE';
 
-// Default hook config values.
-// If hook's state is empty values are loaded from here.
-// Default values.
-const DEF_MOMENT_SIZE = 72;
-const DEF_HOST_REG_FEE = 5;
-const DEF_REDEEM_WINDOW = 24;
-const DEF_MOMENT_BASE_IDX = 0;
+export class EvernodeClient {
 
-const HookStateKeys = {
-    HOST_REG_FEE: ['E', 'V', 'R', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3],
-    MOMENT_SIZE: ['E', 'V', 'R', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    REDEEM_WINDOW: ['E', 'V', 'R', 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5],
-    MOMENT_BASE_IDX: ['E', 'V', 'R', 52, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-}
+    #events = new EventEmitter();
 
-class EvernodeClient {
     constructor(xrpAddress, xrpSecret, options = null) {
-
-        this.xrpAddress = xrpAddress;
-        this.xrpSecret = xrpSecret;
 
         if (!options)
             options = {};
 
-        this.hookAddress = options.hookAddress || DEFAULT_HOOK_ADDR;
+        this.hookAddress = options.hookAddress || EvernodeConstants.DEFAULT_HOOK_ADDR;
         this.rippleAPI = options.rippleAPI || new RippleAPIWrapper(options.rippledServer);
+
+        this.xrpAddress = xrpAddress;
+        this.xrpSecret = xrpSecret;
+        this.xrplAcc = new XrplAccount(this.rippleAPI, this.xrpAddress, this.xrpSecret);
+        this.accKeyPair = this.xrplAcc.deriveKeypair();
+        this.evernodeHook = new EvernodeHook(this.rippleAPI, this.hookAddress);
+
+        this.evernodeHook.events.on(HookEvents.RedeemSuccess, async (ev) => {
+            this.#events.emit(REDEEM_WATCH_PREFIX + ev.redeemTxHash, { success: true, data: ev.payload });
+        })
+        this.evernodeHook.events.on(HookEvents.RedeemError, async (ev) => {
+            this.#events.emit(REDEEM_WATCH_PREFIX + ev.redeemTxHash, { success: false, data: ev.reason });
+        })
     }
 
     async connect() {
         try { await this.rippleAPI.connect(); }
         catch (e) { throw e; }
 
-        this.xrplAcc = new XrplAccount(this.rippleAPI, this.xrpAddress, this.xrpSecret);
-        this.accKeyPair = this.xrplAcc.deriveKeypair();
-        this.evernodeHookAcc = new XrplAccount(this.rippleAPI, this.hookAddress);
-        this.evernodeHook = new EvernodeHook(this.evernodeHookAcc);
         this.evernodeHookConf = await this.evernodeHook.getConfig();
     }
 
@@ -80,77 +55,125 @@ class EvernodeClient {
 
         // We are returning the promise directly without awaiting to let the caller decide what to do with it.
         return this.xrplAcc.makePayment(this.hookAddress,
-            amount,
+            amount.toString(),
             hostingToken,
             hostAddress,
             [{ type: MemoTypes.REDEEM, format: MemoFormats.BINARY, data: ecrypted }]);
     }
 
-    watchRedeemResponse(redeemTx) {
+    watchRedeemResponse(tx) {
         return new Promise(async (resolve, reject) => {
-            console.log(`Waiting for redeem response... (txHash: ${redeemTx.txHash})`);
-            // Handle the transactions on evernode account and filter out redeem operations.
+            console.log(`Waiting for redeem response... (txHash: ${tx.id})`);
+
+            const watchEvent = REDEEM_WATCH_PREFIX + tx.id;
+
             const failTimeout = setInterval(() => {
-                if (this.rippleAPI.ledgerVersion - redeemTx.ledgerVersion >= this.evernodeHookConf.redeemWindow) {
+                if (this.rippleAPI.ledgerVersion - tx.outcome.ledgerVersion >= this.evernodeHookConf.redeemWindow) {
                     clearInterval(failTimeout);
-                    reject({ error: ErrorCodes.REDEEM_ERR, reason: `No response within ${this.evernodeHookConf.redeemWindow} ledgers time.`, redeemTxHash: redeemTx.txHash });
+                    this.#events.off(watchEvent);
+                    reject({ error: ErrorCodes.REDEEM_ERR, reason: `REDEEM_TIMEOUT` });
                 }
             }, 1000);
-            this.evernodeHookAcc.events.on(RippleAPIEvents.PAYMENT, async (data, error) => {
-                if (error)
-                    console.error(error);
-                else if (!data)
-                    console.log('Invalid transaction.');
-                else {
-                    if (data.Memos && data.Memos.length === 2 && data.Memos[0].format === MemoFormats.BINARY &&
-                        data.Memos[0].type === MemoTypes.REDEEM_REF && data.Memos[0].data === redeemTx.txHash &&
-                        data.Memos[1].type === MemoTypes.REDEEM_RESP && data.Memos[1].data) {
-                        clearInterval(failTimeout);
-                        const payload = data.Memos[1].data;
-                        if (data.Memos[1].format === MemoFormats.JSON) { // Format text/json means this is an error message. 
-                            const data = JSON.parse(payload);
-                            reject({ error: ErrorCodes.REDEEM_ERR, reason: data.reason, redeemTxHash: redeemTx.txHash });
-                        } else {
-                            const info = await EncryptionHelper.decrypt(this.accKeyPair.privateKey, payload);
-                            resolve(info.content);
-                        }
-                    }
+
+            this.#events.once(watchEvent, async (ev) => {
+                clearInterval(failTimeout);
+                if (ev.success) {
+                    const info = await EncryptionHelper.decrypt(this.accKeyPair.privateKey, ev.data);
+                    resolve({ instance: info.content });
                 }
-            });
-            this.evernodeHookAcc.subscribe();
+                else {
+                    reject({ error: ErrorCodes.REDEEM_ERR, reason: ev.data });
+                }
+            })
+
+            this.evernodeHook.account.subscribe();
         });
     }
 
     redeem(hostingToken, hostAddress, amount, requirement) {
         return new Promise(async (resolve, reject) => {
-            try {
-                const res = await this.redeemSubmit(hostingToken, hostAddress, amount, requirement);
-                if (res)
-                    this.watchRedeemResponse(res).then(response => resolve(response), error => reject(error));
-                else
-                    reject({ error: ErrorCodes.REDEEM_ERR, reason: 'Redeem transaction failed.' });
-            } catch (error) {
-                reject({ error: ErrorCodes.REDEEM_ERR, reason: error });
+            const tx = await this.redeemSubmit(hostingToken, hostAddress, amount, requirement).catch(errtx => {
+                reject({ error: ErrorCodes.REDEEM_ERR, reason: TRANSACTION_FAILURE, transcation: errtx });
+            });
+            if (tx) {
+                const response = await this.watchRedeemResponse(tx).catch(error => reject(error));
+                if (response) {
+                    response.redeemTransaction = tx;
+                    resolve(response);
+                }
             }
         });
     }
 
     refund(redeemTxHash) {
         return new Promise(async (resolve, reject) => {
-            try {
-                const res = await this.xrplAcc.makePayment(this.hookAddress,
-                    RippleConstants.MIN_XRP_AMOUNT,
-                    'XRP',
-                    null,
-                    [{ type: MemoTypes.REFUND, format: MemoFormats.BINARY, data: redeemTxHash }]);
-                if (res)
-                    resolve(res);
-                else
-                    reject({ error: ErrorCodes.REFUND_ERR, reason: 'Refund transaction failed.' });
-            } catch (error) {
-                reject({ error: ErrorCodes.REFUND_ERR, reason: error });
-            }
+            const res = await this.xrplAcc.makePayment(this.hookAddress,
+                RippleConstants.MIN_XRP_AMOUNT,
+                RippleConstants.XRP,
+                null,
+                [{ type: MemoTypes.REFUND, format: MemoFormats.BINARY, data: redeemTxHash }]).catch(errtx => {
+                    reject({ error: ErrorCodes.REFUND_ERR, reason: TRANSACTION_FAILURE, transcation: errtx });
+                });
+            if (res)
+                resolve(res);
         });
+    }
+
+    registerHost(hostingToken, instanceSize, location) {
+        const memoData = `${hostingToken};${instanceSize};${location}`
+        return this.xrplAcc.makePayment(this.hookAddress,
+            this.evernodeHookConf.hostRegFee.toString(),
+            EvernodeConstants.EVR,
+            this.hookAddress,
+            [{ type: MemoTypes.HOST_REG, format: MemoFormats.TEXT, data: memoData }]);
+    }
+
+    deregisterHost() {
+        return this.xrplAcc.makePayment(this.hookAddress,
+            RippleConstants.MIN_XRP_AMOUNT,
+            RippleConstants.XRP,
+            null,
+            [{ type: MemoTypes.HOST_DEREG, format: MemoFormats.TEXT, data: "" }]);
+    }
+
+    async getRedeemRequirements(redeemPayload) {
+        const instanceRequirements = await EncryptionHelper.decrypt(this.accKeyPair.privateKey, redeemPayload);
+        if (!instanceRequirements) {
+            console.log('Failed to decrypt redeem data.');
+            return null;
+        }
+        return instanceRequirements;
+    }
+
+    async redeemSuccess(txHash, userAddress, userPubKey, instanceInfo) {
+        // Verifying the pubkey.
+        if (!(await this.rippleAPI.isValidKeyForAddress(userPubKey, userAddress)))
+            throw 'Invalid public key for redeem response encryption.';
+
+        const memos = [{ type: MemoTypes.REDEEM_REF, format: MemoFormats.BINARY, data: txHash }];
+        // Encrypt response with user pubkey.
+        const encrypted = await EncryptionHelper.encrypt(userPubKey, instanceInfo);
+        memos.push({ type: MemoTypes.REDEEM_RESP, format: MemoFormats.BINARY, data: encrypted });
+
+        return this.xrplAcc.makePayment(this.hookAddress,
+            RippleConstants.MIN_XRP_AMOUNT,
+            RippleConstants.XRP,
+            null,
+            memos);
+    }
+
+    async redeemError(txHash, reason) {
+
+        const memos = [
+            { type: MemoTypes.REDEEM_REF, format: MemoFormats.BINARY, data: txHash },
+            { type: MemoTypes.REDEEM_RESP, format: MemoFormats.JSON, data: { type: ErrorCodes.REDEEM_ERR, reason: reason } }
+        ];
+
+        return this.xrplAcc.makePayment(this.hookAddress,
+            RippleConstants.MIN_XRP_AMOUNT,
+            RippleConstants.XRP,
+            null,
+            memos);
     }
 
     requestAudit() {
@@ -158,7 +181,7 @@ class EvernodeClient {
             try {
                 const res = await this.xrplAcc.makePayment(this.hookAddress,
                     RippleConstants.MIN_XRP_AMOUNT,
-                    'XRP',
+                    RippleConstants.XRP,
                     null,
                     [{ type: MemoTypes.AUDIT_REQ, format: MemoFormats.BINARY, data: '' }]);
                 if (res) {
@@ -173,13 +196,14 @@ class EvernodeClient {
                                     const lines = await this.xrplAcc.getTrustLines(check.SendMax.currency, check.SendMax.issuer);
                                     if (lines && lines.length === 0) {
                                         console.log(`No trust lines found for ${check.SendMax.currency}/${check.SendMax.issuer}. Creating one...`);
-                                        const ret = await this.xrplAcc.createTrustLine(check.SendMax.currency, check.SendMax.issuer, AUDIT_TRUSTLINE_LIMIT, false);
+                                        const ret = await this.xrplAcc.setTrustLine(check.SendMax.currency, check.SendMax.issuer, AUDIT_TRUSTLINE_LIMIT, false);
                                         if (!ret)
                                             reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: `Creating trustline for ${check.SendMax.currency}/${check.SendMax.issuer} failed.` });
                                     }
 
                                     // Cash the check.
-                                    const result = await this.xrplAcc.cashCheck(check);
+                                    const result = await this.xrplAcc.cashCheck(check).catch(errtx =>
+                                        reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: TRANSACTION_FAILURE, transaction: errtx }));
                                     if (result)
                                         resolve({
                                             address: check.SendMax.issuer,
@@ -187,8 +211,7 @@ class EvernodeClient {
                                             amount: check.SendMax.value,
                                             cashTxHash: result.txHash
                                         });
-                                    else
-                                        reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: 'Cashing check failed.' });
+
                                 } else if (resp && resp.account_objects.length === 0) {
                                     const timeout = setTimeout(() => {
                                         if (this.rippleAPI.ledgerVersion - startingLedger >= this.evernodeHookConf.momentSize) {
@@ -205,7 +228,7 @@ class EvernodeClient {
                     }
                     resolve(await getChecksAndProcess());
                 } else {
-                    reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: 'Audit request failed.' });
+                    reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: TRANSACTION_FAILURE });
                 }
             } catch (error) {
                 // Throw the same error object receiving from the above try block. It is already formatted with AUDIT_REQ_FAILED code.
@@ -219,7 +242,7 @@ class EvernodeClient {
             try {
                 const res = await this.xrplAcc.makePayment(this.hookAddress,
                     RippleConstants.MIN_XRP_AMOUNT,
-                    'XRP',
+                    RippleConstants.XRP,
                     null,
                     [{ type: MemoTypes.AUDIT_SUCCESS, format: MemoFormats.BINARY, data: '' }]);
                 if (res)
@@ -237,73 +260,4 @@ class EvernodeClient {
         try { await this.rippleAPI.disconnect(); }
         catch (e) { throw e; }
     }
-}
-
-class EvernodeHook {
-    constructor(account) {
-        this.account = account;
-    }
-
-    async getHookStates() {
-        let states = await this.account.getStates();
-        states = states.filter(s => s.LedgerEntryType === 'HookState');
-        states = states.map(s => {
-            return {
-                key: Buffer.from(s.HookStateKey, 'hex'),
-                data: Buffer.from(s.HookStateData, 'hex')
-            }
-        });
-        return states;
-    }
-
-    readUInt(buf, base = 32, isBE = true) {
-        buf = Buffer.from(buf);
-        switch (base) {
-            case (8):
-                return buf.readUInt8();
-            case (16):
-                return isBE ? buf.readUInt16BE() : buf.readUInt16LE();
-            case (32):
-                return isBE ? buf.readUInt32BE() : buf.readUInt32LE();
-            case (64):
-                return isBE ? Number(buf.readBigUInt64BE()) : Number(buf.readBigUInt64LE());
-            default:
-                throw 'Invalid base value';
-        }
-    }
-
-    getStateData(states, key) {
-        // If there's any ascii chars, take their ascii value.
-        for (const i in key)
-            if (typeof key[i] === 'string')
-                key[i] = key[i].charCodeAt(0);
-        const state = states.find(s => Buffer.from(key).equals(s.key));
-        return state?.data;
-    }
-
-    async getConfig() {
-        const states = await this.getHookStates();
-        let config = {};
-        let buf = this.getStateData(states, HookStateKeys.HOST_REG_FEE);
-        config.hostRegFee = buf ? this.readUInt(buf, 16) : DEF_HOST_REG_FEE;
-
-        buf = this.getStateData(states, HookStateKeys.MOMENT_SIZE);
-        config.momentSize = buf ? this.readUInt(buf, 16) : DEF_MOMENT_SIZE;
-
-        buf = this.getStateData(states, HookStateKeys.REDEEM_WINDOW);
-        config.redeemWindow = buf ? this.readUInt(buf, 16) : DEF_REDEEM_WINDOW;
-
-        buf = this.getStateData(states, HookStateKeys.MOMENT_BASE_IDX);
-        config.momentBaseIdx = buf ? this.readUInt(buf, 64) : DEF_MOMENT_BASE_IDX;
-
-        return config;
-    }
-}
-
-module.exports = {
-    EvernodeClient,
-    EvernodeHook,
-    MemoFormats,
-    MemoTypes,
-    ErrorCodes
 }
