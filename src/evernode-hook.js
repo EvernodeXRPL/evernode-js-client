@@ -55,9 +55,8 @@ export class EvernodeHook {
             buf = Buffer.from(buf);
             const xfl = buf.readBigInt64BE(0);
             config.hostRegFee = XflHelpers.toString(xfl);
-        } else {
+        } else
             config.hostRegFee = HookStateDefaults.HOST_REG_FEE;
-        }
 
 
         buf = this.getStateData(states, HookStateKeys.MOMENT_SIZE);

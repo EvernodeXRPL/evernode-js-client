@@ -29,7 +29,7 @@ export class XflHelpers {
         if (xfl < 0n)
             throw "Invalid XFL";
         if (xfl == 0n)
-            return "<zero>";
+            return '0';
 
         const mantissa = this.getMantissa(xfl);
         const exponent = this.getExponent(xfl);
