@@ -122,7 +122,7 @@ export class EvernodeClient {
     registerHost(hostingToken, instanceSize, location) {
         const memoData = `${hostingToken};${instanceSize};${location}`
         return this.xrplAcc.makePayment(this.hookAddress,
-            this.evernodeHookConf.hostRegFee.toString(),
+            this.evernodeHookConf.hostRegFee,
             EvernodeConstants.EVR,
             this.hookAddress,
             [{ type: MemoTypes.HOST_REG, format: MemoFormats.TEXT, data: memoData }]);
