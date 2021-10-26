@@ -31,7 +31,7 @@ export const ErrorCodes = {
 // If hook's state is empty, values are loaded from here.
 export const HookStateDefaults = {
     MOMENT_SIZE: 72,
-    HOST_REG_FEE: 5,
+    HOST_REG_FEE: '0.87654321',
     REDEEM_WINDOW: 24,
     MOMENT_BASE_IDX: 0,
 }
