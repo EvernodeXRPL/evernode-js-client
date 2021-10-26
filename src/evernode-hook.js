@@ -2,6 +2,7 @@ const { EvernodeConstants, MemoTypes, HookStateDefaults, HookStateKeys, HookEven
 const { RippleAPIEvents } = require('./ripple-common');
 const { XrplAccount } = require('./xrpl-account');
 const { EventEmitter } = require('./event-emitter');
+const { XflHelpers } = require('./xfl-helpers');
 const rippleCodec = require('ripple-address-codec');
 
 export class EvernodeHook {
@@ -43,14 +44,20 @@ export class EvernodeHook {
         let states = await this.getHookStates();
         states = states.map(s => {
             return {
-                key: Buffer.from(s.key, 'hex'),
+                key: s.key,
                 data: Buffer.from(s.data, 'hex')
             }
         });
 
         let config = {};
         let buf = this.getStateData(states, HookStateKeys.HOST_REG_FEE);
-        config.hostRegFee = buf ? readUInt(buf, 16) : HookStateDefaults.HOST_REG_FEE;
+        if (buf) {
+            buf = Buffer.from(buf);
+            const xfl = buf.readBigInt64BE(0);
+            config.hostRegFee = XflHelpers.toString(xfl);
+        } else
+            config.hostRegFee = HookStateDefaults.HOST_REG_FEE;
+
 
         buf = this.getStateData(states, HookStateKeys.MOMENT_SIZE);
         config.momentSize = buf ? readUInt(buf, 16) : HookStateDefaults.MOMENT_SIZE;
