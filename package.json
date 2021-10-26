@@ -1,6 +1,6 @@
 {
     "name": "evernode-js-client",
-    "version": "0.2.1",
+    "version": "0.2.3",
     "scripts": {
         "build": "ncc build src/index.js -e eccrypto -e ripple-lib -e ripple-address-codec -o dist/",
         "bundle": "npm run build && ./clean-pkg.sh",
