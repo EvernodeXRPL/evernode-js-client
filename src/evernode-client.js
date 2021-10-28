@@ -43,7 +43,7 @@ export class EvernodeClient {
         this.evernodeHookConf = await this.evernodeHook.getConfig();
     }
 
-    async redeemSubmit(hostingToken, hostAddress, amount, requirement) {
+    async redeemSubmit(hostingToken, hostAddress, amount, requirement, options = null) {
 
         // Encrypt the requirements with the host's encryption key (Specified in MessageKey field of the host account).
         const hostAcc = new XrplAccount(this.rippleAPI, hostAddress);
@@ -58,7 +58,8 @@ export class EvernodeClient {
             amount.toString(),
             hostingToken,
             hostAddress,
-            [{ type: MemoTypes.REDEEM, format: MemoFormats.BINARY, data: ecrypted }]);
+            [{ type: MemoTypes.REDEEM, format: MemoFormats.BINARY, data: ecrypted }],
+            options && options.transactionOptions);
     }
 
     watchRedeemResponse(tx) {
@@ -90,9 +91,9 @@ export class EvernodeClient {
         });
     }
 
-    redeem(hostingToken, hostAddress, amount, requirement) {
+    redeem(hostingToken, hostAddress, amount, requirement, options = null) {
         return new Promise(async (resolve, reject) => {
-            const tx = await this.redeemSubmit(hostingToken, hostAddress, amount, requirement).catch(errtx => {
+            const tx = await this.redeemSubmit(hostingToken, hostAddress, amount, requirement, options).catch(errtx => {
                 reject({ error: ErrorCodes.REDEEM_ERR, reason: TRANSACTION_FAILURE, transcation: errtx });
             });
             if (tx) {

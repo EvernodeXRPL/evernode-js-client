@@ -58,22 +58,26 @@ export class TransactionHelper {
                 });
 
                 if (submission) {
-                    if (submission.resultCode !== "tesSUCCESS") {
+
+                    if (submission.resultCode !== "tesSUCCESS" && submission.resultCode !== "tefALREADY") {
                         console.log("Txn submission failure: " + submission.resultCode)
                         reject({
                             id: signed.id,
                             submission: submission
                         });
+                        return;
                     }
-                    else {
-                        const tx = await this.verifyTransaction(signed.id, this.rippleAPI.ledgerVersion, this.getMaxLedgerVersion()).catch(errtx => {
-                            errtx.submission = submission;
-                            reject(errtx);
-                        });
-                        if (tx) {
-                            tx.submission = submission;
-                            resolve(tx);
-                        }
+
+                    if (submission.resultCode === "tefALREADY")
+                        console.log("Transaction already submitted. (tefALREADY)")
+
+                    const tx = await this.verifyTransaction(signed.id, this.rippleAPI.ledgerVersion, this.getMaxLedgerVersion()).catch(errtx => {
+                        errtx.submission = submission;
+                        reject(errtx);
+                    });
+                    if (tx) {
+                        tx.submission = submission;
+                        resolve(tx);
                     }
                 }
             }
