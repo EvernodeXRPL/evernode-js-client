@@ -209,7 +209,7 @@ export class EvernodeClient {
                                             address: check.SendMax.issuer,
                                             currency: check.SendMax.currency,
                                             amount: check.SendMax.value,
-                                            cashTxHash: result.txHash
+                                            cashTxHash: result.id
                                         });
 
                                 } else if (resp && resp.account_objects.length === 0) {
