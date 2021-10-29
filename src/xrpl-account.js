@@ -67,7 +67,7 @@ export class XrplAccount {
         return lines;
     }
 
-    async setMessageKey(publicKey, options = null) {
+    async setMessageKey(publicKey, options = {}) {
         const prepared = await this.rippleAPI.api.prepareSettings(this.address, {
             messageKey: publicKey
         }, await this.#getTransactionOptions(options));
@@ -76,7 +76,7 @@ export class XrplAccount {
         return result;
     }
 
-    async setDefaultRippling(enabled, options = null) {
+    async setDefaultRippling(enabled, options = {}) {
 
         const prepared = await this.rippleAPI.api.prepareSettings(this.address, {
             defaultRipple: enabled
@@ -86,7 +86,7 @@ export class XrplAccount {
         return result;
     }
 
-    async makePayment(toAddr, amount, currency, issuer = null, memos = null, options = null) {
+    async makePayment(toAddr, amount, currency, issuer = null, memos = null, options = {}) {
 
         if (typeof amount !== 'string')
             throw "Amount must be a string.";
@@ -117,7 +117,7 @@ export class XrplAccount {
         return result;
     }
 
-    async setTrustLine(currency, issuer, limit, allowRippling = false, memos = null, options = null) {
+    async setTrustLine(currency, issuer, limit, allowRippling = false, memos = null, options = {}) {
 
         if (typeof limit !== 'string')
             throw "Limit must be a string.";
@@ -164,7 +164,7 @@ export class XrplAccount {
         return res.account_objects ? res.account_objects : [];
     }
 
-    async cashCheck(check, options = null) {
+    async cashCheck(check, options = {}) {
         const checkIDhasher = crypto.createHash('sha512')
         checkIDhasher.update(Buffer.from('0043', 'hex'))
         checkIDhasher.update(Buffer.from(decodeAccountID(check.Account)))
@@ -225,8 +225,7 @@ export class XrplAccount {
         this.subscribed = true;
     }
 
-    async #getTransactionOptions(options) {
-        options = options || {};
+    async #getTransactionOptions(options = {}) {
         const txOptions = {
             maxLedgerVersion: options.maxLedgerVersion || this.txHelper.getMaxLedgerVersion(),
             sequence: options.sequence || await this.getNextSequence()

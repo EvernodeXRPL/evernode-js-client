@@ -8,11 +8,12 @@ export class EncryptionHelper {
     static contentFormat = 'base64';
     static keyFormat = 'hex';
 
-    static async encrypt(publicKey, json) {
+    static async encrypt(publicKey, json, options = {}) {
         // For the encryption library, both keys and data should be buffers.
-        const encrypted = await eccrypto.encrypt(Buffer.from(publicKey, this.keyFormat), Buffer.from(JSON.stringify(json)));
+        const encrypted = await eccrypto.encrypt(Buffer.from(publicKey, this.keyFormat), Buffer.from(JSON.stringify(json)), options);
         // Concat all the properties of the encrypted object to a single buffer.
-        return Buffer.concat([encrypted.ephemPublicKey, encrypted.iv, encrypted.mac, encrypted.ciphertext]).toString(this.contentFormat);
+        const result = Buffer.concat([encrypted.ephemPublicKey, encrypted.iv, encrypted.mac, encrypted.ciphertext]).toString(this.contentFormat);
+        return result;
     }
 
     static async decrypt(privateKey, encrypted) {
