@@ -16,6 +16,7 @@ export class EvernodeClient {
 
     constructor(xrpAddress, xrpSecret, options = {}) {
 
+        this.connected = false;
         this.hookAddress = options.hookAddress || EvernodeConstants.DEFAULT_HOOK_ADDR;
         this.rippleAPI = options.rippleAPI || new RippleAPIWrapper(options.rippledServer);
 
@@ -34,10 +35,14 @@ export class EvernodeClient {
     }
 
     async connect() {
+        if (this.connected)
+            return;
+            
         try { await this.rippleAPI.connect(); }
         catch (e) { throw e; }
 
         this.evernodeHookConf = await this.evernodeHook.getConfig();
+        this.connected = true;
     }
 
     async redeemSubmit(hostingToken, hostAddress, amount, requirement, options = {}) {
