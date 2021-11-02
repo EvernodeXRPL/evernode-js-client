@@ -23,6 +23,11 @@ export class XrplAccount {
         return this.rippleAPI.api.deriveKeypair(this.secret);
     }
 
+    async getSequence() {
+        const info = await this.rippleAPI.getAccountInfo(this.address);
+        return info && info.account_data.Sequence || 0;
+    }
+
     async getNextSequence() {
 
         // If cached value is expired, delete it.
@@ -62,32 +67,26 @@ export class XrplAccount {
         return lines;
     }
 
-    async setMessageKey(publicKey) {
+    async setMessageKey(publicKey, options = {}) {
         const prepared = await this.rippleAPI.api.prepareSettings(this.address, {
             messageKey: publicKey
-        }, {
-            maxLedgerVersion: this.txHelper.getMaxLedgerVersion(),
-            sequence: await this.getNextSequence()
-        });
+        }, await this.#getTransactionOptions(options));
 
         const result = await this.txHelper.submitAndVerifyTransaction(prepared);
         return result;
     }
 
-    async setDefaultRippling(enabled) {
+    async setDefaultRippling(enabled, options = {}) {
 
         const prepared = await this.rippleAPI.api.prepareSettings(this.address, {
             defaultRipple: enabled
-        }, {
-            maxLedgerVersion: this.txHelper.getMaxLedgerVersion(),
-            sequence: await this.getNextSequence()
-        });
+        }, await this.#getTransactionOptions(options));
 
         const result = await this.txHelper.submitAndVerifyTransaction(prepared);
         return result;
     }
 
-    async makePayment(toAddr, amount, currency, issuer, memos = null) {
+    async makePayment(toAddr, amount, currency, issuer = null, memos = null, options = {}) {
 
         if (typeof amount !== 'string')
             throw "Amount must be a string.";
@@ -112,16 +111,13 @@ export class XrplAccount {
                 amount: amountObj
             },
             memos: this.getMemoCollection(memos)
-        }, {
-            maxLedgerVersion: this.txHelper.getMaxLedgerVersion(),
-            sequence: await this.getNextSequence()
-        })
+        }, await this.#getTransactionOptions(options))
 
         const result = await this.txHelper.submitAndVerifyTransaction(prepared);
         return result;
     }
 
-    async setTrustLine(currency, issuer, limit, allowRippling = false, memos = null) {
+    async setTrustLine(currency, issuer, limit, allowRippling = false, memos = null, options = {}) {
 
         if (typeof limit !== 'string')
             throw "Limit must be a string.";
@@ -132,10 +128,7 @@ export class XrplAccount {
             limit: limit,
             memos: this.getMemoCollection(memos),
             ripplingDisabled: !allowRippling
-        }, {
-            maxLedgerVersion: this.txHelper.getMaxLedgerVersion(),
-            sequence: await this.getNextSequence()
-        })
+        }, await this.#getTransactionOptions(options))
 
         const result = await this.txHelper.submitAndVerifyTransaction(prepared);
         return result;
@@ -171,7 +164,7 @@ export class XrplAccount {
         return res.account_objects ? res.account_objects : [];
     }
 
-    async cashCheck(check) {
+    async cashCheck(check, options = {}) {
         const checkIDhasher = crypto.createHash('sha512')
         checkIDhasher.update(Buffer.from('0043', 'hex'))
         checkIDhasher.update(Buffer.from(decodeAccountID(check.Account)))
@@ -188,10 +181,7 @@ export class XrplAccount {
                 value: check.SendMax.value,
                 counterparty: check.SendMax.issuer
             }
-        }, {
-            maxLedgerVersion: this.txHelper.getMaxLedgerVersion(),
-            sequence: await this.getNextSequence()
-        });
+        }, await this.#getTransactionOptions(options));
 
         const result = await this.txHelper.submitAndVerifyTransaction(prepared);
         return result;
@@ -233,5 +223,13 @@ export class XrplAccount {
         console.log(message);
 
         this.subscribed = true;
+    }
+
+    async #getTransactionOptions(options = {}) {
+        const txOptions = {
+            maxLedgerVersion: options.maxLedgerVersion || this.txHelper.getMaxLedgerVersion(),
+            sequence: options.sequence || await this.getNextSequence()
+        }
+        return txOptions;
     }
 }

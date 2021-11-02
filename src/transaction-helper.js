@@ -58,6 +58,7 @@ export class TransactionHelper {
                 });
 
                 if (submission) {
+
                     if (submission.resultCode !== "tesSUCCESS") {
                         console.log("Txn submission failure: " + submission.resultCode)
                         reject({
