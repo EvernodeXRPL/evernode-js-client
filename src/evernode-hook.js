@@ -174,7 +174,7 @@ function extractEvernodeHookEvent(tx) {
         }
     }
     else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
-        tx.Memos[0].type === MemoTypes.AUDIT_REQ && tx.Memos[0].data) {
+        tx.Memos[0].type === MemoTypes.AUDIT_REQ) {
 
         return {
             name: HookEvents.AuditRequest,
@@ -185,7 +185,7 @@ function extractEvernodeHookEvent(tx) {
         }
     }
     else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
-        tx.Memos[0].type === MemoTypes.AUDIT_SUCCESS && tx.Memos[0].data) {
+        tx.Memos[0].type === MemoTypes.AUDIT_SUCCESS) {
 
         return {
             name: HookEvents.AuditSuccess,
