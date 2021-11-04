@@ -65,6 +65,9 @@ export class EvernodeHook {
         buf = this.getStateData(states, HookStateKeys.REDEEM_WINDOW);
         config.redeemWindow = buf ? readUInt(buf, 16) : HookStateDefaults.REDEEM_WINDOW;
 
+        buf = this.getStateData(states, HookStateKeys.MIN_REDEEM);
+        config.minRedeem = buf ? readUInt(buf, 16) : HookStateDefaults.MIN_REDEEM;
+
         buf = this.getStateData(states, HookStateKeys.MOMENT_BASE_IDX);
         config.momentBaseIdx = buf ? readUInt(buf, 64) : HookStateDefaults.MOMENT_BASE_IDX;
 
