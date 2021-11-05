@@ -6,6 +6,9 @@ const { XflHelpers } = require('./xfl-helpers');
 const rippleCodec = require('ripple-address-codec');
 
 export class EvernodeHook {
+
+    #cachedConfig = null;
+
     constructor(rippleAPI, hookAddress) {
         this.account = new XrplAccount(rippleAPI, (hookAddress || EvernodeConstants.DEFAULT_HOOK_ADDR));
         this.events = new EventEmitter();
@@ -43,8 +46,10 @@ export class EvernodeHook {
             buf = Buffer.from(buf);
             const xfl = buf.readBigInt64BE(0);
             config.hostRegFee = XflHelpers.toString(xfl);
-        } else
+        }
+        else {
             config.hostRegFee = HookStateDefaults.HOST_REG_FEE;
+        }
 
 
         buf = this.getStateData(states, HookStateKeys.MOMENT_SIZE);
@@ -59,6 +64,7 @@ export class EvernodeHook {
         buf = this.getStateData(states, HookStateKeys.MOMENT_BASE_IDX);
         config.momentBaseIdx = buf ? readUInt(buf, 64) : HookStateDefaults.MOMENT_BASE_IDX;
 
+        this.#cachedConfig = config;
         return config;
     }
 
@@ -74,6 +80,15 @@ export class EvernodeHook {
             }
         });
         return hosts;
+    }
+
+    async getMoment(ledgerVersion = null) {
+        if (!this.#cachedConfig)
+            await this.getConfig();
+
+        const lv = ledgerVersion || this.account.rippleAPI.ledgerVersion;
+        const m = Math.floor((lv - this.#cachedConfig.momentBaseIdx) / this.#cachedConfig.momentSize);
+        return m;
     }
 
     subscribe() {
