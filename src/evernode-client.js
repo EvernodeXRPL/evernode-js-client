@@ -27,10 +27,10 @@ export class EvernodeClient {
         this.evernodeHook = new EvernodeHook(this.rippleAPI, this.hookAddress);
 
         this.evernodeHook.events.on(HookEvents.RedeemSuccess, async (ev) => {
-            this.#events.emit(REDEEM_WATCH_PREFIX + ev.redeemTxHash, { success: true, data: ev.payload });
+            this.#events.emit(REDEEM_WATCH_PREFIX + ev.redeemTxHash, { success: true, data: ev.payload, transaction: ev.transaction });
         })
         this.evernodeHook.events.on(HookEvents.RedeemError, async (ev) => {
-            this.#events.emit(REDEEM_WATCH_PREFIX + ev.redeemTxHash, { success: false, data: ev.reason });
+            this.#events.emit(REDEEM_WATCH_PREFIX + ev.redeemTxHash, { success: false, data: ev.reason, transaction: ev.transaction });
         })
     }
 
@@ -83,10 +83,10 @@ export class EvernodeClient {
                 clearInterval(failTimeout);
                 if (ev.success) {
                     const info = await EncryptionHelper.decrypt(this.accKeyPair.privateKey, ev.data);
-                    resolve({ instance: info.content });
+                    resolve({ instance: info.content, transaction: ev.transaction });
                 }
                 else {
-                    reject({ error: ErrorCodes.REDEEM_ERR, reason: ev.data });
+                    reject({ error: ErrorCodes.REDEEM_ERR, reason: ev.data, transaction: ev.transaction });
                 }
             })
 
