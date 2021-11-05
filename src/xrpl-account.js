@@ -1,6 +1,6 @@
 var crypto = require("crypto");
 const decodeAccountID = require('ripple-address-codec').decodeAccountID;
-const { RippleAPIEvents, RippleConstants } = require('./ripple-common');
+const { RippleAPIEvents } = require('./ripple-common');
 const { TransactionHelper } = require('./transaction-helper');
 const { EventEmitter } = require('./event-emitter');
 

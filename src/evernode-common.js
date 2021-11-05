@@ -57,5 +57,6 @@ export const HookEvents = {
     RedeemError: "redeemError",
     RefundRequest: "refundRequest",
     AuditRequest: "auditRequest",
-    AuditSuccess: "auditSuccess"
+    AuditSuccess: "auditSuccess",
+    Reward: "reward",
 }

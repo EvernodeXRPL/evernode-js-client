@@ -9,18 +9,6 @@ export class EvernodeHook {
     constructor(rippleAPI, hookAddress) {
         this.account = new XrplAccount(rippleAPI, (hookAddress || EvernodeConstants.DEFAULT_HOOK_ADDR));
         this.events = new EventEmitter();
-
-        this.account.events.on(RippleAPIEvents.PAYMENT, async (data, error) => {
-            if (error)
-                console.error(error);
-            else if (!data)
-                console.log('Invalid transaction.');
-            else {
-                const ev = extractEvernodeHookEvent(data);
-                if (ev)
-                    this.events.emit(ev.name, ev.data);
-            }
-        });
     }
 
     async getHookStates() {
@@ -89,117 +77,145 @@ export class EvernodeHook {
     }
 
     subscribe() {
+        this.account.events.on(RippleAPIEvents.PAYMENT, async (data, error) => {
+            if (error)
+                console.error(error);
+            else if (!data)
+                console.log('Invalid transaction.');
+            else {
+                const ev = await this.#extractEvernodeHookEvent(data);
+                if (ev)
+                    this.events.emit(ev.name, ev.data);
+            }
+        });
         this.account.subscribe();
     }
-}
 
-function extractEvernodeHookEvent(tx) {
+    async #extractEvernodeHookEvent(tx) {
 
-    if (!tx.Memos || tx.Memos.length === 0)
+        // Reward transaction does not have memos.
+        // It's an outgoing transaction with EVR currency.
+        // Memo fields will be added in future to detect reward transactions.
+        if (tx.Account === this.account.address &&
+            typeof tx.Amount === 'object' &&
+            tx.Amount.currency === EvernodeConstants.EVR &&
+            (await this.getHosts()).some(h => h.address === tx.Destination)) {
+            return {
+                name: HookEvents.Reward,
+                data: {
+                    transaction: tx,
+                    host: tx.Destination,
+                    amount: tx.Amount.value
+                }
+            }
+        }
+
+        if (!tx.Memos || tx.Memos.length === 0)
+            return null;
+
+        if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
+            tx.Memos[0].type === MemoTypes.REDEEM && tx.Memos[0].data) {
+
+            return {
+                name: HookEvents.Redeem,
+                data: {
+                    transaction: tx,
+                    user: tx.Account,
+                    host: tx.Amount.issuer,
+                    token: tx.Amount.currency,
+                    moments: parseInt(tx.Amount.value),
+                    payload: tx.Memos[0].data
+                }
+            }
+        }
+        else if (tx.Memos.length >= 2 && tx.Memos[0].format === MemoFormats.BINARY &&
+            tx.Memos[0].type === MemoTypes.REDEEM_REF && tx.Memos[0].data &&
+            tx.Memos[1].type === MemoTypes.REDEEM_RESP && tx.Memos[1].data) {
+
+            const redeemTxHash = tx.Memos[0].data;
+            const payload = tx.Memos[1].data;
+            if (tx.Memos[1].format === MemoFormats.JSON) { // Format text/json means this is an error message. 
+                const error = JSON.parse(payload);
+                return {
+                    name: HookEvents.RedeemError,
+                    data: {
+                        transaction: tx,
+                        redeemTxHash: redeemTxHash,
+                        reason: error.reason
+                    }
+                }
+            }
+            else {
+                return {
+                    name: HookEvents.RedeemSuccess,
+                    data: {
+                        transaction: tx,
+                        redeemTxHash: redeemTxHash,
+                        payload: payload
+                    }
+                }
+            }
+        }
+        else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
+            tx.Memos[0].type === MemoTypes.REFUND && tx.Memos[0].data) {
+
+            return {
+                name: HookEvents.RefundRequest,
+                data: {
+                    transaction: tx,
+                    redeemTxHash: tx.Memos[0].data
+                }
+            }
+        }
+        else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.TEXT &&
+            tx.Memos[0].type === MemoTypes.HOST_REG && tx.Memos[0].data) {
+
+            const parts = tx.Memos[0].data.split(';');
+            return {
+                name: HookEvents.HostRegistered,
+                data: {
+                    transaction: tx,
+                    host: tx.Account,
+                    token: parts[0],
+                    instanceSize: parts[1],
+                    location: parts[2]
+                }
+            }
+        }
+        else if (tx.Memos.length >= 1 && tx.Memos[0].type === MemoTypes.HOST_DEREG) {
+            return {
+                name: HookEvents.HostDeregistered,
+                data: {
+                    transaction: tx,
+                    host: tx.Account
+                }
+            }
+        }
+        else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
+            tx.Memos[0].type === MemoTypes.AUDIT_REQ) {
+
+            return {
+                name: HookEvents.AuditRequest,
+                data: {
+                    transaction: tx,
+                    auditor: tx.Account
+                }
+            }
+        }
+        else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
+            tx.Memos[0].type === MemoTypes.AUDIT_SUCCESS) {
+
+            return {
+                name: HookEvents.AuditSuccess,
+                data: {
+                    transaction: tx,
+                    auditor: tx.Account
+                }
+            }
+        }
+
         return null;
-
-    if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
-        tx.Memos[0].type === MemoTypes.REDEEM && tx.Memos[0].data) {
-
-        return {
-            name: HookEvents.Redeem,
-            data: {
-                transaction: tx,
-                user: tx.Account,
-                host: tx.Amount.issuer,
-                token: tx.Amount.currency,
-                moments: parseInt(tx.Amount.value),
-                payload: tx.Memos[0].data
-            }
-        }
     }
-    else if (tx.Memos.length >= 2 && tx.Memos[0].format === MemoFormats.BINARY &&
-        tx.Memos[0].type === MemoTypes.REDEEM_REF && tx.Memos[0].data &&
-        tx.Memos[1].type === MemoTypes.REDEEM_RESP && tx.Memos[1].data) {
-
-        const redeemTxHash = tx.Memos[0].data;
-        const payload = tx.Memos[1].data;
-        if (tx.Memos[1].format === MemoFormats.JSON) { // Format text/json means this is an error message. 
-            const error = JSON.parse(payload);
-            return {
-                name: HookEvents.RedeemError,
-                data: {
-                    transaction: tx,
-                    redeemTxHash: redeemTxHash,
-                    reason: error.reason
-                }
-            }
-        }
-        else {
-            return {
-                name: HookEvents.RedeemSuccess,
-                data: {
-                    transaction: tx,
-                    redeemTxHash: redeemTxHash,
-                    payload: payload
-                }
-            }
-        }
-    }
-    else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
-        tx.Memos[0].type === MemoTypes.REFUND && tx.Memos[0].data) {
-
-        return {
-            name: HookEvents.RefundRequest,
-            data: {
-                transaction: tx,
-                redeemTxHash: tx.Memos[0].data
-            }
-        }
-    }
-    else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.TEXT &&
-        tx.Memos[0].type === MemoTypes.HOST_REG && tx.Memos[0].data) {
-
-        const parts = tx.Memos[0].data.split(';');
-        return {
-            name: HookEvents.HostRegistered,
-            data: {
-                transaction: tx,
-                host: tx.Account,
-                token: parts[0],
-                instanceSize: parts[1],
-                location: parts[2]
-            }
-        }
-    }
-    else if (tx.Memos.length >= 1 && tx.Memos[0].type === MemoTypes.HOST_DEREG) {
-        return {
-            name: HookEvents.HostDeregistered,
-            data: {
-                transaction: tx,
-                host: tx.Account
-            }
-        }
-    }
-    else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
-        tx.Memos[0].type === MemoTypes.AUDIT_REQ) {
-
-        return {
-            name: HookEvents.AuditRequest,
-            data: {
-                transaction: tx,
-                auditor: tx.Account
-            }
-        }
-    }
-    else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
-        tx.Memos[0].type === MemoTypes.AUDIT_SUCCESS) {
-
-        return {
-            name: HookEvents.AuditSuccess,
-            data: {
-                transaction: tx,
-                auditor: tx.Account
-            }
-        }
-    }
-
-    return null;
 }
 
 function readUInt(buf, base = 32, isBE = true) {
