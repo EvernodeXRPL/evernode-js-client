@@ -15,7 +15,8 @@ export class EvernodeHook {
     }
 
     async getHookStates() {
-        let states = await this.account.getStates();
+        // We use a large limit since there's no way to just get the HookState objects.
+        let states = await this.account.getAccountObjects({ limit: 99999 });
         states = states.filter(s => s.LedgerEntryType === 'HookState');
         states = states.map(s => {
             return {
@@ -24,11 +25,6 @@ export class EvernodeHook {
             }
         });
         return states;
-    }
-
-    getStateData(states, key) {
-        const state = states.find(s => key === s.key);
-        return state?.data;
     }
 
     async getConfig() {
@@ -41,7 +37,7 @@ export class EvernodeHook {
         });
 
         let config = {};
-        let buf = this.getStateData(states, HookStateKeys.HOST_REG_FEE);
+        let buf = this.#getStateData(states, HookStateKeys.HOST_REG_FEE);
         if (buf) {
             buf = Buffer.from(buf);
             const xfl = buf.readBigInt64BE(0);
@@ -52,16 +48,16 @@ export class EvernodeHook {
         }
 
 
-        buf = this.getStateData(states, HookStateKeys.MOMENT_SIZE);
+        buf = this.#getStateData(states, HookStateKeys.MOMENT_SIZE);
         config.momentSize = buf ? readUInt(buf, 16) : HookStateDefaults.MOMENT_SIZE;
 
-        buf = this.getStateData(states, HookStateKeys.REDEEM_WINDOW);
+        buf = this.#getStateData(states, HookStateKeys.REDEEM_WINDOW);
         config.redeemWindow = buf ? readUInt(buf, 16) : HookStateDefaults.REDEEM_WINDOW;
 
-        buf = this.getStateData(states, HookStateKeys.MIN_REDEEM);
+        buf = this.#getStateData(states, HookStateKeys.MIN_REDEEM);
         config.minRedeem = buf ? readUInt(buf, 16) : HookStateDefaults.MIN_REDEEM;
 
-        buf = this.getStateData(states, HookStateKeys.MOMENT_BASE_IDX);
+        buf = this.#getStateData(states, HookStateKeys.MOMENT_BASE_IDX);
         config.momentBaseIdx = buf ? readUInt(buf, 64) : HookStateDefaults.MOMENT_BASE_IDX;
 
         this.#cachedConfig = config;
@@ -104,6 +100,11 @@ export class EvernodeHook {
             }
         });
         this.account.subscribe();
+    }
+
+    #getStateData(states, key) {
+        const state = states.find(s => key === s.key);
+        return state?.data;
     }
 
     async #extractEvernodeHookEvent(tx) {

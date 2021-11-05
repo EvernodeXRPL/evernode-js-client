@@ -145,23 +145,11 @@ export class XrplAccount {
     }
 
     async getChecks(fromAccount) {
-        const account_objects_request = {
-            command: "account_objects",
-            account: fromAccount,
-            ledger_index: "validated",
-            type: "check"
-        }
-        return await this.rippleAPI.api.connection.request(account_objects_request);
+        return await this.rippleAPI.getAccountObjects(fromAccount, { type: "check" });
     }
 
-    async getStates() {
-        const account_objects_request = {
-            command: "account_objects",
-            account: this.address,
-            ledger_index: "validated"
-        }
-        const res = await this.rippleAPI.api.connection.request(account_objects_request);
-        return res.account_objects ? res.account_objects : [];
+    async getAccountObjects(options) {
+        return await this.rippleAPI.getAccountObjects(this.address, options);
     }
 
     async cashCheck(check, options = {}) {

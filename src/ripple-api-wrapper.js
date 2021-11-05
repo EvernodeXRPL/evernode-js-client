@@ -91,4 +91,11 @@ export class RippleAPIWrapper {
         else
             return derivedPubKeyAddress === address || (regularKey && derivedPubKeyAddress === regularKey);
     }
+
+    async getAccountObjects(address, options) {
+        const res = await this.api.getAccountObjects(address, options);
+        if (res.account_objects)
+            return res.account_objects;
+        return [];
+    }
 }

@@ -76,7 +76,7 @@ export class EvernodeClient {
             const failTimeout = setInterval(() => {
                 clearInterval(failTimeout);
                 this.#events.off(watchEvent);
-                reject({ error: ErrorCodes.REDEEM_ERR, reason: `REDEEM_TIMEOUT` });
+                reject({ error: ErrorCodes.REDEEM_ERR, reason: `redeem_timeout` });
             }, 60000);
 
             this.#events.once(watchEvent, async (ev) => {
@@ -90,7 +90,7 @@ export class EvernodeClient {
                 }
             })
 
-            this.evernodeHook.account.subscribe();
+            this.evernodeHook.subscribe();
         });
     }
 
