@@ -37,7 +37,7 @@ export class EvernodeClient {
     async connect() {
         if (this.connected)
             return;
-            
+
         try { await this.rippleAPI.connect(); }
         catch (e) { throw e; }
 
@@ -67,7 +67,7 @@ export class EvernodeClient {
             options.transactionOptions);
     }
 
-    watchRedeemResponse(tx) {
+    watchRedeemResponse(tx, options = { timeout: 60000 }) {
         return new Promise(async (resolve, reject) => {
             console.log(`Waiting for redeem response... (txHash: ${tx.id})`);
 
@@ -77,7 +77,7 @@ export class EvernodeClient {
                 clearInterval(failTimeout);
                 this.#events.off(watchEvent);
                 reject({ error: ErrorCodes.REDEEM_ERR, reason: `redeem_timeout` });
-            }, 60000);
+            }, options.timeout);
 
             this.#events.once(watchEvent, async (ev) => {
                 clearInterval(failTimeout);

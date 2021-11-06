@@ -6,12 +6,13 @@ const CONNECTION_RETRY_THREASHOLD = 60;
 const CONNECTION_RETRY_INTERVAL = 1000;
 
 export class RippleAPIWrapper {
-    constructor(rippledServer = null) {
+    constructor(rippledServer = null, options = { autoReconnect: true }) {
 
         this.connectionRetryCount = 0;
         this.connected = false;
         this.rippledServer = rippledServer || RippleConstants.DEFAULT_RIPPLED_SERVER;
         this.events = new EventEmitter();
+        this.options = options;
 
         this.api = new RippleAPI({ server: this.rippledServer });
         this.api.on('error', (errorCode, errorMessage) => {
@@ -28,11 +29,15 @@ export class RippleAPIWrapper {
 
             this.connected = false;
             console.log(`Disconnected from ${this.rippledServer} code:`, code);
-            try {
-                await this.connect();
-                this.events.emit(RippleAPIEvents.RECONNECTED, `Reconnected to ${this.rippledServer}`);
+
+            if (options.autoReconnect) {
+                try {
+                    console.log(`Reconnecting to ${this.rippledServer}`);
+                    await this.connect();
+                    this.events.emit(RippleAPIEvents.RECONNECTED, `Reconnected to ${this.rippledServer}`);
+                }
+                catch (e) { console.error(e); };
             }
-            catch (e) { console.error(e); };
         });
         this.api.on('ledger', (ledger) => {
             this.ledgerVersion = ledger.ledgerVersion;
@@ -56,6 +61,9 @@ export class RippleAPIWrapper {
             }
             catch (e) {
                 console.log(`Couldn't connect ${this.rippledServer} : `, e);
+                if (!this.options.autoReconnect)
+                    break;
+
                 // If threashold reaches, increase the retry interval.
                 if (this.connectionRetryCount % CONNECTION_RETRY_THREASHOLD === 0)
                     retryInterval += CONNECTION_RETRY_INTERVAL;
@@ -70,7 +78,7 @@ export class RippleAPIWrapper {
             return;
         this.tryConnecting = false;
         this.connected = false;
-        await this.api.disconnect();
+        await this.api.disconnect().catch(console.error);
         console.log(`Disconnected from ${this.rippledServer}`);
     }
 
