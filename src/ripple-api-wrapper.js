@@ -74,12 +74,12 @@ export class RippleAPIWrapper {
     }
 
     async disconnect() {
-        if (!this.connected)
-            return;
+        const wasConnected = this.connected;
         this.tryConnecting = false;
         this.connected = false;
         await this.api.disconnect().catch(console.error);
-        console.log(`Disconnected from ${this.rippledServer}`);
+        if (wasConnected)
+            console.log(`Disconnected from ${this.rippledServer}`);
     }
 
     async getAccountInfo(address) {
