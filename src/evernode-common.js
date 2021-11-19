@@ -10,6 +10,7 @@ export const MemoTypes = {
     HOST_REG: 'evnHostReg',
     HOST_DEREG: 'evnHostDereg',
     REFUND: 'evnRefund',
+    REFUND_RESP: 'evnRefundResp',
     AUDIT_REQ: 'evnAuditRequest',
     AUDIT_SUCCESS: 'evnAuditSuccess'
 }
@@ -56,6 +57,7 @@ export const HookEvents = {
     RedeemSuccess: "redeemSuccess",
     RedeemError: "redeemError",
     RefundRequest: "refundRequest",
+    RefundResp: "refundResp",
     AuditRequest: "auditRequest",
     AuditSuccess: "auditSuccess",
     Reward: "reward",

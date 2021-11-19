@@ -109,9 +109,30 @@ export class EvernodeClient {
         });
     }
 
+    watchRefundResponse(tx, redeem_hash, options = { timeout: 60000 }) {
+        return new Promise(async (resolve, reject) => {
+            console.log(`Waiting for refund response... (txHash: ${redeem_hash})`);
+
+            const failTimeout = setInterval(() => {
+                clearInterval(failTimeout);
+                this.evernodeHook.events.off(HookEvents.RefundResp);
+                reject({ error: ErrorCodes.REFUND_ERR, reason: `refund_timeout` });
+            }, options.timeout);
+
+            this.evernodeHook.events.on(HookEvents.RefundResp, ev => {
+                if (ev.redeemTx === redeem_hash && ev.refundReqTx === tx.id) {
+                    clearInterval(failTimeout);
+                    resolve(ev);
+                }
+            })
+
+            this.evernodeHook.subscribe();
+        });
+    }
+
     refund(redeemTxHash, options = {}) {
         return new Promise(async (resolve, reject) => {
-            const res = await this.xrplAcc.makePayment(this.hookAddress,
+            const tx = await this.xrplAcc.makePayment(this.hookAddress,
                 RippleConstants.MIN_XRP_AMOUNT,
                 RippleConstants.XRP,
                 null,
@@ -120,8 +141,13 @@ export class EvernodeClient {
                 .catch(errtx => {
                     reject({ error: ErrorCodes.REFUND_ERR, reason: TRANSACTION_FAILURE, transaction: errtx });
                 });
-            if (res)
-                resolve(res);
+            if (tx) {
+                const response = await this.watchRefundResponse(tx, redeemTxHash).catch(error => reject(error));
+                if (response) {
+                    response.refundTransaction = tx;
+                    resolve(response);
+                }
+            }
         });
     }
 

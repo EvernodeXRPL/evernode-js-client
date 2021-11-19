@@ -228,6 +228,21 @@ export class EvernodeHook {
                     auditor: tx.Account
                 }
             }
+        } else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
+            tx.Memos[0].type === MemoTypes.REFUND_RESP && tx.Memos[0].data) {
+                const redeemTx = tx.Memos[0].data.substring(0, 64);
+                const refundReqTx = tx.Memos[0].data.substring(64, 128);
+            return {
+                name: HookEvents.RefundResp,
+                data: {
+                    transaction: tx,
+                    redeemTx: redeemTx,
+                    refundReqTx: refundReqTx,
+                    amount: tx.Amount.value,
+                    issuer: tx.Amount.issuer,
+                    currency: tx.Amount.currency
+                }
+            }
         }
 
         return null;
