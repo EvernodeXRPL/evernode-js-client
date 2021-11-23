@@ -228,8 +228,8 @@ export class EvernodeClient {
                         return new Promise(async (resolve, reject) => {
                             try {
                                 const resp = await this.xrplAcc.getChecks(this.hookAddress);
-                                if (resp && resp.account_objects.length > 0) {
-                                    const check = resp.account_objects[0];
+                                if (resp && resp.length > 0) {
+                                    const check = resp[0];
                                     const lines = await this.xrplAcc.getTrustLines(check.SendMax.currency, check.SendMax.issuer);
                                     if (lines && lines.length === 0) {
                                         console.log(`No trust lines found for ${check.SendMax.currency}/${check.SendMax.issuer}. Creating one...`);
@@ -249,7 +249,7 @@ export class EvernodeClient {
                                             cashTxHash: result.id
                                         });
 
-                                } else if (resp && resp.account_objects.length === 0) {
+                                } else if (resp && resp.length === 0) {
                                     const timeout = setTimeout(() => {
                                         if (this.rippleAPI.ledgerVersion - startingLedger >= this.evernodeHookConf.momentSize) {
                                             clearTimeout(timeout);
