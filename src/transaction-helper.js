@@ -105,7 +105,7 @@ export class TransactionHelper {
             // If transaction not in latest validated ledger, try again until max ledger is hit.
             if (error instanceof this.rippleAPI.api.errors.PendingLedgerVersionError || error instanceof this.rippleAPI.api.errors.NotFoundError) {
                 setTimeout(() => {
-                    this.waitForTransactionVerification(txHash, minLedger, maxLedger, resolve);
+                    this.waitForTransactionVerification(txHash, minLedger, maxLedger, resolve, reject);
                 }, 1000);
             }
             else {

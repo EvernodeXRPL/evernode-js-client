@@ -13,7 +13,8 @@ export const MemoTypes = {
     REFUND_RESP: 'evnRefundResp',
     AUDIT_REQ: 'evnAuditRequest',
     AUDIT_SUCCESS: 'evnAuditSuccess',
-    AUDIT_REF: 'evnAuditRef'
+    AUDIT_REF: 'evnAuditRef',
+    REWARD_REF: 'evnRewardRef'
 }
 
 export const MemoFormats = {

@@ -6,7 +6,7 @@ const { EventEmitter } = require('./event-emitter');
 const { EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes, HookEvents } = require('./evernode-common');
 const { EvernodeHook } = require('./evernode-hook');
 
-const AUDIT_TRUSTLINE_LIMIT = 999999999;
+const AUDIT_TRUSTLINE_LIMIT = '999999999';
 const REDEEM_WATCH_PREFIX = 'redeem_';
 const TRANSACTION_FAILURE = 'TRANSACTION_FAILURE';
 
@@ -214,6 +214,7 @@ export class EvernodeClient {
 
     requestAudit(options = {}) {
         return new Promise(async (resolve, reject) => {
+            let timeout = null;
             try {
                 const res = await this.xrplAcc.makePayment(this.hookAddress,
                     RippleConstants.MIN_XRP_AMOUNT,
@@ -223,7 +224,7 @@ export class EvernodeClient {
                     options.transactionOptions);
                 if (res) {
                     const startingLedger = this.rippleAPI.ledgerVersion;
-                    const timeout = setInterval(() => {
+                    timeout = setInterval(() => {
                         if (this.rippleAPI.ledgerVersion - startingLedger >= this.evernodeHookConf.momentSize) {
                             clearInterval(timeout);
                             console.log('Audit request timeout');
