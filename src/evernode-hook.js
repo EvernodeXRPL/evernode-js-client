@@ -99,6 +99,17 @@ export class EvernodeHook {
                     this.events.emit(ev.name, ev.data);
             }
         });
+        this.account.events.on(RippleAPIEvents.CHECK_CREATE, async (data, error) => {
+            if (error)
+                console.error(error);
+            else if (!data)
+                console.log('Invalid transaction.');
+            else {
+                const ev = await this.#extractEvernodeHookEvent(data);
+                if (ev)
+                    this.events.emit(ev.name, ev.data);
+            }
+        });
         this.account.subscribe();
     }
 
@@ -241,6 +252,18 @@ export class EvernodeHook {
                     amount: tx.Amount.value,
                     issuer: tx.Amount.issuer,
                     currency: tx.Amount.currency
+                }
+            }
+        } else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
+            tx.Memos[0].type === MemoTypes.AUDIT_REF && tx.Memos[0].data) {
+
+            return {
+                name: HookEvents.AuditCheck,
+                data: {
+                    transaction: tx,
+                    currency: tx.SendMax.currency,
+                    issuer: tx.SendMax.issuer,
+                    value: tx.SendMax.value,
                 }
             }
         }

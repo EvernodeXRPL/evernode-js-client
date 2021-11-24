@@ -1,7 +1,8 @@
 export const RippleAPIEvents = {
     RECONNECTED: 'reconnected',
     LEDGER: 'ledger',
-    PAYMENT: 'payment'
+    PAYMENT: 'payment',
+    CHECK_CREATE: 'checkcreate'
 }
 
 export const RippleConstants = {

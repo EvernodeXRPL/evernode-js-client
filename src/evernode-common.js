@@ -12,7 +12,8 @@ export const MemoTypes = {
     REFUND: 'evnRefund',
     REFUND_RESP: 'evnRefundResp',
     AUDIT_REQ: 'evnAuditRequest',
-    AUDIT_SUCCESS: 'evnAuditSuccess'
+    AUDIT_SUCCESS: 'evnAuditSuccess',
+    AUDIT_REF: 'evnAuditRef'
 }
 
 export const MemoFormats = {
@@ -59,6 +60,7 @@ export const HookEvents = {
     RefundRequest: "refundRequest",
     RefundResp: "refundResp",
     AuditRequest: "auditRequest",
+    AuditCheck: "auditCheck",
     AuditSuccess: "auditSuccess",
     Reward: "reward",
 }
