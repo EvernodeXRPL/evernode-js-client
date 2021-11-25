@@ -73,14 +73,13 @@ export class EvernodeClient {
 
             const watchEvent = REDEEM_WATCH_PREFIX + tx.id;
 
-            const failTimeout = setInterval(() => {
-                clearInterval(failTimeout);
+            const failTimeout = setTimeout(() => {
                 this.#events.off(watchEvent);
                 reject({ error: ErrorCodes.REDEEM_ERR, reason: `redeem_timeout` });
             }, options.timeout);
 
             this.#events.once(watchEvent, async (ev) => {
-                clearInterval(failTimeout);
+                clearTimeout(failTimeout);
                 if (ev.success) {
                     const info = await EncryptionHelper.decrypt(this.accKeyPair.privateKey, ev.data);
                     resolve({ instance: info.content, transaction: ev.transaction });
@@ -113,15 +112,14 @@ export class EvernodeClient {
         return new Promise(async (resolve, reject) => {
             console.log(`Waiting for refund response... (txHash: ${redeem_hash})`);
 
-            const failTimeout = setInterval(() => {
-                clearInterval(failTimeout);
+            const failTimeout = setTimeout(() => {
                 this.evernodeHook.events.off(HookEvents.RefundResp);
                 reject({ error: ErrorCodes.REFUND_ERR, reason: `refund_timeout` });
             }, options.timeout);
 
             this.evernodeHook.events.on(HookEvents.RefundResp, ev => {
                 if (ev.redeemTx === redeem_hash && ev.refundReqTx === tx.id) {
-                    clearInterval(failTimeout);
+                    clearTimeout(failTimeout);
                     resolve(ev);
                 }
             })
