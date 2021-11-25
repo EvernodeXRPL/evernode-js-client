@@ -6,7 +6,7 @@ const { EventEmitter } = require('./event-emitter');
 const { EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes, HookEvents } = require('./evernode-common');
 const { EvernodeHook } = require('./evernode-hook');
 
-const AUDIT_TRUSTLINE_LIMIT = 999999999;
+const AUDIT_TRUSTLINE_LIMIT = '999999999';
 const REDEEM_WATCH_PREFIX = 'redeem_';
 const TRANSACTION_FAILURE = 'TRANSACTION_FAILURE';
 
@@ -73,14 +73,13 @@ export class EvernodeClient {
 
             const watchEvent = REDEEM_WATCH_PREFIX + tx.id;
 
-            const failTimeout = setInterval(() => {
-                clearInterval(failTimeout);
+            const failTimeout = setTimeout(() => {
                 this.#events.off(watchEvent);
                 reject({ error: ErrorCodes.REDEEM_ERR, reason: `redeem_timeout` });
             }, options.timeout);
 
             this.#events.once(watchEvent, async (ev) => {
-                clearInterval(failTimeout);
+                clearTimeout(failTimeout);
                 if (ev.success) {
                     const info = await EncryptionHelper.decrypt(this.accKeyPair.privateKey, ev.data);
                     resolve({ instance: info.content, transaction: ev.transaction });
@@ -109,9 +108,29 @@ export class EvernodeClient {
         });
     }
 
+    watchRefundResponse(tx, redeem_hash, options = { timeout: 60000 }) {
+        return new Promise(async (resolve, reject) => {
+            console.log(`Waiting for refund response... (txHash: ${redeem_hash})`);
+
+            const failTimeout = setTimeout(() => {
+                this.evernodeHook.events.off(HookEvents.RefundResp);
+                reject({ error: ErrorCodes.REFUND_ERR, reason: `refund_timeout` });
+            }, options.timeout);
+
+            this.evernodeHook.events.on(HookEvents.RefundResp, ev => {
+                if (ev.redeemTx === redeem_hash && ev.refundReqTx === tx.id) {
+                    clearTimeout(failTimeout);
+                    resolve(ev);
+                }
+            })
+
+            this.evernodeHook.subscribe();
+        });
+    }
+
     refund(redeemTxHash, options = {}) {
         return new Promise(async (resolve, reject) => {
-            const res = await this.xrplAcc.makePayment(this.hookAddress,
+            const tx = await this.xrplAcc.makePayment(this.hookAddress,
                 RippleConstants.MIN_XRP_AMOUNT,
                 RippleConstants.XRP,
                 null,
@@ -120,8 +139,13 @@ export class EvernodeClient {
                 .catch(errtx => {
                     reject({ error: ErrorCodes.REFUND_ERR, reason: TRANSACTION_FAILURE, transaction: errtx });
                 });
-            if (res)
-                resolve(res);
+            if (tx) {
+                const response = await this.watchRefundResponse(tx, redeemTxHash).catch(error => reject(error));
+                if (response) {
+                    response.refundTransaction = tx;
+                    resolve(response);
+                }
+            }
         });
     }
 
@@ -188,6 +212,7 @@ export class EvernodeClient {
 
     requestAudit(options = {}) {
         return new Promise(async (resolve, reject) => {
+            let timeout = null;
             try {
                 const res = await this.xrplAcc.makePayment(this.hookAddress,
                     RippleConstants.MIN_XRP_AMOUNT,
@@ -197,51 +222,47 @@ export class EvernodeClient {
                     options.transactionOptions);
                 if (res) {
                     const startingLedger = this.rippleAPI.ledgerVersion;
+                    timeout = setInterval(() => {
+                        if (this.rippleAPI.ledgerVersion - startingLedger >= this.evernodeHookConf.momentSize) {
+                            clearInterval(timeout);
+                            console.log('Audit request timeout');
+                            reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: `No checks found within moment(${this.evernodeHookConf.momentSize}) window.` });
+                        }
+                    }, 2000);
                     console.log('Waiting for check...');
-                    const getChecksAndProcess = () => {
-                        return new Promise(async (resolve, reject) => {
-                            try {
-                                const resp = await this.xrplAcc.getChecks(this.hookAddress);
-                                if (resp && resp.account_objects.length > 0) {
-                                    const check = resp.account_objects[0];
-                                    const lines = await this.xrplAcc.getTrustLines(check.SendMax.currency, check.SendMax.issuer);
-                                    if (lines && lines.length === 0) {
-                                        console.log(`No trust lines found for ${check.SendMax.currency}/${check.SendMax.issuer}. Creating one...`);
-                                        const ret = await this.xrplAcc.setTrustLine(check.SendMax.currency, check.SendMax.issuer, AUDIT_TRUSTLINE_LIMIT, false);
-                                        if (!ret)
-                                            reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: `Creating trustline for ${check.SendMax.currency}/${check.SendMax.issuer} failed.` });
-                                    }
-
-                                    // Cash the check.
-                                    const result = await this.xrplAcc.cashCheck(check).catch(errtx =>
-                                        reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: TRANSACTION_FAILURE, transaction: errtx }));
-                                    if (result)
-                                        resolve({
-                                            address: check.SendMax.issuer,
-                                            currency: check.SendMax.currency,
-                                            amount: check.SendMax.value,
-                                            cashTxHash: result.id
-                                        });
-
-                                } else if (resp && resp.account_objects.length === 0) {
-                                    const timeout = setTimeout(() => {
-                                        if (this.rippleAPI.ledgerVersion - startingLedger >= this.evernodeHookConf.momentSize) {
-                                            clearTimeout(timeout);
-                                            reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: `No checks found within moment(${this.evernodeHookConf.momentSize}) window.` });
-                                        }
-                                        getChecksAndProcess().then(result => resolve(result)).catch(error => reject(error));
-                                    }, 1000);
-                                }
-                            } catch (error) {
-                                reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: error });
+                    this.evernodeHook.subscribe();
+                    this.evernodeHook.events.on(HookEvents.AuditCheck, async (data) => {
+                        const lines = await this.xrplAcc.getTrustLines(data.currency, data.issuer);
+                        if (lines && lines.length === 0) {
+                            console.log(`No trust lines found for ${data.currency}/${data.issuer}. Creating one...`);
+                            const ret = await this.xrplAcc.setTrustLine(data.currency, data.issuer, AUDIT_TRUSTLINE_LIMIT, false);
+                            if (!ret) {
+                                clearInterval(timeout);
+                                reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: `Creating trustline for ${data.currency}/${data.issuer} failed.` });
                             }
+                        }
+                        // Cash the check.
+                        const result = await this.xrplAcc.cashCheck(data.transaction).catch(errtx => {
+                            clearInterval(timeout);
+                            reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: TRANSACTION_FAILURE, transaction: errtx });
                         });
-                    }
-                    resolve(await getChecksAndProcess());
+                        if (result) {
+                            clearInterval(timeout);
+                            resolve({
+                                address: data.issuer,
+                                currency: data.currency,
+                                amount: data.value,
+                                cashTxHash: result.id
+                            });
+                        }
+                    });
                 } else {
+                    clearInterval(timeout);
                     reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: TRANSACTION_FAILURE });
                 }
             } catch (error) {
+                if (timeout)
+                    clearInterval(timeout);
                 // Throw the same error object receiving from the above try block. It is already formatted with AUDIT_REQ_FAILED code.
                 reject(error);
             }
