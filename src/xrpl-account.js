@@ -1,5 +1,6 @@
 var crypto = require("crypto");
 const decodeAccountID = require('ripple-address-codec').decodeAccountID;
+const kp = require('ripple-keypairs');
 const { RippleAPIEvents } = require('./ripple-common');
 const { TransactionHelper } = require('./transaction-helper');
 const { EventEmitter } = require('./event-emitter');
@@ -20,7 +21,7 @@ export class XrplAccount {
         if (!this.secret)
             throw 'Cannot derive key pair: Account secret is empty.';
 
-        return this.rippleAPI.api.deriveKeypair(this.secret);
+        return kp.deriveKeypair(this.secret);
     }
 
     async getSequence() {
@@ -60,11 +61,11 @@ export class XrplAccount {
     }
 
     async getTrustLines(currency, issuer) {
-        const lines = await this.rippleAPI.api.getTrustlines(this.address, {
-            currency: currency,
-            counterparty: issuer
+        const lines = await this.rippleAPI.getTrustlines(this.address, {
+            limit: 399,
+            peer: issuer
         });
-        return lines;
+        return currency ? lines.filter(l => l.currency === currency) : lines;
     }
 
     async setMessageKey(publicKey, options = {}) {
@@ -175,12 +176,12 @@ export class XrplAccount {
         return result;
     }
 
-    subscribe() {
+    async subscribe() {
         // Subscribe only once. Otherwise event handlers will be duplicated.
         if (this.subscribed)
             return;
 
-        this.rippleAPI.api.connection.on("transaction", (data) => {
+        this.rippleAPI.client.on("transaction", (data) => {
             const eventName = data.transaction.TransactionType.toLowerCase();
             // Emit the event only for successful transactions, Otherwise emit error.
             if (data.engine_result === "tesSUCCESS") {
@@ -194,21 +195,8 @@ export class XrplAccount {
             }
         });
 
-        const request = {
-            command: 'subscribe',
-            accounts: [this.address]
-        }
-        const message = `Subscribed to transactions on ${this.address}`;
-
-        // Subscribe to transactions when api is reconnected.
-        // Because API will be automatically reconnected if it's disconnected.
-        this.rippleAPI.events.on(RippleAPIEvents.RECONNECTED, (e) => {
-            this.rippleAPI.api.connection.request(request);
-            console.log(message);
-        });
-
-        this.rippleAPI.api.connection.request(request);
-        console.log(message);
+        await this.rippleAPI.subscribeToAddresses([this.address]);
+        console.log(`Subscribed to transactions on ${this.address}`);
 
         this.subscribed = true;
     }

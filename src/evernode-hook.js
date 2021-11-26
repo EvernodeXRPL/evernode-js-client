@@ -39,7 +39,7 @@ export class EvernodeHook {
 
     async getHookStates() {
         // We use a large limit since there's no way to just get the HookState objects.
-        let states = await this.account.getAccountObjects({ limit: 99999 });
+        let states = await this.account.getAccountObjects({ limit: 399 });
         states = states.filter(s => s.LedgerEntryType === 'HookState');
         states = states.map(s => {
             return {
@@ -110,8 +110,8 @@ export class EvernodeHook {
         return m;
     }
 
-    subscribe() {
-        this.account.subscribe();
+    async subscribe() {
+        await this.account.subscribe();
     }
 
     #getStateData(states, key) {

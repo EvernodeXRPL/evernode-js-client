@@ -89,7 +89,7 @@ export class EvernodeClient {
                 }
             })
 
-            this.evernodeHook.subscribe();
+            await this.evernodeHook.subscribe();
         });
     }
 
@@ -124,7 +124,7 @@ export class EvernodeClient {
                 }
             })
 
-            this.evernodeHook.subscribe();
+            await this.evernodeHook.subscribe();
         });
     }
 
@@ -230,7 +230,7 @@ export class EvernodeClient {
                         }
                     }, 2000);
                     console.log('Waiting for check...');
-                    this.evernodeHook.subscribe();
+                    await this.evernodeHook.subscribe();
                     this.evernodeHook.events.on(HookEvents.AuditCheck, async (data) => {
                         const lines = await this.xrplAcc.getTrustLines(data.currency, data.issuer);
                         if (lines && lines.length === 0) {

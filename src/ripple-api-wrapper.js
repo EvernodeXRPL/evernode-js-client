@@ -1,46 +1,30 @@
-const { RippleAPI } = require('ripple-lib');
+const xrpl = require('xrpl');
+const kp = require('ripple-keypairs');
 const { EventEmitter } = require('./event-emitter');
 const { RippleAPIEvents, RippleConstants } = require('./ripple-common');
 
-const CONNECTION_RETRY_THREASHOLD = 60;
-const CONNECTION_RETRY_INTERVAL = 1000;
-
 export class RippleAPIWrapper {
-    constructor(rippledServer = null, options = { autoReconnect: true }) {
+    constructor(rippledServer = null) {
 
-        this.connectionRetryCount = 0;
         this.connected = false;
         this.rippledServer = rippledServer || RippleConstants.DEFAULT_RIPPLED_SERVER;
         this.events = new EventEmitter();
         this.options = options;
 
-        this.api = new RippleAPI({ server: this.rippledServer });
-        this.api.on('error', (errorCode, errorMessage) => {
+        this.client = new xrpl.Client(this.rippledServer);
+
+        this.client.on('error', (errorCode, errorMessage) => {
             console.log(errorCode + ': ' + errorMessage);
         });
-        this.api.on('connected', () => {
-            console.log(`Connected to ${this.rippledServer}`);
-            this.connectionRetryCount = 0;
-            this.connected = true;
-        });
-        this.api.on('disconnected', async (code) => {
+        this.client.on('disconnected', async (code) => {
             if (!this.connected)
                 return;
 
             this.connected = false;
             console.log(`Disconnected from ${this.rippledServer} code:`, code);
-
-            if (options.autoReconnect) {
-                try {
-                    console.log(`Reconnecting to ${this.rippledServer}`);
-                    await this.connect();
-                    this.events.emit(RippleAPIEvents.RECONNECTED, `Reconnected to ${this.rippledServer}`);
-                }
-                catch (e) { console.error(e); };
-            }
         });
-        this.api.on('ledger', (ledger) => {
-            this.ledgerVersion = ledger.ledgerVersion;
+        this.client.on('ledgerClosed', (ledger) => {
+            this.ledgerVersion = ledger.ledger_index;
             this.events.emit(RippleAPIEvents.LEDGER, ledger);
         });
     }
@@ -49,61 +33,60 @@ export class RippleAPIWrapper {
         if (this.connected)
             return;
 
-        let retryInterval = CONNECTION_RETRY_INTERVAL;
-        this.tryConnecting = true;
-        // If failed, Keep retrying and increasing the retry timeout.
-        while (this.tryConnecting) {
-            try {
-                this.connectionRetryCount++;
-                await this.api.connect();
-                this.ledgerVersion = await this.api.getLedgerVersion();
-                return;
-            }
-            catch (e) {
-                console.log(`Couldn't connect ${this.rippledServer} : `, e);
-                if (!this.options.autoReconnect)
-                    break;
+        try {
+            await this.client.connect();
+            console.log(`Connected to ${this.rippledServer}`);
+            this.connected = true;
 
-                // If threashold reaches, increase the retry interval.
-                if (this.connectionRetryCount % CONNECTION_RETRY_THREASHOLD === 0)
-                    retryInterval += CONNECTION_RETRY_INTERVAL;
-                // Wait before retry.
-                await new Promise(resolve => setTimeout(resolve, retryInterval));
-            }
+            this.ledgerVersion = await this.client.getLedgerIndex();
+        }
+        catch (e) {
+            console.log(`Couldn't connect ${this.rippledServer} : `, e);
         }
     }
 
     async disconnect() {
         const wasConnected = this.connected;
-        this.tryConnecting = false;
         this.connected = false;
-        await this.api.disconnect().catch(console.error);
+        await this.client.disconnect().catch(console.error);
         if (wasConnected)
             console.log(`Disconnected from ${this.rippledServer}`);
     }
 
-    async getAccountInfo(address) {
-        return (await this.api.request('account_info', { account: address }));
-    }
-
     async isValidKeyForAddress(publicKey, address) {
         const info = await this.getAccountInfo(address);
-        const accountFlags = this.api.parseAccountFlags(info.account_data.Flags);
+        const accountFlags = xrpl.parseAccountRootFlags(info.account_data.Flags);
         const regularKey = info.account_data.RegularKey;
-        const derivedPubKeyAddress = this.api.deriveAddress(publicKey);
+        const derivedPubKeyAddress = kp.deriveAddress(publicKey);
 
         // If the master key is disabled the derived pubkey address should be the regular key.
         // Otherwise it could be account address or the regular key
-        if (accountFlags.disableMasterKey)
+        if (accountFlags.lsfDisableMaster)
             return regularKey && (derivedPubKeyAddress === regularKey);
         else
             return derivedPubKeyAddress === address || (regularKey && derivedPubKeyAddress === regularKey);
     }
 
+    async getAccountInfo(address) {
+        const resp = (await this.client.request({ command: 'account_info', account: address }));
+        return resp?.result;
+    }
+
     async getAccountObjects(address, options) {
-        const res = await this.api.getAccountObjects(address, options);
-        if (res.account_objects)
+        const resp = (await this.client.request({ command: 'account_objects', account: address, ...options }));
+        if (resp?.result?.account_objects)
             return res.account_objects;
         return [];
+    }
+
+    async getTrustlines(address, options) {
+        const resp = (await this.client.request({ command: 'account_lines', account: address, ...options }));
+        if (resp?.result?.lines)
+            return res.lines;
+        return [];
+    }
+
+    async subscribeToAddresses(addresses) {
+        await this.client.request({ command: 'subscribe', accounts: addresses });
     }
 }
