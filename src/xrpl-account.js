@@ -177,22 +177,9 @@ export class XrplAccount {
         if (this.subscribed)
             return;
 
-        this.rippleAPI.client.on("transaction", (data) => {
-            const eventName = data.transaction.TransactionType.toLowerCase();
-            // Emit the event only for successful transactions, Otherwise emit error.
-            if (data.engine_result === "tesSUCCESS") {
-                // Convert memo fields to ASCII before emitting the event.
-                if (data.transaction.Memos)
-                    data.transaction.Memos = data.transaction.Memos.filter(m => m.Memo).map(m => TransactionHelper.deserializeMemo(m.Memo));
-                this.events.emit(eventName, data.transaction);
-            }
-            else {
-                this.events.emit(eventName, null, data.engine_result_message);
-            }
+        await this.rippleAPI.subscribeToAddress(this.address, (eventName, tx, error) => {
+            this.events.emit(eventName, tx, error);
         });
-
-        await this.rippleAPI.subscribeToAddresses([this.address]);
-        console.log(`Subscribed to transactions on ${this.address}`);
 
         this.subscribed = true;
     }
@@ -214,10 +201,12 @@ export class XrplAccount {
         }
         Object.assign(tx, txOptions);
 
-        const resp = await this.rippleAPI.client.submitAndWait(tx, { wallet: this.wallet });
-        return {
+        const resp = await this.rippleAPI.submitAndVerify(tx, { wallet: this.wallet });
+        const result = {
             id: resp.result.hash,
             submission: resp.result,
         }
+        console.log(result);
+        return result;
     }
 }
