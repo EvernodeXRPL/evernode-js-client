@@ -221,9 +221,9 @@ export class EvernodeClient {
                     [{ type: MemoTypes.AUDIT_REQ, format: MemoFormats.BINARY, data: '' }],
                     options.transactionOptions);
                 if (res) {
-                    const startingLedger = this.rippleAPI.ledgerVersion;
+                    const startingLedger = this.rippleAPI.ledgerIndex;
                     timeout = setInterval(() => {
-                        if (this.rippleAPI.ledgerVersion - startingLedger >= this.evernodeHookConf.momentSize) {
+                        if (this.rippleAPI.ledgerIndex - startingLedger >= this.evernodeHookConf.momentSize) {
                             clearInterval(timeout);
                             console.log('Audit request timeout');
                             reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: `No checks found within moment(${this.evernodeHookConf.momentSize}) window.` });

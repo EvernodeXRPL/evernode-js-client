@@ -101,11 +101,11 @@ export class EvernodeHook {
         return hosts;
     }
 
-    async getMoment(ledgerVersion = null) {
+    async getMoment(ledgerIndex = null) {
         if (!this.#cachedConfig)
             await this.getConfig();
 
-        const lv = ledgerVersion || this.account.rippleAPI.ledgerVersion;
+        const lv = ledgerIndex || this.account.rippleAPI.ledgerIndex;
         const m = Math.floor((lv - this.#cachedConfig.momentBaseIdx) / this.#cachedConfig.momentSize);
         return m;
     }

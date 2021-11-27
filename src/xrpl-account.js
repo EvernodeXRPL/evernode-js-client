@@ -200,7 +200,7 @@ export class XrplAccount {
 
             // Attach tx options to the transaction.
             const txOptions = {
-                LastLedgerSequence: options.maxLedgerVersion || (this.rippleAPI.ledgerVersion + RippleConstants.MAX_LEDGER_OFFSET),
+                LastLedgerSequence: options.maxLedgerIndex || (this.rippleAPI.ledgerIndex + RippleConstants.MAX_LEDGER_OFFSET),
                 Sequence: options.sequence || await this.getNextSequence()
             }
             Object.assign(tx, txOptions);

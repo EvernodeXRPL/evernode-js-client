@@ -26,7 +26,7 @@ export class RippleAPIWrapper {
             console.log(`Disconnected from ${this.rippledServer} code:`, code);
         });
         this.#client.on('ledgerClosed', (ledger) => {
-            this.ledgerVersion = ledger.ledger_index;
+            this.ledgerIndex = ledger.ledger_index;
             this.events.emit(RippleAPIEvents.LEDGER, ledger);
         });
     }
@@ -40,7 +40,7 @@ export class RippleAPIWrapper {
             console.log(`Connected to ${this.rippledServer}`);
             this.connected = true;
 
-            this.ledgerVersion = await this.#client.getLedgerIndex();
+            this.ledgerIndex = await this.#client.getLedgerIndex();
         }
         catch (e) {
             console.log(`Couldn't connect ${this.rippledServer} : `, e);
