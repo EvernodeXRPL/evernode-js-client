@@ -82,7 +82,7 @@ export class RippleAPIWrapper {
     }
 
     async getTrustlines(address, options) {
-        const resp = (await this.#client.request({ command: 'account_lines', account: address, ...options }));
+        const resp = (await this.#client.request({ command: 'account_lines', account: address, ledger_index: "validated", ...options }));
         if (resp?.result?.lines)
             return resp.result.lines;
         return [];
@@ -110,6 +110,6 @@ export class RippleAPIWrapper {
     }
 
     async submitAndVerify(tx, options) {
-        await this.#client.submitAndWait(tx, options);
+        return await this.#client.submitAndWait(tx, options);
     }
 }

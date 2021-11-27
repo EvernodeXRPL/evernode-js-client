@@ -16,9 +16,8 @@ export class XrplAccount {
         this.sequenceCachedOn = null;
 
         this.secret = secret;
-        if (this.secret) {
+        if (this.secret)
             this.wallet = xrpl.Wallet.fromSeed(this.secret);
-        }
     }
 
     deriveKeypair() {
@@ -184,29 +183,47 @@ export class XrplAccount {
         this.subscribed = true;
     }
 
-    async #submitAndVerifyTransaction(tx, options) {
+    #submitAndVerifyTransaction(tx, options) {
+
+        if (!this.wallet)
+            throw "no_secret";
 
         // Returned format.
         // {
         //     id: txHash, (if signing success)
-        //     submission: submission details, (if signing success)
-        //     ...other tx data... (on successful verification only)
-        //     error: signing error or submission error or ledger error
+        //     code: final transaction result code.
+        //     cdetails: submission and transaction details, (if signing success)
+        //     error: Any error that prevents submission.
         // }
 
-        // Attach tx options to the transaction.
-        const txOptions = {
-            LastLedgerSequence: options.maxLedgerVersion || (this.rippleAPI.ledgerVersion + RippleConstants.MAX_LEDGER_OFFSET),
-            Sequence: options.sequence || await this.getNextSequence()
-        }
-        Object.assign(tx, txOptions);
+        return new Promise(async (resolve, reject) => {
 
-        const resp = await this.rippleAPI.submitAndVerify(tx, { wallet: this.wallet });
-        const result = {
-            id: resp.result.hash,
-            submission: resp.result,
-        }
-        console.log(result);
-        return result;
+            // Attach tx options to the transaction.
+            const txOptions = {
+                LastLedgerSequence: options.maxLedgerVersion || (this.rippleAPI.ledgerVersion + RippleConstants.MAX_LEDGER_OFFSET),
+                Sequence: options.sequence || await this.getNextSequence()
+            }
+            Object.assign(tx, txOptions);
+
+            try {
+                const submission = await this.rippleAPI.submitAndVerify(tx, { wallet: this.wallet });
+                const r = submission?.result;
+                const txResult = {
+                    id: r?.hash,
+                    code: r?.meta?.TransactionResult,
+                    details: r
+                };
+
+                if (r?.meta?.TransactionResult === "tesSUCCESS")
+                    resolve(txResult);
+                else
+                    reject(txResult);
+            }
+            catch (err) {
+                console.log("Error submitting transaction:", err);
+                reject({ error: err });
+            }
+
+        });
     }
 }
