@@ -5,24 +5,27 @@ const { TransactionHelper } = require('./transaction-helper');
 const { RippleAPIEvents, RippleConstants } = require('./ripple-common');
 
 export class RippleAPIWrapper {
+
+    #client;
+
     constructor(rippledServer = null, options = {}) {
 
         this.connected = false;
         this.rippledServer = rippledServer || RippleConstants.DEFAULT_RIPPLED_SERVER;
         this.events = new EventEmitter();
 
-        this.client = options.xrplClient || new xrpl.Client(this.rippledServer);
-        this.client.on('error', (errorCode, errorMessage) => {
+        this.#client = options.xrplClient || new xrpl.Client(this.rippledServer);
+        this.#client.on('error', (errorCode, errorMessage) => {
             console.log(errorCode + ': ' + errorMessage);
         });
-        this.client.on('disconnected', async (code) => {
+        this.#client.on('disconnected', async (code) => {
             if (!this.connected)
                 return;
 
             this.connected = false;
             console.log(`Disconnected from ${this.rippledServer} code:`, code);
         });
-        this.client.on('ledgerClosed', (ledger) => {
+        this.#client.on('ledgerClosed', (ledger) => {
             this.ledgerVersion = ledger.ledger_index;
             this.events.emit(RippleAPIEvents.LEDGER, ledger);
         });
@@ -33,11 +36,11 @@ export class RippleAPIWrapper {
             return;
 
         try {
-            await this.client.connect();
+            await this.#client.connect();
             console.log(`Connected to ${this.rippledServer}`);
             this.connected = true;
 
-            this.ledgerVersion = await this.client.getLedgerIndex();
+            this.ledgerVersion = await this.#client.getLedgerIndex();
         }
         catch (e) {
             console.log(`Couldn't connect ${this.rippledServer} : `, e);
@@ -47,7 +50,7 @@ export class RippleAPIWrapper {
     async disconnect() {
         const wasConnected = this.connected;
         this.connected = false;
-        await this.client.disconnect().catch(console.error);
+        await this.#client.disconnect().catch(console.error);
         if (wasConnected)
             console.log(`Disconnected from ${this.rippledServer}`);
     }
@@ -67,19 +70,19 @@ export class RippleAPIWrapper {
     }
 
     async getAccountInfo(address) {
-        const resp = (await this.client.request({ command: 'account_info', account: address }));
+        const resp = (await this.#client.request({ command: 'account_info', account: address }));
         return resp?.result;
     }
 
     async getAccountObjects(address, options) {
-        const resp = (await this.client.request({ command: 'account_objects', account: address, ...options }));
+        const resp = (await this.#client.request({ command: 'account_objects', account: address, ...options }));
         if (resp?.result?.account_objects)
             return resp.result.account_objects;
         return [];
     }
 
     async getTrustlines(address, options) {
-        const resp = (await this.client.request({ command: 'account_lines', account: address, ...options }));
+        const resp = (await this.#client.request({ command: 'account_lines', account: address, ...options }));
         if (resp?.result?.lines)
             return resp.result.lines;
         return [];
@@ -88,7 +91,7 @@ export class RippleAPIWrapper {
     async subscribeToAddress(address, handler) {
 
         // Register the event handler.
-        this.client.on("transaction", (data) => {
+        this.#client.on("transaction", (data) => {
             const eventName = data.transaction.TransactionType.toLowerCase();
             // Emit the event only for successful transactions, Otherwise emit error.
             if (data.engine_result === "tesSUCCESS") {
@@ -102,11 +105,11 @@ export class RippleAPIWrapper {
             }
         });
 
-        await this.client.request({ command: 'subscribe', accounts: [address] });
+        await this.#client.request({ command: 'subscribe', accounts: [address] });
         console.log(`Subscribed to transactions on ${address}`);
     }
 
     async submitAndVerify(tx, options) {
-        await this.client.submitAndWait(tx, options);
+        await this.#client.submitAndWait(tx, options);
     }
 }

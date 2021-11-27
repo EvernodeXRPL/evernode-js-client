@@ -1,6 +1,6 @@
 const xrpl = require('xrpl');
 const kp = require('ripple-keypairs');
-const decodeAccountID = require('ripple-address-codec').decodeAccountID;
+const codec = require('ripple-address-codec');
 const crypto = require("crypto");
 const { RippleConstants } = require('./ripple-common');
 const { TransactionHelper } = require('./transaction-helper');
@@ -152,7 +152,7 @@ export class XrplAccount {
     async cashCheck(check, options = {}) {
         const checkIDhasher = crypto.createHash('sha512')
         checkIDhasher.update(Buffer.from('0043', 'hex'))
-        checkIDhasher.update(Buffer.from(decodeAccountID(check.Account)))
+        checkIDhasher.update(Buffer.from(codec.decodeAccountID(check.Account)))
         const seqBuf = Buffer.alloc(4)
         seqBuf.writeUInt32BE(check.Sequence, 0)
         checkIDhasher.update(seqBuf)
