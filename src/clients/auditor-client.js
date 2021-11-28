@@ -1,12 +1,16 @@
-const { RippleConstants } = require('./ripple-common');
+const { RippleConstants } = require('../ripple-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { AuditorEvents, MemoFormats, MemoTypes } = require('./evernode-common');
-const { EventEmitter } = require('./event-emitter');
+const { EvernodeEvents, MemoFormats, MemoTypes } = require('../evernode-common');
+const { EventEmitter } = require('../event-emitter');
 
 const AUDIT_TRUSTLINE_LIMIT = '999999999';
 const TRANSACTION_FAILURE = 'TRANSACTION_FAILURE';
 
-export class EvernodeAuditor extends BaseEvernodeClient {
+export const AuditorEvents = {
+    AuditCheck: EvernodeEvents.AuditCheck
+}
+
+export class AuditorClient extends BaseEvernodeClient {
 
     #respWatcher = new EventEmitter();
 

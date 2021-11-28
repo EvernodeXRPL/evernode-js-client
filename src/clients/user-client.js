@@ -1,13 +1,19 @@
-const { RippleConstants } = require('./ripple-common');
+const { RippleConstants } = require('../ripple-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { UserEvents, MemoFormats, MemoTypes } = require('./evernode-common');
-const { EventEmitter } = require('./event-emitter');
-const { EncryptionHelper } = require('./encryption-helper');
+const { EvernodeEvents, MemoFormats, MemoTypes } = require('../evernode-common');
+const { EventEmitter } = require('../event-emitter');
+const { EncryptionHelper } = require('../encryption-helper');
 
 const REDEEM_WATCH_PREFIX = 'redeem_';
 const REFUND_WATCH_PREFIX = 'refund_';
 
-export class EvernodeUser extends BaseEvernodeClient {
+export const UserEvents = {
+    RedeemSuccess: EvernodeEvents.RedeemSuccess,
+    RedeemError: EvernodeEvents.RedeemError,
+    RefundResp: EvernodeEvents.RefundResp
+}
+
+export class UserClient extends BaseEvernodeClient {
 
     #respWatcher = new EventEmitter();
 

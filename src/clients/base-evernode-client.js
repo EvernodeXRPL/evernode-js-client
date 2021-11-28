@@ -1,9 +1,11 @@
-const { RippleAPIWrapper } = require('./ripple-api-wrapper');
-const { XrplAccount } = require('./xrpl-account');
-const { EvernodeEvents, HookStateKeys, HookStateDefaults } = require('./evernode-common');
-const { DefaultValues } = require('./defaults');
-const { EncryptionHelper } = require('./encryption-helper');
-const { EventEmitter } = require('./event-emitter');
+const { RippleAPIWrapper } = require('../ripple-api-wrapper');
+const { XrplAccount } = require('../xrpl-account');
+const { RippleAPIEvents } = require('../ripple-common');
+const { EvernodeEvents, HookStateKeys, HookStateDefaults } = require('../evernode-common');
+const { DefaultValues } = require('../defaults');
+const { EncryptionHelper } = require('../encryption-helper');
+const { EventEmitter } = require('../event-emitter');
+const { XflHelpers } = require('../xfl-helpers');
 
 export class BaseEvernodeClient {
 

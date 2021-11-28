@@ -1,11 +1,24 @@
-const { HookStateKeys, HookEvents } = require('./evernode-common');
+const { EvernodeEvents, HookStateKeys } = require('../evernode-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
+const { DefaultValues } = require('../defaults');
 const rippleCodec = require('ripple-address-codec');
 
-export class EvernodeHook extends BaseEvernodeClient {
+export const HookEvents = {
+    HostRegistered: EvernodeEvents.HostRegistered,
+    HostDeregistered: EvernodeEvents.HostDeregistered,
+    Redeem: EvernodeEvents.Redeem,
+    RedeemSuccess: EvernodeEvents.RedeemSuccess,
+    RedeemError: EvernodeEvents.RedeemError,
+    RefundRequest: EvernodeEvents.RefundRequest,
+    RefundResp: EvernodeEvents.RefundResp,
+    AuditRequest: EvernodeEvents.AuditRequest,
+    AuditSuccess: EvernodeEvents.AuditSuccess
+}
 
-    constructor(xrpAddress, xrpSecret, options = {}) {
-        super(xrpAddress, xrpSecret, Object.keys(HookEvents), options);
+export class HookClient extends BaseEvernodeClient {
+
+    constructor(options = {}) {
+        super((options.hookAddress || DefaultValues.hookAddress), null, Object.keys(HookEvents), options);
     }
 
     async getHosts() {
