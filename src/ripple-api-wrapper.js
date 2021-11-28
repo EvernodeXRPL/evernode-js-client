@@ -92,14 +92,16 @@ export class RippleAPIWrapper {
 
         // Register the event handler.
         this.#client.on("transaction", (data) => {
-            const eventName = data.transaction.TransactionType.toLowerCase();
-            // Emit the event only for successful transactions, Otherwise emit error.
-            if (data.engine_result === "tesSUCCESS") {
-                data.transaction.Memos = TransactionHelper.deserializeMemos(data.transaction.Memos);
-                handler(eventName, data.transaction);
-            }
-            else {
-                handler(eventName, null, data.engine_result_message);
+            if (data.validated && data.transaction.Destination === address) { // Only incoming transactions.
+                const eventName = data.transaction.TransactionType.toLowerCase();
+                // Emit the event only for successful transactions, Otherwise emit error.
+                if (data.engine_result === "tesSUCCESS") {
+                    data.transaction.Memos = TransactionHelper.deserializeMemos(data.transaction.Memos);
+                    handler(eventName, data.transaction);
+                }
+                else {
+                    handler(eventName, null, data.engine_result_message);
+                }
             }
         });
 
