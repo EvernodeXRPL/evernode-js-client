@@ -1,6 +1,6 @@
 {
     "name": "evernode-js-sample-app",
     "dependencies": {
-        "evernode-js-client": "0.2.11"
+        "evernode-js-client": "0.2.14"
     }
 }
