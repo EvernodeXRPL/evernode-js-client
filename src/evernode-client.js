@@ -89,7 +89,7 @@ export class EvernodeClient {
                 }
             })
 
-            this.evernodeHook.subscribe();
+            await this.evernodeHook.subscribe();
         });
     }
 
@@ -124,7 +124,7 @@ export class EvernodeClient {
                 }
             })
 
-            this.evernodeHook.subscribe();
+            await this.evernodeHook.subscribe();
         });
     }
 
@@ -221,16 +221,16 @@ export class EvernodeClient {
                     [{ type: MemoTypes.AUDIT_REQ, format: MemoFormats.BINARY, data: '' }],
                     options.transactionOptions);
                 if (res) {
-                    const startingLedger = this.rippleAPI.ledgerVersion;
+                    const startingLedger = this.rippleAPI.ledgerIndex;
                     timeout = setInterval(() => {
-                        if (this.rippleAPI.ledgerVersion - startingLedger >= this.evernodeHookConf.momentSize) {
+                        if (this.rippleAPI.ledgerIndex - startingLedger >= this.evernodeHookConf.momentSize) {
                             clearInterval(timeout);
                             console.log('Audit request timeout');
                             reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: `No checks found within moment(${this.evernodeHookConf.momentSize}) window.` });
                         }
                     }, 2000);
                     console.log('Waiting for check...');
-                    this.evernodeHook.subscribe();
+                    await this.evernodeHook.subscribe();
                     this.evernodeHook.events.on(HookEvents.AuditCheck, async (data) => {
                         const lines = await this.xrplAcc.getTrustLines(data.currency, data.issuer);
                         if (lines && lines.length === 0) {

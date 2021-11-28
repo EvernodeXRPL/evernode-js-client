@@ -1,5 +1,4 @@
 export const RippleAPIEvents = {
-    RECONNECTED: 'reconnected',
     LEDGER: 'ledger',
     PAYMENT: 'payment',
     CHECK_CREATE: 'checkcreate'

@@ -13,24 +13,24 @@ export class EvernodeHook {
         this.account = new XrplAccount(rippleAPI, (hookAddress || EvernodeConstants.DEFAULT_HOOK_ADDR));
         this.events = new EventEmitter();
 
-        this.account.events.on(RippleAPIEvents.PAYMENT, (data, error) => {
+        this.account.events.on(RippleAPIEvents.PAYMENT, (tx, error) => {
             if (error)
                 console.error(error);
-            else if (!data)
+            else if (!tx)
                 console.log('Invalid transaction.');
             else {
-                const ev = extractEvernodeHookEvent(data);
+                const ev = extractEvernodeHookEvent(tx);
                 if (ev)
                     this.events.emit(ev.name, ev.data);
             }
         });
-        this.account.events.on(RippleAPIEvents.CHECK_CREATE, (data, error) => {
+        this.account.events.on(RippleAPIEvents.CHECK_CREATE, (tx, error) => {
             if (error)
                 console.error(error);
-            else if (!data)
+            else if (!tx)
                 console.log('Invalid transaction.');
             else {
-                const ev = extractEvernodeHookEvent(data);
+                const ev = extractEvernodeHookEvent(tx);
                 if (ev)
                     this.events.emit(ev.name, ev.data);
             }
@@ -39,7 +39,7 @@ export class EvernodeHook {
 
     async getHookStates() {
         // We use a large limit since there's no way to just get the HookState objects.
-        let states = await this.account.getAccountObjects({ limit: 99999 });
+        let states = await this.account.getAccountObjects({ limit: 399 });
         states = states.filter(s => s.LedgerEntryType === 'HookState');
         states = states.map(s => {
             return {
@@ -101,17 +101,17 @@ export class EvernodeHook {
         return hosts;
     }
 
-    async getMoment(ledgerVersion = null) {
+    async getMoment(ledgerIndex = null) {
         if (!this.#cachedConfig)
             await this.getConfig();
 
-        const lv = ledgerVersion || this.account.rippleAPI.ledgerVersion;
+        const lv = ledgerIndex || this.account.rippleAPI.ledgerIndex;
         const m = Math.floor((lv - this.#cachedConfig.momentBaseIdx) / this.#cachedConfig.momentSize);
         return m;
     }
 
-    subscribe() {
-        this.account.subscribe();
+    async subscribe() {
+        await this.account.subscribe();
     }
 
     #getStateData(states, key) {

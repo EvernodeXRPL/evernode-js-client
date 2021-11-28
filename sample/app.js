@@ -1,5 +1,5 @@
 // const { EvernodeClient } = require("evernode-js-client"); // Published npm package.
-const { EvernodeClient, XrplAccount } = require("../dist"); // Local dist dir.
+const { EvernodeClient, XrplAccount, RippleConstants } = require("../dist"); // Local dist dir.
 
 async function app() {
     const client = new EvernodeClient("rfNQEMZwRt8wQnGr3ktuwWKRSXzk8oAFbm", "spyzh41Huy8imGCn1jqYcEPaCA16j");
@@ -7,8 +7,10 @@ async function app() {
     try {
         await client.connect();
         console.log("Connected.");
-        // var acc = new XrplAccount(client.rippleAPI, "rfNQEMZwRt8wQnGr3ktuwWKRSXzk8oAFbm");
-        // console.log(await acc.getTrustLines());
+        
+        const acc = new XrplAccount(client.rippleAPI, "rKiqVckRS7Co3V7pKba19cHfjQXE6wN2P7", "sasjPy2PsmPCKYrAkCo7CZyu2N3WL");
+        console.log(await acc.getTrustLines());
+        console.log(await acc.makePayment("rfNQEMZwRt8wQnGr3ktuwWKRSXzk8oAFbm", "25", RippleConstants.XRP));
 
         // const ret = await client.redeem('HTK', 'rwUBBXWy7asVC3cZq6pUbKpeKjq3Kk9Exx', 12, {
         //     owner_pubkey: 'ed5cb83404120ac759609819591ef839b7d222c84f1f08b3012f490586159d2b50',
@@ -22,7 +24,7 @@ async function app() {
         // console.log(ret);
         
     } catch (e) {
-        console.error(e);
+        console.error("Error occured:", e);
     } finally {
         await client.disconnect();
         console.log("Disconnected.");
