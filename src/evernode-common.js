@@ -51,7 +51,7 @@ export const HookStateKeys = {
     HOST_ADDR: "45565203"
 }
 
-export const HookEvents = {
+export const EvernodeEvents = {
     HostRegistered: "hostRegistered",
     HostDeregistered: "hostDeregistered",
     Redeem: "redeem",
@@ -63,4 +63,31 @@ export const HookEvents = {
     AuditCheck: "auditCheck",
     AuditSuccess: "auditSuccess",
     Reward: "reward",
+}
+
+export const HookEvents = {
+    HostRegistered: EvernodeEvents.HostRegistered,
+    HostDeregistered: EvernodeEvents.HostDeregistered,
+    Redeem: EvernodeEvents.Redeem,
+    RedeemSuccess: EvernodeEvents.RedeemSuccess,
+    RedeemError: EvernodeEvents.RedeemError,
+    RefundRequest: EvernodeEvents.RefundRequest,
+    RefundResp: EvernodeEvents.RefundResp,
+    AuditRequest: EvernodeEvents.AuditRequest,
+    AuditSuccess: EvernodeEvents.AuditSuccess
+}
+
+export const HostEvents = {
+    Redeem: EvernodeEvents.Redeem,
+    Reward: EvernodeEvents.Reward
+}
+
+export const UserEvents = {
+    RedeemSuccess: EvernodeEvents.RedeemSuccess,
+    RedeemError: EvernodeEvents.RedeemError,
+    RefundResp: EvernodeEvents.RefundResp
+}
+
+export const AuditorEvents = {
+    AuditCheck: EvernodeEvents.AuditCheck
 }

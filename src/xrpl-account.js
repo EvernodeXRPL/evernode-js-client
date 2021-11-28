@@ -20,6 +20,18 @@ export class XrplAccount {
             this.wallet = xrpl.Wallet.fromSeed(this.secret);
     }
 
+    on(event, handler) {
+        this.events.on(event, handler);
+    }
+
+    once(event, handler) {
+        this.events.once(event, handler);
+    }
+
+    off(event, handler = null) {
+        this.events.off(event, handler);
+    }
+
     deriveKeypair() {
         if (!this.secret)
             throw 'Cannot derive key pair: Account secret is empty.';
@@ -69,6 +81,25 @@ export class XrplAccount {
             peer: issuer
         });
         return currency ? lines.filter(l => l.currency === currency) : lines;
+    }
+
+    async getChecks(fromAccount) {
+        return await this.rippleAPI.getAccountObjects(fromAccount, { type: "check" });
+    }
+
+    async getAccountObjects(options) {
+        return await this.rippleAPI.getAccountObjects(this.address, options);
+    }
+
+    async getHookStates(options = { limit: 399 }) {
+        // We use a large limit since there's no way to just get the HookState objects.
+        const states = await this.getAccountObjects(options);
+        return states.filter(s => s.LedgerEntryType === 'HookState').map(s => {
+            return {
+                key: s.HookStateKey, //hex
+                data: s.HookStateData //hex
+            }
+        });
     }
 
     async setMessageKey(publicKey, options = {}) {
@@ -138,14 +169,6 @@ export class XrplAccount {
             Memos: TransactionHelper.formatMemos(memos)
         }, options);
         return result;
-    }
-
-    async getChecks(fromAccount) {
-        return await this.rippleAPI.getAccountObjects(fromAccount, { type: "check" });
-    }
-
-    async getAccountObjects(options) {
-        return await this.rippleAPI.getAccountObjects(this.address, options);
     }
 
     async cashCheck(check, options = {}) {
