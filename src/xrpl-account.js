@@ -192,7 +192,7 @@ export class XrplAccount {
         // {
         //     id: txHash, (if signing success)
         //     code: final transaction result code.
-        //     cdetails: submission and transaction details, (if signing success)
+        //     details: submission and transaction details, (if signing success)
         //     error: Any error that prevents submission.
         // }
 
@@ -214,7 +214,8 @@ export class XrplAccount {
                     details: r
                 };
 
-                if (r?.meta?.TransactionResult === "tesSUCCESS")
+                console.log("Transaction result: " + txResult.code);
+                if (txResult.code === "tesSUCCESS")
                     resolve(txResult);
                 else
                     reject(txResult);

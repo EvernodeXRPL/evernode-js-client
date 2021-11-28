@@ -95,9 +95,7 @@ export class RippleAPIWrapper {
             const eventName = data.transaction.TransactionType.toLowerCase();
             // Emit the event only for successful transactions, Otherwise emit error.
             if (data.engine_result === "tesSUCCESS") {
-                // Convert memo fields to ASCII before emitting the event.
-                if (data.transaction.Memos)
-                    data.transaction.Memos = data.transaction.Memos.filter(m => m.Memo).map(m => TransactionHelper.deserializeMemo(m.Memo));
+                data.transaction.Memos = TransactionHelper.deserializeMemos(data.transaction.Memos);
                 handler(eventName, data.transaction);
             }
             else {

@@ -13,24 +13,24 @@ export class EvernodeHook {
         this.account = new XrplAccount(rippleAPI, (hookAddress || EvernodeConstants.DEFAULT_HOOK_ADDR));
         this.events = new EventEmitter();
 
-        this.account.events.on(RippleAPIEvents.PAYMENT, (data, error) => {
+        this.account.events.on(RippleAPIEvents.PAYMENT, (tx, error) => {
             if (error)
                 console.error(error);
-            else if (!data)
+            else if (!tx)
                 console.log('Invalid transaction.');
             else {
-                const ev = extractEvernodeHookEvent(data);
+                const ev = extractEvernodeHookEvent(tx);
                 if (ev)
                     this.events.emit(ev.name, ev.data);
             }
         });
-        this.account.events.on(RippleAPIEvents.CHECK_CREATE, (data, error) => {
+        this.account.events.on(RippleAPIEvents.CHECK_CREATE, (tx, error) => {
             if (error)
                 console.error(error);
-            else if (!data)
+            else if (!tx)
                 console.log('Invalid transaction.');
             else {
-                const ev = extractEvernodeHookEvent(data);
+                const ev = extractEvernodeHookEvent(tx);
                 if (ev)
                     this.events.emit(ev.name, ev.data);
             }
