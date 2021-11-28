@@ -1,5 +1,6 @@
 const { EvernodeConstants, MemoTypes, HookStateDefaults, HookStateKeys, HookEvents, MemoFormats } = require('./evernode-common')
 const { RippleAPIEvents } = require('./ripple-common');
+const { DefaultValues } = require('./defaults');
 const { XrplAccount } = require('./xrpl-account');
 const { EventEmitter } = require('./event-emitter');
 const { XflHelpers } = require('./xfl-helpers');
@@ -10,7 +11,7 @@ export class EvernodeHook {
     #cachedConfig = null;
 
     constructor(rippleAPI, hookAddress) {
-        this.account = new XrplAccount(rippleAPI, (hookAddress || EvernodeConstants.DEFAULT_HOOK_ADDR));
+        this.account = new XrplAccount(rippleAPI, (hookAddress || DefaultValues.hookAddress));
         this.events = new EventEmitter();
 
         this.account.events.on(RippleAPIEvents.PAYMENT, (tx, error) => {

@@ -3,6 +3,7 @@ const { RippleAPIWrapper } = require('./ripple-api-wrapper');
 const { XrplAccount } = require('./xrpl-account');
 const { EncryptionHelper } = require('./encryption-helper');
 const { EventEmitter } = require('./event-emitter');
+const { DefaultValues } = require('./defaults');
 const { EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes, HookEvents } = require('./evernode-common');
 const { EvernodeHook } = require('./evernode-hook');
 
@@ -17,7 +18,7 @@ export class EvernodeClient {
     constructor(xrpAddress, xrpSecret, options = {}) {
 
         this.connected = false;
-        this.hookAddress = options.hookAddress || EvernodeConstants.DEFAULT_HOOK_ADDR;
+        this.hookAddress = options.hookAddress || DefaultValues.hookAddress;
         this.rippleAPI = options.rippleAPI || new RippleAPIWrapper(options.rippledServer);
 
         this.xrpAddress = xrpAddress;

@@ -1,5 +1,4 @@
 export const EvernodeConstants = {
-    DEFAULT_HOOK_ADDR: 'r3q12vGjcvXXEvRvcDwczesmG2jR81tvsE',
     EVR: 'EVR'
 }
 
