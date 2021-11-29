@@ -1,5 +1,5 @@
 export const DefaultValues = {
-    hookAddress: 'r3q12vGjcvXXEvRvcDwczesmG2jR81tvsE',
+    hookAddress: 'rDPqJv7zu6DfeXexAYseABNM2hT2j2rpHv',
     rippledServer: 'wss://hooks-testnet.xrpl-labs.com'
 }
 

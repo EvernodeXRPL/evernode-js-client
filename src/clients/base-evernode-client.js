@@ -18,7 +18,7 @@ export class BaseEvernodeClient {
         this.hookAddress = options.hookAddress || DefaultValues.hookAddress;
         this.xrplApi = options.xrplApi || new XrplApi(options.rippledServer);
         this.xrplAcc = new XrplAccount(this.xrplApi, xrpAddress, xrpSecret);
-        this.accKeyPair = this.secret && this.xrplAcc.deriveKeypair();
+        this.accKeyPair = xrpSecret && this.xrplAcc.deriveKeypair();
         this.#watchEvents = watchEvents;
         this.#autoSubscribe = autoSubscribe;
         this.events = new EventEmitter();

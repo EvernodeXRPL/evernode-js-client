@@ -1,5 +1,8 @@
 {
     "name": "evernode-js-sample-app",
+    "scripts": {
+        "build": "ncc build app.js --minify -o dist"
+    },
     "dependencies": {
         "evernode-js-client": "0.2.14"
     }

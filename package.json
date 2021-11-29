@@ -2,7 +2,7 @@
     "name": "evernode-js-client",
     "version": "0.2.14",
     "scripts": {
-        "build": "ncc build src/index.js -e eccrypto -e xrpl -e ripple-address-codec -e ripple-keypairs -o dist/",
+        "build": "ncc build src/index.js -e xrpl -e ripple-address-codec -e ripple-keypairs -o dist/",
         "bundle": "npm run build && ./clean-pkg.sh",
         "publish": "npm run bundle && npm publish dist"
     },
