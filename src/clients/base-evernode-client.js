@@ -177,7 +177,7 @@ export class BaseEvernodeClient {
             tx.Memos[0].type === MemoTypes.REFUND && tx.Memos[0].data) {
 
             return {
-                name: EvernodeEvents.RefundRequest,
+                name: EvernodeEvents.Refund,
                 data: {
                     transaction: tx,
                     redeemTxHash: tx.Memos[0].data
@@ -212,7 +212,7 @@ export class BaseEvernodeClient {
             tx.Memos[0].type === MemoTypes.AUDIT_REQ) {
 
             return {
-                name: EvernodeEvents.AuditRequest,
+                name: EvernodeEvents.Audit,
                 data: {
                     transaction: tx,
                     auditor: tx.Account
@@ -234,7 +234,7 @@ export class BaseEvernodeClient {
             const redeemTx = tx.Memos[0].data.substring(0, 64);
             const refundReqTx = tx.Memos[0].data.substring(64, 128);
             return {
-                name: EvernodeEvents.RefundResp,
+                name: EvernodeEvents.RefundSuccess,
                 data: {
                     transaction: tx,
                     redeemTx: redeemTx,
@@ -248,7 +248,7 @@ export class BaseEvernodeClient {
             tx.Memos[0].type === MemoTypes.AUDIT_REF && tx.Memos[0].data) {
 
             return {
-                name: EvernodeEvents.AuditCheck,
+                name: EvernodeEvents.AuditAssignment,
                 data: {
                     transaction: tx,
                     currency: tx.SendMax.currency,

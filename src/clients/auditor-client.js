@@ -7,7 +7,7 @@ const AUDIT_TRUSTLINE_LIMIT = '999999999';
 const TRANSACTION_FAILURE = 'TRANSACTION_FAILURE';
 
 export const AuditorEvents = {
-    AuditCheck: EvernodeEvents.AuditCheck
+    AuditAssignment: EvernodeEvents.AuditAssignment
 }
 
 export class AuditorClient extends BaseEvernodeClient {
@@ -17,8 +17,8 @@ export class AuditorClient extends BaseEvernodeClient {
     constructor(xrpAddress, xrpSecret, options = {}) {
         super(xrpAddress, xrpSecret, Object.keys(AuditorEvents), options);
 
-        this.on(AuditorEvents.AuditCheck, async (ev) => {
-            this.#respWatcher.emit(AuditorEvents.AuditCheck, ev);
+        this.on(AuditorEvents.AuditAssignment, async (ev) => {
+            this.#respWatcher.emit(AuditorEvents.AuditAssignment, ev);
         });
     }
 
@@ -37,7 +37,7 @@ export class AuditorClient extends BaseEvernodeClient {
                     const startingLedger = this.rippleAPI.ledgerIndex;
                     timeout = setInterval(() => {
                         if (this.rippleAPI.ledgerIndex - startingLedger >= this.hookConf.momentSize) {
-                            this.#respWatcher.off(AuditorEvents.AuditCheck);
+                            this.#respWatcher.off(AuditorEvents.AuditAssignment);
                             clearInterval(timeout);
                             console.log('Audit request timeout');
                             reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: `No checks found within moment(${this.hookConf.momentSize}) window.` });
@@ -45,7 +45,7 @@ export class AuditorClient extends BaseEvernodeClient {
                     }, 2000);
                     console.log('Waiting for check...');
 
-                    this.#respWatcher.once(AuditorEvents.AuditCheck, async (data) => {
+                    this.#respWatcher.once(AuditorEvents.AuditAssignment, async (data) => {
                         const lines = await this.xrplAcc.getTrustLines(data.currency, data.issuer);
                         if (lines && lines.length === 0) {
                             console.log(`No trust lines found for ${data.currency}/${data.issuer}. Creating one...`);

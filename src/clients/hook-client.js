@@ -9,9 +9,9 @@ export const HookEvents = {
     Redeem: EvernodeEvents.Redeem,
     RedeemSuccess: EvernodeEvents.RedeemSuccess,
     RedeemError: EvernodeEvents.RedeemError,
-    RefundRequest: EvernodeEvents.RefundRequest,
-    RefundResp: EvernodeEvents.RefundResp,
-    AuditRequest: EvernodeEvents.AuditRequest,
+    Refund: EvernodeEvents.Refund,
+    RefundSuccess: EvernodeEvents.RefundSuccess,
+    Audit: EvernodeEvents.Audit,
     AuditSuccess: EvernodeEvents.AuditSuccess
 }
 

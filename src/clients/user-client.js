@@ -10,7 +10,7 @@ const REFUND_WATCH_PREFIX = 'refund_';
 export const UserEvents = {
     RedeemSuccess: EvernodeEvents.RedeemSuccess,
     RedeemError: EvernodeEvents.RedeemError,
-    RefundResp: EvernodeEvents.RefundResp
+    RefundSuccess: EvernodeEvents.RefundSuccess
 }
 
 export class UserClient extends BaseEvernodeClient {
@@ -26,7 +26,7 @@ export class UserClient extends BaseEvernodeClient {
         this.on(UserEvents.RedeemError, async (ev) => {
             this.#respWatcher.emit(REDEEM_WATCH_PREFIX + ev.redeemTxHash, { success: false, data: ev.reason, transaction: ev.transaction });
         });
-        this.on(UserEvents.RefundResp, async (ev) => {
+        this.on(UserEvents.RefundSuccess, async (ev) => {
             this.#respWatcher.emit(REFUND_WATCH_PREFIX + ev.redeemTxHash, ev);
         });
     }
