@@ -3,6 +3,8 @@ const { HookClient, HookEvents } = require("./clients/hook-client");
 const { UserClient, UserEvents } = require("./clients/user-client");
 const { HostClient, HostEvents } = require("./clients/host-client");
 const { AuditorClient, AuditorEvents } = require("./clients/auditor-client");
+const { RippleAPIWrapper } = require('./ripple-api-wrapper');
+const { XrplAccount } = require('./xrpl-account');
 
 module.exports = {
     HookClient,
@@ -13,5 +15,7 @@ module.exports = {
     HostEvents,
     AuditorClient,
     AuditorEvents,
+    RippleAPIWrapper,
+    XrplAccount,
     Defaults
 }

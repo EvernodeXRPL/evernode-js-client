@@ -1,6 +1,6 @@
 const { RippleConstants } = require('../ripple-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { EvernodeEvents, EvernodeConstants, MemoFormats, MemoTypes } = require('../evernode-common');
+const { EvernodeEvents, EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes } = require('../evernode-common');
 const { EncryptionHelper } = require('../encryption-helper');
 
 export const HostEvents = {
@@ -11,7 +11,7 @@ export const HostEvents = {
 export class HostClient extends BaseEvernodeClient {
 
     constructor(xrpAddress, xrpSecret, options = {}) {
-        super(xrpAddress, xrpSecret, Object.keys(HostEvents), options);
+        super(xrpAddress, xrpSecret, Object.keys(HostEvents), true, options);
     }
 
     registerHost(hostingToken, instanceSize, location, options = {}) {

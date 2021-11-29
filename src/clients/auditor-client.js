@@ -1,6 +1,6 @@
 const { RippleConstants } = require('../ripple-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { EvernodeEvents, MemoFormats, MemoTypes } = require('../evernode-common');
+const { EvernodeEvents, MemoFormats, MemoTypes, ErrorCodes } = require('../evernode-common');
 const { EventEmitter } = require('../event-emitter');
 
 const AUDIT_TRUSTLINE_LIMIT = '999999999';
@@ -15,7 +15,7 @@ export class AuditorClient extends BaseEvernodeClient {
     #respWatcher = new EventEmitter();
 
     constructor(xrpAddress, xrpSecret, options = {}) {
-        super(xrpAddress, xrpSecret, Object.keys(AuditorEvents), options);
+        super(xrpAddress, xrpSecret, Object.keys(AuditorEvents), true, options);
 
         this.on(AuditorEvents.AuditAssignment, async (ev) => {
             this.#respWatcher.emit(AuditorEvents.AuditAssignment, ev);

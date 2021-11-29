@@ -10,8 +10,9 @@ const { XflHelpers } = require('../xfl-helpers');
 export class BaseEvernodeClient {
 
     #watchEvents;
+    #autoSubscribe;
 
-    constructor(xrpAddress, xrpSecret, watchEvents, options = {}) {
+    constructor(xrpAddress, xrpSecret, watchEvents, autoSubscribe = false, options = {}) {
 
         this.connected = false;
         this.hookAddress = options.hookAddress || DefaultValues.hookAddress;
@@ -19,6 +20,7 @@ export class BaseEvernodeClient {
         this.xrplAcc = new XrplAccount(this.rippleAPI, xrpAddress, xrpSecret);
         this.accKeyPair = this.secret && this.xrplAcc.deriveKeypair();
         this.#watchEvents = watchEvents;
+        this.#autoSubscribe = autoSubscribe;
         this.events = new EventEmitter();
 
         this.xrplAcc.on(RippleAPIEvents.PAYMENT, (tx, error) => this.#handleEvernodeEvent(tx, error));
@@ -47,6 +49,8 @@ export class BaseEvernodeClient {
         this.hookConf = await this.#getHookConfig();
         this.connected = true;
 
+        if (this.#autoSubscribe)
+            await this.subscribe();
     }
 
     async disconnect() {

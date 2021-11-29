@@ -1,8 +1,9 @@
 const { RippleConstants } = require('../ripple-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { EvernodeEvents, MemoFormats, MemoTypes } = require('../evernode-common');
+const { EvernodeEvents, MemoFormats, MemoTypes, ErrorCodes } = require('../evernode-common');
 const { EventEmitter } = require('../event-emitter');
 const { EncryptionHelper } = require('../encryption-helper');
+const { XrplAccount } = require('../xrpl-account');
 
 const REDEEM_WATCH_PREFIX = 'redeem_';
 const REFUND_WATCH_PREFIX = 'refund_';
@@ -18,7 +19,7 @@ export class UserClient extends BaseEvernodeClient {
     #respWatcher = new EventEmitter();
 
     constructor(xrpAddress, xrpSecret, options = {}) {
-        super(xrpAddress, xrpSecret, Object.keys(UserEvents), options);
+        super(xrpAddress, xrpSecret, Object.keys(UserEvents), true, options);
 
         this.on(UserEvents.RedeemSuccess, async (ev) => {
             this.#respWatcher.emit(REDEEM_WATCH_PREFIX + ev.redeemTxHash, { success: true, data: ev.payload, transaction: ev.transaction });

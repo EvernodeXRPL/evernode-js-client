@@ -3,7 +3,7 @@ const evernode = require("../dist"); // Local dist dir.
 
 async function app() {
 
-    const hook = new evernode.HookClient("rfNQEMZwRt8wQnGr3ktuwWKRSXzk8oAFbm", "spyzh41Huy8imGCn1jqYcEPaCA16j");
+    const hook = new evernode.HookClient("rfNQEMZwRt8wQnGr3ktuwWKRSXzk8oAFbm");
 
     try {
         await hook.connect();

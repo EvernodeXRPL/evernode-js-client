@@ -7,13 +7,15 @@ const { TransactionHelper } = require('./transaction-helper');
 const { EventEmitter } = require('./event-emitter');
 
 export class XrplAccount {
+
+    #events = new EventEmitter();
+    #subscribed = false;
+    #sequence = null;
+    #sequenceCachedOn = null;
+
     constructor(rippleAPI, address, secret = null) {
         this.rippleAPI = rippleAPI;
         this.address = address;
-        this.events = new EventEmitter();
-        this.subscribed = false;
-        this.sequence = null;
-        this.sequenceCachedOn = null;
 
         this.secret = secret;
         if (this.secret)
@@ -21,15 +23,15 @@ export class XrplAccount {
     }
 
     on(event, handler) {
-        this.events.on(event, handler);
+        this.#events.on(event, handler);
     }
 
     once(event, handler) {
-        this.events.once(event, handler);
+        this.#events.once(event, handler);
     }
 
     off(event, handler = null) {
-        this.events.off(event, handler);
+        this.#events.off(event, handler);
     }
 
     deriveKeypair() {
@@ -47,26 +49,26 @@ export class XrplAccount {
     async getNextSequence() {
 
         // If cached value is expired, delete it.
-        if (this.sequenceCachedOn && this.sequenceCachedOn < (new Date().getTime() - 5000)) {
-            this.sequence = null;
-            this.sequenceCachedOn = null;
+        if (this.#sequenceCachedOn && this.#sequenceCachedOn < (new Date().getTime() - 5000)) {
+            this.#sequence = null;
+            this.#sequenceCachedOn = null;
         }
 
-        if (!this.sequence) {
+        if (!this.#sequence) {
             const info = await this.rippleAPI.getAccountInfo(this.address);
             // This can get called by parallel transactions. So we are checking for null again before updating.
-            if (!this.sequence) {
-                this.sequence = info.account_data.Sequence;
-                this.sequenceCachedOn = new Date().getTime();
+            if (!this.#sequence) {
+                this.#sequence = info.account_data.Sequence;
+                this.#sequenceCachedOn = new Date().getTime();
             }
             else {
-                this.sequence++;
+                this.#sequence++;
             }
         }
         else {
-            this.sequence++;
+            this.#sequence++;
         }
-        return this.sequence;
+        return this.#sequence;
     }
 
     async getEncryptionKey() {
@@ -196,14 +198,14 @@ export class XrplAccount {
 
     async subscribe() {
         // Subscribe only once. Otherwise event handlers will be duplicated.
-        if (this.subscribed)
+        if (this.#subscribed)
             return;
 
         await this.rippleAPI.subscribeToAddress(this.address, (eventName, tx, error) => {
-            this.events.emit(eventName, tx, error);
+            this.#events.emit(eventName, tx, error);
         });
 
-        this.subscribed = true;
+        this.#subscribed = true;
     }
 
     #submitAndVerifyTransaction(tx, options) {

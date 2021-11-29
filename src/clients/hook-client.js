@@ -18,7 +18,7 @@ export const HookEvents = {
 export class HookClient extends BaseEvernodeClient {
 
     constructor(options = {}) {
-        super((options.hookAddress || DefaultValues.hookAddress), null, Object.keys(HookEvents), options);
+        super((options.hookAddress || DefaultValues.hookAddress), null, Object.keys(HookEvents), false, options);
     }
 
     async getHosts() {
