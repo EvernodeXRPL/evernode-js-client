@@ -1,4 +1,4 @@
-const { RippleConstants } = require('../ripple-common');
+const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
 const { EvernodeEvents, EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes } = require('../evernode-common');
 const { EncryptionHelper } = require('../encryption-helper');
@@ -26,8 +26,8 @@ export class HostClient extends BaseEvernodeClient {
 
     deregisterHost(options = {}) {
         return this.xrplAcc.makePayment(this.hookAddress,
-            RippleConstants.MIN_XRP_AMOUNT,
-            RippleConstants.XRP,
+            XrplConstants.MIN_XRP_AMOUNT,
+            XrplConstants.XRP,
             null,
             [{ type: MemoTypes.HOST_DEREG, format: MemoFormats.TEXT, data: "" }],
             options.transactionOptions);
@@ -35,7 +35,7 @@ export class HostClient extends BaseEvernodeClient {
 
     async redeemSuccess(txHash, userAddress, userPubKey, instanceInfo, options = {}) {
         // Verifying the pubkey.
-        if (!(await this.rippleAPI.isValidKeyForAddress(userPubKey, userAddress)))
+        if (!(await this.xrplApi.isValidKeyForAddress(userPubKey, userAddress)))
             throw 'Invalid public key for redeem response encryption.';
 
         const memos = [{ type: MemoTypes.REDEEM_REF, format: MemoFormats.BINARY, data: txHash }];
@@ -44,8 +44,8 @@ export class HostClient extends BaseEvernodeClient {
         memos.push({ type: MemoTypes.REDEEM_RESP, format: MemoFormats.BINARY, data: encrypted });
 
         return this.xrplAcc.makePayment(this.hookAddress,
-            RippleConstants.MIN_XRP_AMOUNT,
-            RippleConstants.XRP,
+            XrplConstants.MIN_XRP_AMOUNT,
+            XrplConstants.XRP,
             null,
             memos,
             options.transactionOptions);
@@ -59,8 +59,8 @@ export class HostClient extends BaseEvernodeClient {
         ];
 
         return this.xrplAcc.makePayment(this.hookAddress,
-            RippleConstants.MIN_XRP_AMOUNT,
-            RippleConstants.XRP,
+            XrplConstants.MIN_XRP_AMOUNT,
+            XrplConstants.XRP,
             null,
             memos,
             options.transactionOptions);

@@ -1,4 +1,4 @@
-const { RippleConstants } = require('../ripple-common');
+const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
 const { EvernodeEvents, MemoFormats, MemoTypes, ErrorCodes } = require('../evernode-common');
 const { EventEmitter } = require('../event-emitter');
@@ -35,7 +35,7 @@ export class UserClient extends BaseEvernodeClient {
     async redeemSubmit(hostingToken, hostAddress, amount, requirement, options = {}) {
 
         // Encrypt the requirements with the host's encryption key (Specified in MessageKey field of the host account).
-        const hostAcc = new XrplAccount(this.rippleAPI, hostAddress);
+        const hostAcc = new XrplAccount(this.xrplApi, hostAddress);
         const encKey = await hostAcc.getEncryptionKey();
         if (!encKey)
             throw "Host encryption key not set.";
@@ -114,8 +114,8 @@ export class UserClient extends BaseEvernodeClient {
     refund(redeemTxHash, options = {}) {
         return new Promise(async (resolve, reject) => {
             const tx = await this.xrplAcc.makePayment(this.hookAddress,
-                RippleConstants.MIN_XRP_AMOUNT,
-                RippleConstants.XRP,
+                XrplConstants.MIN_XRP_AMOUNT,
+                XrplConstants.XRP,
                 null,
                 [{ type: MemoTypes.REFUND, format: MemoFormats.BINARY, data: redeemTxHash }],
                 options.transactionOptions)

@@ -3,17 +3,17 @@ const kp = require('ripple-keypairs');
 const { EventEmitter } = require('./event-emitter');
 const { DefaultValues } = require('./defaults');
 const { TransactionHelper } = require('./transaction-helper');
-const { RippleAPIEvents } = require('./ripple-common');
+const { XrplApiEvents } = require('./xrpl-common');
 
-export class RippleAPIWrapper {
+export class XrplApi {
 
     #client;
+    #events = new EventEmitter();
 
     constructor(rippledServer = null, options = {}) {
 
         this.connected = false;
         this.rippledServer = rippledServer || DefaultValues.rippledServer;
-        this.events = new EventEmitter();
 
         this.#client = options.xrplClient || new xrpl.Client(this.rippledServer);
         this.#client.on('error', (errorCode, errorMessage) => {
@@ -28,8 +28,20 @@ export class RippleAPIWrapper {
         });
         this.#client.on('ledgerClosed', (ledger) => {
             this.ledgerIndex = ledger.ledger_index;
-            this.events.emit(RippleAPIEvents.LEDGER, ledger);
+            this.#events.emit(XrplApiEvents.LEDGER, ledger);
         });
+    }
+
+    on(event, handler) {
+        this.#events.on(event, handler);
+    }
+
+    once(event, handler) {
+        this.#events.once(event, handler);
+    }
+
+    off(event, handler = null) {
+        this.#events.off(event, handler);
     }
 
     async connect() {

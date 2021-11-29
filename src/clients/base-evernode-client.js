@@ -1,6 +1,6 @@
-const { RippleAPIWrapper } = require('../ripple-api-wrapper');
+const { XrplApi } = require('../xrpl-api');
 const { XrplAccount } = require('../xrpl-account');
-const { RippleAPIEvents } = require('../ripple-common');
+const { XrplApiEvents } = require('../xrpl-common');
 const { EvernodeEvents, HookStateKeys, HookStateDefaults } = require('../evernode-common');
 const { DefaultValues } = require('../defaults');
 const { EncryptionHelper } = require('../encryption-helper');
@@ -16,15 +16,15 @@ export class BaseEvernodeClient {
 
         this.connected = false;
         this.hookAddress = options.hookAddress || DefaultValues.hookAddress;
-        this.rippleAPI = options.rippleAPI || new RippleAPIWrapper(options.rippledServer);
-        this.xrplAcc = new XrplAccount(this.rippleAPI, xrpAddress, xrpSecret);
+        this.xrplApi = options.xrplApi || new XrplApi(options.rippledServer);
+        this.xrplAcc = new XrplAccount(this.xrplApi, xrpAddress, xrpSecret);
         this.accKeyPair = this.secret && this.xrplAcc.deriveKeypair();
         this.#watchEvents = watchEvents;
         this.#autoSubscribe = autoSubscribe;
         this.events = new EventEmitter();
 
-        this.xrplAcc.on(RippleAPIEvents.PAYMENT, (tx, error) => this.#handleEvernodeEvent(tx, error));
-        this.xrplAcc.on(RippleAPIEvents.CHECK_CREATE, (tx, error) => this.#handleEvernodeEvent(tx, error));
+        this.xrplAcc.on(XrplApiEvents.PAYMENT, (tx, error) => this.#handleEvernodeEvent(tx, error));
+        this.xrplAcc.on(XrplApiEvents.CHECK_CREATE, (tx, error) => this.#handleEvernodeEvent(tx, error));
     }
 
     on(event, handler) {
@@ -43,7 +43,7 @@ export class BaseEvernodeClient {
         if (this.connected)
             return;
 
-        try { await this.rippleAPI.connect(); }
+        try { await this.xrplApi.connect(); }
         catch (e) { throw e; }
 
         this.hookConf = await this.#getHookConfig();
@@ -54,7 +54,7 @@ export class BaseEvernodeClient {
     }
 
     async disconnect() {
-        try { await this.rippleAPI.disconnect(); }
+        try { await this.xrplApi.disconnect(); }
         catch (e) { throw e; }
     }
 

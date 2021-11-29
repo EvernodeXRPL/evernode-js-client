@@ -2,7 +2,7 @@ const xrpl = require('xrpl');
 const kp = require('ripple-keypairs');
 const codec = require('ripple-address-codec');
 const crypto = require("crypto");
-const { RippleConstants } = require('./ripple-common');
+const { XrplConstants } = require('./xrpl-common');
 const { TransactionHelper } = require('./transaction-helper');
 const { EventEmitter } = require('./event-emitter');
 
@@ -13,8 +13,8 @@ export class XrplAccount {
     #sequence = null;
     #sequenceCachedOn = null;
 
-    constructor(rippleAPI, address, secret = null) {
-        this.rippleAPI = rippleAPI;
+    constructor(xrplApi, address, secret = null) {
+        this.xrplApi = xrplApi;
         this.address = address;
 
         this.secret = secret;
@@ -42,7 +42,7 @@ export class XrplAccount {
     }
 
     async getSequence() {
-        const info = await this.rippleAPI.getAccountInfo(this.address);
+        const info = await this.xrplApi.getAccountInfo(this.address);
         return info && info.account_data.Sequence || 0;
     }
 
@@ -55,7 +55,7 @@ export class XrplAccount {
         }
 
         if (!this.#sequence) {
-            const info = await this.rippleAPI.getAccountInfo(this.address);
+            const info = await this.xrplApi.getAccountInfo(this.address);
             // This can get called by parallel transactions. So we are checking for null again before updating.
             if (!this.#sequence) {
                 this.#sequence = info.account_data.Sequence;
@@ -72,13 +72,13 @@ export class XrplAccount {
     }
 
     async getEncryptionKey() {
-        const info = await this.rippleAPI.getAccountInfo(this.address);
+        const info = await this.xrplApi.getAccountInfo(this.address);
         const keyHex = info.account_data.MessageKey;
         return keyHex;
     }
 
     async getTrustLines(currency, issuer) {
-        const lines = await this.rippleAPI.getTrustlines(this.address, {
+        const lines = await this.xrplApi.getTrustlines(this.address, {
             limit: 399,
             peer: issuer
         });
@@ -86,11 +86,11 @@ export class XrplAccount {
     }
 
     async getChecks(fromAccount) {
-        return await this.rippleAPI.getAccountObjects(fromAccount, { type: "check" });
+        return await this.xrplApi.getAccountObjects(fromAccount, { type: "check" });
     }
 
     async getAccountObjects(options) {
-        return await this.rippleAPI.getAccountObjects(this.address, options);
+        return await this.xrplApi.getAccountObjects(this.address, options);
     }
 
     async getHookStates(options = { limit: 399 }) {
@@ -133,10 +133,10 @@ export class XrplAccount {
 
         if (typeof amount !== 'string')
             throw "Amount must be a string.";
-        if (currency !== RippleConstants.XRP && !issuer)
+        if (currency !== XrplConstants.XRP && !issuer)
             throw "Non-XRP currency must have an issuer.";
 
-        const amountObj = (currency == RippleConstants.XRP) ? amount : {
+        const amountObj = (currency == XrplConstants.XRP) ? amount : {
             currency: currency,
             issuer: issuer,
             value: amount
@@ -201,7 +201,7 @@ export class XrplAccount {
         if (this.#subscribed)
             return;
 
-        await this.rippleAPI.subscribeToAddress(this.address, (eventName, tx, error) => {
+        await this.xrplApi.subscribeToAddress(this.address, (eventName, tx, error) => {
             this.#events.emit(eventName, tx, error);
         });
 
@@ -225,13 +225,13 @@ export class XrplAccount {
 
             // Attach tx options to the transaction.
             const txOptions = {
-                LastLedgerSequence: options.maxLedgerIndex || (this.rippleAPI.ledgerIndex + RippleConstants.MAX_LEDGER_OFFSET),
+                LastLedgerSequence: options.maxLedgerIndex || (this.xrplApi.ledgerIndex + XrplConstants.MAX_LEDGER_OFFSET),
                 Sequence: options.sequence || await this.getNextSequence()
             }
             Object.assign(tx, txOptions);
 
             try {
-                const submission = await this.rippleAPI.submitAndVerify(tx, { wallet: this.wallet });
+                const submission = await this.xrplApi.submitAndVerify(tx, { wallet: this.wallet });
                 const r = submission?.result;
                 const txResult = {
                     id: r?.hash,

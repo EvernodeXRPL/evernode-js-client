@@ -1,4 +1,4 @@
-const { RippleConstants } = require('../ripple-common');
+const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
 const { EvernodeEvents, MemoFormats, MemoTypes, ErrorCodes } = require('../evernode-common');
 const { EventEmitter } = require('../event-emitter');
@@ -27,16 +27,16 @@ export class AuditorClient extends BaseEvernodeClient {
             let timeout = null;
             try {
                 const res = await this.xrplAcc.makePayment(this.hookAddress,
-                    RippleConstants.MIN_XRP_AMOUNT,
-                    RippleConstants.XRP,
+                    XrplConstants.MIN_XRP_AMOUNT,
+                    XrplConstants.XRP,
                     null,
                     [{ type: MemoTypes.AUDIT_REQ, format: MemoFormats.BINARY, data: '' }],
                     options.transactionOptions);
 
                 if (res) {
-                    const startingLedger = this.rippleAPI.ledgerIndex;
+                    const startingLedger = this.xrplApi.ledgerIndex;
                     timeout = setInterval(() => {
-                        if (this.rippleAPI.ledgerIndex - startingLedger >= this.hookConf.momentSize) {
+                        if (this.xrplApi.ledgerIndex - startingLedger >= this.hookConf.momentSize) {
                             this.#respWatcher.off(AuditorEvents.AuditAssignment);
                             clearInterval(timeout);
                             console.log('Audit request timeout');
@@ -89,8 +89,8 @@ export class AuditorClient extends BaseEvernodeClient {
         return new Promise(async (resolve, reject) => {
             try {
                 const res = await this.xrplAcc.makePayment(this.hookAddress,
-                    RippleConstants.MIN_XRP_AMOUNT,
-                    RippleConstants.XRP,
+                    XrplConstants.MIN_XRP_AMOUNT,
+                    XrplConstants.XRP,
                     null,
                     [{ type: MemoTypes.AUDIT_SUCCESS, format: MemoFormats.BINARY, data: '' }],
                     options.transactionOptions);
