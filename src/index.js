@@ -4,6 +4,7 @@ const { UserClient, UserEvents } = require("./clients/user-client");
 const { HostClient, HostEvents } = require("./clients/host-client");
 const { AuditorClient, AuditorEvents } = require("./clients/auditor-client");
 const { XrplApi } = require('./xrpl-api');
+const { XrplApiEvents } = require('./xrpl-common');
 const { XrplAccount } = require('./xrpl-account');
 
 module.exports = {
@@ -16,6 +17,7 @@ module.exports = {
     AuditorClient,
     AuditorEvents,
     XrplApi,
+    XrplApiEvents,
     XrplAccount,
     Defaults
 }

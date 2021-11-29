@@ -37,7 +37,7 @@ export class HookClient extends BaseEvernodeClient {
 
     async getMoment(ledgerIndex = null) {
         const lv = ledgerIndex || this.xrplApi.ledgerIndex;
-        const m = Math.floor((lv - this.hookConf.momentBaseIdx) / this.hookConf.momentSize);
+        const m = Math.floor((lv - this.hookConfig.momentBaseIdx) / this.hookConfig.momentSize);
         return m;
     }
 }

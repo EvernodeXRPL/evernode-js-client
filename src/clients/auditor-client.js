@@ -36,11 +36,11 @@ export class AuditorClient extends BaseEvernodeClient {
                 if (res) {
                     const startingLedger = this.xrplApi.ledgerIndex;
                     timeout = setInterval(() => {
-                        if (this.xrplApi.ledgerIndex - startingLedger >= this.hookConf.momentSize) {
+                        if (this.xrplApi.ledgerIndex - startingLedger >= this.hookConfig.momentSize) {
                             this.#respWatcher.off(AuditorEvents.AuditAssignment);
                             clearInterval(timeout);
                             console.log('Audit request timeout');
-                            reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: `No checks found within moment(${this.hookConf.momentSize}) window.` });
+                            reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: `No checks found within moment(${this.hookConfig.momentSize}) window.` });
                         }
                     }, 2000);
                     console.log('Waiting for check...');

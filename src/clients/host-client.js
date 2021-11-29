@@ -17,7 +17,7 @@ export class HostClient extends BaseEvernodeClient {
     registerHost(hostingToken, instanceSize, location, options = {}) {
         const memoData = `${hostingToken};${instanceSize};${location}`
         return this.xrplAcc.makePayment(this.hookAddress,
-            this.hookConf.hostRegFee,
+            this.hookConfig.hostRegFee,
             EvernodeConstants.EVR,
             this.hookAddress,
             [{ type: MemoTypes.HOST_REG, format: MemoFormats.TEXT, data: memoData }],

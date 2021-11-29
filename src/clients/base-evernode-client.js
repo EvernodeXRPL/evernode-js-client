@@ -46,7 +46,7 @@ export class BaseEvernodeClient {
         try { await this.xrplApi.connect(); }
         catch (e) { throw e; }
 
-        this.hookConf = await this.#getHookConfig();
+        this.hookConfig = await this.#getHookConfig();
         this.connected = true;
 
         if (this.#autoSubscribe)
