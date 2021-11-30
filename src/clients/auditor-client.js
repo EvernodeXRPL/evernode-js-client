@@ -15,7 +15,7 @@ export class AuditorClient extends BaseEvernodeClient {
     #respWatcher = new EventEmitter();
 
     constructor(xrpAddress, xrpSecret, options = {}) {
-        super(xrpAddress, xrpSecret, Object.keys(AuditorEvents), true, options);
+        super(xrpAddress, xrpSecret, Object.values(AuditorEvents), true, options);
 
         this.on(AuditorEvents.AuditAssignment, async (ev) => {
             this.#respWatcher.emit(AuditorEvents.AuditAssignment, ev);

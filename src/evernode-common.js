@@ -4,6 +4,7 @@ export const EvernodeConstants = {
 
 export const MemoTypes = {
     REDEEM: 'evnRedeem',
+    REDEEM_ORIGIN: 'evnRedeemOrigin',
     REDEEM_REF: 'evnRedeemRef',
     REDEEM_RESP: 'evnRedeemResp',
     HOST_REG: 'evnHostReg',
@@ -52,15 +53,15 @@ export const HookStateKeys = {
 }
 
 export const EvernodeEvents = {
-    HostRegistered: "hostRegistered",
-    HostDeregistered: "hostDeregistered",
-    Redeem: "redeem",
-    RedeemSuccess: "redeemSuccess",
-    RedeemError: "redeemError",
-    Refund: "refund",
-    RefundSuccess: "refundSuccess",
-    Audit: "audit",
-    AuditAssignment: "auditAssignment",
-    AuditSuccess: "auditSuccess",
-    Reward: "reward",
+    HostRegistered: "HostRegistered",
+    HostDeregistered: "HostDeregistered",
+    Redeem: "Redeem",
+    RedeemSuccess: "RredeemSuccess",
+    RedeemError: "RedeemError",
+    Refund: "Refund",
+    RefundSuccess: "RefundSuccess",
+    Audit: "Audit",
+    AuditAssignment: "AuditAssignment",
+    AuditSuccess: "AuditSuccess",
+    Reward: "Reward",
 }

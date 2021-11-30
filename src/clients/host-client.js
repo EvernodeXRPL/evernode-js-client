@@ -11,7 +11,7 @@ export const HostEvents = {
 export class HostClient extends BaseEvernodeClient {
 
     constructor(xrpAddress, xrpSecret, options = {}) {
-        super(xrpAddress, xrpSecret, Object.keys(HostEvents), true, options);
+        super(xrpAddress, xrpSecret, Object.values(HostEvents), true, options);
     }
 
     registerHost(hostingToken, instanceSize, location, options = {}) {

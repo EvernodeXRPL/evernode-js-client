@@ -1,11 +1,12 @@
 const { XrplApi } = require('../xrpl-api');
 const { XrplAccount } = require('../xrpl-account');
 const { XrplApiEvents } = require('../xrpl-common');
-const { EvernodeEvents, HookStateKeys, HookStateDefaults } = require('../evernode-common');
+const { EvernodeEvents, HookStateKeys, HookStateDefaults, MemoTypes, MemoFormats } = require('../evernode-common');
 const { DefaultValues } = require('../defaults');
 const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
 const { XflHelpers } = require('../xfl-helpers');
+const codec = require('ripple-address-codec');
 
 export class BaseEvernodeClient {
 
@@ -105,7 +106,7 @@ export class BaseEvernodeClient {
             console.log('handleEvernodeEvent: Invalid transaction.');
         else {
             const ev = await this.#extractEvernodeEvent(tx);
-            if (ev && this.#watchEvents.find(ev.name))
+            if (ev && this.#watchEvents.find(e => e === ev.name))
                 this.events.emit(ev.name, ev.data);
         }
     }
@@ -127,15 +128,33 @@ export class BaseEvernodeClient {
                     console.log('Failed to decrypt redeem data.');
             }
 
-            return {
-                name: EvernodeEvents.Redeem,
-                data: {
-                    transaction: tx,
-                    user: tx.Account,
-                    host: tx.Amount.issuer,
-                    token: tx.Amount.currency,
-                    moments: parseInt(tx.Amount.value),
-                    payload: payload
+            if (tx.Memos.length >= 2 && tx.Memos[1].format === MemoFormats.BINARY &&
+                tx.Memos[1].type === MemoTypes.REDEEM_ORIGIN && tx.Memos[1].data) {
+
+                // If the origin memo exists, get the token and user information from the memo.
+                return {
+                    name: EvernodeEvents.Redeem,
+                    data: {
+                        transaction: tx,
+                        user: codec.encodeAccountID(buf.slice(0, 20)),
+                        host: tx.Destination,
+                        token: buf.slice(21, 24).toString(),
+                        moments: parseInt(XflHelpers.toString(buf.slice(25, 33))),
+                        payload: payload
+                    }
+                }
+            }
+            else {
+                return {
+                    name: EvernodeEvents.Redeem,
+                    data: {
+                        transaction: tx,
+                        user: tx.Account,
+                        host: tx.Amount.issuer,
+                        token: tx.Amount.currency,
+                        moments: parseInt(tx.Amount.value),
+                        payload: payload
+                    }
                 }
             }
         }

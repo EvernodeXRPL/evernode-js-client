@@ -19,7 +19,7 @@ export class UserClient extends BaseEvernodeClient {
     #respWatcher = new EventEmitter();
 
     constructor(xrpAddress, xrpSecret, options = {}) {
-        super(xrpAddress, xrpSecret, Object.keys(UserEvents), true, options);
+        super(xrpAddress, xrpSecret, Object.values(UserEvents), true, options);
 
         this.on(UserEvents.RedeemSuccess, async (ev) => {
             this.#respWatcher.emit(REDEEM_WATCH_PREFIX + ev.redeemTxHash, { success: true, data: ev.payload, transaction: ev.transaction });
