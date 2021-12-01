@@ -32,11 +32,21 @@ class UserClient extends BaseEvernodeClient {
         });
     }
 
+    async prepare() {
+        try {
+            if (!await this.xrplAcc.getMessageKey())
+                await this.xrplAcc.setMessageKey(this.accKeyPair.publicKey);
+        }
+        catch (err) {
+            console.log("Error in preparing user xrpl account for Evernode.", err);
+        }
+    }
+
     async redeemSubmit(hostingToken, hostAddress, amount, requirement, options = {}) {
 
         // Encrypt the requirements with the host's encryption key (Specified in MessageKey field of the host account).
         const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
-        const encKey = await hostAcc.getEncryptionKey();
+        const encKey = await hostAcc.getMessageKey();
         if (!encKey)
             throw "Host encryption key not set.";
 

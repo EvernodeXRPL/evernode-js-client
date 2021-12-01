@@ -1,5 +1,6 @@
 # Evernode js client
 Javascript client library for Evernode.
+(Only tested on NodeJS)
 
 ## Prerequisites
 ```
@@ -13,11 +14,11 @@ npm login
 npm run publish
 ```
 
-## Testing sample app
+## Running tests
 ```
-cd sample
+cd test
 npm install
-node app.js
+node test.js
 ```
 
 ## NPM package

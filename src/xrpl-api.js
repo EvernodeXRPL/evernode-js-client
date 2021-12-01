@@ -71,8 +71,8 @@ class XrplApi {
 
     async isValidKeyForAddress(publicKey, address) {
         const info = await this.getAccountInfo(address);
-        const accountFlags = xrpl.parseAccountRootFlags(info.account_data.Flags);
-        const regularKey = info.account_data.RegularKey;
+        const accountFlags = xrpl.parseAccountRootFlags(info.Flags);
+        const regularKey = info.RegularKey;
         const derivedPubKeyAddress = kp.deriveAddress(publicKey);
 
         // If the master key is disabled the derived pubkey address should be the regular key.
@@ -85,7 +85,7 @@ class XrplApi {
 
     async getAccountInfo(address) {
         const resp = (await this.#client.request({ command: 'account_info', account: address }));
-        return resp?.result;
+        return resp?.result?.account_data;
     }
 
     async getAccountObjects(address, options) {
@@ -102,16 +102,21 @@ class XrplApi {
         return [];
     }
 
+    async submitAndVerify(tx, options) {
+        return await this.#client.submitAndWait(tx, options);
+    }
+
     async subscribeToAddress(address, handler) {
 
         // Register the event handler.
         this.#client.on("transaction", (data) => {
             if (data.validated && data.transaction.Destination === address) { // Only incoming transactions.
-                const eventName = data.transaction.TransactionType.toLowerCase();
+                const tx = { ...data.transaction }; // Create an object copy. Otherwise xrpl client will mutate the transaction object,
+                const eventName = tx.TransactionType.toLowerCase();
                 // Emit the event only for successful transactions, Otherwise emit error.
                 if (data.engine_result === "tesSUCCESS") {
-                    data.transaction.Memos = TransactionHelper.deserializeMemos(data.transaction.Memos);
-                    handler(eventName, data.transaction);
+                    tx.Memos = TransactionHelper.deserializeMemos(tx.Memos);
+                    handler(eventName, tx);
                 }
                 else {
                     handler(eventName, null, data.engine_result_message);
@@ -121,10 +126,6 @@ class XrplApi {
 
         await this.#client.request({ command: 'subscribe', accounts: [address] });
         console.log(`Subscribed to transactions on ${address}`);
-    }
-
-    async submitAndVerify(tx, options) {
-        return await this.#client.submitAndWait(tx, options);
     }
 
     async #subscribeToStream(streamName) {

@@ -20,7 +20,7 @@ async function app() {
     try {
         await xrplApi.connect();
 
-        // await registerHost();
+        await registerHost();
         await redeem();
 
     }
@@ -37,35 +37,44 @@ async function registerHost() {
     const host = new evernode.HostClient(hostAddress, hostSecret);
     await host.connect();
 
+    if (await host.isRegistered())
+        return;
+
     // Prepare host account for Evernode.
     console.log("Prepare...");
     await host.prepare();
 
-    // Get EVRs from the hook.
-    const hookAcc = new evernode.XrplAccount(hookAddress, hookSecret);
-    console.log("Transfer EVRs...");
-    await hookAcc.makePayment(hostAddress, "1000", evernode.EvernodeConstants.EVR, hookAddress);
+    // Get EVRs from the hook if needed.
+    const lines = await host.xrplAcc.getTrustLines(evernode.EvernodeConstants.EVR, hookAddress);
+    if (lines.length === 0 || parseInt(lines[0].balance) < 100) {
+        console.log("Transfer EVRs...");
+        const hookAcc = new evernode.XrplAccount(hookAddress, hookSecret);
+        await hookAcc.makePayment(hostAddress, "1000", evernode.EvernodeConstants.EVR, hookAddress);
+    }
 
     console.log("Register...");
     await host.register(hostToken, "8GB", "AU");
 
     // Verify the registration.
-    const hook = new evernode.HookClient();
-    await hook.connect();
-    console.log((await hook.getHosts()).filter(h => h.address === hostAddress)[0]);
+    console.log(await host);
 }
 
 async function redeem() {
 
+    console.log("Redeem...");
+
     // Setup host to watch for incoming redeems.
     const host = new evernode.HostClient(hostAddress, hostSecret);
     await host.connect();
-    host.on(evernode.HostEvents.Redeem, (r) => {
-        console.log(r);
+
+    host.on(evernode.HostEvents.Redeem, async (r) => {
+        console.log(`Host received redeem request: ${r.payload}`)
+        await host.redeemSuccess(r.transaction.hash, userAddress, "dummy success");
     })
 
     const user = new evernode.UserClient(userAddress, userSecret);
     await user.connect();
+    await user.prepare();
 
     // Send hosting tokens to user if needed.
     const lines = await user.xrplAcc.getTrustLines(hostToken, hostAddress);
@@ -74,7 +83,8 @@ async function redeem() {
         await host.xrplAcc.makePayment(userAddress, "1000", hostToken, hostAddress);
     }
 
-    await user.redeem(hostToken, hostAddress, user.hookConfig.minRedeem, "dummy");
+    const result = await user.redeem(hostToken, hostAddress, user.hookConfig.minRedeem, "dummy request");
+    console.log(result);
 }
 
 app();

@@ -46,9 +46,12 @@ class XrplAccount {
         return kp.deriveKeypair(this.secret);
     }
 
+    async getInfo() {
+        return await this.xrplApi.getAccountInfo(this.address);
+    }
+
     async getSequence() {
-        const info = await this.xrplApi.getAccountInfo(this.address);
-        return info && info.account_data.Sequence || 0;
+        return (await this.getInfo()).Sequence;
     }
 
     async getNextSequence() {
@@ -60,10 +63,10 @@ class XrplAccount {
         }
 
         if (!this.#sequence) {
-            const info = await this.xrplApi.getAccountInfo(this.address);
+            const info = await this.getInfo();
             // This can get called by parallel transactions. So we are checking for null again before updating.
             if (!this.#sequence) {
-                this.#sequence = info.account_data.Sequence;
+                this.#sequence = info.Sequence;
                 this.#sequenceCachedOn = new Date().getTime();
             }
             else {
@@ -76,10 +79,8 @@ class XrplAccount {
         return this.#sequence;
     }
 
-    async getEncryptionKey() {
-        const info = await this.xrplApi.getAccountInfo(this.address);
-        const keyHex = info.account_data.MessageKey;
-        return keyHex;
+    async getMessageKey() {
+        return (await this.getInfo()).MessageKey;
     }
 
     async getTrustLines(currency, issuer) {
@@ -96,6 +97,10 @@ class XrplAccount {
 
     async getAccountObjects(options) {
         return await this.xrplApi.getAccountObjects(this.address, options);
+    }
+
+    async getFlags() {
+        return xrpl.parseAccountRootFlags((await this.getInfo()).Flags);
     }
 
     async getHookStates(options = { limit: 399 }) {
