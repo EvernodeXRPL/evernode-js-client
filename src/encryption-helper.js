@@ -1,4 +1,4 @@
-const eccrypto = require("eccrypto");
+const eccrypto = require('./eccrypto') // Using local copy of the eccrypto code file.
 
 class EncryptionHelper {
     // Offsets of the properties in the encrypted buffer.
