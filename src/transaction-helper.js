@@ -1,4 +1,4 @@
-const { MemoTypes } = require('../evernode-common');
+const { MemoTypes } = require('./evernode-common');
 
 class TransactionHelper {
 

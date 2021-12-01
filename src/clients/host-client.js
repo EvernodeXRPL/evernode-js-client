@@ -2,6 +2,7 @@ const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
 const { EvernodeEvents, EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes } = require('../evernode-common');
 const { EncryptionHelper } = require('../encryption-helper');
+const { DefaultValues } = require('../defaults');
 
 const HostEvents = {
     Redeem: EvernodeEvents.Redeem,
@@ -14,7 +15,17 @@ class HostClient extends BaseEvernodeClient {
         super(xrpAddress, xrpSecret, Object.values(HostEvents), true, options);
     }
 
-    registerHost(hostingToken, instanceSize, location, options = {}) {
+    async prepare() {
+        try {
+            await this.xrplAcc.setDefaultRippling(true);
+            await this.xrplAcc.setTrustLine(EvernodeConstants.EVR, DefaultValues.hookAddress, "99999999999999");
+        }
+        catch (err) {
+            console.log("Error in preparing host account.", err);
+        }
+    }
+
+    register(hostingToken, instanceSize, location, options = {}) {
         const memoData = `${hostingToken};${instanceSize};${location}`
         return this.xrplAcc.makePayment(this.hookAddress,
             this.hookConfig.hostRegFee,
@@ -24,7 +35,7 @@ class HostClient extends BaseEvernodeClient {
             options.transactionOptions);
     }
 
-    deregisterHost(options = {}) {
+    deregister(options = {}) {
         return this.xrplAcc.makePayment(this.hookAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,

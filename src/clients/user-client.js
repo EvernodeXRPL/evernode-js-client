@@ -35,7 +35,7 @@ class UserClient extends BaseEvernodeClient {
     async redeemSubmit(hostingToken, hostAddress, amount, requirement, options = {}) {
 
         // Encrypt the requirements with the host's encryption key (Specified in MessageKey field of the host account).
-        const hostAcc = new XrplAccount(this.xrplApi, hostAddress);
+        const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
         const encKey = await hostAcc.getEncryptionKey();
         if (!encKey)
             throw "Host encryption key not set.";

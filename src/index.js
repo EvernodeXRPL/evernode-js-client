@@ -6,6 +6,7 @@ const { AuditorClient, AuditorEvents } = require("./clients/auditor-client");
 const { XrplApi } = require('./xrpl-api');
 const { XrplApiEvents } = require('./xrpl-common');
 const { XrplAccount } = require('./xrpl-account');
+const { EvernodeConstants } = require('./evernode-common');
 
 module.exports = {
     HookClient,
@@ -19,5 +20,6 @@ module.exports = {
     XrplApi,
     XrplApiEvents,
     XrplAccount,
+    EvernodeConstants,
     Defaults
 }

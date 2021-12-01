@@ -18,8 +18,8 @@ class BaseEvernodeClient {
 
         this.connected = false;
         this.hookAddress = options.hookAddress || DefaultValues.hookAddress;
-        this.xrplApi = options.xrplApi || new XrplApi(options.rippledServer);
-        this.xrplAcc = new XrplAccount(this.xrplApi, xrpAddress, xrpSecret);
+        this.xrplApi = options.xrplApi || DefaultValues.xrplApi || new XrplApi(options.rippledServer);
+        this.xrplAcc = new XrplAccount(xrpAddress, xrpSecret, { xrplApi: this.xrplApi });
         this.accKeyPair = xrpSecret && this.xrplAcc.deriveKeypair();
         this.#watchEvents = watchEvents;
         this.#autoSubscribe = autoSubscribe;
@@ -131,16 +131,16 @@ class BaseEvernodeClient {
                 tx.Memos[1].type === MemoTypes.REDEEM_ORIGIN && tx.Memos[1].format === MemoFormats.HEX && tx.Memos[1].data) {
 
                 // If the origin memo exists, get the token and user information from it.
-                const buf = Buffer.from(tx.Memos[1].data, 'hex');
+                const buf = Buffer.from(tx.Memos[1].data);
 
                 return {
                     name: EvernodeEvents.Redeem,
                     data: {
                         transaction: tx,
-                        user: codec.encodeAccountID(buf.slice(0, 19)),
+                        user: codec.encodeAccountID(buf.slice(0, 20)),
                         host: tx.Destination,
-                        token: buf.slice(28, 30).toString(),
-                        moments: parseInt(XflHelpers.toString(buf.slice(20, 27))),
+                        token: buf.slice(28, 31).toString(),
+                        moments: parseInt(XflHelpers.toString(buf.slice(20, 28))),
                         payload: payload
                     }
                 }

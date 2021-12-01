@@ -1,6 +1,7 @@
 const DefaultValues = {
     hookAddress: 'rDPqJv7zu6DfeXexAYseABNM2hT2j2rpHv',
-    rippledServer: 'wss://hooks-testnet.xrpl-labs.com'
+    rippledServer: 'wss://hooks-testnet.xrpl-labs.com',
+    xrplApi: null
 }
 
 class Defaults {

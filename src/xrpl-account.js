@@ -5,6 +5,7 @@ const crypto = require("crypto");
 const { XrplConstants } = require('./xrpl-common');
 const { TransactionHelper } = require('./transaction-helper');
 const { EventEmitter } = require('./event-emitter');
+const { DefaultValues } = require('./defaults');
 
 class XrplAccount {
 
@@ -13,8 +14,12 @@ class XrplAccount {
     #sequence = null;
     #sequenceCachedOn = null;
 
-    constructor(xrplApi, address, secret = null) {
-        this.xrplApi = xrplApi;
+    constructor(address, secret = null, options = {}) {
+        this.xrplApi = options.xrplApi || DefaultValues.xrplApi;
+
+        if (!this.xrplApi)
+            throw "XrplAccount: xrplApi not specified.";
+
         this.address = address;
 
         this.secret = secret;
@@ -113,7 +118,7 @@ class XrplAccount {
         return result;
     }
 
-    async setDefaultRippling(enabled, options = {}) {
+    setDefaultRippling(enabled, options = {}) {
 
         const tx = {
             TransactionType: 'AccountSet',
@@ -125,11 +130,10 @@ class XrplAccount {
         else
             tx.ClearFlag = xrpl.AccountSetAsfFlags.asfDefaultRipple;
 
-        const result = await this.#submitAndVerifyTransaction(tx, options);
-        return result;
+        return this.#submitAndVerifyTransaction(tx, options);
     }
 
-    async makePayment(toAddr, amount, currency, issuer = null, memos = null, options = {}) {
+    makePayment(toAddr, amount, currency, issuer = null, memos = null, options = {}) {
 
         if (typeof amount !== 'string')
             throw "Amount must be a string.";
@@ -142,22 +146,21 @@ class XrplAccount {
             value: amount
         }
 
-        const result = await this.#submitAndVerifyTransaction({
+        return this.#submitAndVerifyTransaction({
             TransactionType: 'Payment',
             Account: this.address,
             Amount: amountObj,
             Destination: toAddr,
             Memos: TransactionHelper.formatMemos(memos)
         }, options);
-        return result;
     }
 
-    async setTrustLine(currency, issuer, limit, allowRippling = false, memos = null, options = {}) {
+    setTrustLine(currency, issuer, limit, allowRippling = false, memos = null, options = {}) {
 
         if (typeof limit !== 'string')
             throw "Limit must be a string.";
 
-        const result = await this.#submitAndVerifyTransaction({
+        return this.#submitAndVerifyTransaction({
             TransactionType: 'TrustSet',
             Account: this.address,
             LimitAmount: {
@@ -170,10 +173,9 @@ class XrplAccount {
             },
             Memos: TransactionHelper.formatMemos(memos)
         }, options);
-        return result;
     }
 
-    async cashCheck(check, options = {}) {
+    cashCheck(check, options = {}) {
         const checkIDhasher = crypto.createHash('sha512')
         checkIDhasher.update(Buffer.from('0043', 'hex'))
         checkIDhasher.update(Buffer.from(codec.decodeAccountID(check.Account)))
@@ -183,7 +185,7 @@ class XrplAccount {
         const checkID = checkIDhasher.digest('hex').slice(0, 64).toUpperCase()
         console.log("Calculated checkID:", checkID);
 
-        const result = await this.#submitAndVerifyTransaction({
+        return this.#submitAndVerifyTransaction({
             TransactionType: 'CheckCash',
             Account: this.address,
             CheckID: checkID,
@@ -193,7 +195,6 @@ class XrplAccount {
                 value: check.SendMax.value
             },
         }, options);
-        return result;
     }
 
     async subscribe() {

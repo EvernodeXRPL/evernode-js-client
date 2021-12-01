@@ -1,27 +1,51 @@
-// const evernode = require("evernode-js-client"); // Published npm package.
-const evernode = require("../dist"); // Local dist dir.
+const evernode = require("evernode-js-client");
+
+const hookAddress = "rUaYV9Mtbu1XHCe7tYfmoJ5m5An977AtLp";
+const hookSecret = "spyYCouK3a5VXJxVX6Vu1MGyLgZtE";
+const hostAddress = "rfjtFb8xz4mmocFgpvpJjp8hbfAWZ3JCgb";
+const hostSecret = "shGDdT5nb7oVjJSYBs7BUsQTbfmdN";
+
+const xrplApi = new evernode.XrplApi();
 
 async function app() {
 
-    const hook = new evernode.HookClient("rfNQEMZwRt8wQnGr3ktuwWKRSXzk8oAFbm");
+    evernode.Defaults.set({
+        hookAddress: hookAddress,
+        xrplApi: xrplApi
+    })
 
     try {
-        await hook.connect();
-        console.log(await hook.getHosts());
+        await xrplApi.connect();
 
-        // const user = new evernode.UserClient("<address>", "<secret>");
-        // await user.redeem('HTK', 'rwUBBXWy7asVC3cZq6pUbKpeKjq3Kk9Exx', 12, {
-        //     owner_pubkey: 'ed5cb83404120ac759609819591ef839b7d222c84f1f08b3012f490586159d2b50',
-        //     contract_id: '8ec3db87-4514-4779-be46-0b092323aedb',
-        //     image: 'hp.latest-ubt.20.04',
-        //     config: {}
-        // })
+        await registerHost();
+        await getHosts();
 
-    } catch (e) {
-        console.error("Error occured:", e);
-    } finally {
-        await hook.disconnect();
     }
+    catch (e) {
+        console.error("Error occured:", e);
+    }
+    finally {
+        await xrplApi.disconnect();
+    }
+}
+
+async function registerHost() {
+
+    const client = new evernode.HostClient(hostAddress, hostSecret, { xrplApi: xrplApi });
+    await client.connect();
+    // await client.prepare();
+
+    // Get EVRs from the hook.
+    const hookAcc = new evernode.XrplAccount(hookAddress, hookSecret);
+    await hookAcc.makePayment(hostAddress, "1000", evernode.EvernodeConstants.EVR, hookAddress);
+
+    await client.register("ABC", "8GB", "AU");
+}
+
+async function getHosts() {
+    const client = new evernode.HookClient();
+    await client.connect();
+    console.log(await client.getHosts());
 }
 
 app();
