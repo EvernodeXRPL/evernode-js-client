@@ -131,7 +131,7 @@ class BaseEvernodeClient {
                 tx.Memos[1].type === MemoTypes.REDEEM_ORIGIN && tx.Memos[1].format === MemoFormats.HEX && tx.Memos[1].data) {
 
                 // If the origin memo exists, get the token and user information from it.
-                const buf = Buffer.from(tx.Memos[1].data);
+                const buf = Buffer.from(tx.Memos[1].data, 'hex');
 
                 return {
                     name: EvernodeEvents.Redeem,

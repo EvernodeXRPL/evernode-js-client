@@ -54,6 +54,7 @@ class XrplApi {
             this.connected = true;
 
             this.ledgerIndex = await this.#client.getLedgerIndex();
+            this.#subscribeToStream('ledger');
         }
         catch (e) {
             console.log(`Couldn't connect ${this.rippledServer} : `, e);
@@ -124,6 +125,10 @@ class XrplApi {
 
     async submitAndVerify(tx, options) {
         return await this.#client.submitAndWait(tx, options);
+    }
+
+    async #subscribeToStream(streamName) {
+        await this.#client.request({ command: 'subscribe', streams: [streamName] });
     }
 }
 

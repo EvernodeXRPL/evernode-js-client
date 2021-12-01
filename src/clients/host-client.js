@@ -19,6 +19,7 @@ class HostClient extends BaseEvernodeClient {
         try {
             await this.xrplAcc.setDefaultRippling(true);
             await this.xrplAcc.setTrustLine(EvernodeConstants.EVR, DefaultValues.hookAddress, "99999999999999");
+            await this.xrplAcc.setMessageKey(this.accKeyPair.publicKey);
         }
         catch (err) {
             console.log("Error in preparing host account.", err);
