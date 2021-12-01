@@ -7,8 +7,9 @@ const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
 const { XflHelpers } = require('../xfl-helpers');
 const codec = require('ripple-address-codec');
+const { Buffer } = require('buffer');
 
-export class BaseEvernodeClient {
+class BaseEvernodeClient {
 
     #watchEvents;
     #autoSubscribe;
@@ -44,8 +45,7 @@ export class BaseEvernodeClient {
         if (this.connected)
             return;
 
-        try { await this.xrplApi.connect(); }
-        catch (e) { throw e; }
+        await this.xrplApi.connect();
 
         this.hookConfig = await this.#getHookConfig();
         this.connected = true;
@@ -55,8 +55,7 @@ export class BaseEvernodeClient {
     }
 
     async disconnect() {
-        try { await this.xrplApi.disconnect(); }
-        catch (e) { throw e; }
+        await this.xrplApi.disconnect();
     }
 
     async subscribe() {
@@ -336,4 +335,8 @@ function readUInt(buf, base = 32, isBE = true) {
         default:
             throw 'Invalid base value';
     }
+}
+
+module.exports = {
+    BaseEvernodeClient
 }

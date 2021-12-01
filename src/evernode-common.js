@@ -1,8 +1,8 @@
-export const EvernodeConstants = {
+const EvernodeConstants = {
     EVR: 'EVR'
 }
 
-export const MemoTypes = {
+const MemoTypes = {
     REDEEM: 'evnRedeem',
     REDEEM_ORIGIN: 'evnRedeemOrigin',
     REDEEM_SUCCESS: 'evnRedeemSuccess',
@@ -19,23 +19,28 @@ export const MemoTypes = {
     REWARD: 'evnReward'
 }
 
-export const MemoFormats = {
+const MemoFormats = {
     TEXT: 'text/plain',
     JSON: 'text/json',
     BASE64: 'base64',
     HEX: 'hex'
 }
 
-export const ErrorCodes = {
+const ErrorCodes = {
     REDEEM_ERR: 'REDEEM_ERR',
     REFUND_ERR: 'REFUND_ERR',
     AUDIT_REQ_ERROR: 'AUDIT_REQ_ERROR',
     AUDIT_SUCCESS_ERROR: 'AUDIT_SUCCESS_ERROR',
 }
 
+const ErrorReasons = {
+    TRANSACTION_FAILURE: 'TRANSACTION_FAILURE',
+    TRANSACTION_FAILURE: 'TRANSACTION_FAILURE'
+}
+
 // Default hook config values.
 // If hook's state is empty, values are loaded from here.
-export const HookStateDefaults = {
+const HookStateDefaults = {
     MOMENT_SIZE: 72,
     HOST_REG_FEE: '0.87654321',
     REDEEM_WINDOW: 24,
@@ -44,7 +49,7 @@ export const HookStateDefaults = {
 }
 
 // All keys are prefixed with 'EVR' (0x455652)
-export const HookStateKeys = {
+const HookStateKeys = {
     MOMENT_SIZE: "4556520100000000000000000000000000000000000000000000000000000001",
     HOST_REG_FEE: "4556520100000000000000000000000000000000000000000000000000000003",
     MIN_REDEEM: "4556520100000000000000000000000000000000000000000000000000000004",
@@ -55,7 +60,7 @@ export const HookStateKeys = {
     HOST_ADDR: "45565203"
 }
 
-export const EvernodeEvents = {
+const EvernodeEvents = {
     HostRegistered: "HostRegistered",
     HostDeregistered: "HostDeregistered",
     Redeem: "Redeem",
@@ -68,4 +73,15 @@ export const EvernodeEvents = {
     AuditAssignment: "AuditAssignment",
     AuditSuccess: "AuditSuccess",
     Reward: "Reward",
+}
+
+module.exports = {
+    EvernodeConstants,
+    MemoTypes,
+    MemoFormats,
+    ErrorCodes,
+    ErrorReasons,
+    HookStateDefaults,
+    HookStateKeys,
+    EvernodeEvents
 }

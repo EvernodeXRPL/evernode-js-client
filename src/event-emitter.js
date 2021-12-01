@@ -1,4 +1,4 @@
-export class EventEmitter {
+class EventEmitter {
     constructor() {
         this.handlers = {};
     }
@@ -38,4 +38,8 @@ export class EventEmitter {
             this.handlers[event] = this.handlers[event].filter(h => !h.once);
         }
     }
+}
+
+module.exports = {
+    EventEmitter
 }

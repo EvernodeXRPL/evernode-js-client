@@ -6,7 +6,7 @@ const { XrplConstants } = require('./xrpl-common');
 const { TransactionHelper } = require('./transaction-helper');
 const { EventEmitter } = require('./event-emitter');
 
-export class XrplAccount {
+class XrplAccount {
 
     #events = new EventEmitter();
     #subscribed = false;
@@ -252,4 +252,8 @@ export class XrplAccount {
 
         });
     }
+}
+
+module.exports = {
+    XrplAccount
 }

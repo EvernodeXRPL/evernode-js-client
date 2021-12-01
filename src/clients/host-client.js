@@ -3,12 +3,12 @@ const { BaseEvernodeClient } = require('./base-evernode-client');
 const { EvernodeEvents, EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes } = require('../evernode-common');
 const { EncryptionHelper } = require('../encryption-helper');
 
-export const HostEvents = {
+const HostEvents = {
     Redeem: EvernodeEvents.Redeem,
     Reward: EvernodeEvents.Reward
 }
 
-export class HostClient extends BaseEvernodeClient {
+class HostClient extends BaseEvernodeClient {
 
     constructor(xrpAddress, xrpSecret, options = {}) {
         super(xrpAddress, xrpSecret, Object.values(HostEvents), true, options);
@@ -65,4 +65,9 @@ export class HostClient extends BaseEvernodeClient {
             memos,
             options.transactionOptions);
     }
+}
+
+module.exports = {
+    HostEvents,
+    HostClient
 }

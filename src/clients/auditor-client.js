@@ -1,16 +1,15 @@
 const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { EvernodeEvents, MemoFormats, MemoTypes, ErrorCodes } = require('../evernode-common');
+const { EvernodeEvents, MemoTypes, ErrorCodes,ErrorReasons } = require('../evernode-common');
 const { EventEmitter } = require('../event-emitter');
 
 const AUDIT_TRUSTLINE_LIMIT = '999999999';
-const TRANSACTION_FAILURE = 'TRANSACTION_FAILURE';
 
-export const AuditorEvents = {
+const AuditorEvents = {
     AuditAssignment: EvernodeEvents.AuditAssignment
 }
 
-export class AuditorClient extends BaseEvernodeClient {
+class AuditorClient extends BaseEvernodeClient {
 
     #respWatcher = new EventEmitter();
 
@@ -58,7 +57,7 @@ export class AuditorClient extends BaseEvernodeClient {
                         // Cash the check.
                         const result = await this.xrplAcc.cashCheck(data.transaction).catch(errtx => {
                             clearInterval(timeout);
-                            reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: TRANSACTION_FAILURE, transaction: errtx });
+                            reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: ErrorReasons.TRANSACTION_FAILURE, transaction: errtx });
                         });
                         if (result) {
                             clearInterval(timeout);
@@ -74,7 +73,7 @@ export class AuditorClient extends BaseEvernodeClient {
 
                 } else {
                     clearInterval(timeout);
-                    reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: TRANSACTION_FAILURE });
+                    reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: ErrorReasons.TRANSACTION_FAILURE });
                 }
             } catch (error) {
                 if (timeout)
@@ -104,4 +103,9 @@ export class AuditorClient extends BaseEvernodeClient {
             }
         });
     }
+}
+
+module.exports = {
+    AuditorEvents,
+    AuditorClient
 }

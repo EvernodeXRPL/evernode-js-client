@@ -1,6 +1,6 @@
 const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { EvernodeEvents, MemoFormats, MemoTypes, ErrorCodes } = require('../evernode-common');
+const { EvernodeEvents, MemoFormats, MemoTypes, ErrorCodes, ErrorReasons } = require('../evernode-common');
 const { EventEmitter } = require('../event-emitter');
 const { EncryptionHelper } = require('../encryption-helper');
 const { XrplAccount } = require('../xrpl-account');
@@ -8,13 +8,13 @@ const { XrplAccount } = require('../xrpl-account');
 const REDEEM_WATCH_PREFIX = 'redeem_';
 const REFUND_WATCH_PREFIX = 'refund_';
 
-export const UserEvents = {
+const UserEvents = {
     RedeemSuccess: EvernodeEvents.RedeemSuccess,
     RedeemError: EvernodeEvents.RedeemError,
     RefundSuccess: EvernodeEvents.RefundSuccess
 }
 
-export class UserClient extends BaseEvernodeClient {
+class UserClient extends BaseEvernodeClient {
 
     #respWatcher = new EventEmitter();
 
@@ -81,7 +81,7 @@ export class UserClient extends BaseEvernodeClient {
     redeem(hostingToken, hostAddress, amount, requirement, options = {}) {
         return new Promise(async (resolve, reject) => {
             const tx = await this.redeemSubmit(hostingToken, hostAddress, amount, requirement, options).catch(errtx => {
-                reject({ error: ErrorCodes.REDEEM_ERR, reason: TRANSACTION_FAILURE, transaction: errtx });
+                reject({ error: ErrorCodes.REDEEM_ERR, reason: ErrorReasons.TRANSACTION_FAILURE, transaction: errtx });
             });
             if (tx) {
                 const response = await this.watchRedeemResponse(tx).catch(error => reject(error));
@@ -95,7 +95,7 @@ export class UserClient extends BaseEvernodeClient {
 
     watchRefundResponse(tx, options = { timeout: 60000 }) {
         return new Promise(async (resolve, reject) => {
-            console.log(`Waiting for refund response... (txHash: ${redeem_hash})`);
+            console.log(`Waiting for refund response... (txHash: ${tx.id})`);
 
             const watchEvent = REFUND_WATCH_PREFIX + tx.id;
 
@@ -120,7 +120,7 @@ export class UserClient extends BaseEvernodeClient {
                 [{ type: MemoTypes.REFUND, format: MemoFormats.HEX, data: redeemTxHash }],
                 options.transactionOptions)
                 .catch(errtx => {
-                    reject({ error: ErrorCodes.REFUND_ERR, reason: TRANSACTION_FAILURE, transaction: errtx });
+                    reject({ error: ErrorCodes.REFUND_ERR, reason: ErrorReasons.TRANSACTION_FAILURE, transaction: errtx });
                 });
             if (tx) {
                 const response = await this.watchRefundResponse(tx).catch(error => reject(error));
@@ -131,4 +131,9 @@ export class UserClient extends BaseEvernodeClient {
             }
         });
     }
+}
+
+module.exports = {
+    UserEvents,
+    UserClient
 }

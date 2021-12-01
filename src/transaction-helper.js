@@ -1,6 +1,6 @@
 const { MemoTypes } = require('../evernode-common');
 
-export class TransactionHelper {
+class TransactionHelper {
 
     // Convert memos from our object type to xrpl lib object type.
     static formatMemos(memos) {
@@ -48,4 +48,8 @@ export class TransactionHelper {
         }
         return hex;
     }
+}
+
+module.exports = {
+    TransactionHelper
 }

@@ -5,7 +5,7 @@ const { DefaultValues } = require('./defaults');
 const { TransactionHelper } = require('./transaction-helper');
 const { XrplApiEvents } = require('./xrpl-common');
 
-export class XrplApi {
+class XrplApi {
 
     #client;
     #events = new EventEmitter();
@@ -125,4 +125,8 @@ export class XrplApi {
     async submitAndVerify(tx, options) {
         return await this.#client.submitAndWait(tx, options);
     }
+}
+
+module.exports = {
+    XrplApi
 }
