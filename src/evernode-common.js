@@ -5,22 +5,25 @@ export const EvernodeConstants = {
 export const MemoTypes = {
     REDEEM: 'evnRedeem',
     REDEEM_ORIGIN: 'evnRedeemOrigin',
+    REDEEM_SUCCESS: 'evnRedeemSuccess',
+    REDEEM_ERROR: 'evnRedeemError',
     REDEEM_REF: 'evnRedeemRef',
-    REDEEM_RESP: 'evnRedeemResp',
     HOST_REG: 'evnHostReg',
     HOST_DEREG: 'evnHostDereg',
     REFUND: 'evnRefund',
-    REFUND_RESP: 'evnRefundResp',
+    REFUND_SUCCESS: 'evnRefundSuccess',
+    REFUND_ERROR: 'evnRefundError',
     AUDIT_REQ: 'evnAuditRequest',
     AUDIT_SUCCESS: 'evnAuditSuccess',
-    AUDIT_REF: 'evnAuditRef',
-    REWARD_REF: 'evnRewardRef'
+    AUDIT_ASSIGNMENT: 'evnAuditAssignment',
+    REWARD: 'evnReward'
 }
 
 export const MemoFormats = {
     TEXT: 'text/plain',
     JSON: 'text/json',
-    BINARY: 'binary'
+    BASE64: 'base64',
+    HEX: 'hex'
 }
 
 export const ErrorCodes = {
@@ -60,6 +63,7 @@ export const EvernodeEvents = {
     RedeemError: "RedeemError",
     Refund: "Refund",
     RefundSuccess: "RefundSuccess",
+    RefundError: "RefundError",
     Audit: "Audit",
     AuditAssignment: "AuditAssignment",
     AuditSuccess: "AuditSuccess",

@@ -50,7 +50,7 @@ export class UserClient extends BaseEvernodeClient {
             amount.toString(),
             hostingToken,
             hostAddress,
-            [{ type: MemoTypes.REDEEM, format: MemoFormats.BINARY, data: ecrypted }],
+            [{ type: MemoTypes.REDEEM, format: MemoFormats.BASE64, data: ecrypted }],
             options.transactionOptions);
     }
 
@@ -117,7 +117,7 @@ export class UserClient extends BaseEvernodeClient {
                 XrplConstants.MIN_XRP_AMOUNT,
                 XrplConstants.XRP,
                 null,
-                [{ type: MemoTypes.REFUND, format: MemoFormats.BINARY, data: redeemTxHash }],
+                [{ type: MemoTypes.REFUND, format: MemoFormats.HEX, data: redeemTxHash }],
                 options.transactionOptions)
                 .catch(errtx => {
                     reject({ error: ErrorCodes.REFUND_ERR, reason: TRANSACTION_FAILURE, transaction: errtx });

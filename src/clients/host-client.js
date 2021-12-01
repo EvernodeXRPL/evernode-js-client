@@ -38,10 +38,10 @@ export class HostClient extends BaseEvernodeClient {
         if (!(await this.xrplApi.isValidKeyForAddress(userPubKey, userAddress)))
             throw 'Invalid public key for redeem response encryption.';
 
-        const memos = [{ type: MemoTypes.REDEEM_REF, format: MemoFormats.BINARY, data: txHash }];
+        const memos = [{ type: MemoTypes.REDEEM_REF, format: MemoFormats.HEX, data: txHash }];
         // Encrypt response with user pubkey.
         const encrypted = await EncryptionHelper.encrypt(userPubKey, instanceInfo);
-        memos.push({ type: MemoTypes.REDEEM_RESP, format: MemoFormats.BINARY, data: encrypted });
+        memos.push({ type: MemoTypes.REDEEM_SUCCESS, format: MemoFormats.BASE64, data: encrypted });
 
         return this.xrplAcc.makePayment(this.hookAddress,
             XrplConstants.MIN_XRP_AMOUNT,
@@ -54,8 +54,8 @@ export class HostClient extends BaseEvernodeClient {
     async redeemError(txHash, reason, options = {}) {
 
         const memos = [
-            { type: MemoTypes.REDEEM_REF, format: MemoFormats.BINARY, data: txHash },
-            { type: MemoTypes.REDEEM_RESP, format: MemoFormats.JSON, data: { type: ErrorCodes.REDEEM_ERR, reason: reason } }
+            { type: MemoTypes.REDEEM_REF, format: MemoFormats.HEX, data: txHash },
+            { type: MemoTypes.REDEEM_ERROR, format: MemoFormats.JSON, data: { type: ErrorCodes.REDEEM_ERR, reason: reason } }
         ];
 
         return this.xrplAcc.makePayment(this.hookAddress,

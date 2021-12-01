@@ -30,7 +30,7 @@ export class AuditorClient extends BaseEvernodeClient {
                     XrplConstants.MIN_XRP_AMOUNT,
                     XrplConstants.XRP,
                     null,
-                    [{ type: MemoTypes.AUDIT_REQ, format: MemoFormats.BINARY, data: '' }],
+                    [{ type: MemoTypes.AUDIT_REQ, format: '', data: '' }],
                     options.transactionOptions);
 
                 if (res) {
@@ -92,7 +92,7 @@ export class AuditorClient extends BaseEvernodeClient {
                     XrplConstants.MIN_XRP_AMOUNT,
                     XrplConstants.XRP,
                     null,
-                    [{ type: MemoTypes.AUDIT_SUCCESS, format: MemoFormats.BINARY, data: '' }],
+                    [{ type: MemoTypes.AUDIT_SUCCESS, format: '', data: '' }],
                     options.transactionOptions);
                 if (res)
                     resolve(res);

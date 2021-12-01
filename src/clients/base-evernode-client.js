@@ -115,8 +115,8 @@ export class BaseEvernodeClient {
         if (!tx.Memos || tx.Memos.length === 0)
             return null;
 
-        if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
-            tx.Memos[0].type === MemoTypes.REDEEM && tx.Memos[0].data) {
+        if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.REDEEM && tx.Memos[0].format === MemoFormats.BASE64 && tx.Memos[0].data) {
 
             // If our account is the destination host account, then decrypt the payload.
             let payload = tx.Memos[0].data;
@@ -128,18 +128,20 @@ export class BaseEvernodeClient {
                     console.log('Failed to decrypt redeem data.');
             }
 
-            if (tx.Memos.length >= 2 && tx.Memos[1].format === MemoFormats.BINARY &&
-                tx.Memos[1].type === MemoTypes.REDEEM_ORIGIN && tx.Memos[1].data) {
+            if (tx.Memos.length >= 2 &&
+                tx.Memos[1].type === MemoTypes.REDEEM_ORIGIN && tx.Memos[1].format === MemoFormats.HEX && tx.Memos[1].data) {
 
-                // If the origin memo exists, get the token and user information from the memo.
+                // If the origin memo exists, get the token and user information from it.
+                const buf = Buffer.from(tx.Memos[1].data, 'hex');
+
                 return {
                     name: EvernodeEvents.Redeem,
                     data: {
                         transaction: tx,
-                        user: codec.encodeAccountID(buf.slice(0, 20)),
+                        user: codec.encodeAccountID(buf.slice(0, 19)),
                         host: tx.Destination,
-                        token: buf.slice(21, 24).toString(),
-                        moments: parseInt(XflHelpers.toString(buf.slice(25, 33))),
+                        token: buf.slice(28, 30).toString(),
+                        moments: parseInt(XflHelpers.toString(buf.slice(20, 27))),
                         payload: payload
                     }
                 }
@@ -158,47 +160,53 @@ export class BaseEvernodeClient {
                 }
             }
         }
-        else if (tx.Memos.length >= 2 && tx.Memos[0].format === MemoFormats.BINARY &&
-            tx.Memos[0].type === MemoTypes.REDEEM_REF && tx.Memos[0].data &&
-            tx.Memos[1].type === MemoTypes.REDEEM_RESP && tx.Memos[1].data) {
+        else if (tx.Memos.length >= 2 &&
+            tx.Memos[0].type === MemoTypes.REDEEM_SUCCESS && tx.Memos[0].data &&
+            tx.Memos[1].type === MemoTypes.REDEEM_REF && tx.Memos[1].data) {
 
-            const redeemTxHash = tx.Memos[0].data;
-            let payload = tx.Memos[1].data;
-            if (tx.Memos[1].format === MemoFormats.JSON) { // Format text/json means this is an error message. 
-                const error = JSON.parse(payload);
-                return {
-                    name: EvernodeEvents.RedeemError,
-                    data: {
-                        transaction: tx,
-                        redeemTxHash: redeemTxHash,
-                        reason: error.reason
-                    }
+            let payload = tx.Memos[0].data;
+            const redeemTxHash = tx.Memos[1].data;
+
+            // If our account is the destination user account, then decrypt the payload.
+            if (tx.Memos[0].format === MemoFormats.BASE64 && tx.Destination === this.xrplAcc.address) {
+                const decrypted = this.accKeyPair && await EncryptionHelper.decrypt(this.accKeyPair.privateKey, payload);
+                if (decrypted)
+                    payload = decrypted;
+                else
+                    console.log('Failed to decrypt instance data.');
+            }
+
+            return {
+                name: EvernodeEvents.RedeemSuccess,
+                data: {
+                    transaction: tx,
+                    redeemTxHash: redeemTxHash,
+                    payload: payload
                 }
             }
-            else {
 
-                // If our account is the destination user account, then decrypt the payload.
-                if (tx.Destination === this.xrplAcc.address) {
-                    const decrypted = this.accKeyPair && await EncryptionHelper.decrypt(this.accKeyPair.privateKey, payload);
-                    if (decrypted)
-                        payload = decrypted;
-                    else
-                        console.log('Failed to decrypt instance data.');
-                }
+        }
+        else if (tx.Memos.length >= 2 &&
+            tx.Memos[0].type === MemoTypes.REDEEM_ERROR && tx.Memos[0].data &&
+            tx.Memos[1].type === MemoTypes.REDEEM_REF && tx.Memos[1].data) {
 
-                return {
-                    name: EvernodeEvents.RedeemSuccess,
-                    data: {
-                        transaction: tx,
-                        redeemTxHash: redeemTxHash,
-                        payload: payload
-                    }
+            let error = tx.Memos[0].data;
+            const redeemTxHash = tx.Memos[1].data;
+
+            if (tx.Memos[0].format === MemoFormats.JSON)
+                error = JSON.parse(tx.Memos[0].data).reason;
+
+            return {
+                name: EvernodeEvents.RedeemError,
+                data: {
+                    transaction: tx,
+                    redeemTxHash: redeemTxHash,
+                    reason: error.reason
                 }
             }
         }
-        else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
-            tx.Memos[0].type === MemoTypes.REFUND && tx.Memos[0].data) {
-
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.REFUND && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
             return {
                 name: EvernodeEvents.Refund,
                 data: {
@@ -207,8 +215,37 @@ export class BaseEvernodeClient {
                 }
             }
         }
-        else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.TEXT &&
-            tx.Memos[0].type === MemoTypes.HOST_REG && tx.Memos[0].data) {
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.REFUND_SUCCESSS && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+
+            const refundReqTx = tx.Memos[0].data.substring(0, 64);
+            const redeemTx = tx.Memos[0].data.substring(64, 128);
+
+            return {
+                name: EvernodeEvents.RefundSuccess,
+                data: {
+                    transaction: tx,
+                    redeemTx: redeemTx,
+                    refundReqTx: refundReqTx,
+                    amount: tx.Amount.value,
+                    issuer: tx.Amount.issuer,
+                    currency: tx.Amount.currency
+                }
+            }
+        }
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.REFUND_ERROR && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+            const refundReqTx = tx.Memos[0].data.substring(0, 64);
+            return {
+                name: EvernodeEvents.RefundError,
+                data: {
+                    transaction: tx,
+                    refundReqTx: refundReqTx
+                }
+            }
+        }
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.HOST_REG && tx.Memos[0].format === MemoFormats.TEXT && tx.Memos[0].data) {
 
             const parts = tx.Memos[0].data.split(';');
             return {
@@ -231,9 +268,8 @@ export class BaseEvernodeClient {
                 }
             }
         }
-        else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
+        else if (tx.Memos.length >= 1 &&
             tx.Memos[0].type === MemoTypes.AUDIT_REQ) {
-
             return {
                 name: EvernodeEvents.Audit,
                 data: {
@@ -242,9 +278,8 @@ export class BaseEvernodeClient {
                 }
             }
         }
-        else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
+        else if (tx.Memos.length >= 1 &&
             tx.Memos[0].type === MemoTypes.AUDIT_SUCCESS) {
-
             return {
                 name: EvernodeEvents.AuditSuccess,
                 data: {
@@ -252,24 +287,9 @@ export class BaseEvernodeClient {
                     auditor: tx.Account
                 }
             }
-        } else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
-            tx.Memos[0].type === MemoTypes.REFUND_RESP && tx.Memos[0].data) {
-            const redeemTx = tx.Memos[0].data.substring(0, 64);
-            const refundReqTx = tx.Memos[0].data.substring(64, 128);
-            return {
-                name: EvernodeEvents.RefundSuccess,
-                data: {
-                    transaction: tx,
-                    redeemTx: redeemTx,
-                    refundReqTx: refundReqTx,
-                    amount: tx.Amount.value,
-                    issuer: tx.Amount.issuer,
-                    currency: tx.Amount.currency
-                }
-            }
-        } else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
-            tx.Memos[0].type === MemoTypes.AUDIT_REF && tx.Memos[0].data) {
-
+        }
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.AUDIT_ASSIGNMENT) {
             return {
                 name: EvernodeEvents.AuditAssignment,
                 data: {
@@ -279,8 +299,9 @@ export class BaseEvernodeClient {
                     value: tx.SendMax.value,
                 }
             }
-        } else if (tx.Memos.length >= 1 && tx.Memos[0].format === MemoFormats.BINARY &&
-            tx.Memos[0].type === MemoTypes.REWARD_REF) {
+        }
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.REWARD) {
 
             return {
                 name: EvernodeEvents.Reward,
