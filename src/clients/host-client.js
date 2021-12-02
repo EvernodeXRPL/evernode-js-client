@@ -83,10 +83,10 @@ class HostClient extends BaseEvernodeClient {
         if (!encKey)
             throw "User encryption key not set.";
 
-        const memos = [{ type: MemoTypes.REDEEM_REF, format: MemoFormats.HEX, data: txHash }];
-
         const encrypted = await EncryptionHelper.encrypt(encKey, instanceInfo);
-        memos.push({ type: MemoTypes.REDEEM_SUCCESS, format: MemoFormats.BASE64, data: encrypted });
+        const memos = [
+            { type: MemoTypes.REDEEM_SUCCESS, format: MemoFormats.BASE64, data: encrypted },
+            { type: MemoTypes.REDEEM_REF, format: MemoFormats.HEX, data: txHash }];
 
         return this.xrplAcc.makePayment(this.hookAddress,
             XrplConstants.MIN_XRP_AMOUNT,
@@ -99,9 +99,8 @@ class HostClient extends BaseEvernodeClient {
     async redeemError(txHash, reason, options = {}) {
 
         const memos = [
-            { type: MemoTypes.REDEEM_REF, format: MemoFormats.HEX, data: txHash },
-            { type: MemoTypes.REDEEM_ERROR, format: MemoFormats.JSON, data: { type: ErrorCodes.REDEEM_ERR, reason: reason } }
-        ];
+            { type: MemoTypes.REDEEM_ERROR, format: MemoFormats.JSON, data: { type: ErrorCodes.REDEEM_ERR, reason: reason } },
+            { type: MemoTypes.REDEEM_REF, format: MemoFormats.HEX, data: txHash }];
 
         return this.xrplAcc.makePayment(this.hookAddress,
             XrplConstants.MIN_XRP_AMOUNT,
