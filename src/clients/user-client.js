@@ -32,7 +32,7 @@ class UserClient extends BaseEvernodeClient {
         });
     }
 
-    async prepare() {
+    async prepareAccount() {
         try {
             if (!await this.xrplAcc.getMessageKey())
                 await this.xrplAcc.setMessageKey(this.accKeyPair.publicKey);

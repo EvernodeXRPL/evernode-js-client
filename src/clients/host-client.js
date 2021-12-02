@@ -27,7 +27,7 @@ class HostClient extends BaseEvernodeClient {
         return (await this.getRegistration()) !== null
     }
 
-    async prepare() {
+    async prepareAccount() {
         try {
             const [flags, trustLines, msgKey] = await Promise.all([
                 this.xrplAcc.getFlags(),

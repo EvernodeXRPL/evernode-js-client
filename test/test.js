@@ -42,7 +42,7 @@ async function registerHost() {
 
     // Prepare host account for Evernode.
     console.log("Prepare...");
-    await host.prepare();
+    await host.prepareAccount();
 
     // Get EVRs from the hook if needed.
     const lines = await host.xrplAcc.getTrustLines(evernode.EvernodeConstants.EVR, hookAddress);
@@ -61,6 +61,10 @@ async function registerHost() {
 
 async function redeem() {
 
+    const user = new evernode.UserClient(userAddress, userSecret);
+    await user.connect();
+    await user.prepareAccount();
+
     console.log("Redeem...");
 
     // Setup host to watch for incoming redeems.
@@ -71,10 +75,6 @@ async function redeem() {
         console.log(`Host received redeem request: ${r.payload}`)
         await host.redeemSuccess(r.transaction.hash, userAddress, "dummy success");
     })
-
-    const user = new evernode.UserClient(userAddress, userSecret);
-    await user.connect();
-    await user.prepare();
 
     // Send hosting tokens to user if needed.
     const lines = await user.xrplAcc.getTrustLines(hostToken, hostAddress);
