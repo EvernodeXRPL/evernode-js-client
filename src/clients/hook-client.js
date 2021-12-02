@@ -37,9 +37,10 @@ class HookClient extends BaseEvernodeClient {
     }
 
     async getMoment(ledgerIndex = null) {
-        await Promise.resolve(); // Awaiter placeholder for future async requirements.
         const lv = ledgerIndex || this.xrplApi.ledgerIndex;
         const m = Math.floor((lv - this.hookConfig.momentBaseIdx) / this.hookConfig.momentSize);
+
+        await Promise.resolve(); // Awaiter placeholder for future async requirements.
         return m;
     }
 }

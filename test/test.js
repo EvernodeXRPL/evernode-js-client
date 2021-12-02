@@ -1,7 +1,7 @@
 const evernode = require("evernode-js-client");
 
-const hookAddress = "rEKxjWAvk7zEK93QsgQsRGKbbRzg9v1zHV";
-const hookSecret = "snGeJGxyArUmy14PsaYQw6J5npWeT";
+const hookAddress = "rHxCwRQcSDr5b2Ln4onZiSBG58Jvm1BoXK";
+const hookSecret = "shKu6kobQjGSRroK1dm9TgzwWZWPV";
 const hostAddress = "rfjtFb8xz4mmocFgpvpJjp8hbfAWZ3JCgb";
 const hostSecret = "shGDdT5nb7oVjJSYBs7BUsQTbfmdN";
 const hostToken = "ABC";
@@ -90,6 +90,7 @@ function redeem(scenario) {
 
             if (scenario !== "timeout") {
                 console.log(`Host submitting ${scenario} response...`);
+                await new Promise(resolve => setTimeout(resolve, 4000));
 
                 if (scenario === "success")
                     await host.redeemSuccess(r.redeemRefId, userAddress, { content: "dummy success" });
@@ -104,7 +105,8 @@ function redeem(scenario) {
         await fundUser(user);
 
         try {
-            const result = await user.redeem(hostToken, hostAddress, user.hookConfig.minRedeem, "dummy request", { timeout: 10000 });
+            const timeout = (scenario === "timeout" ? 10000 : 30000);
+            const result = await user.redeem(hostToken, hostAddress, user.hookConfig.minRedeem, "dummy request", { timeout: timeout });
             console.log(`User received instance '${result.instance}'`);
         }
         catch (err) {
