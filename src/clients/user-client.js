@@ -94,11 +94,8 @@ class UserClient extends BaseEvernodeClient {
                 reject({ error: ErrorCodes.REDEEM_ERR, reason: ErrorReasons.TRANSACTION_FAILURE, transaction: errtx });
             });
             if (tx) {
-                const response = await this.watchRedeemResponse(tx).catch(error => reject(error));
-                if (response) {
-                    response.redeemTransaction = tx;
-                    resolve(response);
-                }
+                const response = await this.watchRedeemResponse(tx, options).catch(error => reject(error));
+                resolve(response);
             }
         });
     }

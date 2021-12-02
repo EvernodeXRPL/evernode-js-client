@@ -11,8 +11,9 @@ class XrplAccount {
 
     #events = new EventEmitter();
     #subscribed = false;
-    #sequence = null;
-    #sequenceCachedOn = null;
+    #sequence;
+    #sequenceCachedOn;
+    #txStreamHandler;
 
     constructor(address, secret = null, options = {}) {
         this.xrplApi = options.xrplApi || DefaultValues.xrplApi;
@@ -25,6 +26,10 @@ class XrplAccount {
         this.secret = secret;
         if (this.secret)
             this.wallet = xrpl.Wallet.fromSeed(this.secret);
+
+        this.#txStreamHandler = (eventName, tx, error) => {
+            this.#events.emit(eventName, tx, error);
+        };
     }
 
     on(event, handler) {
@@ -207,11 +212,17 @@ class XrplAccount {
         if (this.#subscribed)
             return;
 
-        await this.xrplApi.subscribeToAddress(this.address, (eventName, tx, error) => {
-            this.#events.emit(eventName, tx, error);
-        });
+        await this.xrplApi.subscribeToAddress(this.address, this.#txStreamHandler);
 
         this.#subscribed = true;
+    }
+
+    async unsubscribe() {
+        if (!this.#subscribed)
+            return;
+
+        await this.xrplApi.unsubscribeFromAddress(this.address, this.#txStreamHandler);
+        this.#subscribed = false;
     }
 
     #submitAndVerifyTransaction(tx, options) {

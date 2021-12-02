@@ -13,12 +13,17 @@ class BaseEvernodeClient {
 
     #watchEvents;
     #autoSubscribe;
+    #ownsXrplApi = false;
 
     constructor(xrpAddress, xrpSecret, watchEvents, autoSubscribe = false, options = {}) {
 
         this.connected = false;
         this.hookAddress = options.hookAddress || DefaultValues.hookAddress;
+
         this.xrplApi = options.xrplApi || DefaultValues.xrplApi || new XrplApi(options.rippledServer);
+        if (!options.xrplApi && !DefaultValues.xrplApi)
+            this.#ownsXrplApi = true;
+
         this.xrplAcc = new XrplAccount(xrpAddress, xrpSecret, { xrplApi: this.xrplApi });
         this.accKeyPair = xrpSecret && this.xrplAcc.deriveKeypair();
         this.#watchEvents = watchEvents;
@@ -55,11 +60,18 @@ class BaseEvernodeClient {
     }
 
     async disconnect() {
-        await this.xrplApi.disconnect();
+        await this.unsubscribe();
+
+        if (this.#ownsXrplApi)
+            await this.xrplApi.disconnect();
     }
 
     async subscribe() {
         await this.xrplAcc.subscribe();
+    }
+
+    async unsubscribe() {
+        await this.xrplAcc.unsubscribe();
     }
 
     async #getHookConfig() {
@@ -137,6 +149,7 @@ class BaseEvernodeClient {
                     name: EvernodeEvents.Redeem,
                     data: {
                         transaction: tx,
+                        redeemRefId: buf.slice(31, 63).toString('hex'),
                         user: codec.encodeAccountID(buf.slice(0, 20)),
                         host: tx.Destination,
                         token: buf.slice(28, 31).toString(),
@@ -150,6 +163,7 @@ class BaseEvernodeClient {
                     name: EvernodeEvents.Redeem,
                     data: {
                         transaction: tx,
+                        redeemRefId: tx.Hash,
                         user: tx.Account,
                         host: tx.Amount.issuer,
                         token: tx.Amount.currency,
@@ -193,14 +207,14 @@ class BaseEvernodeClient {
             const redeemTxHash = tx.Memos[1].data;
 
             if (tx.Memos[0].format === MemoFormats.JSON)
-                error = JSON.parse(tx.Memos[0].data).reason;
+                error = JSON.parse(error).reason;
 
             return {
                 name: EvernodeEvents.RedeemError,
                 data: {
                     transaction: tx,
                     redeemTxHash: redeemTxHash,
-                    reason: error.reason
+                    reason: error
                 }
             }
         }

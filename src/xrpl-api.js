@@ -9,6 +9,7 @@ class XrplApi {
 
     #client;
     #events = new EventEmitter();
+    #addressSubscriptions = [];
 
     constructor(rippledServer = null, options = {}) {
 
@@ -16,9 +17,11 @@ class XrplApi {
         this.rippledServer = rippledServer || DefaultValues.rippledServer;
 
         this.#client = options.xrplClient || new xrpl.Client(this.rippledServer);
+
         this.#client.on('error', (errorCode, errorMessage) => {
             console.log(errorCode + ': ' + errorMessage);
         });
+
         this.#client.on('disconnected', async (code) => {
             if (!this.connected)
                 return;
@@ -26,9 +29,28 @@ class XrplApi {
             this.connected = false;
             console.log(`Disconnected from ${this.rippledServer} code:`, code);
         });
+
         this.#client.on('ledgerClosed', (ledger) => {
             this.ledgerIndex = ledger.ledger_index;
             this.#events.emit(XrplApiEvents.LEDGER, ledger);
+        });
+
+        this.#client.on("transaction", (data) => {
+            if (data.validated) {
+                const matches = this.#addressSubscriptions.filter(s => s.address === data.transaction.Destination); // Only incoming transactions.
+                if (matches.length > 0) {
+                    const tx = { ...data.transaction }; // Create an object copy. Otherwise xrpl client will mutate the transaction object,
+                    const eventName = tx.TransactionType.toLowerCase();
+                    // Emit the event only for successful transactions, Otherwise emit error.
+                    if (data.engine_result === "tesSUCCESS") {
+                        tx.Memos = TransactionHelper.deserializeMemos(tx.Memos);
+                        matches.forEach(s => s.handler(eventName, tx));
+                    }
+                    else {
+                        matches.forEach(s => s.handler(eventName, null, data.engine_result_message));
+                    }
+                }
+            }
         });
     }
 
@@ -107,25 +129,17 @@ class XrplApi {
     }
 
     async subscribeToAddress(address, handler) {
-
-        // Register the event handler.
-        this.#client.on("transaction", (data) => {
-            if (data.validated && data.transaction.Destination === address) { // Only incoming transactions.
-                const tx = { ...data.transaction }; // Create an object copy. Otherwise xrpl client will mutate the transaction object,
-                const eventName = tx.TransactionType.toLowerCase();
-                // Emit the event only for successful transactions, Otherwise emit error.
-                if (data.engine_result === "tesSUCCESS") {
-                    tx.Memos = TransactionHelper.deserializeMemos(tx.Memos);
-                    handler(eventName, tx);
-                }
-                else {
-                    handler(eventName, null, data.engine_result_message);
-                }
-            }
-        });
-
+        this.#addressSubscriptions.push({ address: address, handler: handler });
         await this.#client.request({ command: 'subscribe', accounts: [address] });
-        console.log(`Subscribed to transactions on ${address}`);
+    }
+
+    async unsubscribeFromAddress(address, handler) {
+        for (let i = this.#addressSubscriptions.length - 1; i >= 0; i--) {
+            const sub = this.#addressSubscriptions[i];
+            if (sub.address === address && sub.handler === handler)
+                this.#addressSubscriptions.splice(i, 1);
+        }
+        await this.#client.request({ command: 'unsubscribe', accounts: [address] });
     }
 
     async #subscribeToStream(streamName) {

@@ -24,7 +24,7 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async isRegistered() {
-        return (await this.getRegistration()) !== null
+        return (await this.getRegistration()) !== undefined
     }
 
     async prepareAccount() {
@@ -51,7 +51,7 @@ class HostClient extends BaseEvernodeClient {
     async register(hostingToken, instanceSize, location, options = {}) {
 
         if (await this.isRegistered())
-            throw "Host already registered."
+            throw "Host already registered.";
 
         const memoData = `${hostingToken};${instanceSize};${location}`
         return this.xrplAcc.makePayment(this.hookAddress,
