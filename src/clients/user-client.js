@@ -22,13 +22,13 @@ class UserClient extends BaseEvernodeClient {
         super(xrpAddress, xrpSecret, Object.values(UserEvents), true, options);
 
         this.on(UserEvents.RedeemSuccess, async (ev) => {
-            this.#respWatcher.emit(REDEEM_WATCH_PREFIX + ev.redeemTxHash, { success: true, data: ev.payload, transaction: ev.transaction });
+            this.#respWatcher.emit(REDEEM_WATCH_PREFIX + ev.redeemRefId, { success: true, data: ev.payload, transaction: ev.transaction });
         });
         this.on(UserEvents.RedeemError, async (ev) => {
-            this.#respWatcher.emit(REDEEM_WATCH_PREFIX + ev.redeemTxHash, { success: false, data: ev.reason, transaction: ev.transaction });
+            this.#respWatcher.emit(REDEEM_WATCH_PREFIX + ev.redeemRefId, { success: false, data: ev.reason, transaction: ev.transaction });
         });
         this.on(UserEvents.RefundSuccess, async (ev) => {
-            this.#respWatcher.emit(REFUND_WATCH_PREFIX + ev.redeemTxHash, ev);
+            this.#respWatcher.emit(REFUND_WATCH_PREFIX + ev.refundRefId, ev);
         });
     }
 
@@ -94,8 +94,14 @@ class UserClient extends BaseEvernodeClient {
                 reject({ error: ErrorCodes.REDEEM_ERR, reason: ErrorReasons.TRANSACTION_FAILURE, transaction: errtx });
             });
             if (tx) {
-                const response = await this.watchRedeemResponse(tx, options).catch(error => reject(error));
-                resolve(response);
+                const response = await this.watchRedeemResponse(tx, options).catch(error => {
+                    error.redeemRefId = tx.id;
+                    reject(error);
+                });
+                if (response) {
+                    response.redeemRefId = tx.id;
+                    resolve(response);
+                }
             }
         });
     }
@@ -118,13 +124,13 @@ class UserClient extends BaseEvernodeClient {
         });
     }
 
-    refund(redeemTxHash, options = {}) {
+    refund(redeemRefId, options = {}) {
         return new Promise(async (resolve, reject) => {
             const tx = await this.xrplAcc.makePayment(this.hookAddress,
                 XrplConstants.MIN_XRP_AMOUNT,
                 XrplConstants.XRP,
                 null,
-                [{ type: MemoTypes.REFUND, format: MemoFormats.HEX, data: redeemTxHash }],
+                [{ type: MemoTypes.REFUND, format: MemoFormats.HEX, data: redeemRefId }],
                 options.transactionOptions)
                 .catch(errtx => {
                     reject({ error: ErrorCodes.REFUND_ERR, reason: ErrorReasons.TRANSACTION_FAILURE, transaction: errtx });

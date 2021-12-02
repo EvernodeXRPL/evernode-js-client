@@ -178,7 +178,7 @@ class BaseEvernodeClient {
             tx.Memos[1].type === MemoTypes.REDEEM_REF && tx.Memos[1].data) {
 
             let payload = tx.Memos[0].data;
-            const redeemTxHash = tx.Memos[1].data;
+            const redeemRefId = tx.Memos[1].data;
 
             // If our account is the destination user account, then decrypt the payload.
             if (tx.Memos[0].format === MemoFormats.BASE64 && tx.Destination === this.xrplAcc.address) {
@@ -193,7 +193,7 @@ class BaseEvernodeClient {
                 name: EvernodeEvents.RedeemSuccess,
                 data: {
                     transaction: tx,
-                    redeemTxHash: redeemTxHash,
+                    redeemRefId: redeemRefId,
                     payload: payload
                 }
             }
@@ -204,7 +204,7 @@ class BaseEvernodeClient {
             tx.Memos[1].type === MemoTypes.REDEEM_REF && tx.Memos[1].data) {
 
             let error = tx.Memos[0].data;
-            const redeemTxHash = tx.Memos[1].data;
+            const redeemRefId = tx.Memos[1].data;
 
             if (tx.Memos[0].format === MemoFormats.JSON)
                 error = JSON.parse(error).reason;
@@ -213,7 +213,7 @@ class BaseEvernodeClient {
                 name: EvernodeEvents.RedeemError,
                 data: {
                     transaction: tx,
-                    redeemTxHash: redeemTxHash,
+                    redeemRefId: redeemRefId,
                     reason: error
                 }
             }
@@ -224,22 +224,21 @@ class BaseEvernodeClient {
                 name: EvernodeEvents.Refund,
                 data: {
                     transaction: tx,
-                    redeemTxHash: tx.Memos[0].data
+                    redeemRefId: tx.Memos[0].data
                 }
             }
         }
         else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.REFUND_SUCCESSS && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
-
-            const refundReqTx = tx.Memos[0].data.substring(0, 64);
-            const redeemTx = tx.Memos[0].data.substring(64, 128);
+            tx.Memos[0].type === MemoTypes.REFUND_SUCCESS && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+            const refundRefId = tx.Memos[0].data.substring(0, 64);
+            const redeemRefId = tx.Memos[0].data.substring(64, 128);
 
             return {
                 name: EvernodeEvents.RefundSuccess,
                 data: {
                     transaction: tx,
-                    redeemTx: redeemTx,
-                    refundReqTx: refundReqTx,
+                    refundRefId: refundRefId,
+                    redeemRefId: redeemRefId,
                     amount: tx.Amount.value,
                     issuer: tx.Amount.issuer,
                     currency: tx.Amount.currency

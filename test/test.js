@@ -1,7 +1,7 @@
 const evernode = require("evernode-js-client");
 
-const hookAddress = "rHGY4fZUSqowzjArrPbJrPRUPLqLz9pAte";
-const hookSecret = "shr6tWYFRefogap9pdLDoRrUNRfHN";
+const hookAddress = "rEKxjWAvk7zEK93QsgQsRGKbbRzg9v1zHV";
+const hookSecret = "snGeJGxyArUmy14PsaYQw6J5npWeT";
 const hostAddress = "rfjtFb8xz4mmocFgpvpJjp8hbfAWZ3JCgb";
 const hostSecret = "shGDdT5nb7oVjJSYBs7BUsQTbfmdN";
 const hostToken = "ABC";
@@ -12,6 +12,7 @@ const clients = [];
 
 async function app() {
 
+    // Use a singleton xrplApi for all tests.
     const xrplApi = new evernode.XrplApi();
     evernode.Defaults.set({
         hookAddress: hookAddress,
@@ -25,7 +26,10 @@ async function app() {
             () => registerHost(),
             () => redeem("success"),
             () => redeem("error"),
-            () => redeem("timeout")];
+            () => redeem("timeout"),
+            () => refundInvalid(),
+            // () => refundValid() // Must use short moment size and redeem window in the hook to test this.
+        ];
 
         for (test of tests) {
             await test();
@@ -45,7 +49,7 @@ async function registerHost() {
     const host = await getHostClient();
 
     if (await host.isRegistered())
-        return;
+        return true;
 
     console.log(`-----------Register host`);
 
@@ -65,7 +69,7 @@ async function registerHost() {
     await host.register(hostToken, "8GB", "AU");
 
     // Verify the registration.
-    console.log(await host.getRegistration());
+    return await host.isRegistered();
 }
 
 function redeem(scenario) {
@@ -97,22 +101,82 @@ function redeem(scenario) {
                 resolve();
         })
 
-        // Send hosting tokens to user if needed.
-        const lines = await user.xrplAcc.getTrustLines(hostToken, hostAddress);
-        if (lines.length === 0 || parseInt(lines[0].balance) < user.hookConfig.minRedeem) {
-            await user.xrplAcc.setTrustLine(hostToken, hostAddress, "99999999");
-            await host.xrplAcc.makePayment(userAddress, "1000", hostToken, hostAddress);
-        }
+        await fundUser(user);
 
-        const result = await user.redeem(hostToken, hostAddress, user.hookConfig.minRedeem, "dummy request", { timeout: 10000 })
-            .catch(err => console.log("User recieved redeem error: ", err.reason));
-
-        if (result)
+        try {
+            const result = await user.redeem(hostToken, hostAddress, user.hookConfig.minRedeem, "dummy request", { timeout: 10000 });
             console.log(`User received instance '${result.instance}'`);
+        }
+        catch (err) {
+            console.log("User recieved redeem error: ", err.reason)
+        }
 
         if (++tasks === 2)
             resolve();
     })
+}
+
+async function refundValid() {
+    console.log(`-----------Refund (valid)`);
+
+    const user = await getUserClient();
+    await user.prepareAccount();
+    await fundUser(user);
+
+    try {
+        await user.redeem(hostToken, hostAddress, user.hookConfig.minRedeem, "dummy request", { timeout: 2000 })
+    }
+    catch (err) {
+        console.log("User recieved redeem error: ", err.reason)
+
+        const hookClient = await getHookClient();
+        const startMoment = await hookClient.getMoment();
+
+        console.log(`Waiting until current Moment (${startMoment}) passes for refund...`);
+
+        while (true) {
+            await new Promise(resolve => setTimeout(resolve, 4000));
+            const moment = await hookClient.getMoment();
+            if (moment > startMoment) {
+                console.log(`Entered into Moment ${moment}. Proceeding...`);
+                break;
+            }
+            else {
+                console.log(`Still in Moment ${moment}. Waiting...`);
+            }
+        }
+
+        try {
+            await user.refund(err.redeemRefId);
+            console.log("Refund success");
+
+        }
+        catch (err) {
+            console.log("Refund error: ", err.reason);
+        }
+    }
+}
+
+async function refundInvalid() {
+    console.log(`-----------Refund (invalid)`);
+
+    const user = await getUserClient();
+    await user.prepareAccount();
+    await fundUser(user);
+
+    try {
+        await user.redeem(hostToken, hostAddress, user.hookConfig.minRedeem, "dummy request", { timeout: 2000 })
+    }
+    catch (err) {
+        console.log("User recieved redeem error: ", err.reason)
+        console.log("Immedidately initiating refund...");
+
+        // Refund will fail because refund has to wait until the current Moment passes.
+
+        const refund = await user.refund(err.redeemRefId).catch(err => console.log("Refund error: ", err.reason));
+        if (refund)
+            console.log("Refund success");
+    }
 }
 
 async function getUserClient() {
@@ -134,6 +198,15 @@ async function getHookClient() {
     await client.connect();
     clients.push(client);
     return client;
+}
+
+async function fundUser(user) {
+    // Send hosting tokens to user if needed.
+    const lines = await user.xrplAcc.getTrustLines(hostToken, hostAddress);
+    if (lines.length === 0 || parseInt(lines[0].balance) < user.hookConfig.minRedeem) {
+        await user.xrplAcc.setTrustLine(hostToken, hostAddress, "99999999");
+        await new evernode.XrplAccount(hostAddress, hostSecret).makePayment(userAddress, "1000", hostToken, hostAddress);
+    }
 }
 
 app();

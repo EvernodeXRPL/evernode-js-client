@@ -1,6 +1,6 @@
 const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { EvernodeEvents, MemoTypes, ErrorCodes,ErrorReasons } = require('../evernode-common');
+const { EvernodeEvents, MemoTypes, ErrorCodes, ErrorReasons } = require('../evernode-common');
 const { EventEmitter } = require('../event-emitter');
 
 const AUDIT_TRUSTLINE_LIMIT = '999999999';
@@ -65,7 +65,7 @@ class AuditorClient extends BaseEvernodeClient {
                                 address: data.issuer,
                                 currency: data.currency,
                                 amount: data.value,
-                                cashTxHash: result.id
+                                cashRefId: result.id
                             });
                         }
                     });
