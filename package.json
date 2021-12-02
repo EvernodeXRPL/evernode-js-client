@@ -1,6 +1,6 @@
 {
     "name": "evernode-js-client",
-    "version": "0.2.14",
+    "version": "0.2.15",
     "scripts": {
         "lint": "./node_modules/.bin/eslint src/**/*.js",
         "build": "npm run lint && ncc build src/index.js -e elliptic -e xrpl -e ripple-address-codec -e ripple-keypairs -o dist/",
