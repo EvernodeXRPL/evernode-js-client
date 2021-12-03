@@ -7,27 +7,33 @@ const { XrplApiEvents } = require('./xrpl-common');
 
 class XrplApi {
 
+    #rippledServer;
     #client;
     #events = new EventEmitter();
     #addressSubscriptions = [];
+    #maintainConnection = false;
 
-    constructor(rippledServer = null, options = {}) {
+    constructor(rippledServer = null) {
 
-        this.connected = false;
-        this.rippledServer = rippledServer || DefaultValues.rippledServer;
+        this.#rippledServer = rippledServer || DefaultValues.rippledServer;
+        this.#initXrplClient();
+    }
 
-        this.#client = options.xrplClient || new xrpl.Client(this.rippledServer);
+    #initXrplClient() {
+        this.#client = new xrpl.Client(this.#rippledServer);
 
         this.#client.on('error', (errorCode, errorMessage) => {
             console.log(errorCode + ': ' + errorMessage);
         });
 
         this.#client.on('disconnected', async (code) => {
-            if (!this.connected)
-                return;
-
-            this.connected = false;
-            console.log(`Disconnected from ${this.rippledServer} code:`, code);
+            if (this.#maintainConnection) {
+                console.log(`Connection failure for ${this.#rippledServer} (code:${code})`);
+                console.log("Reinitializing xrpl client.");
+                await this.#client.disconnect();
+                this.#initXrplClient();
+                this.#connectXrplClient(true);
+            }
         });
 
         this.#client.on('ledgerClosed', (ledger) => {
@@ -54,6 +60,42 @@ class XrplApi {
         });
     }
 
+    async #connectXrplClient(reconnect = false) {
+
+        if (reconnect) {
+            let attempts = 0;
+            while (this.#maintainConnection) { // Keep attempting until consumer calls disconnect() manually.
+                console.log(`Reconnection attempt ${++attempts}`);
+                try {
+                    await this.#client.connect();
+                    break;
+                }
+                catch {
+                    if (this.#maintainConnection) {
+                        const delaySec = 2 * attempts; // Retry with backoff delay.
+                        console.log(`Attempt ${attempts} failed. Retrying in ${delaySec}s...`);
+                        await new Promise(resolve => setTimeout(resolve, delaySec * 1000));
+                    }
+                }
+            }
+        }
+        else {
+            // Single attempt and throw error. Used for initial connect() call.
+            await this.#client.connect();
+        }
+
+        // After connection established, check again whether maintainConnections has become false.
+        // This is in case the consumer has called disconnect() while connection is being established.
+        if (this.#maintainConnection) {
+            console.log(`Connected to ${this.#rippledServer}`);
+            this.ledgerIndex = await this.#client.getLedgerIndex();
+            this.#subscribeToStream('ledger');
+        }
+        else {
+            await this.disconnect();
+        }
+    }
+
     on(event, handler) {
         this.#events.on(event, handler);
     }
@@ -67,28 +109,20 @@ class XrplApi {
     }
 
     async connect() {
-        if (this.connected)
+        if (this.#maintainConnection)
             return;
 
-        try {
-            await this.#client.connect();
-            console.log(`Connected to ${this.rippledServer}`);
-            this.connected = true;
-
-            this.ledgerIndex = await this.#client.getLedgerIndex();
-            this.#subscribeToStream('ledger');
-        }
-        catch (e) {
-            console.log(`Couldn't connect ${this.rippledServer} : `, e);
-        }
+        this.#maintainConnection = true;
+        await this.#connectXrplClient();
     }
 
     async disconnect() {
-        const wasConnected = this.connected;
-        this.connected = false;
-        await this.#client.disconnect().catch(console.error);
-        if (wasConnected)
-            console.log(`Disconnected from ${this.rippledServer}`);
+        this.#maintainConnection = false;
+
+        if (this.#client.isConnected()) {
+            await this.#client.disconnect().catch(console.error);
+            console.log(`Disconnected from ${this.#rippledServer}`);
+        }
     }
 
     async isValidKeyForAddress(publicKey, address) {
