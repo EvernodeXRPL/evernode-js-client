@@ -1,5 +1,5 @@
 // Helper class to handle XFL float numbers.
-export class XflHelpers {
+class XflHelpers {
 
     static getExponent(xfl) {
         if (xfl < 0n)
@@ -52,4 +52,8 @@ export class XflHelpers {
 
 
     }
+}
+
+module.exports = {
+    XflHelpers
 }

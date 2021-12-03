@@ -1,38 +1,46 @@
-export const EvernodeConstants = {
-    DEFAULT_HOOK_ADDR: 'r3q12vGjcvXXEvRvcDwczesmG2jR81tvsE',
+const EvernodeConstants = {
     EVR: 'EVR'
 }
 
-export const MemoTypes = {
+const MemoTypes = {
     REDEEM: 'evnRedeem',
+    REDEEM_ORIGIN: 'evnRedeemOrigin',
+    REDEEM_SUCCESS: 'evnRedeemSuccess',
+    REDEEM_ERROR: 'evnRedeemError',
     REDEEM_REF: 'evnRedeemRef',
-    REDEEM_RESP: 'evnRedeemResp',
     HOST_REG: 'evnHostReg',
     HOST_DEREG: 'evnHostDereg',
     REFUND: 'evnRefund',
-    REFUND_RESP: 'evnRefundResp',
+    REFUND_SUCCESS: 'evnRefundSuccess',
+    REFUND_ERROR: 'evnRefundError',
     AUDIT_REQ: 'evnAuditRequest',
     AUDIT_SUCCESS: 'evnAuditSuccess',
-    AUDIT_REF: 'evnAuditRef',
-    REWARD_REF: 'evnRewardRef'
+    AUDIT_ASSIGNMENT: 'evnAuditAssignment',
+    REWARD: 'evnReward'
 }
 
-export const MemoFormats = {
+const MemoFormats = {
     TEXT: 'text/plain',
     JSON: 'text/json',
-    BINARY: 'binary'
+    BASE64: 'base64',
+    HEX: 'hex'
 }
 
-export const ErrorCodes = {
+const ErrorCodes = {
     REDEEM_ERR: 'REDEEM_ERR',
     REFUND_ERR: 'REFUND_ERR',
     AUDIT_REQ_ERROR: 'AUDIT_REQ_ERROR',
     AUDIT_SUCCESS_ERROR: 'AUDIT_SUCCESS_ERROR',
 }
 
+const ErrorReasons = {
+    TRANSACTION_FAILURE: 'TRANSACTION_FAILURE',
+    TRANSACTION_FAILURE: 'TRANSACTION_FAILURE'
+}
+
 // Default hook config values.
 // If hook's state is empty, values are loaded from here.
-export const HookStateDefaults = {
+const HookStateDefaults = {
     MOMENT_SIZE: 72,
     HOST_REG_FEE: '0.87654321',
     REDEEM_WINDOW: 24,
@@ -41,7 +49,7 @@ export const HookStateDefaults = {
 }
 
 // All keys are prefixed with 'EVR' (0x455652)
-export const HookStateKeys = {
+const HookStateKeys = {
     MOMENT_SIZE: "4556520100000000000000000000000000000000000000000000000000000001",
     HOST_REG_FEE: "4556520100000000000000000000000000000000000000000000000000000003",
     MIN_REDEEM: "4556520100000000000000000000000000000000000000000000000000000004",
@@ -52,16 +60,28 @@ export const HookStateKeys = {
     HOST_ADDR: "45565203"
 }
 
-export const HookEvents = {
-    HostRegistered: "hostRegistered",
-    HostDeregistered: "hostDeregistered",
-    Redeem: "redeem",
-    RedeemSuccess: "redeemSuccess",
-    RedeemError: "redeemError",
-    RefundRequest: "refundRequest",
-    RefundResp: "refundResp",
-    AuditRequest: "auditRequest",
-    AuditCheck: "auditCheck",
-    AuditSuccess: "auditSuccess",
-    Reward: "reward",
+const EvernodeEvents = {
+    HostRegistered: "HostRegistered",
+    HostDeregistered: "HostDeregistered",
+    Redeem: "Redeem",
+    RedeemSuccess: "RredeemSuccess",
+    RedeemError: "RedeemError",
+    Refund: "Refund",
+    RefundSuccess: "RefundSuccess",
+    RefundError: "RefundError",
+    Audit: "Audit",
+    AuditAssignment: "AuditAssignment",
+    AuditSuccess: "AuditSuccess",
+    Reward: "Reward",
+}
+
+module.exports = {
+    EvernodeConstants,
+    MemoTypes,
+    MemoFormats,
+    ErrorCodes,
+    ErrorReasons,
+    HookStateDefaults,
+    HookStateKeys,
+    EvernodeEvents
 }

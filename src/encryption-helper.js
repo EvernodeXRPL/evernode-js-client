@@ -1,6 +1,6 @@
-const eccrypto = require("eccrypto");
+const eccrypto = require('./eccrypto') // Using local copy of the eccrypto code file.
 
-export class EncryptionHelper {
+class EncryptionHelper {
     // Offsets of the properties in the encrypted buffer.
     static ivOffset = 65;
     static macOffset = this.ivOffset + 16;
@@ -34,4 +34,8 @@ export class EncryptionHelper {
 
         return JSON.parse(decrypted.toString());
     }
+}
+
+module.exports = {
+    EncryptionHelper
 }

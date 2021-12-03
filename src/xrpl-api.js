@@ -1,23 +1,27 @@
 const xrpl = require('xrpl');
 const kp = require('ripple-keypairs');
 const { EventEmitter } = require('./event-emitter');
+const { DefaultValues } = require('./defaults');
 const { TransactionHelper } = require('./transaction-helper');
-const { RippleAPIEvents, RippleConstants } = require('./ripple-common');
+const { XrplApiEvents } = require('./xrpl-common');
 
-export class RippleAPIWrapper {
+class XrplApi {
 
     #client;
+    #events = new EventEmitter();
+    #addressSubscriptions = [];
 
     constructor(rippledServer = null, options = {}) {
 
         this.connected = false;
-        this.rippledServer = rippledServer || RippleConstants.DEFAULT_RIPPLED_SERVER;
-        this.events = new EventEmitter();
+        this.rippledServer = rippledServer || DefaultValues.rippledServer;
 
         this.#client = options.xrplClient || new xrpl.Client(this.rippledServer);
+
         this.#client.on('error', (errorCode, errorMessage) => {
             console.log(errorCode + ': ' + errorMessage);
         });
+
         this.#client.on('disconnected', async (code) => {
             if (!this.connected)
                 return;
@@ -25,10 +29,41 @@ export class RippleAPIWrapper {
             this.connected = false;
             console.log(`Disconnected from ${this.rippledServer} code:`, code);
         });
+
         this.#client.on('ledgerClosed', (ledger) => {
             this.ledgerIndex = ledger.ledger_index;
-            this.events.emit(RippleAPIEvents.LEDGER, ledger);
+            this.#events.emit(XrplApiEvents.LEDGER, ledger);
         });
+
+        this.#client.on("transaction", (data) => {
+            if (data.validated) {
+                const matches = this.#addressSubscriptions.filter(s => s.address === data.transaction.Destination); // Only incoming transactions.
+                if (matches.length > 0) {
+                    const tx = { ...data.transaction }; // Create an object copy. Otherwise xrpl client will mutate the transaction object,
+                    const eventName = tx.TransactionType.toLowerCase();
+                    // Emit the event only for successful transactions, Otherwise emit error.
+                    if (data.engine_result === "tesSUCCESS") {
+                        tx.Memos = TransactionHelper.deserializeMemos(tx.Memos);
+                        matches.forEach(s => s.handler(eventName, tx));
+                    }
+                    else {
+                        matches.forEach(s => s.handler(eventName, null, data.engine_result_message));
+                    }
+                }
+            }
+        });
+    }
+
+    on(event, handler) {
+        this.#events.on(event, handler);
+    }
+
+    once(event, handler) {
+        this.#events.once(event, handler);
+    }
+
+    off(event, handler = null) {
+        this.#events.off(event, handler);
     }
 
     async connect() {
@@ -41,6 +76,7 @@ export class RippleAPIWrapper {
             this.connected = true;
 
             this.ledgerIndex = await this.#client.getLedgerIndex();
+            this.#subscribeToStream('ledger');
         }
         catch (e) {
             console.log(`Couldn't connect ${this.rippledServer} : `, e);
@@ -57,8 +93,8 @@ export class RippleAPIWrapper {
 
     async isValidKeyForAddress(publicKey, address) {
         const info = await this.getAccountInfo(address);
-        const accountFlags = xrpl.parseAccountRootFlags(info.account_data.Flags);
-        const regularKey = info.account_data.RegularKey;
+        const accountFlags = xrpl.parseAccountRootFlags(info.Flags);
+        const regularKey = info.RegularKey;
         const derivedPubKeyAddress = kp.deriveAddress(publicKey);
 
         // If the master key is disabled the derived pubkey address should be the regular key.
@@ -71,7 +107,7 @@ export class RippleAPIWrapper {
 
     async getAccountInfo(address) {
         const resp = (await this.#client.request({ command: 'account_info', account: address }));
-        return resp?.result;
+        return resp?.result?.account_data;
     }
 
     async getAccountObjects(address, options) {
@@ -88,28 +124,29 @@ export class RippleAPIWrapper {
         return [];
     }
 
-    async subscribeToAddress(address, handler) {
-
-        // Register the event handler.
-        this.#client.on("transaction", (data) => {
-            if (data.validated && data.transaction.Destination === address) { // Only incoming transactions.
-                const eventName = data.transaction.TransactionType.toLowerCase();
-                // Emit the event only for successful transactions, Otherwise emit error.
-                if (data.engine_result === "tesSUCCESS") {
-                    data.transaction.Memos = TransactionHelper.deserializeMemos(data.transaction.Memos);
-                    handler(eventName, data.transaction);
-                }
-                else {
-                    handler(eventName, null, data.engine_result_message);
-                }
-            }
-        });
-
-        await this.#client.request({ command: 'subscribe', accounts: [address] });
-        console.log(`Subscribed to transactions on ${address}`);
-    }
-
     async submitAndVerify(tx, options) {
         return await this.#client.submitAndWait(tx, options);
     }
+
+    async subscribeToAddress(address, handler) {
+        this.#addressSubscriptions.push({ address: address, handler: handler });
+        await this.#client.request({ command: 'subscribe', accounts: [address] });
+    }
+
+    async unsubscribeFromAddress(address, handler) {
+        for (let i = this.#addressSubscriptions.length - 1; i >= 0; i--) {
+            const sub = this.#addressSubscriptions[i];
+            if (sub.address === address && sub.handler === handler)
+                this.#addressSubscriptions.splice(i, 1);
+        }
+        await this.#client.request({ command: 'unsubscribe', accounts: [address] });
+    }
+
+    async #subscribeToStream(streamName) {
+        await this.#client.request({ command: 'subscribe', streams: [streamName] });
+    }
+}
+
+module.exports = {
+    XrplApi
 }

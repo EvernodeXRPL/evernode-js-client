@@ -2,22 +2,46 @@ const xrpl = require('xrpl');
 const kp = require('ripple-keypairs');
 const codec = require('ripple-address-codec');
 const crypto = require("crypto");
-const { RippleConstants } = require('./ripple-common');
+const { XrplConstants } = require('./xrpl-common');
 const { TransactionHelper } = require('./transaction-helper');
 const { EventEmitter } = require('./event-emitter');
+const { DefaultValues } = require('./defaults');
 
-export class XrplAccount {
-    constructor(rippleAPI, address, secret = null) {
-        this.rippleAPI = rippleAPI;
+class XrplAccount {
+
+    #events = new EventEmitter();
+    #subscribed = false;
+    #sequence;
+    #sequenceCachedOn;
+    #txStreamHandler;
+
+    constructor(address, secret = null, options = {}) {
+        this.xrplApi = options.xrplApi || DefaultValues.xrplApi;
+
+        if (!this.xrplApi)
+            throw "XrplAccount: xrplApi not specified.";
+
         this.address = address;
-        this.events = new EventEmitter();
-        this.subscribed = false;
-        this.sequence = null;
-        this.sequenceCachedOn = null;
 
         this.secret = secret;
         if (this.secret)
             this.wallet = xrpl.Wallet.fromSeed(this.secret);
+
+        this.#txStreamHandler = (eventName, tx, error) => {
+            this.#events.emit(eventName, tx, error);
+        };
+    }
+
+    on(event, handler) {
+        this.#events.on(event, handler);
+    }
+
+    once(event, handler) {
+        this.#events.once(event, handler);
+    }
+
+    off(event, handler = null) {
+        this.#events.off(event, handler);
     }
 
     deriveKeypair() {
@@ -27,48 +51,72 @@ export class XrplAccount {
         return kp.deriveKeypair(this.secret);
     }
 
+    async getInfo() {
+        return await this.xrplApi.getAccountInfo(this.address);
+    }
+
     async getSequence() {
-        const info = await this.rippleAPI.getAccountInfo(this.address);
-        return info && info.account_data.Sequence || 0;
+        return (await this.getInfo()).Sequence;
     }
 
     async getNextSequence() {
 
         // If cached value is expired, delete it.
-        if (this.sequenceCachedOn && this.sequenceCachedOn < (new Date().getTime() - 5000)) {
-            this.sequence = null;
-            this.sequenceCachedOn = null;
+        if (this.#sequenceCachedOn && this.#sequenceCachedOn < (new Date().getTime() - 5000)) {
+            this.#sequence = null;
+            this.#sequenceCachedOn = null;
         }
 
-        if (!this.sequence) {
-            const info = await this.rippleAPI.getAccountInfo(this.address);
+        if (!this.#sequence) {
+            const info = await this.getInfo();
             // This can get called by parallel transactions. So we are checking for null again before updating.
-            if (!this.sequence) {
-                this.sequence = info.account_data.Sequence;
-                this.sequenceCachedOn = new Date().getTime();
+            if (!this.#sequence) {
+                this.#sequence = info.Sequence;
+                this.#sequenceCachedOn = new Date().getTime();
             }
             else {
-                this.sequence++;
+                this.#sequence++;
             }
         }
         else {
-            this.sequence++;
+            this.#sequence++;
         }
-        return this.sequence;
+        return this.#sequence;
     }
 
-    async getEncryptionKey() {
-        const info = await this.rippleAPI.getAccountInfo(this.address);
-        const keyHex = info.account_data.MessageKey;
-        return keyHex;
+    async getMessageKey() {
+        return (await this.getInfo()).MessageKey;
     }
 
     async getTrustLines(currency, issuer) {
-        const lines = await this.rippleAPI.getTrustlines(this.address, {
+        const lines = await this.xrplApi.getTrustlines(this.address, {
             limit: 399,
             peer: issuer
         });
         return currency ? lines.filter(l => l.currency === currency) : lines;
+    }
+
+    async getChecks(fromAccount) {
+        return await this.xrplApi.getAccountObjects(fromAccount, { type: "check" });
+    }
+
+    async getAccountObjects(options) {
+        return await this.xrplApi.getAccountObjects(this.address, options);
+    }
+
+    async getFlags() {
+        return xrpl.parseAccountRootFlags((await this.getInfo()).Flags);
+    }
+
+    async getHookStates(options = { limit: 399 }) {
+        // We use a large limit since there's no way to just get the HookState objects.
+        const states = await this.getAccountObjects(options);
+        return states.filter(s => s.LedgerEntryType === 'HookState').map(s => {
+            return {
+                key: s.HookStateKey, //hex
+                data: s.HookStateData //hex
+            }
+        });
     }
 
     async setMessageKey(publicKey, options = {}) {
@@ -80,7 +128,7 @@ export class XrplAccount {
         return result;
     }
 
-    async setDefaultRippling(enabled, options = {}) {
+    setDefaultRippling(enabled, options = {}) {
 
         const tx = {
             TransactionType: 'AccountSet',
@@ -92,39 +140,37 @@ export class XrplAccount {
         else
             tx.ClearFlag = xrpl.AccountSetAsfFlags.asfDefaultRipple;
 
-        const result = await this.#submitAndVerifyTransaction(tx, options);
-        return result;
+        return this.#submitAndVerifyTransaction(tx, options);
     }
 
-    async makePayment(toAddr, amount, currency, issuer = null, memos = null, options = {}) {
+    makePayment(toAddr, amount, currency, issuer = null, memos = null, options = {}) {
 
         if (typeof amount !== 'string')
             throw "Amount must be a string.";
-        if (currency !== RippleConstants.XRP && !issuer)
+        if (currency !== XrplConstants.XRP && !issuer)
             throw "Non-XRP currency must have an issuer.";
 
-        const amountObj = (currency == RippleConstants.XRP) ? amount : {
+        const amountObj = (currency == XrplConstants.XRP) ? amount : {
             currency: currency,
             issuer: issuer,
             value: amount
         }
 
-        const result = await this.#submitAndVerifyTransaction({
+        return this.#submitAndVerifyTransaction({
             TransactionType: 'Payment',
             Account: this.address,
             Amount: amountObj,
             Destination: toAddr,
             Memos: TransactionHelper.formatMemos(memos)
         }, options);
-        return result;
     }
 
-    async setTrustLine(currency, issuer, limit, allowRippling = false, memos = null, options = {}) {
+    setTrustLine(currency, issuer, limit, allowRippling = false, memos = null, options = {}) {
 
         if (typeof limit !== 'string')
             throw "Limit must be a string.";
 
-        const result = await this.#submitAndVerifyTransaction({
+        return this.#submitAndVerifyTransaction({
             TransactionType: 'TrustSet',
             Account: this.address,
             LimitAmount: {
@@ -137,18 +183,9 @@ export class XrplAccount {
             },
             Memos: TransactionHelper.formatMemos(memos)
         }, options);
-        return result;
     }
 
-    async getChecks(fromAccount) {
-        return await this.rippleAPI.getAccountObjects(fromAccount, { type: "check" });
-    }
-
-    async getAccountObjects(options) {
-        return await this.rippleAPI.getAccountObjects(this.address, options);
-    }
-
-    async cashCheck(check, options = {}) {
+    cashCheck(check, options = {}) {
         const checkIDhasher = crypto.createHash('sha512')
         checkIDhasher.update(Buffer.from('0043', 'hex'))
         checkIDhasher.update(Buffer.from(codec.decodeAccountID(check.Account)))
@@ -158,7 +195,7 @@ export class XrplAccount {
         const checkID = checkIDhasher.digest('hex').slice(0, 64).toUpperCase()
         console.log("Calculated checkID:", checkID);
 
-        const result = await this.#submitAndVerifyTransaction({
+        return this.#submitAndVerifyTransaction({
             TransactionType: 'CheckCash',
             Account: this.address,
             CheckID: checkID,
@@ -168,19 +205,24 @@ export class XrplAccount {
                 value: check.SendMax.value
             },
         }, options);
-        return result;
     }
 
     async subscribe() {
         // Subscribe only once. Otherwise event handlers will be duplicated.
-        if (this.subscribed)
+        if (this.#subscribed)
             return;
 
-        await this.rippleAPI.subscribeToAddress(this.address, (eventName, tx, error) => {
-            this.events.emit(eventName, tx, error);
-        });
+        await this.xrplApi.subscribeToAddress(this.address, this.#txStreamHandler);
 
-        this.subscribed = true;
+        this.#subscribed = true;
+    }
+
+    async unsubscribe() {
+        if (!this.#subscribed)
+            return;
+
+        await this.xrplApi.unsubscribeFromAddress(this.address, this.#txStreamHandler);
+        this.#subscribed = false;
     }
 
     #submitAndVerifyTransaction(tx, options) {
@@ -200,13 +242,13 @@ export class XrplAccount {
 
             // Attach tx options to the transaction.
             const txOptions = {
-                LastLedgerSequence: options.maxLedgerIndex || (this.rippleAPI.ledgerIndex + RippleConstants.MAX_LEDGER_OFFSET),
+                LastLedgerSequence: options.maxLedgerIndex || (this.xrplApi.ledgerIndex + XrplConstants.MAX_LEDGER_OFFSET),
                 Sequence: options.sequence || await this.getNextSequence()
             }
             Object.assign(tx, txOptions);
 
             try {
-                const submission = await this.rippleAPI.submitAndVerify(tx, { wallet: this.wallet });
+                const submission = await this.xrplApi.submitAndVerify(tx, { wallet: this.wallet });
                 const r = submission?.result;
                 const txResult = {
                     id: r?.hash,
@@ -227,4 +269,8 @@ export class XrplAccount {
 
         });
     }
+}
+
+module.exports = {
+    XrplAccount
 }
