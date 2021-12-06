@@ -19,20 +19,25 @@ class XrplApi {
         this.#initXrplClient();
     }
 
-    #initXrplClient() {
+    async #initXrplClient() {
+
+        if (this.#client) { // If the client already exists, clean it up.
+            this.#client.removeAllListeners(); // Remove existing event listeners to avoid them getting called from the old client object.
+            await this.#client.disconnect();
+            this.#client = null;
+        }
+
         this.#client = new xrpl.Client(this.#rippledServer);
 
         this.#client.on('error', (errorCode, errorMessage) => {
             console.log(errorCode + ': ' + errorMessage);
         });
 
-        this.#client.on('disconnected', async (code) => {
+        this.#client.on('disconnected', (code) => {
             if (this.#maintainConnection) {
                 console.log(`Connection failure for ${this.#rippledServer} (code:${code})`);
                 console.log("Reinitializing xrpl client.");
-                await this.#client.disconnect();
-                this.#initXrplClient();
-                this.#connectXrplClient(true);
+                this.#initXrplClient().then(() => this.#connectXrplClient(true));
             }
         });
 
