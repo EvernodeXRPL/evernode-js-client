@@ -13,8 +13,9 @@ const MemoTypes = {
     REFUND: 'evnRefund',
     REFUND_SUCCESS: 'evnRefundSuccess',
     REFUND_ERROR: 'evnRefundError',
-    AUDIT_REQ: 'evnAuditRequest',
+    AUDIT: 'evnAudit',
     AUDIT_SUCCESS: 'evnAuditSuccess',
+    AUDIT_FAILED: 'evnAuditFailed',
     AUDIT_ASSIGNMENT: 'evnAuditAssignment',
     REWARD: 'evnReward'
 }
@@ -31,10 +32,10 @@ const ErrorCodes = {
     REFUND_ERR: 'REFUND_ERR',
     AUDIT_REQ_ERROR: 'AUDIT_REQ_ERROR',
     AUDIT_SUCCESS_ERROR: 'AUDIT_SUCCESS_ERROR',
+    AUDIT_FAIL_ERROR: 'AUDIT_FAIL_ERROR'
 }
 
 const ErrorReasons = {
-    TRANSACTION_FAILURE: 'TRANSACTION_FAILURE',
     TRANSACTION_FAILURE: 'TRANSACTION_FAILURE'
 }
 

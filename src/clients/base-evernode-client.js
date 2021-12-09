@@ -281,7 +281,7 @@ class BaseEvernodeClient {
             }
         }
         else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.AUDIT_REQ) {
+            tx.Memos[0].type === MemoTypes.AUDIT) {
             return {
                 name: EvernodeEvents.Audit,
                 data: {
