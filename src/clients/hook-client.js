@@ -1,8 +1,9 @@
-const { EvernodeEvents, HookStateKeys } = require('../evernode-common');
+const { EvernodeEvents, HookStateKeys, HookStateDefaults } = require('../evernode-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
 const { DefaultValues } = require('../defaults');
 const rippleCodec = require('ripple-address-codec');
 const { Buffer } = require('buffer');
+const { XflHelpers } = require('../xfl-helpers');
 
 const HookEvents = {
     HostRegistered: EvernodeEvents.HostRegistered,
@@ -42,6 +43,26 @@ class HookClient extends BaseEvernodeClient {
 
         await Promise.resolve(); // Awaiter placeholder for future async requirements.
         return m;
+    }
+
+    async getRewardPool() {
+        let states = await this.xrplAcc.getHookStates();
+        states = states.map(s => {
+            return {
+                key: s.key,
+                data: Buffer.from(s.data, 'hex')
+            }
+        });
+
+        let buf = await this.getStateData(states, HookStateKeys.REWARD_POOL);
+        if (buf) {
+            buf = Buffer.from(buf);
+            const xfl = buf.readBigInt64BE(0);
+            return XflHelpers.toString(xfl);
+        }
+        else {
+            return HookStateDefaults.REWARD_POOL;
+        }
     }
 }
 

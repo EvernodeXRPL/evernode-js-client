@@ -1,19 +1,41 @@
-const evernode = require("evernode-js-client");
+// const evernode = require("evernode-js-client");
+const evernode = require("../dist"); // Local dist dir.
 
 const hookAddress = "rHxCwRQcSDr5b2Ln4onZiSBG58Jvm1BoXK";
 const hookSecret = "shKu6kobQjGSRroK1dm9TgzwWZWPV";
 const hostAddress = "rfjtFb8xz4mmocFgpvpJjp8hbfAWZ3JCgb";
 const hostSecret = "shGDdT5nb7oVjJSYBs7BUsQTbfmdN";
 const hostToken = "ABC";
+const extra_hostAddress = "rBdWg75namZt6qsKeLQ64NaLv5o864mLJG";
+const extra_hostSecret = "ssK25HB6tfTzcsGKWRyEuabiwPQis";
+const extra_hostToken = "ABD";
 const userAddress = "r4DKWDEgr6faS7XnKeKKRmorFqufT9NrNa";
 const userSecret = "ssHufjnAFacFSZsoen8i4KVVtUFQa";
+const auditorAddress = "rUWDtXPk4gAp8L6dNS51hLArnwFk4bRxky";
+const auditorSecret = "snUByxoPxYHTZjUBg38X8ihHk5QVi";
+
+const auditHosts = [
+    {
+        address: hostAddress,
+        secret: hostSecret,
+        token: hostToken
+    },
+    {
+        address: extra_hostAddress,
+        secret: extra_hostSecret,
+        token: extra_hostToken
+    }
+]
+
+// const rippledServer = 'ws://localhost:6005';
+const rippledServer = 'wss://hooks-testnet.xrpl-labs.com'; // Testnet.
 
 const clients = [];
 
 async function app() {
 
     // Use a singleton xrplApi for all tests.
-    const xrplApi = new evernode.XrplApi();
+    const xrplApi = new evernode.XrplApi(rippledServer);
     evernode.Defaults.set({
         hookAddress: hookAddress,
         xrplApi: xrplApi
@@ -28,6 +50,8 @@ async function app() {
             () => redeem("error"),
             () => redeem("timeout"),
             () => refundInvalid(),
+            () => auditRequest(),
+            () => auditResponse("success", "failed"),
             // () => refundValid() // Must use short moment size and redeem window in the hook to test this.
         ];
 
@@ -45,8 +69,8 @@ async function app() {
     }
 }
 
-async function registerHost() {
-    const host = await getHostClient();
+async function registerHost(address = hostAddress, secret = hostSecret, token = hostToken) {
+    const host = await getHostClient(address, secret);
 
     if (await host.isRegistered())
         return true;
@@ -58,15 +82,15 @@ async function registerHost() {
     await host.prepareAccount();
 
     // Get EVRs from the hook if needed.
-    const lines = await host.xrplAcc.getTrustLines(evernode.EvernodeConstants.EVR, hookAddress);
+    const lines = await host.xrplAcc.getTrustLines(evernode.EvernodeConstants.EVR, address);
     if (lines.length === 0 || parseInt(lines[0].balance) < 100) {
         console.log("Transfer EVRs...");
-        const hookAcc = new evernode.XrplAccount(hookAddress, hookSecret);
-        await hookAcc.makePayment(hostAddress, "1000", evernode.EvernodeConstants.EVR, hookAddress);
+        const hookAcc = new evernode.XrplAccount(address, secret);
+        await hookAcc.makePayment(address, "1000", evernode.EvernodeConstants.EVR, address);
     }
 
     console.log("Register...");
-    await host.register(hostToken, "8GB", "AU");
+    await host.register(token, "8GB", "AU");
 
     // Verify the registration.
     return await host.isRegistered();
@@ -181,6 +205,73 @@ async function refundInvalid() {
     }
 }
 
+//////////////////////////////////////////////////////////////////////////////////////
+/// Audit test is targetted for the hook which commented out check creation        ///
+/// So audit assignment event cannot be tested properly until check issue is fixed ///
+
+async function auditRequest() {
+    console.log(`-----------Audit request`);
+
+    for (const auditHost of auditHosts)
+        await registerHost(auditHost.address, auditHost.secret, auditHost.token);
+
+    const hook = await getHookClient();
+    const auditor = await getAuditorClient();
+
+    console.log(`Reward pool value before audit request: ${await hook.getRewardPool()}`);
+
+    console.log(`<Moment: ${await hook.getMoment()}> Sending auditor request...`);
+    await auditor.requestAudit();
+
+    console.log(`Reward pool value after audit request: ${await hook.getRewardPool()}`);
+}
+
+async function auditResponse(...scenarios) {
+    return new Promise(async (resolve) => {
+
+        console.log(`-----------Audit response (${scenarios})`);
+
+        tasks = 0;
+
+        const hook = await getHookClient();
+        const auditor = await getAuditorClient();
+
+        // Send audit response to all the hosts, since we know all two hosts will be assigned to default auditor
+        for (const [i, auditHost] of auditHosts.entries()) {
+            const host = await getHostClient(auditHost.address, auditHost.secret);
+
+            host.on(evernode.HostEvents.Reward, async (r) => {
+                console.log(`<Moment: ${await hook.getMoment()}> Host ${auditHost.address} received reward: '${r.amount}'`);
+
+                if (++tasks == auditHosts.length) {
+                    await new Promise(resolve => setTimeout(resolve, 4000));
+                    resolve();
+                }
+            })
+
+            console.log(`<Moment: ${await hook.getMoment()}> Sending auditor response (${scenarios[i] || 'Not specified'}) to ${auditHost.address}...`);
+            if (scenarios[i] === "success")
+                await auditor.auditSuccess(auditHost.address);
+            else if (scenarios[i] === "failed") {
+                console.log(`Reward pool value before audit failure: ${await hook.getRewardPool()}`);
+                await auditor.auditFail(auditHost.address);
+                console.log(`Reward pool value after audit failure: ${await hook.getRewardPool()}`);
+
+                if (++tasks == auditHosts.length) {
+                    await new Promise(resolve => setTimeout(resolve, 4000));
+                    resolve();
+                }
+            }
+            else if (++tasks == auditHosts.length) {
+                await new Promise(resolve => setTimeout(resolve, 4000));
+                resolve();
+            }
+        }
+    });
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+
 async function getUserClient() {
     const client = new evernode.UserClient(userAddress, userSecret);
     await client.connect();
@@ -188,8 +279,8 @@ async function getUserClient() {
     return client;
 }
 
-async function getHostClient() {
-    const client = new evernode.HostClient(hostAddress, hostSecret);
+async function getHostClient(address = hostAddress, secret = hostSecret) {
+    const client = new evernode.HostClient(address, secret);
     await client.connect();
     clients.push(client);
     return client;
@@ -197,6 +288,13 @@ async function getHostClient() {
 
 async function getHookClient() {
     const client = new evernode.HookClient(hookAddress, hookSecret);
+    await client.connect();
+    clients.push(client);
+    return client;
+}
+
+async function getAuditorClient() {
+    const client = new evernode.AuditorClient(auditorAddress, auditorSecret);
     await client.connect();
     clients.push(client);
     return client;
