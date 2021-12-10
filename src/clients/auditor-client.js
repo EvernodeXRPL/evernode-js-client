@@ -16,28 +16,30 @@ class AuditorClient extends BaseEvernodeClient {
 
     constructor(xrpAddress, xrpSecret, options = {}) {
         super(xrpAddress, xrpSecret, Object.values(AuditorEvents), true, options);
+    }
 
-        // Forward AuditAssignment to the auditor event subscribers.
-        // So, they can start audit.
-        this.on(AuditorEvents.AuditAssignment, async (ev) => {
-            const lines = await this.xrplAcc.getTrustLines(ev.currency, ev.issuer);
-            if (lines && lines.length === 0) {
-                console.log(`No trust lines found for ${ev.currency}/${ev.issuer}. Creating one...`);
-                const ret = await this.xrplAcc.setTrustLine(ev.currency, ev.issuer, AUDIT_TRUSTLINE_LIMIT, false);
-                if (!ret)
-                    this.events.emit(AuditorEvents.AuditAssignment, null, { error: ErrorCodes.AUDIT_REQ_ERROR, reason: `Creating trustline for ${ev.currency}/${ev.issuer} failed.` });
-            }
-            // Cash the check.
-            const result = await this.xrplAcc.cashCheck(ev.transaction).catch(errtx => {
-                this.events.emit(AuditorEvents.AuditAssignment, null, { error: ErrorCodes.AUDIT_REQ_ERROR, reason: ErrorReasons.TRANSACTION_FAILURE, transaction: errtx });
-            });
-            if (result) {
-                this.events.emit(AuditorEvents.AuditAssignment, {
-                    address: ev.issuer,
-                    currency: ev.currency,
-                    amount: ev.value,
-                    auditAssignmentRef: result.id
+    cashAuditAssignment(assignmentInfo) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const lines = await this.xrplAcc.getTrustLines(assignmentInfo.currency, assignmentInfo.issuer);
+                if (lines && lines.length === 0) {
+                    console.log(`No trust lines found for ${assignmentInfo.currency}/${assignmentInfo.issuer}. Creating one...`);
+                    const ret = await this.xrplAcc.setTrustLine(assignmentInfo.currency, assignmentInfo.issuer, AUDIT_TRUSTLINE_LIMIT, false);
+                    if (!ret)
+                        reject({ error: ErrorCodes.AUDIT_CASH_ERROR, reason: `Creating trustline for ${assignmentInfo.currency}/${assignmentInfo.issuer} failed.` });
+                }
+                // Cash the check.
+                const res = await this.xrplAcc.cashCheck(assignmentInfo.transaction).catch(errtx => {
+                    reject({ error: ErrorCodes.AUDIT_CASH_ERROR, reason: ErrorReasons.TRANSACTION_FAILURE, transaction: errtx });
                 });
+
+                if (res)
+                    resolve(res);
+                else
+                    reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: ErrorReasons.TRANSACTION_FAILURE });
+
+            } catch (error) {
+                reject({ error: ErrorCodes.AUDIT_CASH_ERROR, reason: ErrorReasons.TRANSACTION_FAILURE });
             }
         });
     }

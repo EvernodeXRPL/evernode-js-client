@@ -108,17 +108,6 @@ class XrplAccount {
         return xrpl.parseAccountRootFlags((await this.getInfo()).Flags);
     }
 
-    async getHookStates(options = { limit: 399 }) {
-        // We use a large limit since there's no way to just get the HookState objects.
-        const states = await this.getAccountObjects(options);
-        return states.filter(s => s.LedgerEntryType === 'HookState').map(s => {
-            return {
-                key: s.HookStateKey, //hex
-                data: s.HookStateData //hex
-            }
-        });
-    }
-
     async setMessageKey(publicKey, options = {}) {
         const result = await this.#submitAndVerifyTransaction({
             TransactionType: 'AccountSet',
