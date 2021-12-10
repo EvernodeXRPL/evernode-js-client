@@ -12,34 +12,30 @@ const AuditorEvents = {
 
 class AuditorClient extends BaseEvernodeClient {
 
-    #respWatcher = new EventEmitter();
+    events = new EventEmitter();
 
     constructor(xrpAddress, xrpSecret, options = {}) {
         super(xrpAddress, xrpSecret, Object.values(AuditorEvents), true, options);
 
+        // Forward AuditAssignment to the auditor event subscribers.
+        // So, they can start audit.
         this.on(AuditorEvents.AuditAssignment, async (ev) => {
-            this.#respWatcher.emit(AuditorEvents.AuditAssignment, ev);
-        });
-    }
-
-    onAuditAssignment(callback) {
-        this.#respWatcher.on(AuditorEvents.AuditAssignment, async (data) => {
-            const lines = await this.xrplAcc.getTrustLines(data.currency, data.issuer);
+            const lines = await this.xrplAcc.getTrustLines(ev.currency, ev.issuer);
             if (lines && lines.length === 0) {
-                console.log(`No trust lines found for ${data.currency}/${data.issuer}. Creating one...`);
-                const ret = await this.xrplAcc.setTrustLine(data.currency, data.issuer, AUDIT_TRUSTLINE_LIMIT, false);
+                console.log(`No trust lines found for ${ev.currency}/${ev.issuer}. Creating one...`);
+                const ret = await this.xrplAcc.setTrustLine(ev.currency, ev.issuer, AUDIT_TRUSTLINE_LIMIT, false);
                 if (!ret)
-                    callback(null, { error: ErrorCodes.AUDIT_REQ_ERROR, reason: `Creating trustline for ${data.currency}/${data.issuer} failed.` });
+                    this.events.emit(AuditorEvents.AuditAssignment, null, { error: ErrorCodes.AUDIT_REQ_ERROR, reason: `Creating trustline for ${ev.currency}/${ev.issuer} failed.` });
             }
             // Cash the check.
-            const result = await this.xrplAcc.cashCheck(data.transaction).catch(errtx => {
-                callback(null, { error: ErrorCodes.AUDIT_REQ_ERROR, reason: ErrorReasons.TRANSACTION_FAILURE, transaction: errtx });
+            const result = await this.xrplAcc.cashCheck(ev.transaction).catch(errtx => {
+                this.events.emit(AuditorEvents.AuditAssignment, null, { error: ErrorCodes.AUDIT_REQ_ERROR, reason: ErrorReasons.TRANSACTION_FAILURE, transaction: errtx });
             });
             if (result) {
-                callback({
-                    address: data.issuer,
-                    currency: data.currency,
-                    amount: data.value,
+                this.events.emit(AuditorEvents.AuditAssignment, {
+                    address: ev.issuer,
+                    currency: ev.currency,
+                    amount: ev.value,
                     auditAssignmentRef: result.id
                 });
             }
