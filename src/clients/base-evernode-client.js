@@ -8,6 +8,7 @@ const { EventEmitter } = require('../event-emitter');
 const { XflHelpers } = require('../xfl-helpers');
 const codec = require('ripple-address-codec');
 const { Buffer } = require('buffer');
+const { UtilHelpers } = require('../util-helpers');
 
 class BaseEvernodeClient {
 
@@ -74,8 +75,19 @@ class BaseEvernodeClient {
         await this.xrplAcc.unsubscribe();
     }
 
+    async getHookStates(options = { limit: 399 }) {
+        // We use a large limit since there's no way to just get the HookState objects.
+        const states = await this.xrplApi.getAccountObjects(this.hookAddress, options);
+        return states.filter(s => s.LedgerEntryType === 'HookState').map(s => {
+            return {
+                key: s.HookStateKey, //hex
+                data: s.HookStateData //hex
+            }
+        });
+    }
+
     async #getHookConfig() {
-        let states = await this.xrplAcc.getHookStates();
+        let states = await this.getHookStates();
         states = states.map(s => {
             return {
                 key: s.key,
@@ -84,7 +96,7 @@ class BaseEvernodeClient {
         });
 
         let config = {};
-        let buf = getStateData(states, HookStateKeys.HOST_REG_FEE);
+        let buf = UtilHelpers.getStateData(states, HookStateKeys.HOST_REG_FEE);
         if (buf) {
             buf = Buffer.from(buf);
             const xfl = buf.readBigInt64BE(0);
@@ -95,17 +107,17 @@ class BaseEvernodeClient {
         }
 
 
-        buf = getStateData(states, HookStateKeys.MOMENT_SIZE);
-        config.momentSize = buf ? readUInt(buf, 16) : HookStateDefaults.MOMENT_SIZE;
+        buf = UtilHelpers.getStateData(states, HookStateKeys.MOMENT_SIZE);
+        config.momentSize = buf ? UtilHelpers.readUInt(buf, 16) : HookStateDefaults.MOMENT_SIZE;
 
-        buf = getStateData(states, HookStateKeys.REDEEM_WINDOW);
-        config.redeemWindow = buf ? readUInt(buf, 16) : HookStateDefaults.REDEEM_WINDOW;
+        buf = UtilHelpers.getStateData(states, HookStateKeys.REDEEM_WINDOW);
+        config.redeemWindow = buf ? UtilHelpers.readUInt(buf, 16) : HookStateDefaults.REDEEM_WINDOW;
 
-        buf = getStateData(states, HookStateKeys.MIN_REDEEM);
-        config.minRedeem = buf ? readUInt(buf, 16) : HookStateDefaults.MIN_REDEEM;
+        buf = UtilHelpers.getStateData(states, HookStateKeys.MIN_REDEEM);
+        config.minRedeem = buf ? UtilHelpers.readUInt(buf, 16) : HookStateDefaults.MIN_REDEEM;
 
-        buf = getStateData(states, HookStateKeys.MOMENT_BASE_IDX);
-        config.momentBaseIdx = buf ? readUInt(buf, 64) : HookStateDefaults.MOMENT_BASE_IDX;
+        buf = UtilHelpers.getStateData(states, HookStateKeys.MOMENT_BASE_IDX);
+        config.momentBaseIdx = buf ? UtilHelpers.readUInt(buf, 64) : HookStateDefaults.MOMENT_BASE_IDX;
 
         return config;
     }
@@ -281,7 +293,7 @@ class BaseEvernodeClient {
             }
         }
         else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.AUDIT_REQ) {
+            tx.Memos[0].type === MemoTypes.AUDIT) {
             return {
                 name: EvernodeEvents.Audit,
                 data: {
@@ -326,27 +338,6 @@ class BaseEvernodeClient {
         }
 
         return null;
-    }
-}
-
-function getStateData(states, key) {
-    const state = states.find(s => key === s.key);
-    return state?.data;
-}
-
-function readUInt(buf, base = 32, isBE = true) {
-    buf = Buffer.from(buf);
-    switch (base) {
-        case (8):
-            return buf.readUInt8();
-        case (16):
-            return isBE ? buf.readUInt16BE() : buf.readUInt16LE();
-        case (32):
-            return isBE ? buf.readUInt32BE() : buf.readUInt32LE();
-        case (64):
-            return isBE ? Number(buf.readBigUInt64BE()) : Number(buf.readBigUInt64LE());
-        default:
-            throw 'Invalid base value';
     }
 }
 

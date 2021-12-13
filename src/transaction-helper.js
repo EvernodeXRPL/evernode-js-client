@@ -35,6 +35,9 @@ class TransactionHelper {
     }
 
     static hexToASCII(hex) {
+        if (!hex)
+            return "";
+
         let str = "";
         for (let n = 0; n < hex.length; n += 2) {
             str += String.fromCharCode(parseInt(hex.substr(n, 2), 16));
@@ -43,6 +46,9 @@ class TransactionHelper {
     }
 
     static asciiToHex(str) {
+        if (!str)
+            return "";
+
         let hex = "";
         for (let n = 0; n < str.length; n++) {
             hex += str.charCodeAt(n).toString(16)

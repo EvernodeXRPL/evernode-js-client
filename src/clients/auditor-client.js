@@ -1,7 +1,8 @@
 const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { EvernodeEvents, MemoTypes, ErrorCodes, ErrorReasons } = require('../evernode-common');
+const { EvernodeEvents, MemoTypes, ErrorCodes, ErrorReasons, MemoFormats } = require('../evernode-common');
 const { EventEmitter } = require('../event-emitter');
+const rippleCodec = require('ripple-address-codec');
 
 const AUDIT_TRUSTLINE_LIMIT = '999999999';
 
@@ -11,87 +12,65 @@ const AuditorEvents = {
 
 class AuditorClient extends BaseEvernodeClient {
 
-    #respWatcher = new EventEmitter();
+    events = new EventEmitter();
 
     constructor(xrpAddress, xrpSecret, options = {}) {
         super(xrpAddress, xrpSecret, Object.values(AuditorEvents), true, options);
+    }
 
-        this.on(AuditorEvents.AuditAssignment, async (ev) => {
-            this.#respWatcher.emit(AuditorEvents.AuditAssignment, ev);
+    cashAuditAssignment(assignmentInfo) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const lines = await this.xrplAcc.getTrustLines(assignmentInfo.currency, assignmentInfo.issuer);
+                if (lines && lines.length === 0) {
+                    console.log(`No trust lines found for ${assignmentInfo.currency}/${assignmentInfo.issuer}. Creating one...`);
+                    const ret = await this.xrplAcc.setTrustLine(assignmentInfo.currency, assignmentInfo.issuer, AUDIT_TRUSTLINE_LIMIT, false);
+                    if (!ret)
+                        reject({ error: ErrorCodes.AUDIT_CASH_ERROR, reason: `Creating trustline for ${assignmentInfo.currency}/${assignmentInfo.issuer} failed.` });
+                }
+                // Cash the check.
+                const res = await this.xrplAcc.cashCheck(assignmentInfo.transaction).catch(errtx => {
+                    reject({ error: ErrorCodes.AUDIT_CASH_ERROR, reason: ErrorReasons.TRANSACTION_FAILURE, transaction: errtx });
+                });
+
+                if (res)
+                    resolve(res);
+                else
+                    reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: ErrorReasons.TRANSACTION_FAILURE });
+
+            } catch (error) {
+                reject({ error: ErrorCodes.AUDIT_CASH_ERROR, reason: ErrorReasons.TRANSACTION_FAILURE });
+            }
         });
     }
 
     requestAudit(options = {}) {
         return new Promise(async (resolve, reject) => {
-            let timeout = null;
             try {
                 const res = await this.xrplAcc.makePayment(this.hookAddress,
                     XrplConstants.MIN_XRP_AMOUNT,
                     XrplConstants.XRP,
                     null,
-                    [{ type: MemoTypes.AUDIT_REQ, format: '', data: '' }],
+                    [{ type: MemoTypes.AUDIT, format: '', data: '' }],
                     options.transactionOptions);
-
-                if (res) {
-                    const startingLedger = this.xrplApi.ledgerIndex;
-                    timeout = setInterval(() => {
-                        if (this.xrplApi.ledgerIndex - startingLedger >= this.hookConfig.momentSize) {
-                            this.#respWatcher.off(AuditorEvents.AuditAssignment);
-                            clearInterval(timeout);
-                            console.log('Audit request timeout');
-                            reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: `No checks found within moment(${this.hookConfig.momentSize}) window.` });
-                        }
-                    }, 2000);
-                    console.log('Waiting for check...');
-
-                    this.#respWatcher.once(AuditorEvents.AuditAssignment, async (data) => {
-                        const lines = await this.xrplAcc.getTrustLines(data.currency, data.issuer);
-                        if (lines && lines.length === 0) {
-                            console.log(`No trust lines found for ${data.currency}/${data.issuer}. Creating one...`);
-                            const ret = await this.xrplAcc.setTrustLine(data.currency, data.issuer, AUDIT_TRUSTLINE_LIMIT, false);
-                            if (!ret) {
-                                clearInterval(timeout);
-                                reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: `Creating trustline for ${data.currency}/${data.issuer} failed.` });
-                            }
-                        }
-                        // Cash the check.
-                        const result = await this.xrplAcc.cashCheck(data.transaction).catch(errtx => {
-                            clearInterval(timeout);
-                            reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: ErrorReasons.TRANSACTION_FAILURE, transaction: errtx });
-                        });
-                        if (result) {
-                            clearInterval(timeout);
-                            resolve({
-                                address: data.issuer,
-                                currency: data.currency,
-                                amount: data.value,
-                                cashRefId: result.id
-                            });
-                        }
-                    });
-
-
-                } else {
-                    clearInterval(timeout);
+                if (res)
+                    resolve(res);
+                else
                     reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: ErrorReasons.TRANSACTION_FAILURE });
-                }
             } catch (error) {
-                if (timeout)
-                    clearInterval(timeout);
-                // Throw the same error object receiving from the above try block. It is already formatted with AUDIT_REQ_FAILED code.
-                reject(error);
+                reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: ErrorReasons.TRANSACTION_FAILURE });
             }
         });
     }
 
-    auditSuccess(options = {}) {
+    auditSuccess(hostAddress, options = {}) {
         return new Promise(async (resolve, reject) => {
             try {
                 const res = await this.xrplAcc.makePayment(this.hookAddress,
                     XrplConstants.MIN_XRP_AMOUNT,
                     XrplConstants.XRP,
                     null,
-                    [{ type: MemoTypes.AUDIT_SUCCESS, format: '', data: '' }],
+                    [{ type: MemoTypes.AUDIT_SUCCESS, format: MemoFormats.HEX, data: rippleCodec.decodeAccountID(hostAddress).toString('hex') }],
                     options.transactionOptions);
                 if (res)
                     resolve(res);
@@ -100,6 +79,26 @@ class AuditorClient extends BaseEvernodeClient {
             } catch (error) {
                 console.error(error);
                 reject({ error: ErrorCodes.AUDIT_SUCCESS_ERROR, reason: 'Audit success transaction failed.' });
+            }
+        });
+    }
+
+    auditFail(hostAddress, options = {}) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const res = await this.xrplAcc.makePayment(this.hookAddress,
+                    XrplConstants.MIN_XRP_AMOUNT,
+                    XrplConstants.XRP,
+                    null,
+                    [{ type: MemoTypes.AUDIT_FAILED, format: MemoFormats.HEX, data: rippleCodec.decodeAccountID(hostAddress).toString('hex') }],
+                    options.transactionOptions);
+                if (res)
+                    resolve(res);
+                else
+                    reject({ error: ErrorCodes.AUDIT_FAIL_ERROR, reason: 'Audit failure transaction failed.' });
+            } catch (error) {
+                console.error(error);
+                reject({ error: ErrorCodes.AUDIT_FAIL_ERROR, reason: 'Audit failure transaction failed.' });
             }
         });
     }
