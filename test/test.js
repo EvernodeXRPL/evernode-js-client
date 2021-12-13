@@ -82,11 +82,11 @@ async function registerHost(address = hostAddress, secret = hostSecret, token = 
     await host.prepareAccount();
 
     // Get EVRs from the hook if needed.
-    const lines = await host.xrplAcc.getTrustLines(evernode.EvernodeConstants.EVR, address);
+    const lines = await host.xrplAcc.getTrustLines(evernode.EvernodeConstants.EVR, hookAddress);
     if (lines.length === 0 || parseInt(lines[0].balance) < 100) {
         console.log("Transfer EVRs...");
-        const hookAcc = new evernode.XrplAccount(address, secret);
-        await hookAcc.makePayment(address, "1000", evernode.EvernodeConstants.EVR, address);
+        const hookAcc = new evernode.XrplAccount(hookAddress, hookSecret);
+        await hookAcc.makePayment(address, "1000", evernode.EvernodeConstants.EVR, hookAddress);
     }
 
     console.log("Register...");
@@ -249,10 +249,12 @@ async function auditResponse(...scenarios) {
                 }
             })
 
-            console.log(`<Moment: ${await hook.getMoment()}> Sending auditor response (${scenarios[i] || 'Not specified'}) to ${auditHost.address}...`);
-            if (scenarios[i] === "success")
+            if (scenarios[i] === "success") {
+                console.log(`<Moment: ${await hook.getMoment()}> Sending auditor response (${scenarios[i] || 'Not specified'}) to ${auditHost.address}...`);
                 await auditor.auditSuccess(auditHost.address);
+            }
             else if (scenarios[i] === "failed") {
+                console.log(`<Moment: ${await hook.getMoment()}> Sending auditor response (${scenarios[i] || 'Not specified'}) to ${auditHost.address}...`);
                 console.log(`Reward pool value before audit failure: ${await hook.getRewardPool()}`);
                 await auditor.auditFail(auditHost.address);
                 console.log(`Reward pool value after audit failure: ${await hook.getRewardPool()}`);
