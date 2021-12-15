@@ -30,9 +30,12 @@ class HookClient extends BaseEvernodeClient {
             return {
                 address: rippleCodec.encodeAccountID(Buffer.from(s.key.slice(-40), 'hex')),
                 token: Buffer.from(s.data.substr(8, 6), 'hex').toString(),
-                txHash: s.data.substr(14, 64),
-                instanceSize: Buffer.from(s.data.substr(78, 120), 'hex').toString().replace(/\0/g, ''),
-                location: Buffer.from(s.data.substr(198, 20), 'hex').toString().replace(/\0/g, ''),
+                countryCode: Buffer.from(s.data.substr(14, 4), 'hex').toString(),
+                cpuMicroSec: Buffer.from(s.data.substr(18, 8), 'hex').readUInt32BE(0),
+                ramMb: Buffer.from(s.data.substr(26, 8), 'hex').readUInt32BE(0),
+                diskMb: Buffer.from(s.data.substr(34, 8), 'hex').readUInt32BE(0),
+                description: Buffer.from(s.data.substr(58, 52), 'hex').toString().replace(/\0/g, ''),
+                lastHeartbeatLedgerIndex: Number(Buffer.from(s.data.substr(214, 16), 'hex').readBigInt64BE(0)),
             }
         });
         return hosts;
@@ -44,6 +47,14 @@ class HookClient extends BaseEvernodeClient {
 
         await Promise.resolve(); // Awaiter placeholder for future async requirements.
         return m;
+    }
+
+    async getMomentStartIndex(ledgerIndex = null) {
+        const lv = ledgerIndex || this.xrplApi.ledgerIndex;
+        const m = Math.floor((lv - this.hookConfig.momentBaseIdx) / this.hookConfig.momentSize);
+
+        await Promise.resolve(); // Awaiter placeholder for future async requirements.
+        return this.hookConfig.momentBaseIdx + (m * this.hookConfig.momentSize);
     }
 
     async getRewardPool() {
@@ -64,6 +75,13 @@ class HookClient extends BaseEvernodeClient {
         else {
             return HookStateDefaults.REWARD_POOL;
         }
+    }
+
+    async getActiveHosts() {
+        const hosts = await this.getHosts();
+        const curMomentStartIdx = await this.getMomentStartIndex();
+
+        return hosts.filter(h => h.lastHeartbeatLedgerIndex >= (curMomentStartIdx - (this.hookConfig.hostHeartbeatFreq * this.hookConfig.momentSize)));
     }
 }
 

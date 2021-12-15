@@ -48,12 +48,24 @@ class HostClient extends BaseEvernodeClient {
         }
     }
 
-    async register(hostingToken, instanceSize, location, options = {}) {
+    async register(hostingToken, countryCode, cpuMicroSec, ramMb, diskMb, description, options = {}) {
+        if (!/^([A-Z]{3})$/.test(hostingToken))
+            throw "hostingToken should consist of 3 uppercase alphabetical characters";
+        else if (!/^([a-zA-Z]{2})$/.test(countryCode))
+            throw "countryCode should consist of 2 alphabetical characters";
+        else if (!cpuMicroSec || isNaN(cpuMicroSec) || cpuMicroSec % 1 != 0 || cpuMicroSec < 0)
+            throw "cpuMicroSec should be a positive intiger";
+        else if (!ramMb || isNaN(ramMb) || ramMb % 1 != 0 || ramMb < 0)
+            throw "ramMb should be a positive intiger";
+        else if (!diskMb || isNaN(diskMb) || diskMb % 1 != 0 || diskMb < 0)
+            throw "diskMb should be a positive intiger";
+        else if (!/^([a-zA-Z\s]{0,26})$/.test(description))
+            throw "description should consist of 0-26 alphabetical characters";
 
         if (await this.isRegistered())
             throw "Host already registered.";
 
-        const memoData = `${hostingToken};${instanceSize};${location}`
+        const memoData = `${hostingToken};${countryCode};${cpuMicroSec};${ramMb};${diskMb};${description}`
         return this.xrplAcc.makePayment(this.hookAddress,
             this.hookConfig.hostRegFee,
             EvernodeConstants.EVR,
@@ -107,6 +119,21 @@ class HostClient extends BaseEvernodeClient {
             XrplConstants.XRP,
             null,
             memos,
+            options.transactionOptions);
+    }
+
+    async recharge(amount = this.hookConfig.minRedeem, options = {}) {
+
+        if (amount < this.hookConfig.minRedeem)
+            throw "Recharge amount should not be less than min redeem amount.";
+
+        const hostInfo = await this.getRegistration();
+
+        return this.xrplAcc.makePayment(this.hookAddress,
+            amount.toString(),
+            hostInfo.token,
+            this.xrplAcc.address,
+            [{ type: MemoTypes.RECHARGE, format: "", data: "" }],
             options.transactionOptions);
     }
 }

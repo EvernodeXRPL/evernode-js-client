@@ -52,6 +52,8 @@ async function app() {
             () => refundInvalid(),
             () => auditRequest(),
             () => auditResponse("success", "failed"),
+            () => rechargeHost(),
+            () => getActiveHosts(),
             // () => refundValid() // Must use short moment size and redeem window in the hook to test this.
         ];
 
@@ -67,6 +69,33 @@ async function app() {
     finally {
         await xrplApi.disconnect();
     }
+}
+
+async function rechargeHost(address = hostAddress, secret = hostSecret) {
+    console.log(`-----------Recharge host`);
+
+    const host = await getHostClient(address, secret);
+
+    console.log("Recharge...");
+    await host.recharge();
+}
+
+async function getHosts() {
+    console.log(`-----------Getting hosts`);
+
+    const hookClient = await getHookClient();
+    const hosts = await hookClient.getHosts();
+
+    console.log("Hosts", hosts || "No hosts");
+}
+
+async function getActiveHosts() {
+    console.log(`-----------Getting active hosts`);
+
+    const hookClient = await getHookClient();
+    const activeHosts = await hookClient.getActiveHosts();
+
+    console.log("Active hosts", activeHosts || "No active hosts");
 }
 
 async function registerHost(address = hostAddress, secret = hostSecret, token = hostToken) {
@@ -90,7 +119,7 @@ async function registerHost(address = hostAddress, secret = hostSecret, token = 
     }
 
     console.log("Register...");
-    await host.register(token, "8GB", "AU");
+    await host.register(token, "AU", 10000, 512, 1024, "Test desctiption");
 
     // Verify the registration.
     return await host.isRegistered();
