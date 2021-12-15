@@ -339,6 +339,20 @@ class BaseEvernodeClient {
                 }
             }
         }
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.RECHARGE) {
+
+            return {
+                name: EvernodeEvents.Recharge,
+                data: {
+                    transaction: tx,
+                    host: tx.Account,
+                    amount: tx.Amount.value,
+                    issuer: tx.Amount.issuer,
+                    currency: tx.Amount.currency
+                }
+            }
+        }
 
         return null;
     }

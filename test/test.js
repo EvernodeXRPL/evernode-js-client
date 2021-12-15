@@ -72,12 +72,24 @@ async function app() {
 }
 
 async function rechargeHost(address = hostAddress, secret = hostSecret) {
-    console.log(`-----------Recharge host`);
+    return new Promise(async (resolve) => {
+        console.log(`-----------Recharge host`);
 
-    const host = await getHostClient(address, secret);
+        const hookClient = await getHookClient();
+        await hookClient.subscribe()
 
-    console.log("Recharge...");
-    await host.recharge();
+        const hostClient = await getHostClient(address, secret);
+
+        hookClient.on(evernode.HookEvents.Recharge, async (r) => {
+            console.log(`Hook received recharge: '${r.amount}', from: '${r.host}'`);
+            await new Promise(resolve => setTimeout(resolve, 4000));
+            resolve();
+        })
+
+        console.log("Recharge...");
+        await hostClient.recharge();
+
+    })
 }
 
 async function getHosts() {

@@ -80,6 +80,7 @@ const EvernodeEvents = {
     AuditAssignment: "AuditAssignment",
     AuditSuccess: "AuditSuccess",
     Reward: "Reward",
+    Recharge: "Recharge",
 }
 
 module.exports = {

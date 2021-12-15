@@ -15,7 +15,8 @@ const HookEvents = {
     Refund: EvernodeEvents.Refund,
     RefundSuccess: EvernodeEvents.RefundSuccess,
     Audit: EvernodeEvents.Audit,
-    AuditSuccess: EvernodeEvents.AuditSuccess
+    AuditSuccess: EvernodeEvents.AuditSuccess,
+    Recharge: EvernodeEvents.Recharge
 }
 
 class HookClient extends BaseEvernodeClient {
