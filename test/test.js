@@ -256,8 +256,11 @@ async function refundInvalid() {
 async function auditRequest() {
     console.log(`-----------Audit request`);
 
-    for (const auditHost of auditHosts)
+    for (const auditHost of auditHosts) {
         await registerHost(auditHost.address, auditHost.secret, auditHost.token);
+        const host = await getHostClient(auditHost.address, auditHost.secret);
+        await host.recharge();
+    }
 
     const hook = await getHookClient();
     const auditor = await getAuditorClient();
