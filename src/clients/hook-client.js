@@ -25,21 +25,32 @@ class HookClient extends BaseEvernodeClient {
         super((options.hookAddress || DefaultValues.hookAddress), null, Object.values(HookEvents), false, options);
     }
 
-    async getHosts() {
+    async getAllHosts() {
         const states = (await this.getHookStates()).filter(s => s.key.startsWith(HookStateKeys.HOST_ADDR));
+        const curMomentStartIdx = await this.getMomentStartIndex();
         const hosts = states.map(s => {
+            const buf = Buffer.from(s.data, 'hex');
+            const lastHeartbeatLedgerIndex = Number(buf.slice(107, 115).readBigInt64BE(0));
             return {
                 address: rippleCodec.encodeAccountID(Buffer.from(s.key.slice(-40), 'hex')),
-                token: Buffer.from(s.data.substr(8, 6), 'hex').toString(),
-                countryCode: Buffer.from(s.data.substr(14, 4), 'hex').toString(),
-                cpuMicroSec: Buffer.from(s.data.substr(18, 8), 'hex').readUInt32BE(0),
-                ramMb: Buffer.from(s.data.substr(26, 8), 'hex').readUInt32BE(0),
-                diskMb: Buffer.from(s.data.substr(34, 8), 'hex').readUInt32BE(0),
-                description: Buffer.from(s.data.substr(58, 52), 'hex').toString().replace(/\0/g, ''),
-                lastHeartbeatLedgerIndex: Number(Buffer.from(s.data.substr(214, 16), 'hex').readBigInt64BE(0)),
+                token: buf.slice(4, 7).toString(),
+                countryCode: buf.slice(7, 9).toString(),
+                cpuMicroSec: buf.slice(9, 13).readUInt32BE(0),
+                ramMb: buf.slice(13, 17).readUInt32BE(0),
+                diskMb: buf.slice(17, 21).readUInt32BE(0),
+                description: buf.slice(29, 55).toString().replace(/\0/g, ''),
+                lastHeartbeatLedgerIndex: lastHeartbeatLedgerIndex,
+                lockedTokenAmount: parseInt(XflHelpers.toString(buf.slice(99, 107).readBigInt64BE(0))),
+                active: (lastHeartbeatLedgerIndex >= (curMomentStartIdx - (this.hookConfig.hostHeartbeatFreq * this.hookConfig.momentSize)))
             }
         });
         return hosts;
+    }
+
+    async getHosts() {
+        const hosts = await this.getAllHosts();
+        // Filter only active hosts.
+        return hosts.filter(h => h.active);
     }
 
     async getMoment(ledgerIndex = null) {
@@ -76,13 +87,6 @@ class HookClient extends BaseEvernodeClient {
         else {
             return HookStateDefaults.REWARD_POOL;
         }
-    }
-
-    async getActiveHosts() {
-        const hosts = await this.getHosts();
-        const curMomentStartIdx = await this.getMomentStartIndex();
-
-        return hosts.filter(h => h.lastHeartbeatLedgerIndex >= (curMomentStartIdx - (this.hookConfig.hostHeartbeatFreq * this.hookConfig.momentSize)));
     }
 }
 

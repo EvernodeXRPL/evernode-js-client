@@ -20,7 +20,8 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async getRegistration() {
-        return (await this.#hookClient.getHosts()).filter(h => h.address === this.xrplAcc.address)[0];
+        await this.#hookClient.connect();
+        return (await this.#hookClient.getAllHosts()).filter(h => h.address === this.xrplAcc.address)[0];
     }
 
     async isRegistered() {

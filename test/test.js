@@ -53,7 +53,8 @@ async function app() {
             () => auditRequest(),
             () => auditResponse("success", "failed"),
             () => rechargeHost(),
-            () => getActiveHosts(),
+            () => getHosts(),
+            () => getAllHosts(),
             // () => refundValid() // Must use short moment size and redeem window in the hook to test this.
         ];
 
@@ -82,6 +83,8 @@ async function rechargeHost(address = hostAddress, secret = hostSecret) {
 
         hookClient.on(evernode.HookEvents.Recharge, async (r) => {
             console.log(`Hook received recharge: '${r.amount}', from: '${r.host}'`);
+            const info = await hostClient.getRegistration();
+            console.log(`Host has ${info.lockedTokenAmount} locked tokens`);
             await new Promise(resolve => setTimeout(resolve, 4000));
             resolve();
         })
@@ -92,22 +95,22 @@ async function rechargeHost(address = hostAddress, secret = hostSecret) {
     })
 }
 
+async function getAllHosts() {
+    console.log(`-----------Getting all hosts (including inactive)`);
+
+    const hookClient = await getHookClient();
+    const hosts = await hookClient.getAllHosts();
+
+    console.log("All hosts", hosts || "No hosts");
+}
+
 async function getHosts() {
     console.log(`-----------Getting hosts`);
 
     const hookClient = await getHookClient();
     const hosts = await hookClient.getHosts();
 
-    console.log("Hosts", hosts || "No hosts");
-}
-
-async function getActiveHosts() {
-    console.log(`-----------Getting active hosts`);
-
-    const hookClient = await getHookClient();
-    const activeHosts = await hookClient.getActiveHosts();
-
-    console.log("Active hosts", activeHosts || "No active hosts");
+    console.log("Hosts", hosts || "No active hosts");
 }
 
 async function registerHost(address = hostAddress, secret = hostSecret, token = hostToken) {
