@@ -41,7 +41,9 @@ class HookClient extends BaseEvernodeClient {
                 description: buf.slice(29, 55).toString().replace(/\0/g, ''),
                 lastHeartbeatLedgerIndex: lastHeartbeatLedgerIndex,
                 lockedTokenAmount: parseInt(XflHelpers.toString(buf.slice(99, 107).readBigInt64BE(0))),
-                active: (lastHeartbeatLedgerIndex >= (curMomentStartIdx - (this.hookConfig.hostHeartbeatFreq * this.hookConfig.momentSize)))
+                active: (lastHeartbeatLedgerIndex > (this.hookConfig.hostHeartbeatFreq * this.hookConfig.momentSize) ?
+                    (lastHeartbeatLedgerIndex >= (curMomentStartIdx - (this.hookConfig.hostHeartbeatFreq * this.hookConfig.momentSize))) :
+                    (lastHeartbeatLedgerIndex > 0))
             }
         });
         return hosts;
