@@ -81,7 +81,7 @@ async function rechargeHost(address = hostAddress, secret = hostSecret) {
 
         const hostClient = await getHostClient(address, secret);
 
-        hookClient.on(evernode.HookEvents.Recharge, async (r) => {
+        hookClient.once(evernode.HookEvents.Recharge, async (r) => {
             console.log(`Hook received recharge: '${r.amount}', from: '${r.host}'`);
             const info = await hostClient.getRegistration();
             console.log(`Host has ${info.lockedTokenAmount} locked tokens`);
