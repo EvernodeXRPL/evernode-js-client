@@ -46,16 +46,17 @@ async function app() {
 
         const tests = [
             () => registerHost(),
+            () => rechargeHost(),
+            () => getHosts(),
+            () => getAllHosts(),
             () => redeem("success"),
             () => redeem("error"),
             () => redeem("timeout"),
             () => refundInvalid(),
+            // () => refundValid(), // Must use short moment size and redeem window in the hook to test this.
+            () => refundAlreadyRedeemed(),
             () => auditRequest(),
             () => auditResponse("success", "failed"),
-            () => rechargeHost(),
-            () => getHosts(),
-            () => getAllHosts(),
-            // () => refundValid() // Must use short moment size and redeem window in the hook to test this.
         ];
 
         for (test of tests) {
@@ -90,8 +91,16 @@ async function rechargeHost(address = hostAddress, secret = hostSecret) {
         })
 
         console.log("Recharge...");
-        await hostClient.recharge();
-
+        // First try with min_redeem amount, If exception occured hook might not have enough hosting tokens.
+        // So then try with min_redeem * (heartbeat_freq + 1).
+        try {
+            await hostClient.recharge();
+        }
+        catch {
+            const amount = hostClient.hookConfig.minRedeem * (hostClient.hookConfig.hostHeartbeatFreq + 1);
+            console.log(`Retrying recharge with '${amount}'' tokens..`)
+            await hostClient.recharge(amount);
+        }
     })
 }
 
@@ -249,6 +258,38 @@ async function refundInvalid() {
     }
 }
 
+function refundAlreadyRedeemed() {
+    return new Promise(async (resolve) => {
+
+        console.log(`-----------Refund (invalid redeemed)`);
+
+        const user = await getUserClient();
+        await user.prepareAccount();
+        await fundUser(user);
+
+        // Setup host to watch for incoming redeems.
+        const host = await getHostClient();
+
+        host.on(evernode.HostEvents.Redeem, async (r) => {
+            console.log(`Host received redeem request: '${r.payload}'`);
+
+            await host.redeemSuccess(r.redeemRefId, userAddress, { content: "dummy success" });
+        })
+
+        try {
+            const result = await user.redeem(hostToken, hostAddress, user.hookConfig.minRedeem, "dummy request", { timeout: 30000 });
+            console.log(`User received instance '${result.instance}'`);
+
+            const refund = await user.refund(result.redeemRefId).catch(err => console.log("Refund error: ", err.reason));
+            if (refund)
+                console.log("Refund success");
+        }
+        catch (err) {
+            console.log("User recieved redeem error: ", err.reason)
+        }
+    })
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 /// Audit test is targetted for the hook which commented out check creation        ///
 /// So audit assignment event cannot be tested properly until check issue is fixed ///
@@ -259,7 +300,9 @@ async function auditRequest() {
     for (const auditHost of auditHosts) {
         await registerHost(auditHost.address, auditHost.secret, auditHost.token);
         const host = await getHostClient(auditHost.address, auditHost.secret);
-        await host.recharge();
+        // First try with min_redeem amount, If exception occured hook might not have enough hosting tokens.
+        // So then try with min_redeem * (heartbeat_freq + 1).
+        await rechargeHost(auditHost.address, auditHost.secret);
     }
 
     const hook = await getHookClient();
@@ -268,7 +311,10 @@ async function auditRequest() {
     console.log(`Reward pool value before audit request: ${await hook.getRewardPool()}`);
 
     console.log(`<Moment: ${await hook.getMoment()}> Sending auditor request...`);
-    await auditor.requestAudit();
+    try {
+        await auditor.requestAudit();
+    }
+    catch { }
 
     console.log(`Reward pool value after audit request: ${await hook.getRewardPool()}`);
 }
@@ -296,24 +342,32 @@ async function auditResponse(...scenarios) {
                 }
             })
 
-            if (scenarios[i] === "success") {
-                console.log(`<Moment: ${await hook.getMoment()}> Sending auditor response (${scenarios[i] || 'Not specified'}) to ${auditHost.address}...`);
-                await auditor.auditSuccess(auditHost.address);
-            }
-            else if (scenarios[i] === "failed") {
-                console.log(`<Moment: ${await hook.getMoment()}> Sending auditor response (${scenarios[i] || 'Not specified'}) to ${auditHost.address}...`);
-                console.log(`Reward pool value before audit failure: ${await hook.getRewardPool()}`);
-                await auditor.auditFail(auditHost.address);
-                console.log(`Reward pool value after audit failure: ${await hook.getRewardPool()}`);
+            try {
+                if (scenarios[i] === "success") {
+                    console.log(`<Moment: ${await hook.getMoment()}> Sending auditor response (${scenarios[i] || 'Not specified'}) to ${auditHost.address}...`);
+                    await auditor.auditSuccess(auditHost.address);
+                }
+                else if (scenarios[i] === "failed") {
+                    console.log(`<Moment: ${await hook.getMoment()}> Sending auditor response (${scenarios[i] || 'Not specified'}) to ${auditHost.address}...`);
+                    console.log(`Reward pool value before audit failure: ${await hook.getRewardPool()}`);
+                    await auditor.auditFail(auditHost.address);
+                    console.log(`Reward pool value after audit failure: ${await hook.getRewardPool()}`);
 
-                if (++tasks == auditHosts.length) {
+                    if (++tasks == auditHosts.length) {
+                        await new Promise(resolve => setTimeout(resolve, 4000));
+                        resolve();
+                    }
+                }
+                else if (++tasks == auditHosts.length) {
                     await new Promise(resolve => setTimeout(resolve, 4000));
                     resolve();
                 }
             }
-            else if (++tasks == auditHosts.length) {
-                await new Promise(resolve => setTimeout(resolve, 4000));
-                resolve();
+            catch {
+                if (++tasks == auditHosts.length) {
+                    await new Promise(resolve => setTimeout(resolve, 4000));
+                    resolve();
+                }
             }
         }
     });
