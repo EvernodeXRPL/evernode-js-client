@@ -314,7 +314,7 @@ async function auditRequest() {
     try {
         await auditor.requestAudit();
     }
-    catch { }
+    catch (e) { console.error(e) }
 
     console.log(`Reward pool value after audit request: ${await hook.getRewardPool()}`);
 }
