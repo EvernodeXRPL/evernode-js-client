@@ -46,13 +46,17 @@ async function app() {
 
         const tests = [
             () => registerHost(),
+            () => rechargeHost(),
+            () => getHosts(),
+            () => getAllHosts(),
             () => redeem("success"),
             () => redeem("error"),
             () => redeem("timeout"),
             () => refundInvalid(),
+            // () => refundValid(), // Must use short moment size and redeem window in the hook to test this.
+            () => refundAlreadyRedeemed(),
             () => auditRequest(),
             () => auditResponse("success", "failed"),
-            // () => refundValid() // Must use short moment size and redeem window in the hook to test this.
         ];
 
         for (test of tests) {
@@ -67,6 +71,55 @@ async function app() {
     finally {
         await xrplApi.disconnect();
     }
+}
+
+async function rechargeHost(address = hostAddress, secret = hostSecret) {
+    return new Promise(async (resolve) => {
+        console.log(`-----------Recharge host`);
+
+        const hookClient = await getHookClient();
+        await hookClient.subscribe()
+
+        const hostClient = await getHostClient(address, secret);
+
+        hookClient.once(evernode.HookEvents.Recharge, async (r) => {
+            console.log(`Hook received recharge: '${r.amount}', from: '${r.host}'`);
+            const info = await hostClient.getRegistration();
+            console.log(`Host has ${info.lockedTokenAmount} locked tokens`);
+            await new Promise(resolve => setTimeout(resolve, 4000));
+            resolve();
+        })
+
+        console.log("Recharge...");
+        // First try with min_redeem amount, If exception occured hook might not have enough hosting tokens.
+        // So then try with min_redeem * (heartbeat_freq + 1).
+        try {
+            await hostClient.recharge();
+        }
+        catch {
+            const amount = hostClient.hookConfig.minRedeem * (hostClient.hookConfig.hostHeartbeatFreq + 1);
+            console.log(`Retrying recharge with '${amount}'' tokens..`)
+            await hostClient.recharge(amount);
+        }
+    })
+}
+
+async function getAllHosts() {
+    console.log(`-----------Getting all hosts (including inactive)`);
+
+    const hookClient = await getHookClient();
+    const hosts = await hookClient.getAllHosts();
+
+    console.log("All hosts", hosts || "No hosts");
+}
+
+async function getHosts() {
+    console.log(`-----------Getting hosts`);
+
+    const hookClient = await getHookClient();
+    const hosts = await hookClient.getHosts();
+
+    console.log("Hosts", hosts || "No active hosts");
 }
 
 async function registerHost(address = hostAddress, secret = hostSecret, token = hostToken) {
@@ -90,7 +143,7 @@ async function registerHost(address = hostAddress, secret = hostSecret, token = 
     }
 
     console.log("Register...");
-    await host.register(token, "8GB", "AU");
+    await host.register(token, "AU", 10000, 512, 1024, "Test desctiption");
 
     // Verify the registration.
     return await host.isRegistered();
@@ -205,6 +258,38 @@ async function refundInvalid() {
     }
 }
 
+function refundAlreadyRedeemed() {
+    return new Promise(async (resolve) => {
+
+        console.log(`-----------Refund (invalid redeemed)`);
+
+        const user = await getUserClient();
+        await user.prepareAccount();
+        await fundUser(user);
+
+        // Setup host to watch for incoming redeems.
+        const host = await getHostClient();
+
+        host.on(evernode.HostEvents.Redeem, async (r) => {
+            console.log(`Host received redeem request: '${r.payload}'`);
+
+            await host.redeemSuccess(r.redeemRefId, userAddress, { content: "dummy success" });
+        })
+
+        try {
+            const result = await user.redeem(hostToken, hostAddress, user.hookConfig.minRedeem, "dummy request", { timeout: 30000 });
+            console.log(`User received instance '${result.instance}'`);
+
+            const refund = await user.refund(result.redeemRefId).catch(err => console.log("Refund error: ", err.reason));
+            if (refund)
+                console.log("Refund success");
+        }
+        catch (err) {
+            console.log("User recieved redeem error: ", err.reason)
+        }
+    })
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 /// Audit test is targetted for the hook which commented out check creation        ///
 /// So audit assignment event cannot be tested properly until check issue is fixed ///
@@ -212,8 +297,13 @@ async function refundInvalid() {
 async function auditRequest() {
     console.log(`-----------Audit request`);
 
-    for (const auditHost of auditHosts)
+    for (const auditHost of auditHosts) {
         await registerHost(auditHost.address, auditHost.secret, auditHost.token);
+        const host = await getHostClient(auditHost.address, auditHost.secret);
+        // First try with min_redeem amount, If exception occured hook might not have enough hosting tokens.
+        // So then try with min_redeem * (heartbeat_freq + 1).
+        await rechargeHost(auditHost.address, auditHost.secret);
+    }
 
     const hook = await getHookClient();
     const auditor = await getAuditorClient();
@@ -221,7 +311,10 @@ async function auditRequest() {
     console.log(`Reward pool value before audit request: ${await hook.getRewardPool()}`);
 
     console.log(`<Moment: ${await hook.getMoment()}> Sending auditor request...`);
-    await auditor.requestAudit();
+    try {
+        await auditor.requestAudit();
+    }
+    catch (e) { console.error(e) }
 
     console.log(`Reward pool value after audit request: ${await hook.getRewardPool()}`);
 }
@@ -249,24 +342,32 @@ async function auditResponse(...scenarios) {
                 }
             })
 
-            if (scenarios[i] === "success") {
-                console.log(`<Moment: ${await hook.getMoment()}> Sending auditor response (${scenarios[i] || 'Not specified'}) to ${auditHost.address}...`);
-                await auditor.auditSuccess(auditHost.address);
-            }
-            else if (scenarios[i] === "failed") {
-                console.log(`<Moment: ${await hook.getMoment()}> Sending auditor response (${scenarios[i] || 'Not specified'}) to ${auditHost.address}...`);
-                console.log(`Reward pool value before audit failure: ${await hook.getRewardPool()}`);
-                await auditor.auditFail(auditHost.address);
-                console.log(`Reward pool value after audit failure: ${await hook.getRewardPool()}`);
+            try {
+                if (scenarios[i] === "success") {
+                    console.log(`<Moment: ${await hook.getMoment()}> Sending auditor response (${scenarios[i] || 'Not specified'}) to ${auditHost.address}...`);
+                    await auditor.auditSuccess(auditHost.address);
+                }
+                else if (scenarios[i] === "failed") {
+                    console.log(`<Moment: ${await hook.getMoment()}> Sending auditor response (${scenarios[i] || 'Not specified'}) to ${auditHost.address}...`);
+                    console.log(`Reward pool value before audit failure: ${await hook.getRewardPool()}`);
+                    await auditor.auditFail(auditHost.address);
+                    console.log(`Reward pool value after audit failure: ${await hook.getRewardPool()}`);
 
-                if (++tasks == auditHosts.length) {
+                    if (++tasks == auditHosts.length) {
+                        await new Promise(resolve => setTimeout(resolve, 4000));
+                        resolve();
+                    }
+                }
+                else if (++tasks == auditHosts.length) {
                     await new Promise(resolve => setTimeout(resolve, 4000));
                     resolve();
                 }
             }
-            else if (++tasks == auditHosts.length) {
-                await new Promise(resolve => setTimeout(resolve, 4000));
-                resolve();
+            catch {
+                if (++tasks == auditHosts.length) {
+                    await new Promise(resolve => setTimeout(resolve, 4000));
+                    resolve();
+                }
             }
         }
     });

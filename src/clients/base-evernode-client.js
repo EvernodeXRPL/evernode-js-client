@@ -116,6 +116,9 @@ class BaseEvernodeClient {
         buf = UtilHelpers.getStateData(states, HookStateKeys.MIN_REDEEM);
         config.minRedeem = buf ? UtilHelpers.readUInt(buf, 16) : HookStateDefaults.MIN_REDEEM;
 
+        buf = UtilHelpers.getStateData(states, HookStateKeys.HOST_HEARTBEAT_FREQ);
+        config.hostHeartbeatFreq = buf ? UtilHelpers.readUInt(buf, 16) : HookStateDefaults.HOST_HEARTBEAT_FREQ;
+
         buf = UtilHelpers.getStateData(states, HookStateKeys.MOMENT_BASE_IDX);
         config.momentBaseIdx = buf ? UtilHelpers.readUInt(buf, 64) : HookStateDefaults.MOMENT_BASE_IDX;
 
@@ -333,6 +336,20 @@ class BaseEvernodeClient {
                     transaction: tx,
                     host: tx.Destination,
                     amount: tx.Amount.value
+                }
+            }
+        }
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.RECHARGE) {
+
+            return {
+                name: EvernodeEvents.Recharge,
+                data: {
+                    transaction: tx,
+                    host: tx.Account,
+                    amount: tx.Amount.value,
+                    issuer: tx.Amount.issuer,
+                    currency: tx.Amount.currency
                 }
             }
         }
