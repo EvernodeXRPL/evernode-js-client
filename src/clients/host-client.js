@@ -52,8 +52,8 @@ class HostClient extends BaseEvernodeClient {
     async register(hostingToken, countryCode, cpuMicroSec, ramMb, diskMb, description, options = {}) {
         if (!/^([A-Z]{3})$/.test(hostingToken))
             throw "hostingToken should consist of 3 uppercase alphabetical characters";
-        else if (!/^([a-zA-Z]{2})$/.test(countryCode))
-            throw "countryCode should consist of 2 alphabetical characters";
+        else if (!/^([A-Z]{2})$/.test(countryCode))
+            throw "countryCode should consist of 2 uppercase alphabetical characters";
         else if (!cpuMicroSec || isNaN(cpuMicroSec) || cpuMicroSec % 1 != 0 || cpuMicroSec < 0)
             throw "cpuMicroSec should be a positive intiger";
         else if (!ramMb || isNaN(ramMb) || ramMb % 1 != 0 || ramMb < 0)
@@ -123,7 +123,10 @@ class HostClient extends BaseEvernodeClient {
             options.transactionOptions);
     }
 
-    async recharge(amount = this.hookConfig.minRedeem, options = {}) {
+    async recharge(amount = null, options = {}) {
+
+        if (!amount)
+            amount = this.hookConfig.minRedeem * (this.hookConfig.hostHeartbeatFreq + 1);
 
         if (amount < this.hookConfig.minRedeem)
             throw "Recharge amount should not be less than min redeem amount.";
