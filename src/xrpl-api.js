@@ -95,6 +95,10 @@ class XrplApi {
             console.log(`Connected to ${this.#rippledServer}`);
             this.ledgerIndex = await this.#client.getLedgerIndex();
             this.#subscribeToStream('ledger');
+
+            // Re-subscribe to existing account address subscriptions (in case this is a reconnect)
+            if (this.#addressSubscriptions.length > 0)
+                await this.#client.request({ command: 'subscribe', accounts: this.#addressSubscriptions.map(s => s.address) });
         }
         else {
             await this.disconnect();
