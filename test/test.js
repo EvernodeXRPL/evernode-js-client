@@ -57,9 +57,10 @@ async function app() {
             () => refundAlreadyRedeemed(),
             () => auditRequest(),
             () => auditResponse("success", "failed"),
+            () => deregisterHost(),
         ];
 
-        for (test of tests) {
+        for (const test of tests) {
             await test();
             await Promise.all(clients.map(c => c.disconnect())); // Cleanup clients after every test.
         }
@@ -76,11 +77,16 @@ async function app() {
 async function rechargeHost(address = hostAddress, secret = hostSecret) {
     return new Promise(async (resolve) => {
         console.log(`-----------Recharge host`);
+        const hostClient = await getHostClient(address, secret);
+        if (!await hostClient.isRegistered()) {
+            console.log("Host is not registered.");
+            resolve(false);
+            return;
+        }
 
         const hookClient = await getHookClient();
         await hookClient.subscribe()
 
-        const hostClient = await getHostClient(address, secret);
 
         hookClient.once(evernode.HookEvents.Recharge, async (r) => {
             console.log(`Hook received recharge: '${r.amount}', from: '${r.host}'`);
@@ -149,6 +155,20 @@ async function registerHost(address = hostAddress, secret = hostSecret, token = 
     return await host.isRegistered();
 }
 
+async function deregisterHost(address = hostAddress, secret = hostSecret) {
+    const host = await getHostClient(address, secret);
+
+    if (!await host.isRegistered())
+        return true;
+
+    console.log(`-----------Deregister host`);
+
+    await host.deregister();
+
+    // Verify the deregistration.
+    return !await host.isRegistered();
+}
+
 function redeem(scenario) {
     return new Promise(async (resolve) => {
 
@@ -195,6 +215,7 @@ function redeem(scenario) {
     })
 }
 
+// eslint-disable-next-line no-unused-vars
 async function refundValid() {
     console.log(`-----------Refund (valid)`);
 
@@ -213,6 +234,7 @@ async function refundValid() {
 
         console.log(`Waiting until current Moment (${startMoment}) passes for refund...`);
 
+        // eslint-disable-next-line no-constant-condition
         while (true) {
             await new Promise(resolve => setTimeout(resolve, 4000));
             const moment = await hookClient.getMoment();
@@ -259,7 +281,7 @@ async function refundInvalid() {
 }
 
 function refundAlreadyRedeemed() {
-    return new Promise(async (resolve) => {
+    return new Promise(async (resolve, reject) => {
 
         console.log(`-----------Refund (invalid redeemed)`);
 
@@ -281,11 +303,14 @@ function refundAlreadyRedeemed() {
             console.log(`User received instance '${result.instance}'`);
 
             const refund = await user.refund(result.redeemRefId).catch(err => console.log("Refund error: ", err.reason));
-            if (refund)
+            if (refund) {
                 console.log("Refund success");
+                resolve();
+            }
         }
         catch (err) {
-            console.log("User recieved redeem error: ", err.reason)
+            console.log("User recieved redeem error: ", err.reason);
+            reject();
         }
     })
 }
@@ -324,7 +349,7 @@ async function auditResponse(...scenarios) {
 
         console.log(`-----------Audit response (${scenarios})`);
 
-        tasks = 0;
+        let tasks = 0;
 
         const hook = await getHookClient();
         const auditor = await getAuditorClient();

@@ -168,7 +168,7 @@ class BaseEvernodeClient {
                         user: codec.encodeAccountID(buf.slice(0, 20)),
                         host: tx.Destination,
                         token: buf.slice(28, 31).toString(),
-                        moments: parseInt(XflHelpers.toString(buf.slice(20, 28).readBigInt64BE(0))),
+                        moments: parseInt(buf.slice(20, 28).readBigInt64BE(0)),
                         payload: payload
                     }
                 }
