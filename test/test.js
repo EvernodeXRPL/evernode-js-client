@@ -47,8 +47,8 @@ async function app() {
         const tests = [
             () => registerHost(),
             () => rechargeHost(),
-            () => getHosts(),
             () => getAllHosts(),
+            () => getActiveHosts(),
             () => redeem("success"),
             () => redeem("error"),
             () => redeem("timeout"),
@@ -119,11 +119,11 @@ async function getAllHosts() {
     console.log("All hosts", hosts || "No hosts");
 }
 
-async function getHosts() {
-    console.log(`-----------Getting hosts`);
+async function getActiveHosts() {
+    console.log(`-----------Getting active hosts`);
 
     const hookClient = await getHookClient();
-    const hosts = await hookClient.getHosts();
+    const hosts = await hookClient.getActiveHosts();
 
     console.log("Hosts", hosts || "No active hosts");
 }
