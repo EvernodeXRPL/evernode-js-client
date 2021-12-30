@@ -50,7 +50,7 @@ class HookClient extends BaseEvernodeClient {
         return hosts;
     }
 
-    async getHosts() {
+    async getActiveHosts() {
         const hosts = await this.getAllHosts();
         // Filter only active hosts.
         return hosts.filter(h => h.active);

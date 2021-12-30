@@ -29,24 +29,19 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async prepareAccount() {
-        try {
-            const [flags, trustLines, msgKey] = await Promise.all([
-                this.xrplAcc.getFlags(),
-                this.xrplAcc.getTrustLines(EvernodeConstants.EVR, this.hookAddress),
-                this.xrplAcc.getMessageKey()]);
+        const [flags, trustLines, msgKey] = await Promise.all([
+            this.xrplAcc.getFlags(),
+            this.xrplAcc.getTrustLines(EvernodeConstants.EVR, this.hookAddress),
+            this.xrplAcc.getMessageKey()]);
 
-            if (!flags.lsfDefaultRipple)
-                await this.xrplAcc.setDefaultRippling(true);
+        if (!flags.lsfDefaultRipple)
+            await this.xrplAcc.setDefaultRippling(true);
 
-            if (trustLines.length === 0)
-                await this.xrplAcc.setTrustLine(EvernodeConstants.EVR, this.hookAddress, "99999999999999");
+        if (trustLines.length === 0)
+            await this.xrplAcc.setTrustLine(EvernodeConstants.EVR, this.hookAddress, "99999999999999");
 
-            if (!msgKey)
-                await this.xrplAcc.setMessageKey(this.accKeyPair.publicKey);
-        }
-        catch (err) {
-            console.log("Error in preparing host xrpl account for Evernode.", err);
-        }
+        if (!msgKey)
+            await this.xrplAcc.setMessageKey(this.accKeyPair.publicKey);
     }
 
     async register(hostingToken, countryCode, cpuMicroSec, ramMb, diskMb, description, options = {}) {

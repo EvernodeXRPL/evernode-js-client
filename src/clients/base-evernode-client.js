@@ -1,7 +1,7 @@
 const { XrplApi } = require('../xrpl-api');
 const { XrplAccount } = require('../xrpl-account');
 const { XrplApiEvents } = require('../xrpl-common');
-const { EvernodeEvents, HookStateKeys, HookStateDefaults, MemoTypes, MemoFormats } = require('../evernode-common');
+const { EvernodeEvents, HookStateKeys, HookStateDefaults, MemoTypes, MemoFormats, EvernodeConstants } = require('../evernode-common');
 const { DefaultValues } = require('../defaults');
 const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
@@ -84,6 +84,14 @@ class BaseEvernodeClient {
                 data: s.HookStateData //hex
             }
         });
+    }
+
+    async getEVRBalance() {
+        const lines = await this.xrplAcc.getTrustLines(EvernodeConstants.EVR, this.hookAddress);
+        if (lines > 0)
+            return lines[0].balance;
+        else
+            return '0';
     }
 
     async #getHookConfig() {
