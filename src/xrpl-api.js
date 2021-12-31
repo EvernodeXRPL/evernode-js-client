@@ -92,7 +92,6 @@ class XrplApi {
         // After connection established, check again whether maintainConnections has become false.
         // This is in case the consumer has called disconnect() while connection is being established.
         if (this.#maintainConnection) {
-            console.log(`Connected to ${this.#rippledServer}`);
             this.ledgerIndex = await this.#client.getLedgerIndex();
             this.#subscribeToStream('ledger');
 
@@ -130,7 +129,6 @@ class XrplApi {
 
         if (this.#client.isConnected()) {
             await this.#client.disconnect().catch(console.error);
-            console.log(`Disconnected from ${this.#rippledServer}`);
         }
     }
 

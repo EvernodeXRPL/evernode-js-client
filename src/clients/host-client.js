@@ -16,7 +16,7 @@ class HostClient extends BaseEvernodeClient {
 
     constructor(xrpAddress, xrpSecret, options = {}) {
         super(xrpAddress, xrpSecret, Object.values(HostEvents), true, options);
-        this.#hookClient = new HookClient(options);
+        this.#hookClient = new HookClient({ ...options, xrplApi: this.xrplApi });
     }
 
     async getRegistration() {

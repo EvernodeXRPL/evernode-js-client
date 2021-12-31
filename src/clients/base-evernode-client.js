@@ -88,7 +88,7 @@ class BaseEvernodeClient {
 
     async getEVRBalance() {
         const lines = await this.xrplAcc.getTrustLines(EvernodeConstants.EVR, this.hookAddress);
-        if (lines > 0)
+        if (lines.length > 0)
             return lines[0].balance;
         else
             return '0';

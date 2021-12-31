@@ -1,5 +1,5 @@
-const evernode = require("evernode-js-client");
-// const evernode = require("../dist"); // Local dist dir.
+// const evernode = require("evernode-js-client");
+const evernode = require("../dist"); // Local dist dir.
 
 const hookAddress = "rHxCwRQcSDr5b2Ln4onZiSBG58Jvm1BoXK";
 const hookSecret = "shKu6kobQjGSRroK1dm9TgzwWZWPV";
