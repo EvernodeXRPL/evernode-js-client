@@ -57,6 +57,7 @@ class HostClient extends BaseEvernodeClient {
             throw "diskMb should be a positive intiger";
         /* eslint-disable no-control-regex */
         // Need to use control characters inside this regex to match ascii characters.
+        // Here we allow all the characters in ascii rage except ";" for the description.
         // no-control-regex is enabled default by eslint:recommended, So we disable it only for this block.
         else if (!/^((?![;])[\x00-\x7F]){0,26}$/.test(description))
             throw "description should consist of 0-26 ascii characters except ';'";
