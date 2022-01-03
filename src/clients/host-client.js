@@ -55,8 +55,12 @@ class HostClient extends BaseEvernodeClient {
             throw "ramMb should be a positive intiger";
         else if (!diskMb || isNaN(diskMb) || diskMb % 1 != 0 || diskMb < 0)
             throw "diskMb should be a positive intiger";
-        else if (!/^([a-zA-Z\s]{0,26})$/.test(description))
-            throw "description should consist of 0-26 alphabetical characters";
+        // Need to use control characters inside this regex to match ascii characters.
+        // Here we allow all the characters in ascii range except ";" for the description.
+        // no-control-regex is enabled default by eslint:recommended, So we disable it only for next line.
+        // eslint-disable-next-line no-control-regex
+        else if (!/^((?![;])[\x00-\x7F]){0,26}$/.test(description))
+            throw "description should consist of 0-26 ascii characters except ';'";
 
         if (await this.isRegistered())
             throw "Host already registered.";
