@@ -34,12 +34,34 @@ class AuditorClient extends BaseEvernodeClient {
                 });
 
                 if (res)
-                    resolve(res);
+                    resolve({ ...res, trustCreated: (lines && lines.length === 0) });
                 else
                     reject({ error: ErrorCodes.AUDIT_REQ_ERROR, reason: ErrorReasons.TRANSACTION_FAILURE });
 
             } catch (error) {
                 reject({ error: ErrorCodes.AUDIT_CASH_ERROR, reason: ErrorReasons.TRANSACTION_FAILURE });
+            }
+        });
+    }
+
+    removeAuditTrustline(hostAddress, currency) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                // Check trustline exist. If so, skip setting the trustline.
+                const lines = await this.xrplAcc.getTrustLines(currency, hostAddress);
+                if (lines && lines.length === 0) {
+                    console.log(`No trust lines found for ${currency}/${hostAddress}.`);
+                    resolve();
+                }
+                else {
+                    const res = await this.xrplAcc.setTrustLine(currency, hostAddress, "0");
+                    if (res)
+                        resolve(res);
+                    else
+                        reject({ error: ErrorCodes.AUDIT_CLEAR_TRUST_ERROR, reason: `Removing trustline for ${currency}/${hostAddress} failed.` });
+                }
+            } catch (error) {
+                reject({ error: ErrorCodes.AUDIT_CLEAR_TRUST_ERROR, reason: ErrorReasons.TRANSACTION_FAILURE });
             }
         });
     }

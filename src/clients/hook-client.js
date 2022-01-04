@@ -13,7 +13,6 @@ const HookEvents = {
     RedeemSuccess: EvernodeEvents.RedeemSuccess,
     RedeemError: EvernodeEvents.RedeemError,
     Refund: EvernodeEvents.Refund,
-    RefundSuccess: EvernodeEvents.RefundSuccess,
     Audit: EvernodeEvents.Audit,
     AuditSuccess: EvernodeEvents.AuditSuccess,
     Recharge: EvernodeEvents.Recharge
