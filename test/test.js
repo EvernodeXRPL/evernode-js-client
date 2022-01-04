@@ -97,16 +97,7 @@ async function rechargeHost(address = hostAddress, secret = hostSecret) {
         })
 
         console.log("Recharge...");
-        // First try with min_redeem amount, If exception occured hook might not have enough hosting tokens.
-        // So then try with min_redeem * (heartbeat_freq + 1).
-        try {
-            await hostClient.recharge();
-        }
-        catch {
-            const amount = hostClient.hookConfig.minRedeem * (hostClient.hookConfig.hostHeartbeatFreq + 1);
-            console.log(`Retrying recharge with '${amount}'' tokens..`)
-            await hostClient.recharge(amount);
-        }
+        await hostClient.recharge();
     })
 }
 

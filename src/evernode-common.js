@@ -47,7 +47,7 @@ const HookStateDefaults = {
     MOMENT_SIZE: 72,
     HOST_REG_FEE: '0.87654321',
     REDEEM_WINDOW: 24,
-    MIN_REDEEM: 12,
+    MIN_REDEEM: 1,
     HOST_HEARTBEAT_FREQ: 1,
     MOMENT_BASE_IDX: 0,
     REWARD_POOL: '0'
