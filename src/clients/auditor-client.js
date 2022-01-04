@@ -47,7 +47,7 @@ class AuditorClient extends BaseEvernodeClient {
     removeAuditTrustline(hostAddress, currency) {
         return new Promise(async (resolve, reject) => {
             try {
-                // Check trustline exist. If so, skip setting the trustline.
+                // Check trustline exist. If so, skip removing the trustline.
                 const lines = await this.xrplAcc.getTrustLines(currency, hostAddress);
                 if (lines && lines.length === 0) {
                     console.log(`No trust lines found for ${currency}/${hostAddress}.`);
