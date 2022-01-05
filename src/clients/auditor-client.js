@@ -50,13 +50,15 @@ class AuditorClient extends BaseEvernodeClient {
                 // Check trustline exist. If so, remove the trustline.
                 const lines = await this.xrplAcc.getTrustLines(hostCurrency, hostAddress);
                 if (lines && lines.length > 0) {
-                    // Transfer the hosting token balance back to the host.
-                    const ret = await this.xrplAcc.makePayment(hostAddress,
-                        lines[0].balance,
-                        hostCurrency,
-                        hostAddress);
-                    if (!ret)
-                        reject({ error: ErrorCodes.AUDIT_CLEAR_TRUST_ERROR, reason: `Transfering ${hostCurrency}/${hostAddress} back to ${hostAddress} failed.` });
+                    // Transfer the hosting token balance back to the host, if balance > 0.
+                    if (parseFloat(lines[0].balance) > 0) {
+                        const ret = await this.xrplAcc.makePayment(hostAddress,
+                            lines[0].balance,
+                            hostCurrency,
+                            hostAddress);
+                        if (!ret)
+                            reject({ error: ErrorCodes.AUDIT_CLEAR_TRUST_ERROR, reason: `Transfering ${hostCurrency}/${hostAddress} back to ${hostAddress} failed.` });
+                    }
 
                     const res = await this.xrplAcc.setTrustLine(hostCurrency, hostAddress, "0");
                     if (res)
