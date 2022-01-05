@@ -22,7 +22,7 @@ class AuditorClient extends BaseEvernodeClient {
         return new Promise(async (resolve, reject) => {
             try {
                 const lines = await this.xrplAcc.getTrustLines(assignmentInfo.currency, assignmentInfo.issuer);
-                if (lines && lines.length === 0) {
+                if (!lines || lines.length === 0) {
                     console.log(`No trust lines found for ${assignmentInfo.currency}/${assignmentInfo.issuer}. Creating one...`);
                     const ret = await this.xrplAcc.setTrustLine(assignmentInfo.currency, assignmentInfo.issuer, AUDIT_TRUSTLINE_LIMIT, false);
                     if (!ret)
