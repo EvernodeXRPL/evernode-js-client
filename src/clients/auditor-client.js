@@ -44,21 +44,29 @@ class AuditorClient extends BaseEvernodeClient {
         });
     }
 
-    removeAuditTrustline(hostAddress, currency) {
+    removeAuditTrustline(hostAddress, hostCurrency) {
         return new Promise(async (resolve, reject) => {
             try {
                 // Check trustline exist. If so, skip removing the trustline.
-                const lines = await this.xrplAcc.getTrustLines(currency, hostAddress);
+                const lines = await this.xrplAcc.getTrustLines(hostCurrency, hostAddress);
                 if (lines && lines.length === 0) {
-                    console.log(`No trust lines found for ${currency}/${hostAddress}.`);
+                    console.log(`No trust lines found for ${hostCurrency}/${hostAddress}.`);
                     resolve();
                 }
                 else {
-                    const res = await this.xrplAcc.setTrustLine(currency, hostAddress, "0");
+                    // Transfer the hosting token balance back to the host.
+                    const ret = await this.xrplAcc.makePayment(hostAddress,
+                        lines[0].balance,
+                        hostCurrency,
+                        hostAddress);
+                    if (!ret)
+                        reject({ error: ErrorCodes.AUDIT_CLEAR_TRUST_ERROR, reason: `Transfering ${hostCurrency}/${hostAddress} back to ${hostAddress} failed.` });
+
+                    const res = await this.xrplAcc.setTrustLine(hostCurrency, hostAddress, "0");
                     if (res)
                         resolve(res);
                     else
-                        reject({ error: ErrorCodes.AUDIT_CLEAR_TRUST_ERROR, reason: `Removing trustline for ${currency}/${hostAddress} failed.` });
+                        reject({ error: ErrorCodes.AUDIT_CLEAR_TRUST_ERROR, reason: `Removing trustline for ${hostCurrency}/${hostAddress} failed.` });
                 }
             } catch (error) {
                 reject({ error: ErrorCodes.AUDIT_CLEAR_TRUST_ERROR, reason: ErrorReasons.TRANSACTION_FAILURE });
