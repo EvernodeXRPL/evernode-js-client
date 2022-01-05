@@ -47,13 +47,9 @@ class AuditorClient extends BaseEvernodeClient {
     removeAuditTrustline(hostAddress, hostCurrency) {
         return new Promise(async (resolve, reject) => {
             try {
-                // Check trustline exist. If so, skip removing the trustline.
+                // Check trustline exist. If so, remove the trustline.
                 const lines = await this.xrplAcc.getTrustLines(hostCurrency, hostAddress);
-                if (lines && lines.length === 0) {
-                    console.log(`No trust lines found for ${hostCurrency}/${hostAddress}.`);
-                    resolve();
-                }
-                else {
+                if (lines && lines.length > 0) {
                     // Transfer the hosting token balance back to the host.
                     const ret = await this.xrplAcc.makePayment(hostAddress,
                         lines[0].balance,
@@ -67,6 +63,10 @@ class AuditorClient extends BaseEvernodeClient {
                         resolve(res);
                     else
                         reject({ error: ErrorCodes.AUDIT_CLEAR_TRUST_ERROR, reason: `Removing trustline for ${hostCurrency}/${hostAddress} failed.` });
+                }
+                else {
+                    console.log(`No trust lines found for ${hostCurrency}/${hostAddress}.`);
+                    resolve();
                 }
             } catch (error) {
                 reject({ error: ErrorCodes.AUDIT_CLEAR_TRUST_ERROR, reason: ErrorReasons.TRANSACTION_FAILURE });
