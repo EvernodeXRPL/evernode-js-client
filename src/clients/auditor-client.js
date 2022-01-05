@@ -22,7 +22,7 @@ class AuditorClient extends BaseEvernodeClient {
         return new Promise(async (resolve, reject) => {
             try {
                 const lines = await this.xrplAcc.getTrustLines(assignmentInfo.currency, assignmentInfo.issuer);
-                if (lines && lines.length === 0) {
+                if (!lines || lines.length === 0) {
                     console.log(`No trust lines found for ${assignmentInfo.currency}/${assignmentInfo.issuer}. Creating one...`);
                     const ret = await this.xrplAcc.setTrustLine(assignmentInfo.currency, assignmentInfo.issuer, AUDIT_TRUSTLINE_LIMIT, false);
                     if (!ret)
@@ -44,21 +44,31 @@ class AuditorClient extends BaseEvernodeClient {
         });
     }
 
-    removeAuditTrustline(hostAddress, currency) {
+    removeAuditTrustline(hostAddress, hostCurrency) {
         return new Promise(async (resolve, reject) => {
             try {
-                // Check trustline exist. If so, skip removing the trustline.
-                const lines = await this.xrplAcc.getTrustLines(currency, hostAddress);
-                if (lines && lines.length === 0) {
-                    console.log(`No trust lines found for ${currency}/${hostAddress}.`);
-                    resolve();
-                }
-                else {
-                    const res = await this.xrplAcc.setTrustLine(currency, hostAddress, "0");
+                // Check trustline exist. If so, remove the trustline.
+                const lines = await this.xrplAcc.getTrustLines(hostCurrency, hostAddress);
+                if (lines && lines.length > 0) {
+                    // Transfer the hosting token balance back to the host, if balance > 0.
+                    if (parseFloat(lines[0].balance) > 0) {
+                        const ret = await this.xrplAcc.makePayment(hostAddress,
+                            lines[0].balance,
+                            hostCurrency,
+                            hostAddress);
+                        if (!ret)
+                            reject({ error: ErrorCodes.AUDIT_CLEAR_TRUST_ERROR, reason: `Transfering ${hostCurrency}/${hostAddress} back to ${hostAddress} failed.` });
+                    }
+
+                    const res = await this.xrplAcc.setTrustLine(hostCurrency, hostAddress, "0");
                     if (res)
                         resolve(res);
                     else
-                        reject({ error: ErrorCodes.AUDIT_CLEAR_TRUST_ERROR, reason: `Removing trustline for ${currency}/${hostAddress} failed.` });
+                        reject({ error: ErrorCodes.AUDIT_CLEAR_TRUST_ERROR, reason: `Removing trustline for ${hostCurrency}/${hostAddress} failed.` });
+                }
+                else {
+                    console.log(`No trust lines found for ${hostCurrency}/${hostAddress}.`);
+                    resolve();
                 }
             } catch (error) {
                 reject({ error: ErrorCodes.AUDIT_CLEAR_TRUST_ERROR, reason: ErrorReasons.TRANSACTION_FAILURE });
