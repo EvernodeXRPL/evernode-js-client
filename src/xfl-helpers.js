@@ -82,18 +82,18 @@ class XflHelpers {
             mantissa = BigInt(parseInt(floatStr));
         }
 
-        // convert types as needed
+        // Convert types as needed.
         if (typeof (exponent) != 'bigint')
             exponent = BigInt(exponent);
 
         if (typeof (mantissa) != 'bigint')
             mantissa = BigInt(mantissa);
 
-        // canonical zero
+        // Canonical zero.
         if (mantissa == 0n)
             return 0n;
 
-        // normalize
+        // Normalize.
         let is_negative = mantissa < 0;
         if (is_negative)
             mantissa *= -1n;
@@ -107,13 +107,13 @@ class XflHelpers {
             exponent--;
         }
 
-        // canonical zero on mantissa underflow
+        // Canonical zero on mantissa underflow.
         if (mantissa == 0)
             return 0n;
 
-        // under and overflows
+        // Under and overflows.
         if (exponent > maxExponent || exponent < minExponent)
-            return -1; // note this is an "invalid" XFL used to propagate errors
+            return -1; // Note this is an "invalid" XFL used to propagate errors.
 
         exponent += 97n;
 
