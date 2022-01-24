@@ -7,6 +7,7 @@ const { XrplApi } = require('./xrpl-api');
 const { XrplApiEvents } = require('./xrpl-common');
 const { XrplAccount } = require('./xrpl-account');
 const { EvernodeConstants } = require('./evernode-common');
+const { XflHelpers } = require('./xfl-helpers');
 
 module.exports = {
     HookClient,
@@ -21,5 +22,6 @@ module.exports = {
     XrplApiEvents,
     XrplAccount,
     EvernodeConstants,
-    Defaults
+    Defaults,
+    XflHelpers
 }
