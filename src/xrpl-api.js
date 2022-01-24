@@ -50,7 +50,11 @@ class XrplApi {
             if (data.validated) {
                 const matches = this.#addressSubscriptions.filter(s => s.address === data.transaction.Destination); // Only incoming transactions.
                 if (matches.length > 0) {
-                    const tx = { ...data.transaction }; // Create an object copy. Otherwise xrpl client will mutate the transaction object,
+                    const tx = {
+                        LedgerHash: data.ledger_hash,
+                        LedgerIndex: data.ledger_index,
+                        ...data.transaction
+                    }; // Create an object copy. Otherwise xrpl client will mutate the transaction object,
                     const eventName = tx.TransactionType.toLowerCase();
                     // Emit the event only for successful transactions, Otherwise emit error.
                     if (data.engine_result === "tesSUCCESS") {
