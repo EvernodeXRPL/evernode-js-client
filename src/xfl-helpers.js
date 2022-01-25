@@ -59,13 +59,11 @@ class XflHelpers {
     static getXfl(floatStr) {
         let exponent;
         let mantissa;
-        if (floatStr.startsWith('.')) {
-            exponent = BigInt(floatStr.length - 1);
-            mantissa = BigInt(parseInt(floatStr.substr(1)));
-        }
-        else if (floatStr.endsWith('.')) {
+        floatStr = parseFloat(floatStr).toString();
+
+        if (floatStr === '0') {
             exponent = BigInt(0);
-            mantissa = BigInt(parseInt(floatStr.substr(-1)));
+            mantissa = BigInt(0);
         }
         else if (floatStr.includes('.')) {
             const parts = floatStr.split('.');
