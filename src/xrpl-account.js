@@ -258,6 +258,43 @@ class XrplAccount {
 
         });
     }
+
+    submitTransactionBlob(txBlob) {
+
+        if (!this.wallet)
+            throw "no_secret";
+
+        // Returned format.
+        // {
+        //     id: txHash, (if signing success)
+        //     code: final transaction result code.
+        //     details: submission and transaction details, (if signing success)
+        //     error: Any error that prevents submission.
+        // }
+
+        return new Promise(async (resolve, reject) => {
+            try {
+                const submission = await this.xrplApi.submitAndVerify(txBlob);
+                const r = submission?.result;
+                const txResult = {
+                    id: r?.hash,
+                    code: r?.meta?.TransactionResult,
+                    details: r
+                };
+
+                console.log("Transaction result: " + txResult.code);
+                if (txResult.code === "tesSUCCESS")
+                    resolve(txResult);
+                else
+                    reject(txResult);
+            }
+            catch (err) {
+                console.log("Error submitting transaction:", err);
+                reject({ error: err });
+            }
+
+        });
+    }
 }
 
 module.exports = {
