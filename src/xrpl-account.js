@@ -259,6 +259,10 @@ class XrplAccount {
         });
     }
 
+    /**
+     * Submit the signed raw transaction.
+     * @param txBlob Signed and encoded transacion as a hex string.
+     */
     submitTransactionBlob(txBlob) {
 
         if (!this.wallet)
