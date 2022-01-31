@@ -265,9 +265,6 @@ class XrplAccount {
      */
     submitTransactionBlob(txBlob) {
 
-        if (!this.wallet)
-            throw "no_secret";
-
         // Returned format.
         // {
         //     id: txHash, (if signing success)
