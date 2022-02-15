@@ -1,6 +1,5 @@
 // const evernode = require("evernode-js-client");
-const { NFTokenCreateOfferFlags } = require("xrpl");
-const evernode = require("../dist"); // Local dist dir.
+const evernode = require("../dist"); // Local dist dir. (use 'npm run build' to update)
 
 const registryAddress = "rBwEV4MDQuSqsPWhY3sVevWnin5NEHZgXs";
 const registrySecret = "shYeka6uDt6cyUx5JqCit4rH7oypk";
@@ -10,7 +9,7 @@ const hostToken = "ABC";
 const userAddress = "rKCp2EyWg94c1keic83SHzWEuQXy5Am6Ni";
 const userSecret = "spzjw4ZC36Nzy7yggVurfH3ESjvbk";
 
-const rippledServer = 'wss://xls20-sandbox.rippletest.net:51233'; // Testnet.
+const rippledServer = 'wss://xls20-sandbox.rippletest.net:51233';
 
 const clients = [];
 
@@ -53,7 +52,6 @@ async function app() {
 
         // const tests = [
         //     () => registerHost(),
-        //     () => rechargeHost(),
         //     () => getAllHosts(),
         //     () => getActiveHosts(),
         //     () => redeem("success"),
@@ -74,33 +72,6 @@ async function app() {
     finally {
         await xrplApi.disconnect();
     }
-}
-
-async function rechargeHost(address = hostAddress, secret = hostSecret) {
-    return new Promise(async (resolve) => {
-        console.log(`-----------Recharge host`);
-        const hostClient = await getHostClient(address, secret);
-        if (!await hostClient.isRegistered()) {
-            console.log("Host is not registered.");
-            resolve(false);
-            return;
-        }
-
-        const hookClient = await getHookClient();
-        await hookClient.subscribe()
-
-
-        hookClient.once(evernode.HookEvents.Recharge, async (r) => {
-            console.log(`Hook received recharge: '${r.amount}', from: '${r.host}'`);
-            const info = await hostClient.getRegistration();
-            console.log(`Host has ${info.lockedTokenAmount} locked tokens`);
-            await new Promise(resolve => setTimeout(resolve, 4000));
-            resolve();
-        })
-
-        console.log("Recharge...");
-        await hostClient.recharge();
-    })
 }
 
 async function getAllHosts() {
@@ -224,8 +195,8 @@ async function getHostClient(address = hostAddress, secret = hostSecret) {
     return client;
 }
 
-async function getHookClient() {
-    const client = new evernode.HookClient(registryAddress, registrySecret);
+async function getRegistryClient() {
+    const client = new evernode.RegistryClient(registryAddress, registrySecret);
     await client.connect();
     clients.push(client);
     return client;
