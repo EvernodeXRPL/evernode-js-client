@@ -243,12 +243,38 @@ class XrplAccount {
         }, options);
     }
 
+    offerBuyNft(tokenId, owner, amount, currency, issuer = null, expiration = 4294967295, memos = null, options = {}) {
+
+        const amountObj = makeAmountObject(amount, currency, issuer);
+
+        return this.#submitAndVerifyTransaction({
+            TransactionType: 'NFTokenCreateOffer',
+            Account: this.address,
+            TokenID: tokenId,
+            Owner: owner,
+            Amount: amountObj,
+            Expiration: expiration,
+            Flags: 0, // Buy offer
+            Memos: TransactionHelper.formatMemos(memos)
+        }, options);
+    }
+
     buyNft(offerId, memos = null, options = {}) {
 
         return this.#submitAndVerifyTransaction({
             TransactionType: 'NFTokenAcceptOffer',
             Account: this.address,
             SellOffer: offerId,
+            Memos: TransactionHelper.formatMemos(memos)
+        }, options);
+    }
+
+    burnNft(tokenId, memos = null, options = {}) {
+
+        return this.#submitAndVerifyTransaction({
+            TransactionType: 'NFTokenBurn',
+            Account: this.address,
+            TokenID: tokenId,
             Memos: TransactionHelper.formatMemos(memos)
         }, options);
     }
