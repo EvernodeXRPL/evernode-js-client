@@ -100,6 +100,24 @@ class XrplAccount {
         return await this.xrplApi.getAccountObjects(fromAccount, { type: "check" });
     }
 
+    async getNfts() {
+        return await this.xrplApi.getNfts(this.address, {
+            limit: 399
+        });
+    }
+
+    async getNftOffers() {
+        const offers = await this.xrplApi.getAccountObjects(this.address);
+        // TODO: Pass rippled filter parameter when xrpl.js supports it.
+        return offers.filter(o => o.LedgerEntryType == 'NFTokenOffer');
+    }
+
+    async getNftByUri(uri) {
+        const nfts = await this.getNfts();
+        const hexUri = TransactionHelper.asciiToHex(uri).toUpperCase();
+        return nfts.find(n => n.URI == hexUri);
+    }
+
     async getAccountObjects(options) {
         return await this.xrplApi.getAccountObjects(this.address, options);
     }
@@ -193,6 +211,51 @@ class XrplAccount {
                 issuer: check.SendMax.issuer,
                 value: check.SendMax.value
             },
+        }, options);
+    }
+
+    mintNft(uri, taxon, transferFee, isTransferable, memos = null, options = {}) {
+        return this.#submitAndVerifyTransaction({
+            TransactionType: 'NFTokenMint',
+            Account: this.address,
+            URI: TransactionHelper.asciiToHex(uri).toUpperCase(),
+            TokenTaxon: taxon,
+            TransferFee: transferFee,
+            Flags: isTransferable ? 8 : 0,
+            Memos: TransactionHelper.formatMemos(memos)
+        }, options);
+    }
+
+    offerSellNft(tokenId, destination, amount, currency, issuer = null, expiration = 4294967295, memos = null, options = {}) {
+
+        if (typeof amount !== 'string')
+            throw "Amount must be a string.";
+
+        const amountObj = (currency == XrplConstants.XRP) ? amount : {
+            currency: currency,
+            issuer: issuer,
+            value: amount
+        }
+
+        return this.#submitAndVerifyTransaction({
+            TransactionType: 'NFTokenCreateOffer',
+            Account: this.address,
+            TokenID: tokenId,
+            Destination: destination,
+            Amount: amountObj,
+            Expiration: expiration,
+            Flags: 1, // tfSellToken
+            Memos: TransactionHelper.formatMemos(memos)
+        }, options);
+    }
+
+    buyNft(offerId, memos = null, options = {}) {
+
+        return this.#submitAndVerifyTransaction({
+            TransactionType: 'NFTokenAcceptOffer',
+            Account: this.address,
+            SellOffer: offerId,
+            Memos: TransactionHelper.formatMemos(memos)
         }, options);
     }
 

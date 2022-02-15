@@ -1,34 +1,15 @@
 // const evernode = require("evernode-js-client");
-const evernode = require("../dist"); // Local dist dir.
+const evernode = require("../dist"); // Local dist dir. (use 'npm run build' to update)
 
-const hookAddress = "rHxCwRQcSDr5b2Ln4onZiSBG58Jvm1BoXK";
-const hookSecret = "shKu6kobQjGSRroK1dm9TgzwWZWPV";
-const hostAddress = "rfjtFb8xz4mmocFgpvpJjp8hbfAWZ3JCgb";
-const hostSecret = "shGDdT5nb7oVjJSYBs7BUsQTbfmdN";
+const registryAddress = "rBwEV4MDQuSqsPWhY3sVevWnin5NEHZgXs";
+const registrySecret = "shYeka6uDt6cyUx5JqCit4rH7oypk";
+const hostAddress = "r4SCD3XsMDhZJb43tCN7uNe9DjCSfozgKc";
+const hostSecret = "sh8p6qLWbJ7iGHcmdn5jSQzj4EzTF";
 const hostToken = "ABC";
-const extra_hostAddress = "rBdWg75namZt6qsKeLQ64NaLv5o864mLJG";
-const extra_hostSecret = "ssK25HB6tfTzcsGKWRyEuabiwPQis";
-const extra_hostToken = "ABD";
-const userAddress = "r4DKWDEgr6faS7XnKeKKRmorFqufT9NrNa";
-const userSecret = "ssHufjnAFacFSZsoen8i4KVVtUFQa";
-const auditorAddress = "rUWDtXPk4gAp8L6dNS51hLArnwFk4bRxky";
-const auditorSecret = "snUByxoPxYHTZjUBg38X8ihHk5QVi";
+const userAddress = "rKCp2EyWg94c1keic83SHzWEuQXy5Am6Ni";
+const userSecret = "spzjw4ZC36Nzy7yggVurfH3ESjvbk";
 
-const auditHosts = [
-    {
-        address: hostAddress,
-        secret: hostSecret,
-        token: hostToken
-    },
-    {
-        address: extra_hostAddress,
-        secret: extra_hostSecret,
-        token: extra_hostToken
-    }
-]
-
-// const rippledServer = 'ws://localhost:6005';
-const rippledServer = 'wss://hooks-testnet.xrpl-labs.com'; // Testnet.
+const rippledServer = 'wss://xls20-sandbox.rippletest.net:51233';
 
 const clients = [];
 
@@ -37,33 +18,52 @@ async function app() {
     // Use a singleton xrplApi for all tests.
     const xrplApi = new evernode.XrplApi(rippledServer);
     evernode.Defaults.set({
-        hookAddress: hookAddress,
+        registryAddress: registryAddress,
         xrplApi: xrplApi
     })
 
     try {
         await xrplApi.connect();
 
-        const tests = [
-            () => registerHost(),
-            () => rechargeHost(),
-            () => getAllHosts(),
-            () => getActiveHosts(),
-            () => redeem("success"),
-            () => redeem("error"),
-            () => redeem("timeout"),
-            () => refundInvalid(),
-            // () => refundValid(), // Must use short moment size and redeem window in the hook to test this.
-            () => refundAlreadyRedeemed(),
-            () => auditRequest(),
-            () => auditResponse("success", "failed"),
-            () => deregisterHost(),
-        ];
+        // Process of minting and selling a NFT.
 
-        for (const test of tests) {
-            await test();
-            await Promise.all(clients.map(c => c.disconnect())); // Cleanup clients after every test.
-        }
+        // Account1: selling party.
+        const acc1 = new evernode.XrplAccount(registryAddress, registrySecret);
+        // Mint an nft with some data included in uri (256 bytes). xrpl doesn't check for uniqueness of data.
+        // We need to make it unique in order to later find the token by uri.
+        const uri = "mynft custom data";
+        await acc1.mintNft(uri, 0, 0, true);
+        // Get the minted nft information and sell it on the dex.
+        const nft = await acc1.getNftByUri(uri);
+        console.log(nft);
+        // Make a sell offer (for free) while restricting it to be only purchased by the specified party.
+        await acc1.offerSellNft(nft.TokenID, hostAddress, '0', 'XRP');
+
+        // Account2: Buying party.
+        const acc2 = new evernode.XrplAccount(hostAddress, hostSecret);
+        // Find the sellOffer information from seller's account.
+        const sellOffer = (await acc1.getNftOffers()).find(o => o.TokenID == nft.TokenID);
+        console.log(sellOffer);
+        // Buy the NFT by accepting the sell offer.
+        await acc2.buyNft(sellOffer.index);
+        // Get information about the purchased nft.
+        const nft2 = await acc2.getNftByUri(uri);
+        console.log(nft2);
+
+        // const tests = [
+        //     () => registerHost(),
+        //     () => getAllHosts(),
+        //     () => getActiveHosts(),
+        //     () => redeem("success"),
+        //     () => redeem("error"),
+        //     () => redeem("timeout"),
+        //     () => deregisterHost(),
+        // ];
+
+        // for (const test of tests) {
+        //     await test();
+        //     await Promise.all(clients.map(c => c.disconnect())); // Cleanup clients after every test.
+        // }
 
     }
     catch (e) {
@@ -72,33 +72,6 @@ async function app() {
     finally {
         await xrplApi.disconnect();
     }
-}
-
-async function rechargeHost(address = hostAddress, secret = hostSecret) {
-    return new Promise(async (resolve) => {
-        console.log(`-----------Recharge host`);
-        const hostClient = await getHostClient(address, secret);
-        if (!await hostClient.isRegistered()) {
-            console.log("Host is not registered.");
-            resolve(false);
-            return;
-        }
-
-        const hookClient = await getHookClient();
-        await hookClient.subscribe()
-
-
-        hookClient.once(evernode.HookEvents.Recharge, async (r) => {
-            console.log(`Hook received recharge: '${r.amount}', from: '${r.host}'`);
-            const info = await hostClient.getRegistration();
-            console.log(`Host has ${info.lockedTokenAmount} locked tokens`);
-            await new Promise(resolve => setTimeout(resolve, 4000));
-            resolve();
-        })
-
-        console.log("Recharge...");
-        await hostClient.recharge();
-    })
 }
 
 async function getAllHosts() {
@@ -132,11 +105,11 @@ async function registerHost(address = hostAddress, secret = hostSecret, token = 
     await host.prepareAccount();
 
     // Get EVRs from the hook if needed.
-    const lines = await host.xrplAcc.getTrustLines(evernode.EvernodeConstants.EVR, hookAddress);
+    const lines = await host.xrplAcc.getTrustLines(evernode.EvernodeConstants.EVR, registryAddress);
     if (lines.length === 0 || parseInt(lines[0].balance) < 100) {
         console.log("Transfer EVRs...");
-        const hookAcc = new evernode.XrplAccount(hookAddress, hookSecret);
-        await hookAcc.makePayment(address, "1000", evernode.EvernodeConstants.EVR, hookAddress);
+        const hookAcc = new evernode.XrplAccount(registryAddress, registrySecret);
+        await hookAcc.makePayment(address, "1000", evernode.EvernodeConstants.EVR, registryAddress);
     }
 
     console.log("Register...");
@@ -206,189 +179,6 @@ function redeem(scenario) {
     })
 }
 
-// eslint-disable-next-line no-unused-vars
-async function refundValid() {
-    console.log(`-----------Refund (valid)`);
-
-    const user = await getUserClient();
-    await user.prepareAccount();
-    await fundUser(user);
-
-    try {
-        await user.redeem(hostToken, hostAddress, user.hookConfig.minRedeem, "dummy request", { timeout: 2000 })
-    }
-    catch (err) {
-        console.log("User recieved redeem error: ", err.reason)
-
-        const hookClient = await getHookClient();
-        const startMoment = await hookClient.getMoment();
-
-        console.log(`Waiting until current Moment (${startMoment}) passes for refund...`);
-
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-            await new Promise(resolve => setTimeout(resolve, 4000));
-            const moment = await hookClient.getMoment();
-            if (moment > startMoment) {
-                console.log(`Entered into Moment ${moment}. Proceeding...`);
-                break;
-            }
-            else {
-                console.log(`Still in Moment ${moment}. Waiting...`);
-            }
-        }
-
-        try {
-            await user.refund(err.redeemRefId);
-            console.log("Refund success");
-
-        }
-        catch (err) {
-            console.log("Refund error: ", err.reason);
-        }
-    }
-}
-
-async function refundInvalid() {
-    console.log(`-----------Refund (invalid)`);
-
-    const user = await getUserClient();
-    await user.prepareAccount();
-    await fundUser(user);
-
-    try {
-        await user.redeem(hostToken, hostAddress, user.hookConfig.minRedeem, "dummy request", { timeout: 2000 })
-    }
-    catch (err) {
-        console.log("User recieved redeem error: ", err.reason)
-        console.log("Immedidately initiating refund...");
-
-        // Refund will fail because refund has to wait until the current Moment passes.
-
-        const refund = await user.refund(err.redeemRefId).catch(err => console.log("Refund error: ", err.reason));
-        if (refund)
-            console.log("Refund success");
-    }
-}
-
-function refundAlreadyRedeemed() {
-    return new Promise(async (resolve, reject) => {
-
-        console.log(`-----------Refund (invalid redeemed)`);
-
-        const user = await getUserClient();
-        await user.prepareAccount();
-        await fundUser(user);
-
-        // Setup host to watch for incoming redeems.
-        const host = await getHostClient();
-
-        host.on(evernode.HostEvents.Redeem, async (r) => {
-            console.log(`Host received redeem request: '${r.payload}'`);
-
-            await host.redeemSuccess(r.redeemRefId, userAddress, { content: "dummy success" });
-        })
-
-        try {
-            const result = await user.redeem(hostToken, hostAddress, user.hookConfig.minRedeem, "dummy request", { timeout: 30000 });
-            console.log(`User received instance '${result.instance}'`);
-
-            const refund = await user.refund(result.redeemRefId).catch(err => console.log("Refund error: ", err.reason));
-            if (refund) {
-                console.log("Refund success");
-                resolve();
-            }
-        }
-        catch (err) {
-            console.log("User recieved redeem error: ", err.reason);
-            reject();
-        }
-    })
-}
-
-//////////////////////////////////////////////////////////////////////////////////////
-/// Audit test is targetted for the hook which commented out check creation        ///
-/// So audit assignment event cannot be tested properly until check issue is fixed ///
-
-async function auditRequest() {
-    console.log(`-----------Audit request`);
-
-    for (const auditHost of auditHosts) {
-        await registerHost(auditHost.address, auditHost.secret, auditHost.token);
-        const host = await getHostClient(auditHost.address, auditHost.secret);
-        // First try with min_redeem amount, If exception occured hook might not have enough hosting tokens.
-        // So then try with min_redeem * (heartbeat_freq + 1).
-        await rechargeHost(auditHost.address, auditHost.secret);
-    }
-
-    const hook = await getHookClient();
-    const auditor = await getAuditorClient();
-
-    console.log(`Reward pool value before audit request: ${await hook.getRewardPool()}`);
-
-    console.log(`<Moment: ${await hook.getMoment()}> Sending auditor request...`);
-    try {
-        await auditor.requestAudit();
-    }
-    catch (e) { console.error(e) }
-
-    console.log(`Reward pool value after audit request: ${await hook.getRewardPool()}`);
-}
-
-async function auditResponse(...scenarios) {
-    return new Promise(async (resolve) => {
-
-        console.log(`-----------Audit response (${scenarios})`);
-
-        let tasks = 0;
-
-        const hook = await getHookClient();
-        const auditor = await getAuditorClient();
-
-        // Send audit response to all the hosts, since we know all two hosts will be assigned to default auditor
-        for (const [i, auditHost] of auditHosts.entries()) {
-            const host = await getHostClient(auditHost.address, auditHost.secret);
-
-            host.on(evernode.HostEvents.Reward, async (r) => {
-                console.log(`<Moment: ${await hook.getMoment()}> Host ${auditHost.address} received reward: '${r.amount}'`);
-
-                if (++tasks == auditHosts.length) {
-                    await new Promise(resolve => setTimeout(resolve, 4000));
-                    resolve();
-                }
-            })
-
-            try {
-                if (scenarios[i] === "success") {
-                    console.log(`<Moment: ${await hook.getMoment()}> Sending auditor response (${scenarios[i] || 'Not specified'}) to ${auditHost.address}...`);
-                    await auditor.auditSuccess(auditHost.address);
-                }
-                else if (scenarios[i] === "failed") {
-                    console.log(`<Moment: ${await hook.getMoment()}> Sending auditor response (${scenarios[i] || 'Not specified'}) to ${auditHost.address}...`);
-                    console.log(`Reward pool value before audit failure: ${await hook.getRewardPool()}`);
-                    await auditor.auditFail(auditHost.address);
-                    console.log(`Reward pool value after audit failure: ${await hook.getRewardPool()}`);
-
-                    if (++tasks == auditHosts.length) {
-                        await new Promise(resolve => setTimeout(resolve, 4000));
-                        resolve();
-                    }
-                }
-                else if (++tasks == auditHosts.length) {
-                    await new Promise(resolve => setTimeout(resolve, 4000));
-                    resolve();
-                }
-            }
-            catch {
-                if (++tasks == auditHosts.length) {
-                    await new Promise(resolve => setTimeout(resolve, 4000));
-                    resolve();
-                }
-            }
-        }
-    });
-}
-
 //////////////////////////////////////////////////////////////////////////////////////
 
 async function getUserClient() {
@@ -405,15 +195,8 @@ async function getHostClient(address = hostAddress, secret = hostSecret) {
     return client;
 }
 
-async function getHookClient() {
-    const client = new evernode.HookClient(hookAddress, hookSecret);
-    await client.connect();
-    clients.push(client);
-    return client;
-}
-
-async function getAuditorClient() {
-    const client = new evernode.AuditorClient(auditorAddress, auditorSecret);
+async function getRegistryClient() {
+    const client = new evernode.RegistryClient(registryAddress, registrySecret);
     await client.connect();
     clients.push(client);
     return client;
