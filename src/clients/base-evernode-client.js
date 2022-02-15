@@ -267,18 +267,6 @@ class BaseEvernodeClient {
             }
         }
         else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.REWARD) {
-
-            return {
-                name: EvernodeEvents.Reward,
-                data: {
-                    transaction: tx,
-                    host: tx.Destination,
-                    amount: tx.Amount.value
-                }
-            }
-        }
-        else if (tx.Memos.length >= 1 &&
             tx.Memos[0].type === MemoTypes.RECHARGE) {
 
             return {

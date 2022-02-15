@@ -6,8 +6,7 @@ const { XrplAccount } = require('../xrpl-account');
 const { EncryptionHelper } = require('../encryption-helper');
 
 const HostEvents = {
-    Redeem: EvernodeEvents.Redeem,
-    Reward: EvernodeEvents.Reward
+    Redeem: EvernodeEvents.Redeem
 }
 
 class HostClient extends BaseEvernodeClient {

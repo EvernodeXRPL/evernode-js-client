@@ -10,7 +10,6 @@ const MemoTypes = {
     REDEEM_REF: 'evnRedeemRef',
     HOST_REG: 'evnHostReg',
     HOST_DEREG: 'evnHostDereg',
-    REWARD: 'evnReward',
     RECHARGE: 'evnRecharge'
 }
 
@@ -37,8 +36,7 @@ const HookStateDefaults = {
     REDEEM_WINDOW: 24,
     MIN_REDEEM: 1,
     HOST_HEARTBEAT_FREQ: 1,
-    MOMENT_BASE_IDX: 0,
-    REWARD_POOL: '0'
+    MOMENT_BASE_IDX: 0
 }
 
 // All keys are prefixed with 'EVR' (0x455652)
@@ -49,7 +47,6 @@ const HookStateKeys = {
     REDEEM_WINDOW: "4556520100000000000000000000000000000000000000000000000000000005",
     HOST_HEARTBEAT_FREQ: "4556520100000000000000000000000000000000000000000000000000000009",
     MOMENT_BASE_IDX: "4556523400000000000000000000000000000000000000000000000000000000",
-    REWARD_POOL: "4556523700000000000000000000000000000000000000000000000000000000",
 
     // Prefixes
     HOST_ADDR: "45565203"
@@ -61,7 +58,6 @@ const EvernodeEvents = {
     Redeem: "Redeem",
     RedeemSuccess: "RredeemSuccess",
     RedeemError: "RedeemError",
-    Reward: "Reward",
     Recharge: "Recharge",
 }
 

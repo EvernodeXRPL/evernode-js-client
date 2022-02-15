@@ -63,26 +63,6 @@ class RegistryClient extends BaseEvernodeClient {
         await Promise.resolve(); // Awaiter placeholder for future async requirements.
         return this.hookConfig.momentBaseIdx + (m * this.hookConfig.momentSize);
     }
-
-    async getRewardPool() {
-        let states = await this.getHookStates();
-        states = states.map(s => {
-            return {
-                key: s.key,
-                data: Buffer.from(s.data, 'hex')
-            }
-        });
-
-        let buf = await UtilHelpers.getStateData(states, HookStateKeys.REWARD_POOL);
-        if (buf) {
-            buf = Buffer.from(buf);
-            const xfl = buf.readBigInt64BE(0);
-            return XflHelpers.toString(xfl);
-        }
-        else {
-            return HookStateDefaults.REWARD_POOL;
-        }
-    }
 }
 
 module.exports = {
