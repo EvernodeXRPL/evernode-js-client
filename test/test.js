@@ -1,5 +1,5 @@
 // const evernode = require("evernode-js-client");
-const evernode = require("../dist"); // Local dist dir. (use 'npm run build' to update)
+const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 
 const evrIssuerAddress = "rPeayir8ZgztXDt2yTRsv2veHqFRTreAe1";
 const registryAddress = "rBwEV4MDQuSqsPWhY3sVevWnin5NEHZgXs";
