@@ -1,6 +1,7 @@
 // const evernode = require("evernode-js-client");
-const evernode = require("../dist"); // Local dist dir. (use 'npm run build' to update)
+const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 
+const evrIssuerAddress = "rPeayir8ZgztXDt2yTRsv2veHqFRTreAe1";
 const registryAddress = "rBwEV4MDQuSqsPWhY3sVevWnin5NEHZgXs";
 const registrySecret = "shYeka6uDt6cyUx5JqCit4rH7oypk";
 const hostAddress = "r4SCD3XsMDhZJb43tCN7uNe9DjCSfozgKc";
@@ -18,6 +19,7 @@ async function app() {
     // Use a singleton xrplApi for all tests.
     const xrplApi = new evernode.XrplApi(rippledServer);
     evernode.Defaults.set({
+        evrIssuerAddress: evrIssuerAddress,
         registryAddress: registryAddress,
         xrplApi: xrplApi
     })

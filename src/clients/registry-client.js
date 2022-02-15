@@ -1,27 +1,19 @@
-const { EvernodeEvents, HookStateKeys, HookStateDefaults } = require('../evernode-common');
+const { EvernodeEvents, HookStateKeys } = require('../evernode-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
 const { DefaultValues } = require('../defaults');
 const rippleCodec = require('ripple-address-codec');
 const { Buffer } = require('buffer');
 const { XflHelpers } = require('../xfl-helpers');
-const { UtilHelpers } = require('../util-helpers');
 
-const HookEvents = {
+const RegistryEvents = {
     HostRegistered: EvernodeEvents.HostRegistered,
-    HostDeregistered: EvernodeEvents.HostDeregistered,
-    Redeem: EvernodeEvents.Redeem,
-    RedeemSuccess: EvernodeEvents.RedeemSuccess,
-    RedeemError: EvernodeEvents.RedeemError,
-    Refund: EvernodeEvents.Refund,
-    Audit: EvernodeEvents.Audit,
-    AuditSuccess: EvernodeEvents.AuditSuccess,
-    Recharge: EvernodeEvents.Recharge
+    HostDeregistered: EvernodeEvents.HostDeregistered
 }
 
-class HookClient extends BaseEvernodeClient {
+class RegistryClient extends BaseEvernodeClient {
 
     constructor(options = {}) {
-        super((options.hookAddress || DefaultValues.hookAddress), null, Object.values(HookEvents), false, options);
+        super((options.registryAddress || DefaultValues.registryAddress), null, Object.values(RegistryEvents), false, options);
     }
 
     async getAllHosts() {
@@ -70,29 +62,9 @@ class HookClient extends BaseEvernodeClient {
         await Promise.resolve(); // Awaiter placeholder for future async requirements.
         return this.hookConfig.momentBaseIdx + (m * this.hookConfig.momentSize);
     }
-
-    async getRewardPool() {
-        let states = await this.getHookStates();
-        states = states.map(s => {
-            return {
-                key: s.key,
-                data: Buffer.from(s.data, 'hex')
-            }
-        });
-
-        let buf = await UtilHelpers.getStateData(states, HookStateKeys.REWARD_POOL);
-        if (buf) {
-            buf = Buffer.from(buf);
-            const xfl = buf.readBigInt64BE(0);
-            return XflHelpers.toString(xfl);
-        }
-        else {
-            return HookStateDefaults.REWARD_POOL;
-        }
-    }
 }
 
 module.exports = {
-    HookEvents,
-    HookClient
+    RegistryEvents,
+    RegistryClient
 }

@@ -1,13 +1,12 @@
 const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { HookClient } = require('./hook-client');
+const { HookClient } = require('./registry-client');
 const { EvernodeEvents, EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes } = require('../evernode-common');
 const { XrplAccount } = require('../xrpl-account');
 const { EncryptionHelper } = require('../encryption-helper');
 
 const HostEvents = {
-    Redeem: EvernodeEvents.Redeem,
-    Reward: EvernodeEvents.Reward
+    Redeem: EvernodeEvents.Redeem
 }
 
 class HostClient extends BaseEvernodeClient {

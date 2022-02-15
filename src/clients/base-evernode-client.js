@@ -19,7 +19,8 @@ class BaseEvernodeClient {
     constructor(xrpAddress, xrpSecret, watchEvents, autoSubscribe = false, options = {}) {
 
         this.connected = false;
-        this.hookAddress = options.hookAddress || DefaultValues.hookAddress;
+        this.evrIssuerAddress = options.evrIssuerAddress || DefaultValues.evrIssuerAddress;
+        this.registryAddress = options.registryAddress || DefaultValues.registryAddress;
 
         this.xrplApi = options.xrplApi || DefaultValues.xrplApi || new XrplApi(options.rippledServer);
         if (!options.xrplApi && !DefaultValues.xrplApi)
@@ -77,7 +78,7 @@ class BaseEvernodeClient {
 
     async getHookStates(options = { limit: 399 }) {
         // We use a large limit since there's no way to just get the HookState objects.
-        const states = await this.xrplApi.getAccountObjects(this.hookAddress, options);
+        const states = await this.xrplApi.getAccountObjects(this.registryAddress, options);
         return states.filter(s => s.LedgerEntryType === 'HookState').map(s => {
             return {
                 key: s.HookStateKey, //hex
@@ -87,7 +88,7 @@ class BaseEvernodeClient {
     }
 
     async getEVRBalance() {
-        const lines = await this.xrplAcc.getTrustLines(EvernodeConstants.EVR, this.hookAddress);
+        const lines = await this.xrplAcc.getTrustLines(EvernodeConstants.EVR, this.evrIssuerAddress);
         if (lines.length > 0)
             return lines[0].balance;
         else
@@ -242,44 +243,6 @@ class BaseEvernodeClient {
             }
         }
         else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.REFUND && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
-            return {
-                name: EvernodeEvents.Refund,
-                data: {
-                    transaction: tx,
-                    redeemRefId: tx.Memos[0].data
-                }
-            }
-        }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.REFUND_SUCCESS && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
-            const refundRefId = tx.Memos[0].data.substring(0, 64);
-            const redeemRefId = tx.Memos[0].data.substring(64, 128);
-
-            return {
-                name: EvernodeEvents.RefundSuccess,
-                data: {
-                    transaction: tx,
-                    refundRefId: refundRefId,
-                    redeemRefId: redeemRefId,
-                    amount: tx.Amount.value,
-                    issuer: tx.Amount.issuer,
-                    currency: tx.Amount.currency
-                }
-            }
-        }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.REFUND_ERROR && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
-            const refundReqTx = tx.Memos[0].data.substring(0, 64);
-            return {
-                name: EvernodeEvents.RefundError,
-                data: {
-                    transaction: tx,
-                    refundReqTx: refundReqTx
-                }
-            }
-        }
-        else if (tx.Memos.length >= 1 &&
             tx.Memos[0].type === MemoTypes.HOST_REG && tx.Memos[0].format === MemoFormats.TEXT && tx.Memos[0].data) {
 
             const parts = tx.Memos[0].data.split(';');
@@ -300,50 +263,6 @@ class BaseEvernodeClient {
                 data: {
                     transaction: tx,
                     host: tx.Account
-                }
-            }
-        }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.AUDIT) {
-            return {
-                name: EvernodeEvents.Audit,
-                data: {
-                    transaction: tx,
-                    auditor: tx.Account
-                }
-            }
-        }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.AUDIT_SUCCESS) {
-            return {
-                name: EvernodeEvents.AuditSuccess,
-                data: {
-                    transaction: tx,
-                    auditor: tx.Account
-                }
-            }
-        }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.AUDIT_ASSIGNMENT) {
-            return {
-                name: EvernodeEvents.AuditAssignment,
-                data: {
-                    transaction: tx,
-                    currency: tx.SendMax.currency,
-                    issuer: tx.SendMax.issuer,
-                    value: tx.SendMax.value,
-                }
-            }
-        }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.REWARD) {
-
-            return {
-                name: EvernodeEvents.Reward,
-                data: {
-                    transaction: tx,
-                    host: tx.Destination,
-                    amount: tx.Amount.value
                 }
             }
         }

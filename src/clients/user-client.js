@@ -1,4 +1,3 @@
-const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
 const { EvernodeEvents, MemoFormats, MemoTypes, ErrorCodes, ErrorReasons } = require('../evernode-common');
 const { EventEmitter } = require('../event-emitter');
@@ -6,12 +5,10 @@ const { EncryptionHelper } = require('../encryption-helper');
 const { XrplAccount } = require('../xrpl-account');
 
 const REDEEM_WATCH_PREFIX = 'redeem_';
-const REFUND_WATCH_PREFIX = 'refund_';
 
 const UserEvents = {
     RedeemSuccess: EvernodeEvents.RedeemSuccess,
     RedeemError: EvernodeEvents.RedeemError,
-    RefundSuccess: EvernodeEvents.RefundSuccess
 }
 
 class UserClient extends BaseEvernodeClient {
@@ -26,9 +23,6 @@ class UserClient extends BaseEvernodeClient {
         });
         this.on(UserEvents.RedeemError, async (ev) => {
             this.#respWatcher.emit(REDEEM_WATCH_PREFIX + ev.redeemRefId, { success: false, data: ev.reason, transaction: ev.transaction });
-        });
-        this.on(UserEvents.RefundSuccess, async (ev) => {
-            this.#respWatcher.emit(REFUND_WATCH_PREFIX + ev.refundRefId, ev);
         });
     }
 
@@ -100,45 +94,6 @@ class UserClient extends BaseEvernodeClient {
                 });
                 if (response) {
                     response.redeemRefId = tx.id;
-                    resolve(response);
-                }
-            }
-        });
-    }
-
-    watchRefundResponse(tx, options = { timeout: 60000 }) {
-        return new Promise(async (resolve, reject) => {
-            console.log(`Waiting for refund response... (txHash: ${tx.id})`);
-
-            const watchEvent = REFUND_WATCH_PREFIX + tx.id;
-
-            const failTimeout = setTimeout(() => {
-                this.#respWatcher.off(watchEvent);
-                reject({ error: ErrorCodes.REFUND_ERR, reason: `refund_timeout` });
-            }, options.timeout);
-
-            this.#respWatcher.once(watchEvent, (ev) => {
-                clearTimeout(failTimeout);
-                resolve(ev);
-            });
-        });
-    }
-
-    refund(redeemRefId, options = {}) {
-        return new Promise(async (resolve, reject) => {
-            const tx = await this.xrplAcc.makePayment(this.hookAddress,
-                XrplConstants.MIN_XRP_AMOUNT,
-                XrplConstants.XRP,
-                null,
-                [{ type: MemoTypes.REFUND, format: MemoFormats.HEX, data: redeemRefId }],
-                options.transactionOptions)
-                .catch(errtx => {
-                    reject({ error: ErrorCodes.REFUND_ERR, reason: ErrorReasons.TRANSACTION_FAILURE, transaction: errtx });
-                });
-            if (tx) {
-                const response = await this.watchRefundResponse(tx).catch(error => reject(error));
-                if (response) {
-                    response.refundTransaction = tx;
                     resolve(response);
                 }
             }
