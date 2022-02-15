@@ -1,10 +1,9 @@
-const { EvernodeEvents, HookStateKeys, HookStateDefaults } = require('../evernode-common');
+const { EvernodeEvents, HookStateKeys } = require('../evernode-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
 const { DefaultValues } = require('../defaults');
 const rippleCodec = require('ripple-address-codec');
 const { Buffer } = require('buffer');
 const { XflHelpers } = require('../xfl-helpers');
-const { UtilHelpers } = require('../util-helpers');
 
 const RegistryEvents = {
     HostRegistered: EvernodeEvents.HostRegistered,
