@@ -178,7 +178,7 @@ class XrplAccount {
         }, options);
     }
 
-    offerSell(sellAmount, sellCurrency, sellIssuer, forAmount, forCurrency, forIssuer = null, memos = null, options = {}) {
+    offerSell(sellAmount, sellCurrency, sellIssuer, forAmount, forCurrency, forIssuer = null, expiration = 4294967295, memos = null, options = {}) {
 
         const sellAmountObj = makeAmountObject(sellAmount, sellCurrency, sellIssuer);
         const forAmountObj = makeAmountObject(forAmount, forCurrency, forIssuer);
@@ -188,11 +188,12 @@ class XrplAccount {
             Account: this.address,
             TakerGets: sellAmountObj,
             TakerPays: forAmountObj,
+            Expiration: expiration,
             Memos: TransactionHelper.formatMemos(memos)
         }, options);
     }
 
-    offerBuy(buyAmount, buyCurrency, buyIssuer, forAmount, forCurrency, forIssuer = null, memos = null, options = {}) {
+    offerBuy(buyAmount, buyCurrency, buyIssuer, forAmount, forCurrency, forIssuer = null, expiration = 4294967295, memos = null, options = {}) {
 
         const buyAmountObj = makeAmountObject(buyAmount, buyCurrency, buyIssuer);
         const forAmountObj = makeAmountObject(forAmount, forCurrency, forIssuer);
@@ -202,6 +203,7 @@ class XrplAccount {
             Account: this.address,
             TakerGets: forAmountObj,
             TakerPays: buyAmountObj,
+            Expiration: expiration,
             Memos: TransactionHelper.formatMemos(memos)
         }, options);
     }
@@ -392,6 +394,7 @@ function makeAmountObject(amount, currency, issuer) {
         issuer: issuer,
         value: amount
     }
+    return amountObj;
 }
 
 module.exports = {
