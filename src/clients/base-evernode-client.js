@@ -267,38 +267,6 @@ class BaseEvernodeClient {
             }
         }
         else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.AUDIT) {
-            return {
-                name: EvernodeEvents.Audit,
-                data: {
-                    transaction: tx,
-                    auditor: tx.Account
-                }
-            }
-        }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.AUDIT_SUCCESS) {
-            return {
-                name: EvernodeEvents.AuditSuccess,
-                data: {
-                    transaction: tx,
-                    auditor: tx.Account
-                }
-            }
-        }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.AUDIT_ASSIGNMENT) {
-            return {
-                name: EvernodeEvents.AuditAssignment,
-                data: {
-                    transaction: tx,
-                    currency: tx.SendMax.currency,
-                    issuer: tx.SendMax.issuer,
-                    value: tx.SendMax.value,
-                }
-            }
-        }
-        else if (tx.Memos.length >= 1 &&
             tx.Memos[0].type === MemoTypes.REWARD) {
 
             return {

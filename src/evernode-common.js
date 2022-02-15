@@ -10,10 +10,6 @@ const MemoTypes = {
     REDEEM_REF: 'evnRedeemRef',
     HOST_REG: 'evnHostReg',
     HOST_DEREG: 'evnHostDereg',
-    AUDIT: 'evnAudit',
-    AUDIT_SUCCESS: 'evnAuditSuccess',
-    AUDIT_FAILED: 'evnAuditFailed',
-    AUDIT_ASSIGNMENT: 'evnAuditAssignment',
     REWARD: 'evnReward',
     RECHARGE: 'evnRecharge'
 }
@@ -27,11 +23,6 @@ const MemoFormats = {
 
 const ErrorCodes = {
     REDEEM_ERR: 'REDEEM_ERR',
-    AUDIT_REQ_ERROR: 'AUDIT_REQ_ERROR',
-    AUDIT_CASH_ERROR: 'AUDIT_CASH_ERROR',
-    AUDIT_CLEAR_TRUST_ERROR: 'AUDIT_CLEAR_TRUST_ERROR',
-    AUDIT_SUCCESS_ERROR: 'AUDIT_SUCCESS_ERROR',
-    AUDIT_FAIL_ERROR: 'AUDIT_FAIL_ERROR'
 }
 
 const ErrorReasons = {
@@ -70,9 +61,6 @@ const EvernodeEvents = {
     Redeem: "Redeem",
     RedeemSuccess: "RredeemSuccess",
     RedeemError: "RedeemError",
-    Audit: "Audit",
-    AuditAssignment: "AuditAssignment",
-    AuditSuccess: "AuditSuccess",
     Reward: "Reward",
     Recharge: "Recharge",
 }
