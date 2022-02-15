@@ -1,5 +1,6 @@
 const DefaultValues = {
-    hookAddress: 'rDPqJv7zu6DfeXexAYseABNM2hT2j2rpHv',
+    evrIssuerAddress: 'rPeayir8ZgztXDt2yTRsv2veHqFRTreAe1',
+    registryAddress: 'rDPqJv7zu6DfeXexAYseABNM2hT2j2rpHv',
     rippledServer: 'wss://hooks-testnet.xrpl-labs.com',
     xrplApi: null
 }

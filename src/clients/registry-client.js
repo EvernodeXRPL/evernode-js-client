@@ -6,22 +6,15 @@ const { Buffer } = require('buffer');
 const { XflHelpers } = require('../xfl-helpers');
 const { UtilHelpers } = require('../util-helpers');
 
-const HookEvents = {
+const RegistryEvents = {
     HostRegistered: EvernodeEvents.HostRegistered,
-    HostDeregistered: EvernodeEvents.HostDeregistered,
-    Redeem: EvernodeEvents.Redeem,
-    RedeemSuccess: EvernodeEvents.RedeemSuccess,
-    RedeemError: EvernodeEvents.RedeemError,
-    Refund: EvernodeEvents.Refund,
-    Audit: EvernodeEvents.Audit,
-    AuditSuccess: EvernodeEvents.AuditSuccess,
-    Recharge: EvernodeEvents.Recharge
+    HostDeregistered: EvernodeEvents.HostDeregistered
 }
 
-class HookClient extends BaseEvernodeClient {
+class RegistryClient extends BaseEvernodeClient {
 
     constructor(options = {}) {
-        super((options.hookAddress || DefaultValues.hookAddress), null, Object.values(HookEvents), false, options);
+        super((options.registryAddress || DefaultValues.registryAddress), null, Object.values(RegistryEvents), false, options);
     }
 
     async getAllHosts() {
@@ -93,6 +86,6 @@ class HookClient extends BaseEvernodeClient {
 }
 
 module.exports = {
-    HookEvents,
-    HookClient
+    RegistryEvents,
+    RegistryClient
 }

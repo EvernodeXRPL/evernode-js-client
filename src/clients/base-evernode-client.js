@@ -19,7 +19,8 @@ class BaseEvernodeClient {
     constructor(xrpAddress, xrpSecret, watchEvents, autoSubscribe = false, options = {}) {
 
         this.connected = false;
-        this.hookAddress = options.hookAddress || DefaultValues.hookAddress;
+        this.evrIssuerAddress = options.evrIssuerAddress || DefaultValues.evrIssuerAddress;
+        this.registryAddress = options.registryAddress || DefaultValues.registryAddress;
 
         this.xrplApi = options.xrplApi || DefaultValues.xrplApi || new XrplApi(options.rippledServer);
         if (!options.xrplApi && !DefaultValues.xrplApi)
@@ -77,7 +78,7 @@ class BaseEvernodeClient {
 
     async getHookStates(options = { limit: 399 }) {
         // We use a large limit since there's no way to just get the HookState objects.
-        const states = await this.xrplApi.getAccountObjects(this.hookAddress, options);
+        const states = await this.xrplApi.getAccountObjects(this.registryAddress, options);
         return states.filter(s => s.LedgerEntryType === 'HookState').map(s => {
             return {
                 key: s.HookStateKey, //hex
@@ -87,7 +88,7 @@ class BaseEvernodeClient {
     }
 
     async getEVRBalance() {
-        const lines = await this.xrplAcc.getTrustLines(EvernodeConstants.EVR, this.hookAddress);
+        const lines = await this.xrplAcc.getTrustLines(EvernodeConstants.EVR, this.evrIssuerAddress);
         if (lines.length > 0)
             return lines[0].balance;
         else
