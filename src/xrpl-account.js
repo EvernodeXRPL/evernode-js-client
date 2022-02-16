@@ -11,8 +11,6 @@ class XrplAccount {
 
     #events = new EventEmitter();
     #subscribed = false;
-    #sequence;
-    #sequenceCachedOn;
     #txStreamHandler;
 
     constructor(address, secret = null, options = {}) {
@@ -57,31 +55,6 @@ class XrplAccount {
 
     async getSequence() {
         return (await this.getInfo()).Sequence;
-    }
-
-    async getNextSequence() {
-
-        // If cached value is expired, delete it.
-        if (this.#sequenceCachedOn && this.#sequenceCachedOn < (new Date().getTime() - 5000)) {
-            this.#sequence = null;
-            this.#sequenceCachedOn = null;
-        }
-
-        if (!this.#sequence) {
-            const info = await this.getInfo();
-            // This can get called by parallel transactions. So we are checking for null again before updating.
-            if (!this.#sequence) {
-                this.#sequence = info.Sequence;
-                this.#sequenceCachedOn = new Date().getTime();
-            }
-            else {
-                this.#sequence++;
-            }
-        }
-        else {
-            this.#sequence++;
-        }
-        return this.#sequence;
     }
 
     async getMessageKey() {
@@ -152,16 +125,7 @@ class XrplAccount {
 
     makePayment(toAddr, amount, currency, issuer = null, memos = null, options = {}) {
 
-        if (typeof amount !== 'string')
-            throw "Amount must be a string.";
-        if (currency !== XrplConstants.XRP && !issuer)
-            throw "Non-XRP currency must have an issuer.";
-
-        const amountObj = (currency == XrplConstants.XRP) ? amount : {
-            currency: currency,
-            issuer: issuer,
-            value: amount
-        }
+        const amountObj = makeAmountObject(amount, currency, issuer);
 
         return this.#submitAndVerifyTransaction({
             TransactionType: 'Payment',
@@ -214,6 +178,45 @@ class XrplAccount {
         }, options);
     }
 
+    offerSell(sellAmount, sellCurrency, sellIssuer, forAmount, forCurrency, forIssuer = null, expiration = 4294967295, memos = null, options = {}) {
+
+        const sellAmountObj = makeAmountObject(sellAmount, sellCurrency, sellIssuer);
+        const forAmountObj = makeAmountObject(forAmount, forCurrency, forIssuer);
+
+        return this.#submitAndVerifyTransaction({
+            TransactionType: 'OfferCreate',
+            Account: this.address,
+            TakerGets: sellAmountObj,
+            TakerPays: forAmountObj,
+            Expiration: expiration,
+            Memos: TransactionHelper.formatMemos(memos)
+        }, options);
+    }
+
+    offerBuy(buyAmount, buyCurrency, buyIssuer, forAmount, forCurrency, forIssuer = null, expiration = 4294967295, memos = null, options = {}) {
+
+        const buyAmountObj = makeAmountObject(buyAmount, buyCurrency, buyIssuer);
+        const forAmountObj = makeAmountObject(forAmount, forCurrency, forIssuer);
+
+        return this.#submitAndVerifyTransaction({
+            TransactionType: 'OfferCreate',
+            Account: this.address,
+            TakerGets: forAmountObj,
+            TakerPays: buyAmountObj,
+            Expiration: expiration,
+            Memos: TransactionHelper.formatMemos(memos)
+        }, options);
+    }
+
+    cancelOffer(offerSequence, memos = null, options = {}) {
+        return this.#submitAndVerifyTransaction({
+            TransactionType: 'OfferCancel',
+            Account: this.address,
+            OfferSequence: offerSequence,
+            Memos: TransactionHelper.formatMemos(memos)
+        }, options);
+    }
+
     mintNft(uri, taxon, transferFee, isTransferable, memos = null, options = {}) {
         return this.#submitAndVerifyTransaction({
             TransactionType: 'NFTokenMint',
@@ -228,14 +231,7 @@ class XrplAccount {
 
     offerSellNft(tokenId, destination, amount, currency, issuer = null, expiration = 4294967295, memos = null, options = {}) {
 
-        if (typeof amount !== 'string')
-            throw "Amount must be a string.";
-
-        const amountObj = (currency == XrplConstants.XRP) ? amount : {
-            currency: currency,
-            issuer: issuer,
-            value: amount
-        }
+        const amountObj = makeAmountObject(amount, currency, issuer);
 
         return this.#submitAndVerifyTransaction({
             TransactionType: 'NFTokenCreateOffer',
@@ -249,12 +245,38 @@ class XrplAccount {
         }, options);
     }
 
+    offerBuyNft(tokenId, owner, amount, currency, issuer = null, expiration = 4294967295, memos = null, options = {}) {
+
+        const amountObj = makeAmountObject(amount, currency, issuer);
+
+        return this.#submitAndVerifyTransaction({
+            TransactionType: 'NFTokenCreateOffer',
+            Account: this.address,
+            TokenID: tokenId,
+            Owner: owner,
+            Amount: amountObj,
+            Expiration: expiration,
+            Flags: 0, // Buy offer
+            Memos: TransactionHelper.formatMemos(memos)
+        }, options);
+    }
+
     buyNft(offerId, memos = null, options = {}) {
 
         return this.#submitAndVerifyTransaction({
             TransactionType: 'NFTokenAcceptOffer',
             Account: this.address,
             SellOffer: offerId,
+            Memos: TransactionHelper.formatMemos(memos)
+        }, options);
+    }
+
+    burnNft(tokenId, memos = null, options = {}) {
+
+        return this.#submitAndVerifyTransaction({
+            TransactionType: 'NFTokenBurn',
+            Account: this.address,
+            TokenID: tokenId,
             Memos: TransactionHelper.formatMemos(memos)
         }, options);
     }
@@ -295,7 +317,7 @@ class XrplAccount {
             // Attach tx options to the transaction.
             const txOptions = {
                 LastLedgerSequence: options.maxLedgerIndex || (this.xrplApi.ledgerIndex + XrplConstants.MAX_LEDGER_OFFSET),
-                Sequence: options.sequence || await this.getNextSequence()
+                Sequence: options.sequence || await this.getSequence()
             }
             Object.assign(tx, txOptions);
 
@@ -359,6 +381,20 @@ class XrplAccount {
 
         });
     }
+}
+
+function makeAmountObject(amount, currency, issuer) {
+    if (typeof amount !== 'string')
+        throw "Amount must be a string.";
+    if (currency !== XrplConstants.XRP && !issuer)
+        throw "Non-XRP currency must have an issuer.";
+
+    const amountObj = (currency == XrplConstants.XRP) ? amount : {
+        currency: currency,
+        issuer: issuer,
+        value: amount
+    }
+    return amountObj;
 }
 
 module.exports = {
