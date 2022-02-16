@@ -8,7 +8,7 @@ npm i -g @vercel/ncc
 ```
 
 ## Publish to npm
-First, updated the version in package.json.
+First, update the version in package.json.
 ```
 npm install
 npm login
