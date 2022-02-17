@@ -82,7 +82,7 @@ class BaseEvernodeClient {
             return '0';
     }
 
-    async getHookStates(options = { limit: 399 }) {
+    async getStates(options = { limit: 399 }) {
         // We use a large limit since there's no way to just get the HookState objects.
         const states = await this.xrplApi.getAccountObjects(this.registryAddress, options);
         return states.filter(s => s.LedgerEntryType === 'HookState').map(s => {
@@ -110,7 +110,7 @@ class BaseEvernodeClient {
     }
 
     async #getEvernodeConfig() {
-        let states = await this.getHookStates();
+        let states = await this.getStates();
         states = states.map(s => {
             return {
                 key: s.key,

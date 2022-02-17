@@ -1,5 +1,6 @@
 const EvernodeConstants = {
-    EVR: 'EVR'
+    EVR: 'EVR',
+    NFT_PREFIX_HEX: '657672686F7374' // evrhost
 }
 
 const MemoTypes = {
@@ -39,7 +40,8 @@ const HookStateKeys = {
     MOMENT_BASE_IDX: "4556523400000000000000000000000000000000000000000000000000000000",
 
     // Prefixes
-    HOST_ADDR: "45565203"
+    PREFIX_HOST_ADDR: "45565203",
+    PREFIX_HOST_TOKENID: "45565204"
 }
 
 const EvernodeEvents = {
