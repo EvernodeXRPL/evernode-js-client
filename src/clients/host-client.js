@@ -66,7 +66,7 @@ class HostClient extends BaseEvernodeClient {
 
         const memoData = `${hostingToken};${countryCode};${cpuMicroSec};${ramMb};${diskMb};${description}`
         return this.xrplAcc.makePayment(this.hookAddress,
-            this.hookConfig.hostRegFee,
+            this.config.hostRegFee,
             EvernodeConstants.EVR,
             this.hookAddress,
             [{ type: MemoTypes.HOST_REG, format: MemoFormats.TEXT, data: memoData }],
@@ -122,12 +122,6 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async recharge(amount = null, options = {}) {
-
-        if (!amount)
-            amount = this.hookConfig.minRedeem * (this.hookConfig.hostHeartbeatFreq + 1);
-
-        if (amount < this.hookConfig.minRedeem)
-            throw "Recharge amount should not be less than min redeem amount.";
 
         const hostInfo = await this.getRegistration();
 

@@ -3,7 +3,10 @@ class UtilHelpers {
 
     static getStateData(states, key) {
         const state = states.find(s => key === s.key);
-        return state?.data;
+        if (!state)
+            throw `State key '${key}' not found.`;
+            
+        return state.data;
     }
 
     static readUInt(buf, base = 32, isBE = true) {

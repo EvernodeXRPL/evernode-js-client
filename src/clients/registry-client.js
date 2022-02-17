@@ -33,8 +33,8 @@ class RegistryClient extends BaseEvernodeClient {
                 lastHeartbeatLedgerIndex: lastHeartbeatLedgerIndex,
                 accumulatedAmount: Number(XflHelpers.toString(buf.slice(91, 99).readBigInt64BE(0))),
                 lockedTokenAmount: Number(buf.slice(99, 107).readBigInt64BE(0)),
-                active: (lastHeartbeatLedgerIndex > (this.hookConfig.hostHeartbeatFreq * this.hookConfig.momentSize) ?
-                    (lastHeartbeatLedgerIndex >= (curMomentStartIdx - (this.hookConfig.hostHeartbeatFreq * this.hookConfig.momentSize))) :
+                active: (lastHeartbeatLedgerIndex > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
+                    (lastHeartbeatLedgerIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
                     (lastHeartbeatLedgerIndex > 0))
             }
         });
@@ -45,22 +45,6 @@ class RegistryClient extends BaseEvernodeClient {
         const hosts = await this.getAllHosts();
         // Filter only active hosts.
         return hosts.filter(h => h.active);
-    }
-
-    async getMoment(ledgerIndex = null) {
-        const lv = ledgerIndex || this.xrplApi.ledgerIndex;
-        const m = Math.floor((lv - this.hookConfig.momentBaseIdx) / this.hookConfig.momentSize);
-
-        await Promise.resolve(); // Awaiter placeholder for future async requirements.
-        return m;
-    }
-
-    async getMomentStartIndex(ledgerIndex = null) {
-        const lv = ledgerIndex || this.xrplApi.ledgerIndex;
-        const m = Math.floor((lv - this.hookConfig.momentBaseIdx) / this.hookConfig.momentSize);
-
-        await Promise.resolve(); // Awaiter placeholder for future async requirements.
-        return this.hookConfig.momentBaseIdx + (m * this.hookConfig.momentSize);
     }
 }
 
