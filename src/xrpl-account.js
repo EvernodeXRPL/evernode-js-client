@@ -217,14 +217,14 @@ class XrplAccount {
         }, options);
     }
 
-    mintNft(uri, taxon, transferFee, isTransferable, memos = null, options = {}) {
+    mintNft(uri, taxon, transferFee, flags = {}, memos = null, options = {}) {
         return this.#submitAndVerifyTransaction({
             TransactionType: 'NFTokenMint',
             Account: this.address,
             URI: TransactionHelper.asciiToHex(uri).toUpperCase(),
             TokenTaxon: taxon,
             TransferFee: transferFee,
-            Flags: isTransferable ? 8 : 0,
+            Flags: (flags.isBurnable ? 1 : 0) | (flags.isOnlyXRP ? 2 : 0) | (flags.isTrustLine ? 4 : 0) | (flags.isTransferable ? 8 : 0),
             Memos: TransactionHelper.formatMemos(memos)
         }, options);
     }
@@ -257,6 +257,16 @@ class XrplAccount {
             Amount: amountObj,
             Expiration: expiration,
             Flags: 0, // Buy offer
+            Memos: TransactionHelper.formatMemos(memos)
+        }, options);
+    }
+
+    sellNft(offerId, memos = null, options = {}) {
+
+        return this.#submitAndVerifyTransaction({
+            TransactionType: 'NFTokenAcceptOffer',
+            Account: this.address,
+            BuyOffer: offerId,
             Memos: TransactionHelper.formatMemos(memos)
         }, options);
     }
