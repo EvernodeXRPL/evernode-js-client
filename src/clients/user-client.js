@@ -50,7 +50,7 @@ class UserClient extends BaseEvernodeClient {
         });
 
         // We are returning the promise directly without awaiting to let the caller decide what to do with it.
-        return this.xrplAcc.makePayment(this.hookAddress,
+        return this.xrplAcc.makePayment(hostAddress,
             amount.toString(),
             hostingToken,
             hostAddress,

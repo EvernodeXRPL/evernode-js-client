@@ -1,9 +1,11 @@
 const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { HookClient } = require('./registry-client');
-const { EvernodeEvents, EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes } = require('../evernode-common');
+const { EvernodeEvents, EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes, HookStateKeys } = require('../evernode-common');
 const { XrplAccount } = require('../xrpl-account');
 const { EncryptionHelper } = require('../encryption-helper');
+const { UtilHelpers } = require('../util-helpers');
+const { Buffer } = require('buffer');
+const codec = require('ripple-address-codec');
 
 const HostEvents = {
     Redeem: EvernodeEvents.Redeem
@@ -11,16 +13,37 @@ const HostEvents = {
 
 class HostClient extends BaseEvernodeClient {
 
-    #hookClient;
-
     constructor(xrpAddress, xrpSecret, options = {}) {
         super(xrpAddress, xrpSecret, Object.values(HostEvents), true, options);
-        this.#hookClient = new HookClient({ ...options, xrplApi: this.xrplApi });
+    }
+
+    async getRegistrationNft() {
+        // Find an owned NFT with matching Evernode host NFT prefix.
+        const nft = (await this.xrplAcc.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX))
+        if (nft) {
+            // Check whether the token was actually issued from Evernode.
+            const issuerHex = nft.TokenID.substr(8, 40);
+            const issuerAddr = codec.encodeAccountID(Buffer.from(issuerHex, 'hex'));
+            if (issuerAddr == this.config.evrIssuerAddress) {
+                return nft;
+            }
+        }
+
+        return null;
     }
 
     async getRegistration() {
-        await this.#hookClient.connect();
-        return (await this.#hookClient.getAllHosts()).filter(h => h.address === this.xrplAcc.address)[0];
+        // Check whether we own an evernode host token.
+        const nft = await this.getRegistrationNft();
+        if (nft) {
+            const state = (await this.getStates()).filter(s => s.key = (HookStateKeys.PREFIX_HOST_TOKENID + nft.TokenID));
+            if (state) {
+                const curMomentStartIdx = await this.getMomentStartIndex();
+                return UtilHelpers.decodeRegistration(state.data, this.config.hostHeartbeatFreq, this.config.momentSize, curMomentStartIdx);
+            }
+        }
+
+        return null;
     }
 
     async isRegistered() {
@@ -30,14 +53,14 @@ class HostClient extends BaseEvernodeClient {
     async prepareAccount() {
         const [flags, trustLines, msgKey] = await Promise.all([
             this.xrplAcc.getFlags(),
-            this.xrplAcc.getTrustLines(EvernodeConstants.EVR, this.hookAddress),
+            this.xrplAcc.getTrustLines(EvernodeConstants.EVR, this.config.evrIssuerAddress),
             this.xrplAcc.getMessageKey()]);
 
         if (!flags.lsfDefaultRipple)
             await this.xrplAcc.setDefaultRippling(true);
 
         if (trustLines.length === 0)
-            await this.xrplAcc.setTrustLine(EvernodeConstants.EVR, this.hookAddress, "99999999999999");
+            await this.xrplAcc.setTrustLine(EvernodeConstants.EVR, this.config.evrIssuerAddress, "99999999999999");
 
         if (!msgKey)
             await this.xrplAcc.setMessageKey(this.accKeyPair.publicKey);
@@ -65,10 +88,10 @@ class HostClient extends BaseEvernodeClient {
             throw "Host already registered.";
 
         const memoData = `${hostingToken};${countryCode};${cpuMicroSec};${ramMb};${diskMb};${description}`
-        return this.xrplAcc.makePayment(this.hookAddress,
-            this.hookConfig.hostRegFee,
+        return this.xrplAcc.makePayment(this.registryAddress,
+            this.config.hostRegFee,
             EvernodeConstants.EVR,
-            this.hookAddress,
+            this.config.evrIssuerAddress,
             [{ type: MemoTypes.HOST_REG, format: MemoFormats.TEXT, data: memoData }],
             options.transactionOptions);
     }
@@ -78,7 +101,7 @@ class HostClient extends BaseEvernodeClient {
         if (!(await this.isRegistered()))
             throw "Host not registered."
 
-        return this.xrplAcc.makePayment(this.hookAddress,
+        return this.xrplAcc.makePayment(this.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
@@ -99,7 +122,7 @@ class HostClient extends BaseEvernodeClient {
             { type: MemoTypes.REDEEM_SUCCESS, format: MemoFormats.BASE64, data: encrypted },
             { type: MemoTypes.REDEEM_REF, format: MemoFormats.HEX, data: txHash }];
 
-        return this.xrplAcc.makePayment(this.hookAddress,
+        return this.xrplAcc.makePayment(this.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
@@ -113,7 +136,7 @@ class HostClient extends BaseEvernodeClient {
             { type: MemoTypes.REDEEM_ERROR, format: MemoFormats.JSON, data: { type: ErrorCodes.REDEEM_ERR, reason: reason } },
             { type: MemoTypes.REDEEM_REF, format: MemoFormats.HEX, data: txHash }];
 
-        return this.xrplAcc.makePayment(this.hookAddress,
+        return this.xrplAcc.makePayment(this.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
@@ -123,15 +146,9 @@ class HostClient extends BaseEvernodeClient {
 
     async recharge(amount = null, options = {}) {
 
-        if (!amount)
-            amount = this.hookConfig.minRedeem * (this.hookConfig.hostHeartbeatFreq + 1);
-
-        if (amount < this.hookConfig.minRedeem)
-            throw "Recharge amount should not be less than min redeem amount.";
-
         const hostInfo = await this.getRegistration();
 
-        return this.xrplAcc.makePayment(this.hookAddress,
+        return this.xrplAcc.makePayment(this.registryAddress,
             amount.toString(),
             hostInfo.token,
             this.xrplAcc.address,

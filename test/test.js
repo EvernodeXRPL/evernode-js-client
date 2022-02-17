@@ -19,7 +19,6 @@ async function app() {
     // Use a singleton xrplApi for all tests.
     const xrplApi = new evernode.XrplApi(rippledServer);
     evernode.Defaults.set({
-        evrIssuerAddress: evrIssuerAddress,
         registryAddress: registryAddress,
         xrplApi: xrplApi
     })
@@ -79,8 +78,8 @@ async function app() {
 async function getAllHosts() {
     console.log(`-----------Getting all hosts (including inactive)`);
 
-    const hookClient = await getHookClient();
-    const hosts = await hookClient.getAllHosts();
+    const regClient = await getRegistryClient();
+    const hosts = await regClient.getAllHosts();
 
     console.log("All hosts", hosts || "No hosts");
 }
@@ -88,8 +87,8 @@ async function getAllHosts() {
 async function getActiveHosts() {
     console.log(`-----------Getting active hosts`);
 
-    const hookClient = await getHookClient();
-    const hosts = await hookClient.getActiveHosts();
+    const regClient = await getRegistryClient();
+    const hosts = await regClient.getActiveHosts();
 
     console.log("Hosts", hosts || "No active hosts");
 }
@@ -169,7 +168,7 @@ function redeem(scenario) {
 
         try {
             const timeout = (scenario === "timeout" ? 10000 : 30000);
-            const result = await user.redeem(hostToken, hostAddress, user.hookConfig.minRedeem, "dummy request", { timeout: timeout });
+            const result = await user.redeem(hostToken, hostAddress, 1, "dummy request", { timeout: timeout });
             console.log(`User received instance '${result.instance}'`);
         }
         catch (err) {
@@ -207,7 +206,7 @@ async function getRegistryClient() {
 async function fundUser(user) {
     // Send hosting tokens to user if needed.
     const lines = await user.xrplAcc.getTrustLines(hostToken, hostAddress);
-    if (lines.length === 0 || parseInt(lines[0].balance) < user.hookConfig.minRedeem) {
+    if (lines.length === 0 || parseInt(lines[0].balance) < 1) {
         await user.xrplAcc.setTrustLine(hostToken, hostAddress, "99999999");
         await new evernode.XrplAccount(hostAddress, hostSecret).makePayment(userAddress, "1000", hostToken, hostAddress);
     }

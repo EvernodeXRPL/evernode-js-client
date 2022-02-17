@@ -1,7 +1,7 @@
 const { XrplApi } = require('../xrpl-api');
 const { XrplAccount } = require('../xrpl-account');
 const { XrplApiEvents } = require('../xrpl-common');
-const { EvernodeEvents, HookStateKeys, HookStateDefaults, MemoTypes, MemoFormats, EvernodeConstants } = require('../evernode-common');
+const { EvernodeEvents, HookStateKeys, MemoTypes, MemoFormats, EvernodeConstants } = require('../evernode-common');
 const { DefaultValues } = require('../defaults');
 const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
@@ -19,7 +19,6 @@ class BaseEvernodeClient {
     constructor(xrpAddress, xrpSecret, watchEvents, autoSubscribe = false, options = {}) {
 
         this.connected = false;
-        this.evrIssuerAddress = options.evrIssuerAddress || DefaultValues.evrIssuerAddress;
         this.registryAddress = options.registryAddress || DefaultValues.registryAddress;
 
         this.xrplApi = options.xrplApi || DefaultValues.xrplApi || new XrplApi(options.rippledServer);
@@ -33,7 +32,6 @@ class BaseEvernodeClient {
         this.events = new EventEmitter();
 
         this.xrplAcc.on(XrplApiEvents.PAYMENT, (tx, error) => this.#handleEvernodeEvent(tx, error));
-        this.xrplAcc.on(XrplApiEvents.CHECK_CREATE, (tx, error) => this.#handleEvernodeEvent(tx, error));
     }
 
     on(event, handler) {
@@ -54,7 +52,7 @@ class BaseEvernodeClient {
 
         await this.xrplApi.connect();
 
-        this.hookConfig = await this.#getHookConfig();
+        this.config = await this.#getEvernodeConfig();
         this.connected = true;
 
         if (this.#autoSubscribe)
@@ -76,7 +74,15 @@ class BaseEvernodeClient {
         await this.xrplAcc.unsubscribe();
     }
 
-    async getHookStates(options = { limit: 399 }) {
+    async getEVRBalance() {
+        const lines = await this.xrplAcc.getTrustLines(EvernodeConstants.EVR, this.config.evrIssuerAddress);
+        if (lines.length > 0)
+            return lines[0].balance;
+        else
+            return '0';
+    }
+
+    async getStates(options = { limit: 399 }) {
         // We use a large limit since there's no way to just get the HookState objects.
         const states = await this.xrplApi.getAccountObjects(this.registryAddress, options);
         return states.filter(s => s.LedgerEntryType === 'HookState').map(s => {
@@ -87,16 +93,24 @@ class BaseEvernodeClient {
         });
     }
 
-    async getEVRBalance() {
-        const lines = await this.xrplAcc.getTrustLines(EvernodeConstants.EVR, this.evrIssuerAddress);
-        if (lines.length > 0)
-            return lines[0].balance;
-        else
-            return '0';
+    async getMoment(ledgerIndex = null) {
+        const lv = ledgerIndex || this.xrplApi.ledgerIndex;
+        const m = Math.floor((lv - this.config.momentBaseIdx) / this.config.momentSize);
+
+        await Promise.resolve(); // Awaiter placeholder for future async requirements.
+        return m;
     }
 
-    async #getHookConfig() {
-        let states = await this.getHookStates();
+    async getMomentStartIndex(ledgerIndex = null) {
+        const lv = ledgerIndex || this.xrplApi.ledgerIndex;
+        const m = Math.floor((lv - this.config.momentBaseIdx) / this.config.momentSize);
+
+        await Promise.resolve(); // Awaiter placeholder for future async requirements.
+        return this.config.momentBaseIdx + (m * this.config.momentSize);
+    }
+
+    async #getEvernodeConfig() {
+        let states = await this.getStates();
         states = states.map(s => {
             return {
                 key: s.key,
@@ -105,31 +119,26 @@ class BaseEvernodeClient {
         });
 
         let config = {};
-        let buf = UtilHelpers.getStateData(states, HookStateKeys.HOST_REG_FEE);
-        if (buf) {
-            buf = Buffer.from(buf);
-            const xfl = buf.readBigInt64BE(0);
-            config.hostRegFee = XflHelpers.toString(xfl);
-        }
-        else {
-            config.hostRegFee = HookStateDefaults.HOST_REG_FEE;
-        }
-
+        let buf = null;
 
         buf = UtilHelpers.getStateData(states, HookStateKeys.MOMENT_SIZE);
-        config.momentSize = buf ? UtilHelpers.readUInt(buf, 16) : HookStateDefaults.MOMENT_SIZE;
+        config.evrIssuerAddress = codec.encodeAccountID(buf);
+
+        buf = UtilHelpers.getStateData(states, HookStateKeys.HOST_REG_FEE);
+        const xfl = buf.readBigInt64BE(0);
+        config.hostRegFee = XflHelpers.toString(xfl);
+
+        buf = UtilHelpers.getStateData(states, HookStateKeys.MOMENT_SIZE);
+        config.momentSize = UtilHelpers.readUInt(buf, 16);
 
         buf = UtilHelpers.getStateData(states, HookStateKeys.REDEEM_WINDOW);
-        config.redeemWindow = buf ? UtilHelpers.readUInt(buf, 16) : HookStateDefaults.REDEEM_WINDOW;
-
-        buf = UtilHelpers.getStateData(states, HookStateKeys.MIN_REDEEM);
-        config.minRedeem = buf ? UtilHelpers.readUInt(buf, 16) : HookStateDefaults.MIN_REDEEM;
+        config.redeemWindow = UtilHelpers.readUInt(buf, 16);
 
         buf = UtilHelpers.getStateData(states, HookStateKeys.HOST_HEARTBEAT_FREQ);
-        config.hostHeartbeatFreq = buf ? UtilHelpers.readUInt(buf, 16) : HookStateDefaults.HOST_HEARTBEAT_FREQ;
+        config.hostHeartbeatFreq = UtilHelpers.readUInt(buf, 16);
 
         buf = UtilHelpers.getStateData(states, HookStateKeys.MOMENT_BASE_IDX);
-        config.momentBaseIdx = buf ? UtilHelpers.readUInt(buf, 64) : HookStateDefaults.MOMENT_BASE_IDX;
+        config.momentBaseIdx = UtilHelpers.readUInt(buf, 64);
 
         return config;
     }
