@@ -4,6 +4,7 @@ const { EvernodeEvents, EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes, H
 const { XrplAccount } = require('../xrpl-account');
 const { EncryptionHelper } = require('../encryption-helper');
 const { UtilHelpers } = require('../util-helpers');
+const { Buffer } = require('buffer');
 const codec = require('ripple-address-codec');
 
 const HostEvents = {
