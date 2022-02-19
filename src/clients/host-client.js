@@ -144,15 +144,13 @@ class HostClient extends BaseEvernodeClient {
             options.transactionOptions);
     }
 
-    async recharge(amount = null, options = {}) {
-
-        const hostInfo = await this.getRegistration();
-
+    async heartbeat(options = {}) {
         return this.xrplAcc.makePayment(this.registryAddress,
-            amount.toString(),
-            hostInfo.token,
+            XrplConstants.MIN_XRP_AMOUNT,
+            XrplConstants.XRP,
+            null,
             this.xrplAcc.address,
-            [{ type: MemoTypes.RECHARGE, format: "", data: "" }],
+            [{ type: MemoTypes.HEARTBEAT, format: "", data: "" }],
             options.transactionOptions);
     }
 }

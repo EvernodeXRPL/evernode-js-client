@@ -1,7 +1,6 @@
 const XrplApiEvents = {
     LEDGER: 'ledger',
-    PAYMENT: 'payment',
-    CHECK_CREATE: 'checkcreate'
+    PAYMENT: 'payment'
 }
 
 const XrplConstants = {

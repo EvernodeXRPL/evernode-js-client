@@ -279,16 +279,13 @@ class BaseEvernodeClient {
             }
         }
         else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.RECHARGE) {
+            tx.Memos[0].type === MemoTypes.HEARTBEAT) {
 
             return {
-                name: EvernodeEvents.Recharge,
+                name: EvernodeEvents.HEARTBEAT,
                 data: {
                     transaction: tx,
-                    host: tx.Account,
-                    amount: tx.Amount.value,
-                    issuer: tx.Amount.issuer,
-                    currency: tx.Amount.currency
+                    host: tx.Account
                 }
             }
         }

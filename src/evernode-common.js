@@ -11,7 +11,7 @@ const MemoTypes = {
     REDEEM_REF: 'evnRedeemRef',
     HOST_REG: 'evnHostReg',
     HOST_DEREG: 'evnHostDereg',
-    RECHARGE: 'evnRecharge'
+    HEARTBEAT: 'evnHeartbeat'
 }
 
 const MemoFormats = {
@@ -51,7 +51,7 @@ const EvernodeEvents = {
     Redeem: "Redeem",
     RedeemSuccess: "RredeemSuccess",
     RedeemError: "RedeemError",
-    Recharge: "Recharge",
+    Heartbeat: "Heartbeat",
 }
 
 module.exports = {
