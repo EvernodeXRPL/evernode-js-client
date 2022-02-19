@@ -10,14 +10,12 @@ const hostToken = "ABC";
 const userAddress = "rKCp2EyWg94c1keic83SHzWEuQXy5Am6Ni";
 const userSecret = "spzjw4ZC36Nzy7yggVurfH3ESjvbk";
 
-const rippledServer = 'wss://xls20-sandbox.rippletest.net:51233';
-
 const clients = [];
 
 async function app() {
 
     // Use a singleton xrplApi for all tests.
-    const xrplApi = new evernode.XrplApi(rippledServer);
+    const xrplApi = new evernode.XrplApi();
     evernode.Defaults.set({
         registryAddress: registryAddress,
         xrplApi: xrplApi

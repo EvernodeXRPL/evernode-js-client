@@ -121,8 +121,11 @@ class BaseEvernodeClient {
         let config = {};
         let buf = null;
 
-        buf = UtilHelpers.getStateData(states, HookStateKeys.MOMENT_SIZE);
+        buf = UtilHelpers.getStateData(states, HookStateKeys.EVR_ISSUER_ADDR);
         config.evrIssuerAddress = codec.encodeAccountID(buf);
+
+        buf = UtilHelpers.getStateData(states, HookStateKeys.FOUNDATION_ADDR);
+        config.foundationAddress = codec.encodeAccountID(buf);
 
         buf = UtilHelpers.getStateData(states, HookStateKeys.HOST_REG_FEE);
         const xfl = buf.readBigInt64BE(0);
