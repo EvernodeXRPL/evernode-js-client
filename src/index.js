@@ -3,7 +3,7 @@ const { RegistryClient, RegistryEvents } = require("./clients/registry-client");
 const { UserClient, UserEvents } = require("./clients/user-client");
 const { HostClient, HostEvents } = require("./clients/host-client");
 const { XrplApi } = require('./xrpl-api');
-const { XrplApiEvents } = require('./xrpl-common');
+const { XrplApiEvents, XrplConstants } = require('./xrpl-common');
 const { XrplAccount } = require('./xrpl-account');
 const { EvernodeConstants } = require('./evernode-common');
 const { XflHelpers } = require('./xfl-helpers');
@@ -17,6 +17,7 @@ module.exports = {
     HostEvents,
     XrplApi,
     XrplApiEvents,
+    XrplConstants,
     XrplAccount,
     EvernodeConstants,
     Defaults,
