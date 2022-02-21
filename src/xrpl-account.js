@@ -156,6 +156,16 @@ class XrplAccount {
         }, options);
     }
 
+    setRegularKey(regularKey, memos = null, options = {}) {
+
+        return this.#submitAndVerifyTransaction({
+            TransactionType: 'SetRegularKey',
+            Account: this.address,  
+            RegularKey: regularKey, 
+            Memos: TransactionHelper.formatMemos(memos)
+        }, options);
+    }
+
     cashCheck(check, options = {}) {
         const checkIDhasher = crypto.createHash('sha512')
         checkIDhasher.update(Buffer.from('0043', 'hex'))
