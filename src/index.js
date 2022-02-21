@@ -17,7 +17,6 @@ module.exports = {
     HostEvents,
     XrplApi,
     XrplApiEvents,
-    XrplConstants,
     XrplAccount,
     EvernodeConstants,
     Defaults,
