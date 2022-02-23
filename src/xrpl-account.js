@@ -123,6 +123,33 @@ class XrplAccount {
         return this.#submitAndVerifyTransaction(tx, options);
     }
 
+    setAccountFields(fields, options = {}) {
+        /**
+         * Example for fields
+         * 
+         * fields = [
+         * {"name" : "Domain", "value" : "6578616D706C652E636F6D"},
+         * {"name" : "SetFlag", "value" : 8}
+         * ]
+         */
+
+        if (fields.length === 0)
+            throw "AccountSet fields cannot be empty.";
+
+        const tx = {
+            TransactionType: 'AccountSet',
+            Account: this.address
+        };
+
+        fields.forEach(field => {
+            if (!tx.hasOwnProperty(field.name)) {
+                tx[field.name] = field.value;
+            }
+        });
+
+        return this.#submitAndVerifyTransaction(tx, options);
+    }
+
     makePayment(toAddr, amount, currency, issuer = null, memos = null, options = {}) {
 
         const amountObj = makeAmountObject(amount, currency, issuer);
