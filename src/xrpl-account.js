@@ -99,41 +99,20 @@ class XrplAccount {
         return xrpl.parseAccountRootFlags((await this.getInfo()).Flags);
     }
 
-    async setMessageKey(publicKey, options = {}) {
-        const result = await this.#submitAndVerifyTransaction({
-            TransactionType: 'AccountSet',
-            Account: this.address,
-            MessageKey: publicKey,
-        }, options);
-        return result;
-    }
 
-    setDefaultRippling(enabled, options = {}) {
-
-        const tx = {
-            TransactionType: 'AccountSet',
-            Account: this.address
-        }
-
-        if (enabled)
-            tx.SetFlag = xrpl.AccountSetAsfFlags.asfDefaultRipple;
-        else
-            tx.ClearFlag = xrpl.AccountSetAsfFlags.asfDefaultRipple;
-
-        return this.#submitAndVerifyTransaction(tx, options);
-    }
 
     setAccountFields(fields, options = {}) {
         /**
          * Example for fields
          * 
-         * fields = [
-         * {"name" : "Domain", "value" : "6578616D706C652E636F6D"},
-         * {"name" : "SetFlag", "value" : 8}
-         * ]
+         * fields = {
+         *  Domain : "www.mydomain.com",
+         *  Flags : { asfDefaultRipple: false, asfDisableMaster: true } 
+         * }
+         * 
          */
 
-        if (fields.length === 0)
+        if (Object.keys(fields).length === 0)
             throw "AccountSet fields cannot be empty.";
 
         const tx = {
@@ -141,11 +120,24 @@ class XrplAccount {
             Account: this.address
         };
 
-        fields.forEach(field => {
-            if (!tx.hasOwnProperty(field.name)) {
-                tx[field.name] = field.value;
+        for (const [key, value] of Object.entries(fields)) {
+
+            switch (key) {
+                case 'Domain' :
+                    tx.Domain = TransactionHelper.asciiToHex(value).toUpperCase();
+                    break;
+
+                case 'Flags' :
+                    for (const [flagKey, flagValue] of Object.entries(value)) {
+                        tx[(flagValue) ? 'SetFlag' : 'ClearFlag'] = xrpl.AccountSetAsfFlags[flagKey];
+                    }
+                    break;
+
+                default : 
+                    tx[key] = value;
+                    break;
             }
-        });
+        }          
 
         return this.#submitAndVerifyTransaction(tx, options);
     }
