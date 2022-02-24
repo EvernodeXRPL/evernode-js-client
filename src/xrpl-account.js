@@ -100,7 +100,6 @@ class XrplAccount {
     }
 
 
-
     setAccountFields(fields, options = {}) {
         /**
          * Example for fields
@@ -129,7 +128,7 @@ class XrplAccount {
 
                 case 'Flags' :
                     for (const [flagKey, flagValue] of Object.entries(value)) {
-                        tx[(flagValue) ? 'SetFlag' : 'ClearFlag'] = xrpl.AccountSetAsfFlags[flagKey];
+                        tx[(flagValue) ? 'SetFlag' : 'ClearFlag'] |= xrpl.AccountSetAsfFlags[flagKey];
                     }
                     break;
 
