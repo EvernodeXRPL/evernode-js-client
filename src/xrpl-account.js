@@ -99,26 +99,44 @@ class XrplAccount {
         return xrpl.parseAccountRootFlags((await this.getInfo()).Flags);
     }
 
-    async setMessageKey(publicKey, options = {}) {
-        const result = await this.#submitAndVerifyTransaction({
-            TransactionType: 'AccountSet',
-            Account: this.address,
-            MessageKey: publicKey,
-        }, options);
-        return result;
-    }
 
-    setDefaultRippling(enabled, options = {}) {
+    setAccountFields(fields, options = {}) {
+        /**
+         * Example for fields
+         * 
+         * fields = {
+         *  Domain : "www.mydomain.com",
+         *  Flags : { asfDefaultRipple: false, asfDisableMaster: true } 
+         * }
+         * 
+         */
+
+        if (Object.keys(fields).length === 0)
+            throw "AccountSet fields cannot be empty.";
 
         const tx = {
             TransactionType: 'AccountSet',
             Account: this.address
-        }
+        };
 
-        if (enabled)
-            tx.SetFlag = xrpl.AccountSetAsfFlags.asfDefaultRipple;
-        else
-            tx.ClearFlag = xrpl.AccountSetAsfFlags.asfDefaultRipple;
+        for (const [key, value] of Object.entries(fields)) {
+
+            switch (key) {
+                case 'Domain' :
+                    tx.Domain = TransactionHelper.asciiToHex(value).toUpperCase();
+                    break;
+
+                case 'Flags' :
+                    for (const [flagKey, flagValue] of Object.entries(value)) {
+                        tx[(flagValue) ? 'SetFlag' : 'ClearFlag'] |= xrpl.AccountSetAsfFlags[flagKey];
+                    }
+                    break;
+
+                default : 
+                    tx[key] = value;
+                    break;
+            }
+        }          
 
         return this.#submitAndVerifyTransaction(tx, options);
     }

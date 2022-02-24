@@ -29,7 +29,7 @@ class UserClient extends BaseEvernodeClient {
     async prepareAccount() {
         try {
             if (!await this.xrplAcc.getMessageKey())
-                await this.xrplAcc.setMessageKey(this.accKeyPair.publicKey);
+                await this.xrplAcc.setAccountFields({ MessageKey : this.accKeyPair.publicKey });
         }
         catch (err) {
             console.log("Error in preparing user xrpl account for Evernode.", err);

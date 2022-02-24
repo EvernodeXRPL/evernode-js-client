@@ -56,14 +56,15 @@ class HostClient extends BaseEvernodeClient {
             this.xrplAcc.getTrustLines(EvernodeConstants.EVR, this.config.evrIssuerAddress),
             this.xrplAcc.getMessageKey()]);
 
-        if (!flags.lsfDefaultRipple)
-            await this.xrplAcc.setDefaultRippling(true);
+        let accountSetFields = {};
+        accountSetFields =  (!flags.lsfDefaultRipple) ? { ...accountSetFields, Flags: {asfDefaultRipple : true }} : accountSetFields;
+        accountSetFields = (!msgKey) ? {...accountSetFields, MessageKey : this.accKeyPair.publicKey} : accountSetFields;
+
+        if (Object.keys(accountSetFields).length !== 0) 
+            await this.xrplAcc.setAccountFields(accountSetFields);
 
         if (trustLines.length === 0)
             await this.xrplAcc.setTrustLine(EvernodeConstants.EVR, this.config.evrIssuerAddress, "99999999999999");
-
-        if (!msgKey)
-            await this.xrplAcc.setMessageKey(this.accKeyPair.publicKey);
     }
 
     async register(hostingToken, countryCode, cpuMicroSec, ramMb, diskMb, description, options = {}) {
