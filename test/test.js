@@ -17,7 +17,7 @@ const clients = [];
 async function app() {
 
     // Use a singleton xrplApi for all tests.
-    const xrplApi = new evernode.XrplApi('wss://xls20-sandbox.rippletest.net:51233');
+    const xrplApi = new evernode.XrplApi();
     evernode.Defaults.set({
         registryAddress: registryAddress,
         xrplApi: xrplApi
