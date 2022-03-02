@@ -1,14 +1,14 @@
 const { XrplApi } = require('../xrpl-api');
 const { XrplAccount } = require('../xrpl-account');
 const { XrplApiEvents } = require('../xrpl-common');
-const { EvernodeEvents, HookStateKeys, MemoTypes, MemoFormats, EvernodeConstants } = require('../evernode-common');
+const { EvernodeEvents, MemoTypes, MemoFormats, EvernodeConstants } = require('../evernode-common');
 const { DefaultValues } = require('../defaults');
 const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
-const { XflHelpers } = require('../xfl-helpers');
+// const { XflHelpers } = require('../xfl-helpers');
 const codec = require('ripple-address-codec');
 const { Buffer } = require('buffer');
-const { UtilHelpers } = require('../util-helpers');
+// const { UtilHelpers } = require('../util-helpers');
 
 class BaseEvernodeClient {
 
@@ -110,38 +110,39 @@ class BaseEvernodeClient {
     }
 
     async #getEvernodeConfig() {
-        let states = await this.getStates();
-        states = states.map(s => {
-            return {
-                key: s.key,
-                data: Buffer.from(s.data, 'hex')
-            }
-        });
+        // let states = await this.getStates();
+        // states = states.map(s => {
+        //     return {
+        //         key: s.key,
+        //         data: Buffer.from(s.data, 'hex')
+        //     }
+        // });
 
         let config = {};
-        let buf = null;
+        // let buf = null;
 
-        buf = UtilHelpers.getStateData(states, HookStateKeys.EVR_ISSUER_ADDR);
-        config.evrIssuerAddress = codec.encodeAccountID(buf);
+        // buf = UtilHelpers.getStateData(states, HookStateKeys.EVR_ISSUER_ADDR);
+        config.evrIssuerAddress = 'rHdSF3FWTFR11zZ4dPy17Rch1Ygch3gy8p';//codec.encodeAccountID(buf);
+        config.registryAddress = 'rDruU1JTwpxc7dxhWmAFFKJpq3BwreFAFg';
 
-        buf = UtilHelpers.getStateData(states, HookStateKeys.FOUNDATION_ADDR);
-        config.foundationAddress = codec.encodeAccountID(buf);
+        // buf = UtilHelpers.getStateData(states, HookStateKeys.FOUNDATION_ADDR);
+        config.foundationAddress = 'rEHTwF8GA3rMMmmWJcuB2BqU63PdmMaekq';//codec.encodeAccountID(buf);
 
-        buf = UtilHelpers.getStateData(states, HookStateKeys.HOST_REG_FEE);
-        const xfl = buf.readBigInt64BE(0);
-        config.hostRegFee = XflHelpers.toString(xfl);
+        // buf = UtilHelpers.getStateData(states, HookStateKeys.HOST_REG_FEE);
+        // const xfl = buf.readBigInt64BE(0);
+        config.hostRegFee = '5120'; //XflHelpers.toString(xfl);
 
-        buf = UtilHelpers.getStateData(states, HookStateKeys.MOMENT_SIZE);
-        config.momentSize = UtilHelpers.readUInt(buf, 16);
+        // buf = UtilHelpers.getStateData(states, HookStateKeys.MOMENT_SIZE);
+        config.momentSize = 72;//UtilHelpers.readUInt(buf, 16);
 
-        buf = UtilHelpers.getStateData(states, HookStateKeys.REDEEM_WINDOW);
-        config.redeemWindow = UtilHelpers.readUInt(buf, 16);
+        // buf = UtilHelpers.getStateData(states, /HookStateKeys.REDEEM_WINDOW);
+        config.redeemWindow = 14;//UtilHelpers.readUInt(buf, 16);
 
-        buf = UtilHelpers.getStateData(states, HookStateKeys.HOST_HEARTBEAT_FREQ);
-        config.hostHeartbeatFreq = UtilHelpers.readUInt(buf, 16);
+        // buf = UtilHelpers.getStateData(states, HookStateKeys.HOST_HEARTBEAT_FREQ);
+        config.hostHeartbeatFreq = 1;//UtilHelpers.readUInt(buf, 16);
 
-        buf = UtilHelpers.getStateData(states, HookStateKeys.MOMENT_BASE_IDX);
-        config.momentBaseIdx = UtilHelpers.readUInt(buf, 64);
+        // buf = UtilHelpers.getStateData(states, HookStateKeys.MOMENT_BASE_IDX);
+        config.momentBaseIdx = 0;//UtilHelpers.readUInt(buf, 64);
 
         return config;
     }

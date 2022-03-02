@@ -19,12 +19,12 @@ class HostClient extends BaseEvernodeClient {
 
     async getRegistrationNft() {
         // Find an owned NFT with matching Evernode host NFT prefix.
-        const nft = (await this.xrplAcc.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX))
+        const nft = (await this.xrplAcc.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX));
         if (nft) {
-            // Check whether the token was actually issued from Evernode.
+            // Check whether the token was actually issued from Evernode registry contract.
             const issuerHex = nft.TokenID.substr(8, 40);
             const issuerAddr = codec.encodeAccountID(Buffer.from(issuerHex, 'hex'));
-            if (issuerAddr == this.config.evrIssuerAddress) {
+            if (issuerAddr == this.config.registryAddress) {
                 return nft;
             }
         }
@@ -47,7 +47,7 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async isRegistered() {
-        return (await this.getRegistration()) !== undefined
+        return (await this.getRegistrationNft()) !== undefined
     }
 
     async prepareAccount() {
@@ -57,10 +57,10 @@ class HostClient extends BaseEvernodeClient {
             this.xrplAcc.getMessageKey()]);
 
         let accountSetFields = {};
-        accountSetFields =  (!flags.lsfDefaultRipple) ? { ...accountSetFields, Flags: {asfDefaultRipple : true }} : accountSetFields;
-        accountSetFields = (!msgKey) ? {...accountSetFields, MessageKey : this.accKeyPair.publicKey} : accountSetFields;
+        accountSetFields = (!flags.lsfDefaultRipple) ? { ...accountSetFields, Flags: { asfDefaultRipple: true } } : accountSetFields;
+        accountSetFields = (!msgKey) ? { ...accountSetFields, MessageKey: this.accKeyPair.publicKey } : accountSetFields;
 
-        if (Object.keys(accountSetFields).length !== 0) 
+        if (Object.keys(accountSetFields).length !== 0)
             await this.xrplAcc.setAccountFields(accountSetFields);
 
         if (trustLines.length === 0)
@@ -101,12 +101,12 @@ class HostClient extends BaseEvernodeClient {
 
         if (!(await this.isRegistered()))
             throw "Host not registered."
-
+        const regNFT = await this.getRegistrationNft();
         return this.xrplAcc.makePayment(this.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            [{ type: MemoTypes.HOST_DEREG, format: MemoFormats.TEXT, data: "" }],
+            [{ type: MemoTypes.HOST_DEREG, format: MemoFormats.HEX, data: regNFT.TokenID }],
             options.transactionOptions);
     }
 
