@@ -47,7 +47,7 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async isRegistered() {
-        return (await this.getRegistrationNft()) !== undefined
+        return (await this.getRegistrationNft()) !== null
     }
 
     async prepareAccount() {
@@ -101,13 +101,33 @@ class HostClient extends BaseEvernodeClient {
 
         if (!(await this.isRegistered()))
             throw "Host not registered."
+
         const regNFT = await this.getRegistrationNft();
-        return this.xrplAcc.makePayment(this.registryAddress,
+        await this.xrplAcc.makePayment(this.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
             [{ type: MemoTypes.HOST_DEREG, format: MemoFormats.HEX, data: regNFT.TokenID }],
             options.transactionOptions);
+
+        console.log('Waiting for the buy offer')
+        const regAcc = new XrplAccount(this.registryAddress);
+        let offer = null;
+        let attempts = 0;
+        while (attempts < 10) {
+            offer = (await regAcc.getNftOffers()).find(o => (o.TokenID == regNFT.TokenID) && (o.Flags === 0));
+            if (offer)
+                break;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            attempts++;
+            console.log('No offer found. Retring...');
+        }
+        if (!offer)
+            throw 'No offer found within timeout.';
+
+        await this.xrplAcc.sellNft(offer.index);
+
+        return await this.isRegistered();
     }
 
     async redeemSuccess(txHash, userAddress, instanceInfo, options = {}) {
