@@ -8,7 +8,8 @@ const { Buffer } = require('buffer');
 const codec = require('ripple-address-codec');
 
 const HostEvents = {
-    Redeem: EvernodeEvents.Redeem
+    Redeem: EvernodeEvents.Redeem,
+    NftOfferCreate: EvernodeEvents.NftOfferCreate
 }
 
 class HostClient extends BaseEvernodeClient {
@@ -67,7 +68,7 @@ class HostClient extends BaseEvernodeClient {
             await this.xrplAcc.setTrustLine(EvernodeConstants.EVR, this.config.evrIssuerAddress, "99999999999999");
     }
 
-    async register(hostingToken, countryCode, cpuMicroSec, ramMb, diskMb, description, options = {}) {
+    async register(hostingToken, countryCode, cpuMicroSec, ramMb, diskMb, totalInstanceCount, description, options = {}) {
         if (!/^([A-Z]{3})$/.test(hostingToken))
             throw "hostingToken should consist of 3 uppercase alphabetical characters";
         else if (!/^([A-Z]{2})$/.test(countryCode))
@@ -78,6 +79,8 @@ class HostClient extends BaseEvernodeClient {
             throw "ramMb should be a positive intiger";
         else if (!diskMb || isNaN(diskMb) || diskMb % 1 != 0 || diskMb < 0)
             throw "diskMb should be a positive intiger";
+        else if (!totalInstanceCount || isNaN(totalInstanceCount) || totalInstanceCount % 1 != 0 || totalInstanceCount < 0)
+            throw "totalInstanceCount should be a positive intiger";
         // Need to use control characters inside this regex to match ascii characters.
         // Here we allow all the characters in ascii range except ";" for the description.
         // no-control-regex is enabled default by eslint:recommended, So we disable it only for next line.
@@ -88,7 +91,7 @@ class HostClient extends BaseEvernodeClient {
         if (await this.isRegistered())
             throw "Host already registered.";
 
-        const memoData = `${hostingToken};${countryCode};${cpuMicroSec};${ramMb};${diskMb};${description}`
+        const memoData = `${hostingToken};${countryCode};${cpuMicroSec};${ramMb};${diskMb};${totalInstanceCount};${description}`
         return this.xrplAcc.makePayment(this.registryAddress,
             this.config.hostRegFee,
             EvernodeConstants.EVR,
