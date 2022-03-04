@@ -167,7 +167,10 @@ class BaseEvernodeClient {
                 return {
                     name: EvernodeEvents.NftOfferCreate,
                     data: {
-                        transaction: tx
+                        transaction: tx,
+                        tokenId: tx.TokenID,
+                        flags: tx.Flags,
+                        hash: tx.hash
                     }
                 }
             }
