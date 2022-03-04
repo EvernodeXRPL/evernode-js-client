@@ -1,7 +1,6 @@
-const { EvernodeEvents, HookStateKeys } = require('../evernode-common');
+const { EvernodeEvents, EvernodeConstants } = require('../evernode-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
 const { DefaultValues } = require('../defaults');
-const { UtilHelpers } = require('../util-helpers');
 
 const RegistryEvents = {
     HostRegistered: EvernodeEvents.HostRegistered,
@@ -15,11 +14,16 @@ class RegistryClient extends BaseEvernodeClient {
     }
 
     async getAllHosts() {
-        const states = (await this.getStates()).filter(s => s.key.startsWith(HookStateKeys.PREFIX_HOST_ADDR));
+        const hosts = await this._firestoreHandler.getDocuments(EvernodeConstants.HOSTS_INDEX);
         const curMomentStartIdx = await this.getMomentStartIndex();
-        const hosts = states.map(s =>
-            UtilHelpers.decodeRegistration(s.key, s.data, this.config.hostHeartbeatFreq, this.config.momentSize, curMomentStartIdx));
-        return hosts;
+        return hosts.map(h => {
+            return {
+                ...h,
+                active: (h.lastHeartbeatLedger > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
+                    (h.lastHeartbeatLedger >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
+                    (h.lastHeartbeatLedger > 0))
+            };
+        })
     }
 
     async getActiveHosts() {

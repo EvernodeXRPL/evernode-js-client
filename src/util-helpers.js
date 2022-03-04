@@ -1,5 +1,4 @@
 const { Buffer } = require('buffer');
-const { StateHelpers } = require('./state-helpers');
 
 // Utility helper functions.
 class UtilHelpers {
@@ -25,19 +24,6 @@ class UtilHelpers {
                 return isBE ? Number(buf.readBigUInt64BE()) : Number(buf.readBigUInt64LE());
             default:
                 throw 'Invalid base value';
-        }
-    }
-
-    static decodeRegistration(key, hex, hostHeartbeatFreq, momentSize, curMomentStartIdx) {
-        const keyBuf = Buffer.from(key, 'hex');
-        const buf = Buffer.from(hex, 'hex');
-        const lastHeartbeatLedgerIndex = Number(buf.slice(107, 115).readBigInt64BE(0));
-        return {
-            address: rippleCodec.encodeAccountID(Buffer.from(s.key.slice(-40), 'hex')),
-            ...StateHelpers.decodeHostAddressState(keyBuf, buf),
-            active: (lastHeartbeatLedgerIndex > (hostHeartbeatFreq * momentSize) ?
-                (lastHeartbeatLedgerIndex >= (curMomentStartIdx - (hostHeartbeatFreq * momentSize))) :
-                (lastHeartbeatLedgerIndex > 0))
         }
     }
 }

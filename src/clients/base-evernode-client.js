@@ -5,16 +5,17 @@ const { EvernodeEvents, HookStateKeys, MemoTypes, MemoFormats, EvernodeConstants
 const { DefaultValues } = require('../defaults');
 const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
-const { XflHelpers } = require('../xfl-helpers');
 const codec = require('ripple-address-codec');
 const { Buffer } = require('buffer');
 const { UtilHelpers } = require('../util-helpers');
+const { FirestoreHandler } = require('../firestore/firestore-handler');
 
 class BaseEvernodeClient {
 
     #watchEvents;
     #autoSubscribe;
     #ownsXrplApi = false;
+    _firestoreHandler;
 
     constructor(xrpAddress, xrpSecret, watchEvents, autoSubscribe = false, options = {}) {
 
@@ -30,6 +31,7 @@ class BaseEvernodeClient {
         this.#watchEvents = watchEvents;
         this.#autoSubscribe = autoSubscribe;
         this.events = new EventEmitter();
+        this._firestoreHandler = new FirestoreHandler(EvernodeConstants.INDEX_ID)
 
         this.xrplAcc.on(XrplApiEvents.PAYMENT, (tx, error) => this.#handleEvernodeEvent(tx, error));
     }
@@ -82,15 +84,9 @@ class BaseEvernodeClient {
             return '0';
     }
 
-    async getStates(options = { limit: 399 }) {
-        // We use a large limit since there's no way to just get the HookState objects.
-        const states = await this.xrplApi.getAccountObjects(this.registryAddress, options);
-        return states.filter(s => s.LedgerEntryType === 'HookState').map(s => {
-            return {
-                key: s.HookStateKey, //hex
-                data: s.HookStateData //hex
-            }
-        });
+    async getConfigs() {
+        const configs = await this._firestoreHandler.getDocuments(EvernodeConstants.CONFIGS_INDEX);
+        return configs.map(c => { return { key: c.key, data: c.value } });
     }
 
     async getMoment(ledgerIndex = null) {
@@ -110,40 +106,15 @@ class BaseEvernodeClient {
     }
 
     async #getEvernodeConfig() {
-        let states = await this.getStates();
-        states = states.map(s => {
-            return {
-                key: s.key,
-                data: Buffer.from(s.data, 'hex')
-            }
-        });
-
-        let config = {};
-        let buf = null;
-
-        buf = UtilHelpers.getStateData(states, HookStateKeys.EVR_ISSUER_ADDR);
-        config.evrIssuerAddress = codec.encodeAccountID(buf);
-
-        buf = UtilHelpers.getStateData(states, HookStateKeys.FOUNDATION_ADDR);
-        config.foundationAddress = codec.encodeAccountID(buf);
-
-        buf = UtilHelpers.getStateData(states, HookStateKeys.HOST_REG_FEE);
-        const xfl = buf.readBigInt64BE(0);
-        config.hostRegFee = XflHelpers.toString(xfl);
-
-        buf = UtilHelpers.getStateData(states, HookStateKeys.MOMENT_SIZE);
-        config.momentSize = UtilHelpers.readUInt(buf, 16);
-
-        buf = UtilHelpers.getStateData(states, HookStateKeys.REDEEM_WINDOW);
-        config.redeemWindow = UtilHelpers.readUInt(buf, 16);
-
-        buf = UtilHelpers.getStateData(states, HookStateKeys.HOST_HEARTBEAT_FREQ);
-        config.hostHeartbeatFreq = UtilHelpers.readUInt(buf, 16);
-
-        buf = UtilHelpers.getStateData(states, HookStateKeys.MOMENT_BASE_IDX);
-        config.momentBaseIdx = UtilHelpers.readUInt(buf, 64);
-
-        return config;
+        let states = await this.getConfigs();
+        return {
+            evrIssuerAddress: UtilHelpers.getStateData(states, HookStateKeys.EVR_ISSUER_ADDR),
+            foundationAddress: UtilHelpers.getStateData(states, HookStateKeys.FOUNDATION_ADDR),
+            hostRegFee: UtilHelpers.getStateData(states, HookStateKeys.HOST_REG_FEE),
+            momentSize: UtilHelpers.getStateData(states, HookStateKeys.MOMENT_SIZE),
+            hostHeartbeatFreq: UtilHelpers.getStateData(states, HookStateKeys.HOST_HEARTBEAT_FREQ),
+            momentBaseIdx: UtilHelpers.getStateData(states, HookStateKeys.MOMENT_BASE_IDX)
+        };
     }
 
     async #handleEvernodeEvent(tx, error) {

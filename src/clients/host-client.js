@@ -3,7 +3,6 @@ const { BaseEvernodeClient } = require('./base-evernode-client');
 const { EvernodeEvents, EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes, HookStateKeys } = require('../evernode-common');
 const { XrplAccount } = require('../xrpl-account');
 const { EncryptionHelper } = require('../encryption-helper');
-const { UtilHelpers } = require('../util-helpers');
 const { Buffer } = require('buffer');
 const codec = require('ripple-address-codec');
 
@@ -36,11 +35,9 @@ class HostClient extends BaseEvernodeClient {
         // Check whether we own an evernode host token.
         const nft = await this.getRegistrationNft();
         if (nft) {
-            const state = (await this.getStates()).filter(s => s.key = (HookStateKeys.PREFIX_HOST_TOKENID + nft.TokenID));
-            if (state) {
-                const curMomentStartIdx = await this.getMomentStartIndex();
-                return UtilHelpers.decodeRegistration(state.key, state.data, this.config.hostHeartbeatFreq, this.config.momentSize, curMomentStartIdx);
-            }
+            const host = (await this.getAllHosts()).filter(s => s.key = (HookStateKeys.PREFIX_HOST_TOKENID + nft.TokenID));
+            if (host)
+                return host;
         }
 
         return null;
@@ -57,10 +54,10 @@ class HostClient extends BaseEvernodeClient {
             this.xrplAcc.getMessageKey()]);
 
         let accountSetFields = {};
-        accountSetFields =  (!flags.lsfDefaultRipple) ? { ...accountSetFields, Flags: {asfDefaultRipple : true }} : accountSetFields;
-        accountSetFields = (!msgKey) ? {...accountSetFields, MessageKey : this.accKeyPair.publicKey} : accountSetFields;
+        accountSetFields = (!flags.lsfDefaultRipple) ? { ...accountSetFields, Flags: { asfDefaultRipple: true } } : accountSetFields;
+        accountSetFields = (!msgKey) ? { ...accountSetFields, MessageKey: this.accKeyPair.publicKey } : accountSetFields;
 
-        if (Object.keys(accountSetFields).length !== 0) 
+        if (Object.keys(accountSetFields).length !== 0)
             await this.xrplAcc.setAccountFields(accountSetFields);
 
         if (trustLines.length === 0)
