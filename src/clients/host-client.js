@@ -44,7 +44,7 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async isRegistered() {
-        return (await this.getRegistration()) !== undefined
+        return (await this.getRegistrationNft()) !== null
     }
 
     async prepareAccount() {
@@ -89,7 +89,7 @@ class HostClient extends BaseEvernodeClient {
 
         const memoData = `${hostingToken};${countryCode};${cpuMicroSec};${ramMb};${diskMb};${totalInstanceCount};${description}`
         return this.xrplAcc.makePayment(this.registryAddress,
-            this.config.hostRegFee,
+            this.config.hostRegFee.toString(),
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress,
             [{ type: MemoTypes.HOST_REG, format: MemoFormats.TEXT, data: memoData }],
