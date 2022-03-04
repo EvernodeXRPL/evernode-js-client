@@ -22,7 +22,7 @@ class StateHelpers {
         TOKEN_ID: 'tokenId',
         HOST_ADDR: 'hostAddr',
         SIGLETON: 'singleton',
-        CONFIGURATION: 'configiration'
+        CONFIGURATION: 'configuration'
     }
 
     static decodeHostAddressState(stateKeyBuf, stateDataBuf) {
