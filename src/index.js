@@ -7,6 +7,8 @@ const { XrplApiEvents, XrplConstants } = require('./xrpl-common');
 const { XrplAccount } = require('./xrpl-account');
 const { EvernodeConstants } = require('./evernode-common');
 const { XflHelpers } = require('./xfl-helpers');
+const { FirestoreHandler, FirestoreOperations } = require('./firestore/firestore-handler');
+const { StateHelpers } = require('./state-helpers');
 
 module.exports = {
     RegistryClient,
@@ -21,5 +23,9 @@ module.exports = {
     XrplAccount,
     EvernodeConstants,
     Defaults,
-    XflHelpers
+    XflHelpers,
+    StateHelpers,
+    FirestoreHandler,
+    FirestoreOperations,
+    StateHelpers
 }

@@ -18,7 +18,7 @@ class RegistryClient extends BaseEvernodeClient {
         const states = (await this.getStates()).filter(s => s.key.startsWith(HookStateKeys.PREFIX_HOST_ADDR));
         const curMomentStartIdx = await this.getMomentStartIndex();
         const hosts = states.map(s =>
-            UtilHelpers.decodeRegistration(s.data, this.config.hostHeartbeatFreq, this.config.momentSize, curMomentStartIdx));
+            UtilHelpers.decodeRegistration(s.key, s.data, this.config.hostHeartbeatFreq, this.config.momentSize, curMomentStartIdx));
         return hosts;
     }
 
