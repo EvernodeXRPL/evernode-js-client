@@ -48,6 +48,7 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async isRegistered() {
+        // TODO: This is a temporary fix until getRegistration get fixed.
         return (await this.getRegistrationNft()) !== null;
     }
 
@@ -106,7 +107,7 @@ class HostClient extends BaseEvernodeClient {
 
         let attemps = 0;
 
-        while (attemps < 30) {                
+        while (attemps < 60) {                
             await new Promise(resolve => setTimeout(resolve, 1000));
             if (tx.isSellOfferAccepted) {
                 break;
