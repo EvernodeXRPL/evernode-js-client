@@ -52,6 +52,7 @@ const EvernodeEvents = {
     RedeemSuccess: "RredeemSuccess",
     RedeemError: "RedeemError",
     Heartbeat: "Heartbeat",
+    NftOfferCreate: "NftOfferCreate",
 }
 
 module.exports = {
