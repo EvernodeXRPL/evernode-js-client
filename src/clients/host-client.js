@@ -91,7 +91,7 @@ class HostClient extends BaseEvernodeClient {
 
         const memoData = `${hostingToken};${countryCode};${cpuMicroSec};${ramMb};${diskMb};${totalInstanceCount};${description}`
         const tx = await this.xrplAcc.makePayment(this.registryAddress,
-            this.config.hostRegFee,
+            this.config.hostRegFee.toString(),
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress,
             [{ type: MemoTypes.HOST_REG, format: MemoFormats.TEXT, data: memoData }],

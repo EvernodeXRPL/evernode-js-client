@@ -28,7 +28,7 @@ class StateHelpers {
     static decodeHostAddressState(stateKeyBuf, stateDataBuf) {
         return {
             address: codec.encodeAccountID(stateKeyBuf.slice(12)),
-            nfTokenId: stateDataBuf.slice(HOST_TOKEN_ID_OFFSET, HOST_TOKEN_OFFSET).toString('hex'),
+            nfTokenId: stateDataBuf.slice(HOST_TOKEN_ID_OFFSET, HOST_TOKEN_OFFSET).toString('hex').toUpperCase(),
             token: stateDataBuf.slice(HOST_TOKEN_OFFSET, HOST_COUNTRY_CODE_OFFSET).toString(),
             countryCode: stateDataBuf.slice(HOST_COUNTRY_CODE_OFFSET, HOST_CPU_MICROSEC_OFFSET).toString(),
             cpuMicrosec: stateDataBuf.readUInt32BE(HOST_CPU_MICROSEC_OFFSET),
@@ -44,7 +44,7 @@ class StateHelpers {
     }
 
     static decodeStateData(stateKey, stateData) {
-        const hexKey = stateKey.toString('hex');
+        const hexKey = stateKey.toString('hex').toUpperCase();
         if (Buffer.from(HookStateKeys.PREFIX_HOST_ADDR, 'hex').compare(stateKey, 0, 4) === 0) {
             return {
                 type: this.StateTypes.HOST_ADDR,
@@ -56,7 +56,7 @@ class StateHelpers {
             return {
                 type: this.StateTypes.TOKEN_ID,
                 key: hexKey,
-                nfTokenId: `${NFTOKEN_PREFIX}${stateKey.slice(4).toString('hex')}`,
+                nfTokenId: `${NFTOKEN_PREFIX}${stateKey.slice(4).toString('hex')}`.toUpperCase(),
                 address: codec.encodeAccountID(stateData)
             }
         }
@@ -107,7 +107,7 @@ class StateHelpers {
     }
 
     static decodeStateKey(stateKey) {
-        const hexKey = stateKey.toString('hex');
+        const hexKey = stateKey.toString('hex').toUpperCase();
         if (Buffer.from(HookStateKeys.PREFIX_HOST_ADDR, 'hex').compare(stateKey, 0, 4) === 0) {
             return {
                 key: hexKey,
