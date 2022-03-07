@@ -7,7 +7,8 @@ const { Buffer } = require('buffer');
 const codec = require('ripple-address-codec');
 
 const HostEvents = {
-    Redeem: EvernodeEvents.Redeem
+    Redeem: EvernodeEvents.Redeem,
+    NftOfferCreate: EvernodeEvents.NftOfferCreate
 }
 
 class HostClient extends BaseEvernodeClient {
@@ -44,7 +45,8 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async isRegistered() {
-        return (await this.getRegistrationNft()) !== null
+        // TODO: This is a temporary fix until getRegistration get fixed.
+        return (await this.getRegistrationNft()) !== null;
     }
 
     async prepareAccount() {
@@ -88,12 +90,45 @@ class HostClient extends BaseEvernodeClient {
             throw "Host already registered.";
 
         const memoData = `${hostingToken};${countryCode};${cpuMicroSec};${ramMb};${diskMb};${totalInstanceCount};${description}`
-        return this.xrplAcc.makePayment(this.registryAddress,
-            this.config.hostRegFee.toString(),
+        const tx = await this.xrplAcc.makePayment(this.registryAddress,
+            this.config.hostRegFee,
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress,
             [{ type: MemoTypes.HOST_REG, format: MemoFormats.TEXT, data: memoData }],
             options.transactionOptions);
+        
+        // Added this attribute as an indication for the sell offer acceptance
+        tx.isSellOfferAccepted = false;
+
+        this.on(HostEvents.NftOfferCreate, r => this.handleNftOffer(r, tx)); 
+
+        let attemps = 0;
+
+        while (attemps < 60) {                
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            if (tx.isSellOfferAccepted) {
+                break;
+            }
+            attemps++;
+        }
+
+        if (!tx.isSellOfferAccepted)
+            throw "No sell offer was found within timeout."; 
+        
+        return await this.isRegistered();           
+    }
+        
+    
+    async handleNftOffer(r, tx) {
+        if (this.xrplAcc.address === r.transaction.Destination) {
+            const registryAcc = new XrplAccount(this.registryAddress, null, {xrplApi : this.xrplApi});
+            const nft = (await registryAcc.getNfts()).find(n => n.URI === `${EvernodeConstants.NFT_PREFIX_HEX}${tx.id}`);
+            if (nft) {
+                const sellOffer = (await registryAcc.getNftOffers()).find(o => o.TokenID === nft.TokenID && o.Flags === 1);
+                await this.xrplAcc.buyNft(sellOffer.index);
+                tx.isSellOfferAccepted = true;
+            }
+        }                
     }
 
     async deregister(options = {}) {
