@@ -38,15 +38,24 @@ class FirestoreHandler {
         return await this._sendRequest('POST', url, null, body);
     }
 
-    async #read(collectionId) {
+    async #read(collectionId, pageSize = null, nextPageToken = null) {
         if (!collectionId)
             throw { type: 'Validation Error', message: 'collectionId is required' };
 
         const url = this._buildApiPath(collectionId);
-        return await this._sendRequest('GET', url);
+        let params = (pageSize || nextPageToken) ? {} : null;
+        if (pageSize)
+            params = { pageSize: pageSize };
+        if (nextPageToken)
+            params = { pageToken: nextPageToken, ...params };
+
+        return await this._sendRequest('GET', url, params);
     }
 
-    async #getDocuments(collectionId, filters = null) {
+    async #getDocuments(collectionId, filters = null, pageSize = null, nextPageToken = null) {
+        if (filters && (pageSize || nextPageToken))
+            throw { type: 'Validation Error', message: 'Pagination isn\'t supported with filter.' };
+
         let data;
         if (filters) {
             let where = {
@@ -89,12 +98,16 @@ class FirestoreHandler {
             }
         }
         else {
-            data = await this.#read(collectionId);
+            data = await this.#read(collectionId, pageSize, nextPageToken);
             data = data ? JSON.parse(data) : {};
             if (data.documents && data.documents.length) {
-                return data.documents.map(d => {
+                const list = data.documents.map(d => {
                     return this._parseDocument(d);
                 });
+                return data.nextPageToken ? {
+                    data: list,
+                    nextPageToken: data.nextPageToken
+                } : list;
             }
         }
 
@@ -102,7 +115,7 @@ class FirestoreHandler {
     }
 
     _getCollectionId(collection) {
-        return `${this.#collectionPrefix}_${collection}`
+        return `${this.#collectionPrefix}_${collection}`;
     }
 
     async _sendRequest(httpMethod, url, params = null, data = null, options = null) {
@@ -189,12 +202,12 @@ class FirestoreHandler {
         return item;
     }
 
-    async getHosts(filters = null) {
-        return await this.#getDocuments(this._getCollectionId('hosts'), filters);
+    async getHosts(filters = null, pageSize = null, nextPageToken = null) {
+        return await this.#getDocuments(this._getCollectionId('hosts'), filters, pageSize, nextPageToken);
     }
 
-    async getConfigs(filters = null) {
-        return await this.#getDocuments(this._getCollectionId('configs'), filters);
+    async getConfigs(filters = null, pageSize = null, nextPageToken = null) {
+        return await this.#getDocuments(this._getCollectionId('configs'), filters, pageSize, nextPageToken);
     }
 }
 

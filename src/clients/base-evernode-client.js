@@ -86,17 +86,16 @@ class BaseEvernodeClient {
             return '0';
     }
 
-    async getHosts(filters = null) {
-        const hosts = await this.#firestoreHandler.getHosts(filters);
+    async getHosts(filters = null, pageSize = null, nextPageToken = null) {
+        const hosts = await this.#firestoreHandler.getHosts(filters, pageSize, nextPageToken);
         const curMomentStartIdx = await this.getMomentStartIndex();
-        return hosts.map(h => {
-            return {
-                ...h,
-                active: (h.lastHeartbeatLedger > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
-                    (h.lastHeartbeatLedger >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
-                    (h.lastHeartbeatLedger > 0))
-            };
-        })
+        // Populate the host active status.
+        (hosts.nextPageToken ? hosts.data : hosts).forEach(h => {
+            h.active = (h.lastHeartbeatLedger > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
+                (h.lastHeartbeatLedger >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
+                (h.lastHeartbeatLedger > 0))
+        });
+        return hosts
     }
 
     async getConfigs() {
