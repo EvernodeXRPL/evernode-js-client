@@ -32,6 +32,8 @@ class BaseEvernodeClient {
         this.events = new EventEmitter();
 
         this.xrplAcc.on(XrplApiEvents.PAYMENT, (tx, error) => this.#handleEvernodeEvent(tx, error));
+        this.xrplAcc.on(XrplApiEvents.NFT_OFFER_CREATE, (tx, error) => this.#handleEvernodeEvent(tx, error));
+
     }
 
     on(event, handler) {
@@ -160,8 +162,21 @@ class BaseEvernodeClient {
     }
 
     async #extractEvernodeEvent(tx) {
-        if (!tx.Memos || tx.Memos.length === 0)
+
+        if (!tx.Memos || tx.Memos.length === 0) {
+            if (tx.TransactionType === "NFTokenCreateOffer") {
+                return {
+                    name: EvernodeEvents.NftOfferCreate,
+                    data: {
+                        transaction: tx,
+                        tokenId: tx.TokenID,
+                        flags: tx.Flags,
+                        hash: tx.hash
+                    }
+                }
+            }
             return null;
+        }
 
         if (tx.Memos.length >= 1 &&
             tx.Memos[0].type === MemoTypes.REDEEM && tx.Memos[0].format === MemoFormats.BASE64 && tx.Memos[0].data) {

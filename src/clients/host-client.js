@@ -8,7 +8,8 @@ const { Buffer } = require('buffer');
 const codec = require('ripple-address-codec');
 
 const HostEvents = {
-    Redeem: EvernodeEvents.Redeem
+    Redeem: EvernodeEvents.Redeem,
+    NftOfferCreate: EvernodeEvents.NftOfferCreate
 }
 
 class HostClient extends BaseEvernodeClient {
@@ -47,7 +48,8 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async isRegistered() {
-        return (await this.getRegistrationNft()) !== null
+        // TODO: This is a temporary fix until getRegistration get fixed.
+        return (await this.getRegistrationNft()) !== null;
     }
 
     async prepareAccount() {
@@ -67,7 +69,7 @@ class HostClient extends BaseEvernodeClient {
             await this.xrplAcc.setTrustLine(EvernodeConstants.EVR, this.config.evrIssuerAddress, "99999999999999");
     }
 
-    async register(hostingToken, countryCode, cpuMicroSec, ramMb, diskMb, description, options = {}) {
+    async register(hostingToken, countryCode, cpuMicroSec, ramMb, diskMb, totalInstanceCount, description, options = {}) {
         if (!/^([A-Z]{3})$/.test(hostingToken))
             throw "hostingToken should consist of 3 uppercase alphabetical characters";
         else if (!/^([A-Z]{2})$/.test(countryCode))
@@ -78,6 +80,8 @@ class HostClient extends BaseEvernodeClient {
             throw "ramMb should be a positive intiger";
         else if (!diskMb || isNaN(diskMb) || diskMb % 1 != 0 || diskMb < 0)
             throw "diskMb should be a positive intiger";
+        else if (!totalInstanceCount || isNaN(totalInstanceCount) || totalInstanceCount % 1 != 0 || totalInstanceCount < 0)
+            throw "totalInstanceCount should be a positive intiger";
         // Need to use control characters inside this regex to match ascii characters.
         // Here we allow all the characters in ascii range except ";" for the description.
         // no-control-regex is enabled default by eslint:recommended, So we disable it only for next line.
@@ -88,13 +92,46 @@ class HostClient extends BaseEvernodeClient {
         if (await this.isRegistered())
             throw "Host already registered.";
 
-        const memoData = `${hostingToken};${countryCode};${cpuMicroSec};${ramMb};${diskMb};${description}`
-        return this.xrplAcc.makePayment(this.registryAddress,
+        const memoData = `${hostingToken};${countryCode};${cpuMicroSec};${ramMb};${diskMb};${totalInstanceCount};${description}`
+        const tx = await this.xrplAcc.makePayment(this.registryAddress,
             this.config.hostRegFee,
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress,
             [{ type: MemoTypes.HOST_REG, format: MemoFormats.TEXT, data: memoData }],
             options.transactionOptions);
+        
+        // Added this attribute as an indication for the sell offer acceptance
+        tx.isSellOfferAccepted = false;
+
+        this.on(HostEvents.NftOfferCreate, r => this.handleNftOffer(r, tx)); 
+
+        let attemps = 0;
+
+        while (attemps < 60) {                
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            if (tx.isSellOfferAccepted) {
+                break;
+            }
+            attemps++;
+        }
+
+        if (!tx.isSellOfferAccepted)
+            throw "No sell offer was found within timeout."; 
+        
+        return await this.isRegistered();           
+    }
+        
+    
+    async handleNftOffer(r, tx) {
+        if (this.xrplAcc.address === r.transaction.Destination) {
+            const registryAcc = new XrplAccount(this.registryAddress, null, {xrplApi : this.xrplApi});
+            const nft = (await registryAcc.getNfts()).find(n => n.URI === `${EvernodeConstants.NFT_PREFIX_HEX}${tx.id}`);
+            if (nft) {
+                const sellOffer = (await registryAcc.getNftOffers()).find(o => o.TokenID === nft.TokenID && o.Flags === 1);
+                await this.xrplAcc.buyNft(sellOffer.index);
+                tx.isSellOfferAccepted = true;
+            }
+        }                
     }
 
     async deregister(options = {}) {
