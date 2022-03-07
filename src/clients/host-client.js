@@ -1,6 +1,6 @@
 const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { EvernodeEvents, EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes, HookStateKeys } = require('../evernode-common');
+const { EvernodeEvents, EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes } = require('../evernode-common');
 const { XrplAccount } = require('../xrpl-account');
 const { EncryptionHelper } = require('../encryption-helper');
 const { Buffer } = require('buffer');
@@ -19,12 +19,12 @@ class HostClient extends BaseEvernodeClient {
 
     async getRegistrationNft() {
         // Find an owned NFT with matching Evernode host NFT prefix.
-        const nft = (await this.xrplAcc.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX))
+        const nft = (await this.xrplAcc.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX));
         if (nft) {
-            // Check whether the token was actually issued from Evernode.
+            // Check whether the token was actually issued from Evernode registry account.
             const issuerHex = nft.TokenID.substr(8, 40);
             const issuerAddr = codec.encodeAccountID(Buffer.from(issuerHex, 'hex'));
-            if (issuerAddr == this.config.evrIssuerAddress) {
+            if (issuerAddr == this.registryAddress) {
                 return nft;
             }
         }
@@ -36,9 +36,9 @@ class HostClient extends BaseEvernodeClient {
         // Check whether we own an evernode host token.
         const nft = await this.getRegistrationNft();
         if (nft) {
-            const host = (await this.getAllHosts()).filter(s => s.key = (HookStateKeys.PREFIX_HOST_TOKENID + nft.TokenID));
-            if (host)
-                return host;
+            const host = await this.getHosts({ nfTokenId: nft.TokenID });
+            if (host && host.length == 1)
+                return host[0];
         }
 
         return null;
@@ -96,15 +96,15 @@ class HostClient extends BaseEvernodeClient {
             this.config.evrIssuerAddress,
             [{ type: MemoTypes.HOST_REG, format: MemoFormats.TEXT, data: memoData }],
             options.transactionOptions);
-        
+
         // Added this attribute as an indication for the sell offer acceptance
         tx.isSellOfferAccepted = false;
 
-        this.on(HostEvents.NftOfferCreate, r => this.handleNftOffer(r, tx)); 
+        this.on(HostEvents.NftOfferCreate, r => this.handleNftOffer(r, tx));
 
         let attemps = 0;
 
-        while (attemps < 60) {                
+        while (attemps < 60) {
             await new Promise(resolve => setTimeout(resolve, 1000));
             if (tx.isSellOfferAccepted) {
                 break;
@@ -113,34 +113,34 @@ class HostClient extends BaseEvernodeClient {
         }
 
         if (!tx.isSellOfferAccepted)
-            throw "No sell offer was found within timeout."; 
-        
-        return await this.isRegistered();           
+            throw "No sell offer was found within timeout.";
+
+        return await this.isRegistered();
     }
-        
-    
+
     async handleNftOffer(r, tx) {
         if (this.xrplAcc.address === r.transaction.Destination) {
-            const registryAcc = new XrplAccount(this.registryAddress, null, {xrplApi : this.xrplApi});
+            const registryAcc = new XrplAccount(this.registryAddress, null, { xrplApi: this.xrplApi });
             const nft = (await registryAcc.getNfts()).find(n => n.URI === `${EvernodeConstants.NFT_PREFIX_HEX}${tx.id}`);
             if (nft) {
                 const sellOffer = (await registryAcc.getNftOffers()).find(o => o.TokenID === nft.TokenID && o.Flags === 1);
                 await this.xrplAcc.buyNft(sellOffer.index);
                 tx.isSellOfferAccepted = true;
             }
-        }                
+        }
     }
 
     async deregister(options = {}) {
 
-        if (!(await this.isRegistered()))
+        const host = await this.getRegistration();
+        if (host === null)
             throw "Host not registered."
 
         return this.xrplAcc.makePayment(this.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            [{ type: MemoTypes.HOST_DEREG, format: MemoFormats.TEXT, data: "" }],
+            [{ type: MemoTypes.HOST_DEREG, format: MemoFormats.HEX, data: host.nfTokenId }],
             options.transactionOptions);
     }
 

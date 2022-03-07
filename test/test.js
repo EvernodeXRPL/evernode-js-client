@@ -80,7 +80,7 @@ async function getAllHosts() {
     console.log(`-----------Getting all hosts (including inactive)`);
 
     const regClient = await getRegistryClient();
-    const hosts = await regClient.getAllHosts();
+    const hosts = await regClient.getHosts();
 
     console.log("All hosts", hosts || "No hosts");
 }

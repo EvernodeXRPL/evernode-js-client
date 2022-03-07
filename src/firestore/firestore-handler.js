@@ -51,22 +51,25 @@ class FirestoreHandler {
         if (filters) {
             let where = {
                 compositeFilter: {
-                    filters: [],
+                    filters: Object.entries(filters).map(([key, value]) => {
+                        const field = this._convertValue(key, value);
+                        return {
+                            fieldFilter: {
+                                field: { fieldPath: field.key },
+                                op: FirestoreOperations.EQUAL,
+                                value: field.value
+                            }
+                        }
+                    }),
                     op: filters.operator ? filters.operator : FirestoreOperations.AND
                 }
             };
-            for (const filter of filters.list) {
+            for (const [key, value] of Object.entries(filters)) {
+                const field = this._convertValue(key, value);
                 let fieldFilter = {
-                    field: { fieldPath: null },
-                    op: filter.operator,
-                    value: null
-                }
-                for (const [key, value] of Object.entries(filter)) {
-                    if (key !== 'operator') {
-                        const field = this._convertValue(key, value);
-                        fieldFilter.field.fieldPath = field.key;
-                        fieldFilter.value = field.value;
-                    }
+                    field: { fieldPath: field.key },
+                    op: FirestoreOperations.EQUAL,
+                    value: field.value
                 }
                 where.compositeFilter.filters.push({ fieldFilter: fieldFilter });
             }

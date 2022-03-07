@@ -15,7 +15,7 @@ class BaseEvernodeClient {
     #watchEvents;
     #autoSubscribe;
     #ownsXrplApi = false;
-    _firestoreHandler;
+    #firestoreHandler;
 
     constructor(xrpAddress, xrpSecret, watchEvents, autoSubscribe = false, options = {}) {
 
@@ -31,7 +31,7 @@ class BaseEvernodeClient {
         this.#watchEvents = watchEvents;
         this.#autoSubscribe = autoSubscribe;
         this.events = new EventEmitter();
-        this._firestoreHandler = new FirestoreHandler()
+        this.#firestoreHandler = new FirestoreHandler()
 
         this.xrplAcc.on(XrplApiEvents.PAYMENT, (tx, error) => this.#handleEvernodeEvent(tx, error));
         this.xrplAcc.on(XrplApiEvents.NFT_OFFER_CREATE, (tx, error) => this.#handleEvernodeEvent(tx, error));
@@ -86,8 +86,21 @@ class BaseEvernodeClient {
             return '0';
     }
 
+    async getHosts(filters = null) {
+        const hosts = await this.#firestoreHandler.getHosts(filters);
+        const curMomentStartIdx = await this.getMomentStartIndex();
+        return hosts.map(h => {
+            return {
+                ...h,
+                active: (h.lastHeartbeatLedger > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
+                    (h.lastHeartbeatLedger >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
+                    (h.lastHeartbeatLedger > 0))
+            };
+        })
+    }
+
     async getConfigs() {
-        const configs = await this._firestoreHandler.getConfigs();
+        const configs = await this.#firestoreHandler.getConfigs();
         return configs.map(c => { return { key: c.key, data: c.value } });
     }
 
