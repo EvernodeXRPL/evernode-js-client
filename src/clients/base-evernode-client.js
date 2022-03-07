@@ -31,7 +31,7 @@ class BaseEvernodeClient {
         this.#watchEvents = watchEvents;
         this.#autoSubscribe = autoSubscribe;
         this.events = new EventEmitter();
-        this._firestoreHandler = new FirestoreHandler(EvernodeConstants.INDEX_ID)
+        this._firestoreHandler = new FirestoreHandler()
 
         this.xrplAcc.on(XrplApiEvents.PAYMENT, (tx, error) => this.#handleEvernodeEvent(tx, error));
     }
@@ -85,7 +85,7 @@ class BaseEvernodeClient {
     }
 
     async getConfigs() {
-        const configs = await this._firestoreHandler.getDocuments(EvernodeConstants.CONFIGS_INDEX);
+        const configs = await this._firestoreHandler.getConfigs();
         return configs.map(c => { return { key: c.key, data: c.value } });
     }
 

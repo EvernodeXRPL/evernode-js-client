@@ -1,9 +1,6 @@
 const EvernodeConstants = {
     EVR: 'EVR',
     NFT_PREFIX_HEX: '657672686F7374', // evrhost
-    INDEX_ID: 'evernodeindex',
-    CONFIGS_INDEX: 'configs',
-    HOSTS_INDEX: 'hosts'
 }
 
 const MemoTypes = {

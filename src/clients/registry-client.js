@@ -1,4 +1,4 @@
-const { EvernodeEvents, EvernodeConstants } = require('../evernode-common');
+const { EvernodeEvents } = require('../evernode-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
 const { DefaultValues } = require('../defaults');
 
@@ -14,7 +14,7 @@ class RegistryClient extends BaseEvernodeClient {
     }
 
     async getAllHosts() {
-        const hosts = await this._firestoreHandler.getDocuments(EvernodeConstants.HOSTS_INDEX);
+        const hosts = await this._firestoreHandler.getHosts();
         const curMomentStartIdx = await this.getMomentStartIndex();
         return hosts.map(h => {
             return {
