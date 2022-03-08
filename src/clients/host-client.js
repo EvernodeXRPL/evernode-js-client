@@ -6,6 +6,8 @@ const { EncryptionHelper } = require('../encryption-helper');
 const { Buffer } = require('buffer');
 const codec = require('ripple-address-codec');
 
+const OFFER_WAIT_TIMEOUT = 60;
+
 const HostEvents = {
     Redeem: EvernodeEvents.Redeem,
     NftOfferCreate: EvernodeEvents.NftOfferCreate
@@ -122,7 +124,7 @@ class HostClient extends BaseEvernodeClient {
 
         let attemps = 0;
 
-        while (attemps < 60) {
+        while (attemps < OFFER_WAIT_TIMEOUT) {
             await new Promise(resolve => setTimeout(resolve, 1000));
             if (tx.isSellOfferAccepted) {
                 break;
@@ -165,7 +167,7 @@ class HostClient extends BaseEvernodeClient {
         const regAcc = new XrplAccount(this.registryAddress);
         let offer = null;
         let attempts = 0;
-        while (attempts < 60) {
+        while (attempts < OFFER_WAIT_TIMEOUT) {
             offer = (await regAcc.getNftOffers()).find(o => (o.TokenID == regNFT.TokenID) && (o.Flags === 0));
             if (offer)
                 break;
