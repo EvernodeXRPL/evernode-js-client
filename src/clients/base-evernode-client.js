@@ -1,20 +1,21 @@
 const { XrplApi } = require('../xrpl-api');
 const { XrplAccount } = require('../xrpl-account');
 const { XrplApiEvents } = require('../xrpl-common');
-const { EvernodeEvents, MemoTypes, MemoFormats, EvernodeConstants } = require('../evernode-common');
+const { EvernodeEvents, MemoTypes, MemoFormats, EvernodeConstants, HookStateKeys } = require('../evernode-common');
 const { DefaultValues } = require('../defaults');
 const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
-// const { XflHelpers } = require('../xfl-helpers');
 const codec = require('ripple-address-codec');
 const { Buffer } = require('buffer');
-// const { UtilHelpers } = require('../util-helpers');
+const { UtilHelpers } = require('../util-helpers');
+const { FirestoreHandler } = require('../firestore/firestore-handler');
 
 class BaseEvernodeClient {
 
     #watchEvents;
     #autoSubscribe;
     #ownsXrplApi = false;
+    #firestoreHandler;
 
     constructor(xrpAddress, xrpSecret, watchEvents, autoSubscribe = false, options = {}) {
 
@@ -30,6 +31,7 @@ class BaseEvernodeClient {
         this.#watchEvents = watchEvents;
         this.#autoSubscribe = autoSubscribe;
         this.events = new EventEmitter();
+        this.#firestoreHandler = new FirestoreHandler()
 
         this.xrplAcc.on(XrplApiEvents.PAYMENT, (tx, error) => this.#handleEvernodeEvent(tx, error));
         this.xrplAcc.on(XrplApiEvents.NFT_OFFER_CREATE, (tx, error) => this.#handleEvernodeEvent(tx, error));
@@ -84,15 +86,21 @@ class BaseEvernodeClient {
             return '0';
     }
 
-    async getStates(options = { limit: 399 }) {
-        // We use a large limit since there's no way to just get the HookState objects.
-        const states = await this.xrplApi.getAccountObjects(this.registryAddress, options);
-        return states.filter(s => s.LedgerEntryType === 'HookState').map(s => {
-            return {
-                key: s.HookStateKey, //hex
-                data: s.HookStateData //hex
-            }
+    async getHosts(filters = null, pageSize = null, nextPageToken = null) {
+        const hosts = await this.#firestoreHandler.getHosts(filters, pageSize, nextPageToken);
+        const curMomentStartIdx = await this.getMomentStartIndex();
+        // Populate the host active status.
+        (hosts.nextPageToken ? hosts.data : hosts).forEach(h => {
+            h.active = (h.lastHeartbeatLedger > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
+                (h.lastHeartbeatLedger >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
+                (h.lastHeartbeatLedger > 0))
         });
+        return hosts
+    }
+
+    async getConfigs() {
+        const configs = await this.#firestoreHandler.getConfigs();
+        return configs.map(c => { return { key: c.key, data: c.value } });
     }
 
     async getMoment(ledgerIndex = null) {
@@ -112,41 +120,15 @@ class BaseEvernodeClient {
     }
 
     async #getEvernodeConfig() {
-        // let states = await this.getStates();
-        // states = states.map(s => {
-        //     return {
-        //         key: s.key,
-        //         data: Buffer.from(s.data, 'hex')
-        //     }
-        // });
-
-        let config = {};
-        // let buf = null;
-
-        // buf = UtilHelpers.getStateData(states, HookStateKeys.EVR_ISSUER_ADDR);
-        config.evrIssuerAddress = 'rHdSF3FWTFR11zZ4dPy17Rch1Ygch3gy8p';//codec.encodeAccountID(buf);
-        config.registryAddress = 'rDruU1JTwpxc7dxhWmAFFKJpq3BwreFAFg';
-
-        // buf = UtilHelpers.getStateData(states, HookStateKeys.FOUNDATION_ADDR);
-        config.foundationAddress = 'rEHTwF8GA3rMMmmWJcuB2BqU63PdmMaekq';//codec.encodeAccountID(buf);
-
-        // buf = UtilHelpers.getStateData(states, HookStateKeys.HOST_REG_FEE);
-        // const xfl = buf.readBigInt64BE(0);
-        config.hostRegFee = '5120'; //XflHelpers.toString(xfl);
-
-        // buf = UtilHelpers.getStateData(states, HookStateKeys.MOMENT_SIZE);
-        config.momentSize = 72;//UtilHelpers.readUInt(buf, 16);
-
-        // buf = UtilHelpers.getStateData(states, /HookStateKeys.REDEEM_WINDOW);
-        config.redeemWindow = 14;//UtilHelpers.readUInt(buf, 16);
-
-        // buf = UtilHelpers.getStateData(states, HookStateKeys.HOST_HEARTBEAT_FREQ);
-        config.hostHeartbeatFreq = 1;//UtilHelpers.readUInt(buf, 16);
-
-        // buf = UtilHelpers.getStateData(states, HookStateKeys.MOMENT_BASE_IDX);
-        config.momentBaseIdx = 0;//UtilHelpers.readUInt(buf, 64);
-
-        return config;
+        let states = await this.getConfigs();
+        return {
+            evrIssuerAddress: UtilHelpers.getStateData(states, HookStateKeys.EVR_ISSUER_ADDR),
+            foundationAddress: UtilHelpers.getStateData(states, HookStateKeys.FOUNDATION_ADDR),
+            hostRegFee: UtilHelpers.getStateData(states, HookStateKeys.HOST_REG_FEE),
+            momentSize: UtilHelpers.getStateData(states, HookStateKeys.MOMENT_SIZE),
+            hostHeartbeatFreq: UtilHelpers.getStateData(states, HookStateKeys.HOST_HEARTBEAT_FREQ),
+            momentBaseIdx: UtilHelpers.getStateData(states, HookStateKeys.MOMENT_BASE_IDX)
+        };
     }
 
     async #handleEvernodeEvent(tx, error) {

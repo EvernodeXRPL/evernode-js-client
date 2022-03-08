@@ -1,7 +1,6 @@
-const { EvernodeEvents, HookStateKeys } = require('../evernode-common');
+const { EvernodeEvents } = require('../evernode-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
 const { DefaultValues } = require('../defaults');
-const { UtilHelpers } = require('../util-helpers');
 
 const RegistryEvents = {
     HostRegistered: EvernodeEvents.HostRegistered,
@@ -14,16 +13,8 @@ class RegistryClient extends BaseEvernodeClient {
         super((options.registryAddress || DefaultValues.registryAddress), null, Object.values(RegistryEvents), false, options);
     }
 
-    async getAllHosts() {
-        const states = (await this.getStates()).filter(s => s.key.startsWith(HookStateKeys.PREFIX_HOST_ADDR));
-        const curMomentStartIdx = await this.getMomentStartIndex();
-        const hosts = states.map(s =>
-            UtilHelpers.decodeRegistration(s.data, this.config.hostHeartbeatFreq, this.config.momentSize, curMomentStartIdx));
-        return hosts;
-    }
-
     async getActiveHosts() {
-        const hosts = await this.getAllHosts();
+        const hosts = await this.getHosts();
         // Filter only active hosts.
         return hosts.filter(h => h.active);
     }

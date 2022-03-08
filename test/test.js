@@ -1,13 +1,13 @@
 // const evernode = require("evernode-js-client");
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 
-const evrIssuerAddress = "rHdSF3FWTFR11zZ4dPy17Rch1Ygch3gy8p";
-const registryAddress = "rDruU1JTwpxc7dxhWmAFFKJpq3BwreFAFg";
-const registrySecret = "ss1sCAbWsPzUJyA9S4hx8eXKNCV3j";
-const hostAddress = "rKndKCQ3KHWMkRMmhhvRAEZuT2nepTctxw";
-const hostSecret = "shRqYNHpaPFacu5w5nxiPp1SPAnXC";
-const foundationAddress = "rEHTwF8GA3rMMmmWJcuB2BqU63PdmMaekq";
-const foundationSecret = "spjcJauXLibViF6geM9cRFDdPLdhs";
+const evrIssuerAddress = "rfFa1RQwGVQHCnLmjQMo7YdtDvSccTDwCR";
+const registryAddress = "rwxqawWwey68QcgtoGrDMEWX8bcKb7zBm6";
+const registrySecret = "spjdSxTgARNRVNkz73BU5jcF8gga8";
+const hostAddress = "rQUKE28PC6H9MDmr9mf5JBVCQYXjCLDvpQ";
+const hostSecret = "sn6w93baB2GiqRpKj6mXw8a8L7NtN";
+const foundationAddress = "rJTt3294QFYTHf6SZkae8RojbBUG8vvbMB";
+const foundationSecret = "snEXsnNiD5A9tkrZ3Jic6ofeGTjzP";
 const hostToken = "ABC";
 const userAddress = "rKCp2EyWg94c1keic83SHzWEuQXy5Am6Ni";
 const userSecret = "spzjw4ZC36Nzy7yggVurfH3ESjvbk";
@@ -56,6 +56,7 @@ async function app() {
         // console.log(nft2);
 
         // const tests = [
+        //     () => initializeConfigs(),
         //     () => registerHost(),
         //     () => getAllHosts(),
         //     () => getActiveHosts(),
@@ -97,7 +98,7 @@ async function getAllHosts() {
     console.log(`-----------Getting all hosts (including inactive)`);
 
     const regClient = await getRegistryClient();
-    const hosts = await regClient.getAllHosts();
+    const hosts = await regClient.getHosts();
 
     console.log("All hosts", hosts || "No hosts");
 }
@@ -109,6 +110,16 @@ async function getActiveHosts() {
     const hosts = await regClient.getActiveHosts();
 
     console.log("Hosts", hosts || "No active hosts");
+}
+
+async function initializeConfigs() {
+    console.log(`-----------Initialize configs`);
+    const foundationAcc = new evernode.XrplAccount(foundationAddress, foundationSecret);
+    await foundationAcc.makePayment(registryAddress,
+        '1',
+        'XRP',
+        null,
+        [{ type: 'evnInitialize', format: '', data: '' }]);
 }
 
 async function registerHost(address = hostAddress, secret = hostSecret, token = hostToken) {
@@ -123,16 +134,16 @@ async function registerHost(address = hostAddress, secret = hostSecret, token = 
     console.log("Prepare...");
     await host.prepareAccount();
 
-    // Get EVRs from the hook if needed.
-    const lines = await host.xrplAcc.getTrustLines(evernode.EvernodeConstants.EVR, registryAddress);
-    if (lines.length === 0 || parseInt(lines[0].balance) < 100) {
+    // Get EVRs from the foundation if needed.
+    const lines = await host.xrplAcc.getTrustLines(evernode.EvernodeConstants.EVR, evrIssuerAddress);
+    if (lines.length === 0 || parseInt(lines[0].balance) < 5120) {
         console.log("Transfer EVRs...");
-        const hookAcc = new evernode.XrplAccount(registryAddress, registrySecret);
-        await hookAcc.makePayment(address, "1000", evernode.EvernodeConstants.EVR, registryAddress);
+        const foundationAcc = new evernode.XrplAccount(foundationAddress, foundationSecret);
+        await foundationAcc.makePayment(address, "5120", evernode.EvernodeConstants.EVR, evrIssuerAddress);
     }
 
     console.log("Register...");
-    await host.register(token, "AU", 10000, 512, 1024, "Test desctiption");
+    await host.register(token, "AU", 10000, 512, 1024, 5, "Test desctiption");
 
     // Verify the registration.
     return await host.isRegistered();
