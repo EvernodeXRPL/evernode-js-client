@@ -46,7 +46,6 @@ class HostClient extends BaseEvernodeClient {
 
     async getTokenOffer() {
         const hostingToken = (await this.getRegistration())?.token;
-        console.log(hostingToken)
         if (!hostingToken)
             throw "Error getting hosting hosting token";
         const offer = (await this.xrplAcc.getOffers()).find(o => o.taker_gets.currency === hostingToken && o.taker_gets.issuer === this.xrplAcc.address);
