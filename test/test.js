@@ -83,7 +83,7 @@ async function app() {
         // const nfts = await host.getNfts();
         // console.log(nfts);
         // await host.register();
-        // await initialize();
+        // await initializeConfigs();
         await registerHost();
         // await deregisterHost();
 
@@ -94,11 +94,6 @@ async function app() {
     finally {
         await xrplApi.disconnect();
     }
-}
-
-async function initialize() {
-    const foundation = new evernode.XrplAccount(foundationAddress, foundationSecret);
-    await foundation.makePayment(registryAddress, '1', 'XRP', null, [{ type: 'evnInitialize', format: '', data: '' }]);
 }
 
 async function getAllHosts() {
