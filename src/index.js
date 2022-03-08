@@ -25,7 +25,5 @@ module.exports = {
     Defaults,
     XflHelpers,
     StateHelpers,
-    FirestoreHandler,
-    FirestoreOperations,
-    StateHelpers
+    FirestoreHandler
 }
