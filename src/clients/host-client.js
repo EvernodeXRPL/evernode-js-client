@@ -44,9 +44,28 @@ class HostClient extends BaseEvernodeClient {
         return null;
     }
 
+    async getTokenOffer() {
+        const hostingToken = (await this.getRegistration())?.token;
+        console.log(hostingToken)
+        if (!hostingToken)
+            throw "Error getting hosting hosting token";
+        const offer = (await this.xrplAcc.getOffers()).find(o => o.taker_gets.currency === hostingToken && o.taker_gets.issuer === this.xrplAcc.address);
+        return offer || null;
+    }
+
+    async createTokenSellOffer(sellAmount, valueInEVRs) {
+        const hostingToken = (await this.getRegistration())?.token;
+        if (!hostingToken)
+            throw "Error getting hosting hosting token";
+        return this.xrplAcc.offerSell(sellAmount, hostingToken, this.xrplAcc.address, valueInEVRs, EvernodeConstants.EVR, this.config.evrIssuerAddress);
+    }
+
+    async cancelOffer(offerIndex) {
+        return this.xrplAcc.cancelOffer(offerIndex);
+    }
+
     async isRegistered() {
-        // TODO: This is a temporary fix until getRegistration get fixed.
-        return (await this.getRegistrationNft()) !== null;
+        return (await this.getRegistration()) !== null;
     }
 
     async prepareAccount() {
@@ -147,17 +166,17 @@ class HostClient extends BaseEvernodeClient {
         const regAcc = new XrplAccount(this.registryAddress);
         let offer = null;
         let attempts = 0;
-        while (attempts < 10) {
+        while (attempts < 60) {
             offer = (await regAcc.getNftOffers()).find(o => (o.TokenID == regNFT.TokenID) && (o.Flags === 0));
             if (offer)
                 break;
             await new Promise(resolve => setTimeout(resolve, 1000));
             attempts++;
-            console.log('No offer found. Retring...');
         }
         if (!offer)
             throw 'No offer found within timeout.';
 
+        console.log('Accepting buy offer..');
         await this.xrplAcc.sellNft(offer.index);
 
         return await this.isRegistered();

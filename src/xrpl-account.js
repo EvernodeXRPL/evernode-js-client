@@ -79,6 +79,10 @@ class XrplAccount {
         });
     }
 
+    async getOffers() {
+        return await this.xrplApi.getOffers(this.address);
+    }
+
     async getNftOffers() {
         const offers = await this.xrplApi.getAccountObjects(this.address);
         // TODO: Pass rippled filter parameter when xrpl.js supports it.

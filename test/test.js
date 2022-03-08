@@ -1,16 +1,16 @@
 // const evernode = require("evernode-js-client");
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 
-const evrIssuerAddress = "rfFa1RQwGVQHCnLmjQMo7YdtDvSccTDwCR";
-const registryAddress = "rwxqawWwey68QcgtoGrDMEWX8bcKb7zBm6";
-const registrySecret = "spjdSxTgARNRVNkz73BU5jcF8gga8";
-const hostAddress = "rQUKE28PC6H9MDmr9mf5JBVCQYXjCLDvpQ";
-const hostSecret = "sn6w93baB2GiqRpKj6mXw8a8L7NtN";
-const foundationAddress = "rJTt3294QFYTHf6SZkae8RojbBUG8vvbMB";
-const foundationSecret = "snEXsnNiD5A9tkrZ3Jic6ofeGTjzP";
-const hostToken = "ABC";
-const userAddress = "rKCp2EyWg94c1keic83SHzWEuQXy5Am6Ni";
-const userSecret = "spzjw4ZC36Nzy7yggVurfH3ESjvbk";
+const evrIssuerAddress = "rGXfRUyC4QUBxJbDXiEYnyRBCoTgtHYJfU";
+const registryAddress = "rNronq4u4hNKRMW1BpidCwjk8BPYze4wyb";
+const registrySecret = "snaRKvZGvT1RtGhojw9Sh9MM7ppLh";
+const hostAddress = "r9MeWFtVyuyqky4arYwbVYhFLrZ4HmJXbr";
+const hostSecret = "snBfHJF3GxWomjzgcv7EBq9dVXsfW";
+const foundationAddress = "rNqBr7PJnThQXAXWgFYwCe9SLHXndxNJbj";
+const foundationSecret = "sn7w1G5EqpkCZ3jNDnctZcBWaudsd";
+const hostToken = "HTK";
+const userAddress = "rhsRWnBuY8LhQTceEXH87HuDM1wmHPJsDu";
+const userSecret = "sh3tMVdd8pWW2QyiCGTZ2TPaPu73K";
 
 const clients = [];
 
@@ -74,7 +74,7 @@ async function app() {
         // await registerHost();
         // Accepting the sell offer created by registry.
 
-        // const tokenID = '0008000083CD166E1806EF2076C55077AEFD418E771A516CE4FA33A50000000A';
+        // const tokenID = '0008000083CD166E1806EF2076C55077AEFD418E771A516CB30E8CAE00000013';
         // const reg = new evernode.XrplAccount(registryAddress, registrySecret);
         // const sellOffer = (await reg.getNftOffers()).find(o => o.TokenID == tokenID);
         // console.log(sellOffer);
@@ -82,8 +82,10 @@ async function app() {
         // await host.buyNft(sellOffer.index);
         // const nfts = await host.getNfts();
         // console.log(nfts);
-        const host = await getHostClient(hostAddress, hostSecret);
-        await host.deregister();
+        // await host.register();
+        // await initialize();
+        await registerHost();
+        // await deregisterHost();
 
     }
     catch (e) {
@@ -92,6 +94,11 @@ async function app() {
     finally {
         await xrplApi.disconnect();
     }
+}
+
+async function initialize() {
+    const foundation = new evernode.XrplAccount(foundationAddress, foundationSecret);
+    await foundation.makePayment(registryAddress, '1', 'XRP', null, [{ type: 'evnInitialize', format: '', data: '' }]);
 }
 
 async function getAllHosts() {
@@ -131,8 +138,8 @@ async function registerHost(address = hostAddress, secret = hostSecret, token = 
     console.log(`-----------Register host`);
 
     // Prepare host account for Evernode.
-    console.log("Prepare...");
-    await host.prepareAccount();
+    // console.log("Prepare...");
+    // await host.prepareAccount();
 
     // Get EVRs from the foundation if needed.
     const lines = await host.xrplAcc.getTrustLines(evernode.EvernodeConstants.EVR, evrIssuerAddress);

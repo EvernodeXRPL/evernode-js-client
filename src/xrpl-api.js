@@ -176,6 +176,13 @@ class XrplApi {
         return [];
     }
 
+    async getOffers(address, options) {
+        const resp = (await this.#client.request({ command: 'account_offers', account: address, ledger_index: "validated", ...options }));
+        if (resp?.result?.offers)
+            return resp.result.offers;
+        return [];
+    }
+
     async submitAndVerify(tx, options) {
         return await this.#client.submitAndWait(tx, options);
     }
