@@ -55,7 +55,7 @@ class FirestoreHandler {
      * @param collectionId Name of the collection.
      * @param pageSize Optianal page size if result set needed to be paginated
      * @param nextPageToken Next page token of a paginated result set.
-     * @returns 
+     * @returns Result set.
      */
     async #read(collectionId, pageSize = null, nextPageToken = null) {
         if (!collectionId)
@@ -71,6 +71,14 @@ class FirestoreHandler {
         return await this.sendRequest('GET', url, params);
     }
 
+    /**
+     * Get documents from a collection with filtering support.
+     * @param collectionId Name of the collection.
+     * @param filter Optional filters to filter documents.
+     * @param pageSize Optianal page size if result set needed to be paginated
+     * @param nextPageToken Next page token of a paginated result set.
+     * @returns Parsed readable result set.
+     */
     async #getDocuments(collectionId, filters = null, pageSize = null, nextPageToken = null) {
         if (filters && (pageSize || nextPageToken))
             throw { type: 'Validation Error', message: 'Pagination isn\'t supported with filter.' };
