@@ -46,7 +46,7 @@ class HostClient extends BaseEvernodeClient {
 
     async isRegistered() {
         // TODO: This is a temporary fix until getRegistration get fixed.
-        return (await this.getRegistration()) !== null;
+        return (await this.getRegistrationNft()) !== null;
     }
 
     async prepareAccount() {
