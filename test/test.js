@@ -1,16 +1,16 @@
 // const evernode = require("evernode-js-client");
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 
-const evrIssuerAddress = "rfFa1RQwGVQHCnLmjQMo7YdtDvSccTDwCR";
-const registryAddress = "rwxqawWwey68QcgtoGrDMEWX8bcKb7zBm6";
-const registrySecret = "spjdSxTgARNRVNkz73BU5jcF8gga8";
-const hostAddress = "rQUKE28PC6H9MDmr9mf5JBVCQYXjCLDvpQ";
-const hostSecret = "sn6w93baB2GiqRpKj6mXw8a8L7NtN";
-const foundationAddress = "rJTt3294QFYTHf6SZkae8RojbBUG8vvbMB";
-const foundationSecret = "snEXsnNiD5A9tkrZ3Jic6ofeGTjzP";
-const hostToken = "ABC";
-const userAddress = "rKCp2EyWg94c1keic83SHzWEuQXy5Am6Ni";
-const userSecret = "spzjw4ZC36Nzy7yggVurfH3ESjvbk";
+const evrIssuerAddress = "rGXfRUyC4QUBxJbDXiEYnyRBCoTgtHYJfU";
+const registryAddress = "rNronq4u4hNKRMW1BpidCwjk8BPYze4wyb";
+const registrySecret = "snaRKvZGvT1RtGhojw9Sh9MM7ppLh";
+const hostAddress = "r9MeWFtVyuyqky4arYwbVYhFLrZ4HmJXbr";
+const hostSecret = "snBfHJF3GxWomjzgcv7EBq9dVXsfW";
+const foundationAddress = "rNqBr7PJnThQXAXWgFYwCe9SLHXndxNJbj";
+const foundationSecret = "sn7w1G5EqpkCZ3jNDnctZcBWaudsd";
+const hostToken = "HTK";
+const userAddress = "rhsRWnBuY8LhQTceEXH87HuDM1wmHPJsDu";
+const userSecret = "sh3tMVdd8pWW2QyiCGTZ2TPaPu73K";
 
 const clients = [];
 
@@ -29,27 +29,31 @@ async function app() {
         // Process of minting and selling a NFT.
 
         // Account1: selling party.
-        const acc1 = new evernode.XrplAccount(registryAddress, registrySecret);
-        // Mint an nft with some data included in uri (256 bytes). xrpl doesn't check for uniqueness of data.
-        // We need to make it unique in order to later find the token by uri.
-        const uri = "mynft custom data";
-        await acc1.mintNft(uri, 0, 0, true);
-        // Get the minted nft information and sell it on the dex.
-        const nft = await acc1.getNftByUri(uri);
-        console.log(nft);
-        // Make a sell offer (for free) while restricting it to be only purchased by the specified party.
-        await acc1.offerSellNft(nft.TokenID, hostAddress, '0', 'XRP');
+        // const acc1 = new evernode.XrplAccount(ownerAddress, ownerSecret);
+        // // Mint an nft with some data included in uri (256 bytes). xrpl doesn't check for uniqueness of data.
+        // // We need to make it unique in order to later find the token by uri.
+        // const uri = "mynft custom data";
+        // await acc1.mintNft(uri, 0, 0, true);
+        // // Get the minted nft information and sell it on the dex.
+        // const nft = await acc1.getNftByUri(uri);
+        // console.log(nft);
+        // // Make a sell offer (for free) while restricting it to be only purchased by the specified party.
+        // await acc1.offerSellNft(nft.TokenID, hostAddress, '0', 'XRP');
 
-        // Account2: Buying party.
-        const acc2 = new evernode.XrplAccount(hostAddress, hostSecret);
-        // Find the sellOffer information from seller's account.
-        const sellOffer = (await acc1.getNftOffers()).find(o => o.TokenID == nft.TokenID);
-        console.log(sellOffer);
-        // Buy the NFT by accepting the sell offer.
-        await acc2.buyNft(sellOffer.index);
-        // Get information about the purchased nft.
-        const nft2 = await acc2.getNftByUri(uri);
-        console.log(nft2);
+        // // Account2: Buying party.
+        // const acc2 = new evernode.XrplAccount(hostAddress, hostSecret);
+        // // await acc2.offerBuyNft(nft.TokenID, registryAddress, '10', 'EVR', evrIssuerAddress);
+
+        // // const offers = await acc1.getNftOffers();
+        // // console.log(offers);
+        // // Find the sellOffer information from seller's account.
+        // const sellOffer = (await acc1.getNftOffers()).find(o => o.TokenID == nft.TokenID);
+        // console.log(sellOffer);
+        // // Buy the NFT by accepting the sell offer.
+        // await acc2.buyNft(sellOffer.index);
+        // // Get information about the purchased nft.
+        // const nft2 = await acc2.getNftByUri(uri);
+        // console.log(nft2);
 
         // const tests = [
         //     () => initializeConfigs(),
@@ -66,6 +70,22 @@ async function app() {
         //     await test();
         //     await Promise.all(clients.map(c => c.disconnect())); // Cleanup clients after every test.
         // }
+
+        // await registerHost();
+        // Accepting the sell offer created by registry.
+
+        // const tokenID = '0008000083CD166E1806EF2076C55077AEFD418E771A516CB30E8CAE00000013';
+        // const reg = new evernode.XrplAccount(registryAddress, registrySecret);
+        // const sellOffer = (await reg.getNftOffers()).find(o => o.TokenID == tokenID);
+        // console.log(sellOffer);
+        // const host = new evernode.XrplAccount(hostAddress, hostSecret);
+        // await host.buyNft(sellOffer.index);
+        // const nfts = await host.getNfts();
+        // console.log(nfts);
+        // await host.register();
+        // await initializeConfigs();
+        await registerHost();
+        // await deregisterHost();
 
     }
     catch (e) {
@@ -113,8 +133,8 @@ async function registerHost(address = hostAddress, secret = hostSecret, token = 
     console.log(`-----------Register host`);
 
     // Prepare host account for Evernode.
-    console.log("Prepare...");
-    await host.prepareAccount();
+    // console.log("Prepare...");
+    // await host.prepareAccount();
 
     // Get EVRs from the foundation if needed.
     const lines = await host.xrplAcc.getTrustLines(evernode.EvernodeConstants.EVR, evrIssuerAddress);

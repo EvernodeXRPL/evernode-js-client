@@ -6,6 +6,8 @@ const { EncryptionHelper } = require('../encryption-helper');
 const { Buffer } = require('buffer');
 const codec = require('ripple-address-codec');
 
+const OFFER_WAIT_TIMEOUT = 60;
+
 const HostEvents = {
     Redeem: EvernodeEvents.Redeem,
     NftOfferCreate: EvernodeEvents.NftOfferCreate
@@ -44,9 +46,27 @@ class HostClient extends BaseEvernodeClient {
         return null;
     }
 
+    async getTokenOffer() {
+        const hostingToken = (await this.getRegistration())?.token;
+        if (!hostingToken)
+            throw "Error getting hosting hosting token";
+        const offer = (await this.xrplAcc.getOffers()).find(o => o.taker_gets.currency === hostingToken && o.taker_gets.issuer === this.xrplAcc.address);
+        return offer || null;
+    }
+
+    async createTokenSellOffer(sellAmount, valueInEVRs) {
+        const hostingToken = (await this.getRegistration())?.token;
+        if (!hostingToken)
+            throw "Error getting hosting hosting token";
+        return this.xrplAcc.offerSell(sellAmount, hostingToken, this.xrplAcc.address, valueInEVRs, EvernodeConstants.EVR, this.config.evrIssuerAddress);
+    }
+
+    async cancelOffer(offerIndex) {
+        return this.xrplAcc.cancelOffer(offerIndex);
+    }
+
     async isRegistered() {
-        // TODO: This is a temporary fix until getRegistration get fixed.
-        return (await this.getRegistrationNft()) !== null;
+        return (await this.getRegistration()) !== null;
     }
 
     async prepareAccount() {
@@ -104,7 +124,7 @@ class HostClient extends BaseEvernodeClient {
 
         let attemps = 0;
 
-        while (attemps < 60) {
+        while (attemps < OFFER_WAIT_TIMEOUT) {
             await new Promise(resolve => setTimeout(resolve, 1000));
             if (tx.isSellOfferAccepted) {
                 break;
@@ -142,6 +162,25 @@ class HostClient extends BaseEvernodeClient {
             null,
             [{ type: MemoTypes.HOST_DEREG, format: MemoFormats.HEX, data: regNFT.TokenID }],
             options.transactionOptions);
+
+        console.log('Waiting for the buy offer')
+        const regAcc = new XrplAccount(this.registryAddress);
+        let offer = null;
+        let attempts = 0;
+        while (attempts < OFFER_WAIT_TIMEOUT) {
+            offer = (await regAcc.getNftOffers()).find(o => (o.TokenID == regNFT.TokenID) && (o.Flags === 0));
+            if (offer)
+                break;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            attempts++;
+        }
+        if (!offer)
+            throw 'No offer found within timeout.';
+
+        console.log('Accepting buy offer..');
+        await this.xrplAcc.sellNft(offer.index);
+
+        return await this.isRegistered();
     }
 
     async redeemSuccess(txHash, userAddress, instanceInfo, options = {}) {

@@ -1,7 +1,7 @@
 const { XrplApi } = require('../xrpl-api');
 const { XrplAccount } = require('../xrpl-account');
 const { XrplApiEvents } = require('../xrpl-common');
-const { EvernodeEvents, HookStateKeys, MemoTypes, MemoFormats, EvernodeConstants } = require('../evernode-common');
+const { EvernodeEvents, MemoTypes, MemoFormats, EvernodeConstants, HookStateKeys } = require('../evernode-common');
 const { DefaultValues } = require('../defaults');
 const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
