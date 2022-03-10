@@ -1,6 +1,7 @@
 const codec = require('ripple-address-codec');
 const { Buffer } = require('buffer');
 const { HookStateKeys } = require('./evernode-common');
+const { XflHelpers } = require('./xfl-helpers');
 
 const NFTOKEN_PREFIX = '00080000';
 
@@ -100,6 +101,15 @@ class StateHelpers {
                 type: this.StateTypes.CONFIGURATION,
                 key: hexKey,
                 value: Number(stateData.readBigUInt64BE())
+            }
+        }
+        else if (Buffer.from(HookStateKeys.MOMENT_COMMUNITY_PRICE, 'hex').compare(stateKey) === 0) {
+            const xfl = stateData.readBigInt64BE(0);
+            const val = XflHelpers.toString(xfl);
+            return {
+                type: this.StateTypes.CONFIGURATION,
+                key: hexKey,
+                value: val
             }
         }
         else
