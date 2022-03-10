@@ -128,7 +128,7 @@ class BaseEvernodeClient {
             momentSize: UtilHelpers.getStateData(states, HookStateKeys.MOMENT_SIZE),
             hostHeartbeatFreq: UtilHelpers.getStateData(states, HookStateKeys.HOST_HEARTBEAT_FREQ),
             momentBaseIdx: UtilHelpers.getStateData(states, HookStateKeys.MOMENT_BASE_IDX),
-            momentCommunityPrice: UtilHelpers.getStateData(states, HookStateKeys.MOMENT_COMMUNITY_PRICE)
+            purchaserTargetPrice: UtilHelpers.getStateData(states, HookStateKeys.PURCHASER_TARGET_PRICE)
         };
     }
 

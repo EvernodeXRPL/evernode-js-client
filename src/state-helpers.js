@@ -103,7 +103,7 @@ class StateHelpers {
                 value: Number(stateData.readBigUInt64BE())
             }
         }
-        else if (Buffer.from(HookStateKeys.MOMENT_COMMUNITY_PRICE, 'hex').compare(stateKey) === 0) {
+        else if (Buffer.from(HookStateKeys.PURCHASER_TARGET_PRICE, 'hex').compare(stateKey) === 0) {
             const xfl = stateData.readBigInt64BE(0);
             const val = XflHelpers.toString(xfl);
             return {
