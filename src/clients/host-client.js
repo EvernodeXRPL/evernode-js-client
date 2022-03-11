@@ -109,6 +109,22 @@ class HostClient extends BaseEvernodeClient {
         if (await this.isRegistered())
             throw "Host already registered.";
 
+        // Check whether is there any missed NFT sell offer that needs to be accepted
+        // from the client-side in order to complete the registration.
+        const regNft = await this.getRegistrationNft();
+        if (!regNft) {                
+            const regInfo = await this.getHosts({address : this.xrplAcc.address});
+            if (regInfo.length !== 0) {
+                const registryAcc = new XrplAccount(this.registryAddress, null, {xrplApi: this.xrplApi});
+                const sellOffer = (await registryAcc.getNftOffers()).find(o => o.TokenID == regInfo[0].nfTokenId);
+                if (sellOffer) {
+                    await this.xrplAcc.buyNft(sellOffer.index);
+                    console.log("Registration was successfully completed after acquiring the NFT.");
+                    return await this.isRegistered();
+                }
+            }
+        }
+
         const memoData = `${hostingToken};${countryCode};${cpuMicroSec};${ramMb};${diskMb};${totalInstanceCount};${description}`
         const tx = await this.xrplAcc.makePayment(this.registryAddress,
             this.config.hostRegFee.toString(),
