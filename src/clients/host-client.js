@@ -111,16 +111,11 @@ class HostClient extends BaseEvernodeClient {
 
         // Check whether is there any missed NFT sell offer that needs to be accepted
         // from the client-side in order to complete the registration.
-        const nft = (await this.xrplAcc.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX));
-        if (!nft) {                
+        const regNft = await this.getRegistrationNft();
+        if (!regNft) {                
             const registryAcc = new XrplAccount(this.registryAddress, null, {xrplApi: this.xrplApi});
-            const sellOffer = (await registryAcc.getNftOffers()).find(
-                o => 
-                    o.Amount == "0"
-                    && o.Flags === 1
-                    && o.Owner === this.registryAddress
-                    && o.Destination === this.xrplAcc.address
-            );
+            const regInfo = await this.getHosts({address : this.xrplAcc.address});
+            const sellOffer = (regInfo.length !== 0) ? (await registryAcc.getNftOffers()).find(o => o.TokenID == regInfo[0].nfTokenId) : null;
 
             if (sellOffer) {            
                 await this.xrplAcc.buyNft(sellOffer.index);
