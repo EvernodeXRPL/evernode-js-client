@@ -127,8 +127,13 @@ class BaseEvernodeClient {
             hostRegFee: UtilHelpers.getStateData(states, HookStateKeys.HOST_REG_FEE),
             momentSize: UtilHelpers.getStateData(states, HookStateKeys.MOMENT_SIZE),
             hostHeartbeatFreq: UtilHelpers.getStateData(states, HookStateKeys.HOST_HEARTBEAT_FREQ),
-            momentBaseIdx: UtilHelpers.getStateData(states, HookStateKeys.MOMENT_BASE_IDX)
+            momentBaseIdx: UtilHelpers.getStateData(states, HookStateKeys.MOMENT_BASE_IDX),
+            purchaserTargetPrice: UtilHelpers.getStateData(states, HookStateKeys.PURCHASER_TARGET_PRICE)
         };
+    }
+
+    async refreshConfig() {
+        this.config = await this.#getEvernodeConfig();
     }
 
     async #handleEvernodeEvent(tx, error) {
