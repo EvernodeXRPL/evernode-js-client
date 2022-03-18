@@ -112,10 +112,10 @@ class HostClient extends BaseEvernodeClient {
         // Check whether is there any missed NFT sell offer that needs to be accepted
         // from the client-side in order to complete the registration.
         const regNft = await this.getRegistrationNft();
-        if (!regNft) {                
-            const regInfo = await this.getHosts({address : this.xrplAcc.address});
+        if (!regNft) {
+            const regInfo = await this.getHosts({ address: this.xrplAcc.address });
             if (regInfo.length !== 0) {
-                const registryAcc = new XrplAccount(this.registryAddress, null, {xrplApi: this.xrplApi});
+                const registryAcc = new XrplAccount(this.registryAddress, null, { xrplApi: this.xrplApi });
                 const sellOffer = (await registryAcc.getNftOffers()).find(o => o.TokenID == regInfo[0].nfTokenId);
                 if (sellOffer) {
                     await this.xrplAcc.buyNft(sellOffer.index);
@@ -160,8 +160,10 @@ class HostClient extends BaseEvernodeClient {
             const nft = (await registryAcc.getNfts()).find(n => n.URI === `${EvernodeConstants.NFT_PREFIX_HEX}${tx.id}`);
             if (nft) {
                 const sellOffer = (await registryAcc.getNftOffers()).find(o => o.TokenID === nft.TokenID && o.Flags === 1);
-                await this.xrplAcc.buyNft(sellOffer.index);
-                tx.isSellOfferAccepted = true;
+                if (sellOffer) {
+                    await this.xrplAcc.buyNft(sellOffer.index);
+                    tx.isSellOfferAccepted = true;
+                }
             }
         }
     }
@@ -180,7 +182,7 @@ class HostClient extends BaseEvernodeClient {
             options.transactionOptions);
 
         console.log('Waiting for the buy offer')
-        const regAcc = new XrplAccount(this.registryAddress);
+        const regAcc = new XrplAccount(this.registryAddress, null, { xrplApi: this.xrplApi });
         let offer = null;
         let attempts = 0;
         while (attempts < OFFER_WAIT_TIMEOUT) {
@@ -197,6 +199,15 @@ class HostClient extends BaseEvernodeClient {
         await this.xrplAcc.sellNft(offer.index);
 
         return await this.isRegistered();
+    }
+
+    async heartbeat(options = {}) {
+        return this.xrplAcc.makePayment(this.registryAddress,
+            XrplConstants.MIN_XRP_AMOUNT,
+            XrplConstants.XRP,
+            null,
+            [{ type: MemoTypes.HEARTBEAT, format: "", data: "" }],
+            options.transactionOptions);
     }
 
     async redeemSuccess(txHash, userAddress, instanceInfo, options = {}) {
@@ -231,16 +242,6 @@ class HostClient extends BaseEvernodeClient {
             XrplConstants.XRP,
             null,
             memos,
-            options.transactionOptions);
-    }
-
-    async heartbeat(options = {}) {
-        return this.xrplAcc.makePayment(this.registryAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
-            null,
-            this.xrplAcc.address,
-            [{ type: MemoTypes.HEARTBEAT, format: "", data: "" }],
             options.transactionOptions);
     }
 }
