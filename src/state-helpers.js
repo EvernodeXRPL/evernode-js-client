@@ -40,7 +40,7 @@ class StateHelpers {
             registrationFee: Number(stateDataBuf.readBigUInt64BE(HOST_REG_FEE_OFFSET)),
             noOfTotalInstances: stateDataBuf.readUInt32BE(HOST_TOT_INS_COUNT_OFFSET),
             noOfActiveInstances: stateDataBuf.readUInt32BE(HOST_ACT_INS_COUNT_OFFSET),
-            lastHeartbeatLedger: stateDataBuf.readUInt32BE(HOST_HEARTBEAT_LEDGER_IDX_OFFSET)
+            lastHeartbeatLedger: Number(stateDataBuf.readBigUInt64BE(HOST_HEARTBEAT_LEDGER_IDX_OFFSET))
         }
     }
 

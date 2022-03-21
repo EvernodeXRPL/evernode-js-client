@@ -5,7 +5,6 @@ const EvernodeConstants = {
 
 const MemoTypes = {
     REDEEM: 'evnRedeem',
-    REDEEM_ORIGIN: 'evnRedeemOrigin',
     REDEEM_SUCCESS: 'evnRedeemSuccess',
     REDEEM_ERROR: 'evnRedeemError',
     REDEEM_REF: 'evnRedeemRef',
