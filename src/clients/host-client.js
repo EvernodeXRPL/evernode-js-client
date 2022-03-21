@@ -223,7 +223,7 @@ class HostClient extends BaseEvernodeClient {
             { type: MemoTypes.REDEEM_SUCCESS, format: MemoFormats.BASE64, data: encrypted },
             { type: MemoTypes.REDEEM_REF, format: MemoFormats.HEX, data: txHash }];
 
-        return this.xrplAcc.makePayment(this.registryAddress,
+        return this.xrplAcc.makePayment(userAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
@@ -231,13 +231,13 @@ class HostClient extends BaseEvernodeClient {
             options.transactionOptions);
     }
 
-    async redeemError(txHash, reason, options = {}) {
+    async redeemError(txHash, userAddress, reason, options = {}) {
 
         const memos = [
             { type: MemoTypes.REDEEM_ERROR, format: MemoFormats.JSON, data: { type: ErrorCodes.REDEEM_ERR, reason: reason } },
             { type: MemoTypes.REDEEM_REF, format: MemoFormats.HEX, data: txHash }];
 
-        return this.xrplAcc.makePayment(this.registryAddress,
+        return this.xrplAcc.makePayment(userAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,

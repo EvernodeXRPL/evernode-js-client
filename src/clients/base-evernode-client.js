@@ -5,8 +5,6 @@ const { EvernodeEvents, MemoTypes, MemoFormats, EvernodeConstants, HookStateKeys
 const { DefaultValues } = require('../defaults');
 const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
-const codec = require('ripple-address-codec');
-const { Buffer } = require('buffer');
 const { UtilHelpers } = require('../util-helpers');
 const { FirestoreHandler } = require('../firestore/firestore-handler');
 
@@ -178,37 +176,16 @@ class BaseEvernodeClient {
                     console.log('Failed to decrypt redeem data.');
             }
 
-            if (tx.Memos.length >= 2 &&
-                tx.Memos[1].type === MemoTypes.REDEEM_ORIGIN && tx.Memos[1].format === MemoFormats.HEX && tx.Memos[1].data) {
-
-                // If the origin memo exists, get the token and user information from it.
-                const buf = Buffer.from(tx.Memos[1].data, 'hex');
-
-                return {
-                    name: EvernodeEvents.Redeem,
-                    data: {
-                        transaction: tx,
-                        redeemRefId: buf.slice(31, 63).toString('hex'),
-                        user: codec.encodeAccountID(buf.slice(0, 20)),
-                        host: tx.Destination,
-                        token: buf.slice(28, 31).toString(),
-                        moments: parseInt(buf.slice(20, 28).readBigInt64BE(0)),
-                        payload: payload
-                    }
-                }
-            }
-            else {
-                return {
-                    name: EvernodeEvents.Redeem,
-                    data: {
-                        transaction: tx,
-                        redeemRefId: tx.Hash,
-                        user: tx.Account,
-                        host: tx.Amount.issuer,
-                        token: tx.Amount.currency,
-                        moments: parseInt(tx.Amount.value),
-                        payload: payload
-                    }
+            return {
+                name: EvernodeEvents.Redeem,
+                data: {
+                    transaction: tx,
+                    redeemRefId: tx.hash,
+                    user: tx.Account,
+                    host: tx.Amount.issuer,
+                    token: tx.Amount.currency,
+                    moments: parseInt(tx.Amount.value),
+                    payload: payload
                 }
             }
         }

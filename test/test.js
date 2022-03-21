@@ -4,13 +4,13 @@ const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to
 const evrIssuerAddress = "rGXfRUyC4QUBxJbDXiEYnyRBCoTgtHYJfU";
 const registryAddress = "rNronq4u4hNKRMW1BpidCwjk8BPYze4wyb";
 const registrySecret = "snaRKvZGvT1RtGhojw9Sh9MM7ppLh";
-const hostAddress = "r9MeWFtVyuyqky4arYwbVYhFLrZ4HmJXbr";
-const hostSecret = "snBfHJF3GxWomjzgcv7EBq9dVXsfW";
+const hostAddress = "r9j3Vniv9s6JMMZdoeU4mXwFQks2q835H7";
+const hostSecret = "saamtVHjcB7Not2YqTHUBFzzmFJjZ";
+const hostToken = "OXO";
 const foundationAddress = "rNqBr7PJnThQXAXWgFYwCe9SLHXndxNJbj";
 const foundationSecret = "sn7w1G5EqpkCZ3jNDnctZcBWaudsd";
-const hostToken = "HTK";
-const userAddress = "rhsRWnBuY8LhQTceEXH87HuDM1wmHPJsDu";
-const userSecret = "sh3tMVdd8pWW2QyiCGTZ2TPaPu73K";
+const userAddress = "rJPd1PJJrcEqPNKBWuz5zG4mGepXE211fa";
+const userSecret = "shCMVtVAq8nbxKvWb8bXmoQZzZGbC";
 
 const clients = [];
 
@@ -84,7 +84,7 @@ async function app() {
         // console.log(nfts);
         // await host.register();
         // await initializeConfigs();
-        await registerHost();
+        // await registerHost();
         // await deregisterHost();
 
     }
@@ -188,7 +188,7 @@ function redeem(scenario) {
                 if (scenario === "success")
                     await host.redeemSuccess(r.redeemRefId, userAddress, { content: "dummy success" });
                 else if (scenario === "error")
-                    await host.redeemError(r.redeemRefId, "dummy_error");
+                    await host.redeemError(r.redeemRefId, userAddress, "dummy_error");
             }
 
             if (++tasks === 2)
