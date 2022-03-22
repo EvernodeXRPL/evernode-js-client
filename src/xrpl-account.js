@@ -61,6 +61,11 @@ class XrplAccount {
         return (await this.getInfo()).MessageKey;
     }
 
+    async getDomain() {
+        const domain = await this.getInfo().Domain;
+        return domain ? TransactionHelper.hexToASCII(domain) : null;
+    }
+
     async getTrustLines(currency, issuer) {
         const lines = await this.xrplApi.getTrustlines(this.address, {
             limit: 399,

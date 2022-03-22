@@ -1,14 +1,14 @@
 // const evernode = require("evernode-js-client");
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 
-const evrIssuerAddress = "rGXfRUyC4QUBxJbDXiEYnyRBCoTgtHYJfU";
-const registryAddress = "rNronq4u4hNKRMW1BpidCwjk8BPYze4wyb";
-const registrySecret = "snaRKvZGvT1RtGhojw9Sh9MM7ppLh";
-const hostAddress = "r9j3Vniv9s6JMMZdoeU4mXwFQks2q835H7";
-const hostSecret = "saamtVHjcB7Not2YqTHUBFzzmFJjZ";
-const hostToken = "OXO";
-const foundationAddress = "rNqBr7PJnThQXAXWgFYwCe9SLHXndxNJbj";
-const foundationSecret = "sn7w1G5EqpkCZ3jNDnctZcBWaudsd";
+const evrIssuerAddress = "rK37c7HwDAuFrog1Cj9PFfWEH69qhsdnwz";
+const registryAddress = "rMAbKPhLod79akExCoqEWRJjsgPFfHWcej";
+const registrySecret = "shVhKzvvZM8333x5Jw2Hj8obAdsAx";
+const hostAddress = "rHHe6aD5yxcKS6uXumaHdCMoHZcoaPZRYJ";
+const hostSecret = "ssutuMaeXzZZuCV3sqjdUJHijqPXe";
+const hostToken = "OXA";
+const foundationAddress = "rKV1gkJwPm4aUaddChuZhVX4LGoAcNYRXp";
+const foundationSecret = "spAsSxYz1SpsFruuZ5WFaztDxbsPT";
 const userAddress = "rJPd1PJJrcEqPNKBWuz5zG4mGepXE211fa";
 const userSecret = "shCMVtVAq8nbxKvWb8bXmoQZzZGbC";
 
@@ -84,7 +84,7 @@ async function app() {
         // console.log(nfts);
         // await host.register();
         // await initializeConfigs();
-        // await registerHost();
+        await registerHost();
         // await deregisterHost();
 
     }
@@ -133,8 +133,8 @@ async function registerHost(address = hostAddress, secret = hostSecret, token = 
     console.log(`-----------Register host`);
 
     // Prepare host account for Evernode.
-    // console.log("Prepare...");
-    // await host.prepareAccount();
+    console.log("Prepare...");
+    await host.prepareAccount("mydomain.com");
 
     // Get EVRs from the foundation if needed.
     const lines = await host.xrplAcc.getTrustLines(evernode.EvernodeConstants.EVR, evrIssuerAddress);

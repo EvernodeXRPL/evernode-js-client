@@ -69,15 +69,20 @@ class HostClient extends BaseEvernodeClient {
         return (await this.getRegistration()) !== null;
     }
 
-    async prepareAccount() {
-        const [flags, trustLines, msgKey] = await Promise.all([
+    async prepareAccount(domain) {
+        const [flags, trustLines, msgKey, curDomain] = await Promise.all([
             this.xrplAcc.getFlags(),
             this.xrplAcc.getTrustLines(EvernodeConstants.EVR, this.config.evrIssuerAddress),
-            this.xrplAcc.getMessageKey()]);
+            this.xrplAcc.getMessageKey(),
+            this.xrplAcc.getDomain()]);
 
         let accountSetFields = {};
         accountSetFields = (!flags.lsfDefaultRipple) ? { ...accountSetFields, Flags: { asfDefaultRipple: true } } : accountSetFields;
         accountSetFields = (!msgKey) ? { ...accountSetFields, MessageKey: this.accKeyPair.publicKey } : accountSetFields;
+
+        domain = domain.toLowerCase();
+        accountSetFields = (!curDomain || curDomain !== domain) ?
+            { ...accountSetFields, Domain: domain } : accountSetFields;
 
         if (Object.keys(accountSetFields).length !== 0)
             await this.xrplAcc.setAccountFields(accountSetFields);
