@@ -62,7 +62,7 @@ class XrplAccount {
     }
 
     async getDomain() {
-        const domain = await this.getInfo().Domain;
+        const domain = (await this.getInfo()).Domain;
         return domain ? TransactionHelper.hexToASCII(domain) : null;
     }
 
