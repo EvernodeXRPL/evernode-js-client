@@ -54,11 +54,16 @@ class XrplAccount {
     }
 
     async getSequence() {
-        return (await this.getInfo()).Sequence;
+        return (await this.getInfo())?.Sequence;
     }
 
     async getMessageKey() {
-        return (await this.getInfo()).MessageKey;
+        return (await this.getInfo())?.MessageKey;
+    }
+
+    async getDomain() {
+        const domain = (await this.getInfo())?.Domain;
+        return domain ? TransactionHelper.hexToASCII(domain) : null;
     }
 
     async getTrustLines(currency, issuer) {
