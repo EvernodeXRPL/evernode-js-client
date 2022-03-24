@@ -6,17 +6,16 @@ const { XflHelpers } = require('./xfl-helpers');
 const NFTOKEN_PREFIX = '00080000';
 
 const HOST_TOKEN_ID_OFFSET = 0;
-const HOST_TOKEN_OFFSET = 32;
-const HOST_COUNTRY_CODE_OFFSET = 35;
-const HOST_CPU_MICROSEC_OFFSET = 37;
-const HOST_RAM_MB_OFFSET = 41;
-const HOST_DISK_MB_OFFSET = 45;
-const HOST_DESCRIPTION_OFFSET = 57;
-const HOST_REG_LEDGER_OFFSET = 83;
-const HOST_REG_FEE_OFFSET = 91;
-const HOST_TOT_INS_COUNT_OFFSET = 99;
-const HOST_ACT_INS_COUNT_OFFSET = 103;
-const HOST_HEARTBEAT_LEDGER_IDX_OFFSET = 107;
+const HOST_COUNTRY_CODE_OFFSET = 31;
+const HOST_CPU_MICROSEC_OFFSET = 34;
+const HOST_RAM_MB_OFFSET = 38;
+const HOST_DISK_MB_OFFSET = 42;
+const HOST_DESCRIPTION_OFFSET = 54;
+const HOST_REG_LEDGER_OFFSET = 80;
+const HOST_REG_FEE_OFFSET = 88;
+const HOST_TOT_INS_COUNT_OFFSET = 96;
+const HOST_ACT_INS_COUNT_OFFSET = 100;
+const HOST_HEARTBEAT_LEDGER_IDX_OFFSET = 104;
 
 class StateHelpers {
     static StateTypes = {
@@ -29,8 +28,7 @@ class StateHelpers {
     static decodeHostAddressState(stateKeyBuf, stateDataBuf) {
         return {
             address: codec.encodeAccountID(stateKeyBuf.slice(12)),
-            nfTokenId: stateDataBuf.slice(HOST_TOKEN_ID_OFFSET, HOST_TOKEN_OFFSET).toString('hex').toUpperCase(),
-            token: stateDataBuf.slice(HOST_TOKEN_OFFSET, HOST_COUNTRY_CODE_OFFSET).toString(),
+            nfTokenId: stateDataBuf.slice(HOST_TOKEN_ID_OFFSET, HOST_COUNTRY_CODE_OFFSET).toString('hex').toUpperCase(),
             countryCode: stateDataBuf.slice(HOST_COUNTRY_CODE_OFFSET, HOST_CPU_MICROSEC_OFFSET).toString(),
             cpuMicrosec: stateDataBuf.readUInt32BE(HOST_CPU_MICROSEC_OFFSET),
             ramMb: stateDataBuf.readUInt32BE(HOST_RAM_MB_OFFSET),

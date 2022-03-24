@@ -33,6 +33,7 @@ class BaseEvernodeClient {
 
         this.xrplAcc.on(XrplApiEvents.PAYMENT, (tx, error) => this.#handleEvernodeEvent(tx, error));
         this.xrplAcc.on(XrplApiEvents.NFT_OFFER_CREATE, (tx, error) => this.#handleEvernodeEvent(tx, error));
+        this.xrplAcc.on(XrplApiEvents.NFT_OFFER_ACCEPT, (tx, error) => this.#handleEvernodeEvent(tx, error));
 
     }
 
@@ -148,23 +149,19 @@ class BaseEvernodeClient {
 
     async #extractEvernodeEvent(tx) {
 
-        if (!tx.Memos || tx.Memos.length === 0) {
-            if (tx.TransactionType === "NFTokenCreateOffer") {
-                return {
-                    name: EvernodeEvents.NftOfferCreate,
-                    data: {
-                        transaction: tx,
-                        tokenId: tx.TokenID,
-                        flags: tx.Flags,
-                        hash: tx.hash
-                    }
+        if (tx.TransactionType === 'NFTokenCreateOffer' && (!tx.Memos || tx.Memos.length === 0)) {
+            return {
+                name: EvernodeEvents.NftOfferCreate,
+                data: {
+                    transaction: tx,
+                    tokenId: tx.TokenID,
+                    flags: tx.Flags,
+                    hash: tx.hash
                 }
             }
-            return null;
         }
-
-        if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.REDEEM && tx.Memos[0].format === MemoFormats.BASE64 && tx.Memos[0].data) {
+        else if (tx.TransactionType === 'NFTokenAcceptOffer' && tx.SellOffer && tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.ACQUIRE_LEASE && tx.Memos[0].format === MemoFormats.BASE64 && tx.Memos[0].data) {
 
             // If our account is the destination host account, then decrypt the payload.
             let payload = tx.Memos[0].data;
@@ -173,28 +170,27 @@ class BaseEvernodeClient {
                 if (decrypted)
                     payload = decrypted;
                 else
-                    console.log('Failed to decrypt redeem data.');
+                    console.log('Failed to decrypt acquire data.');
             }
 
             return {
-                name: EvernodeEvents.Redeem,
+                name: EvernodeEvents.AcquireLease,
                 data: {
                     transaction: tx,
-                    redeemRefId: tx.hash,
-                    user: tx.Account,
-                    host: tx.Amount.issuer,
-                    token: tx.Amount.currency,
-                    moments: parseInt(tx.Amount.value),
+                    nfTokenId: tx.SellOffer.TokenID,
+                    hostingPrice: tx.SellOffer.Amount.value,
+                    acquireRefId: tx.hash,
+                    tenant: tx.Account,
                     payload: payload
                 }
             }
         }
         else if (tx.Memos.length >= 2 &&
-            tx.Memos[0].type === MemoTypes.REDEEM_SUCCESS && tx.Memos[0].data &&
-            tx.Memos[1].type === MemoTypes.REDEEM_REF && tx.Memos[1].data) {
+            tx.Memos[0].type === MemoTypes.ACQUIRE_SUCCESS && tx.Memos[0].data &&
+            tx.Memos[1].type === MemoTypes.ACQUIRE_REF && tx.Memos[1].data) {
 
             let payload = tx.Memos[0].data;
-            const redeemRefId = tx.Memos[1].data;
+            const acquireRefId = tx.Memos[1].data;
 
             // If our account is the destination user account, then decrypt the payload.
             if (tx.Memos[0].format === MemoFormats.BASE64 && tx.Destination === this.xrplAcc.address) {
@@ -206,30 +202,30 @@ class BaseEvernodeClient {
             }
 
             return {
-                name: EvernodeEvents.RedeemSuccess,
+                name: EvernodeEvents.AcquireSuccess,
                 data: {
                     transaction: tx,
-                    redeemRefId: redeemRefId,
+                    acquireRefId: acquireRefId,
                     payload: payload
                 }
             }
 
         }
         else if (tx.Memos.length >= 2 &&
-            tx.Memos[0].type === MemoTypes.REDEEM_ERROR && tx.Memos[0].data &&
-            tx.Memos[1].type === MemoTypes.REDEEM_REF && tx.Memos[1].data) {
+            tx.Memos[0].type === MemoTypes.ACQUIRE_ERROR && tx.Memos[0].data &&
+            tx.Memos[1].type === MemoTypes.ACQUIRE_REF && tx.Memos[1].data) {
 
             let error = tx.Memos[0].data;
-            const redeemRefId = tx.Memos[1].data;
+            const acquireRefId = tx.Memos[1].data;
 
             if (tx.Memos[0].format === MemoFormats.JSON)
                 error = JSON.parse(error).reason;
 
             return {
-                name: EvernodeEvents.RedeemError,
+                name: EvernodeEvents.AcquireError,
                 data: {
                     transaction: tx,
-                    redeemRefId: redeemRefId,
+                    acquireRefId: acquireRefId,
                     reason: error
                 }
             }

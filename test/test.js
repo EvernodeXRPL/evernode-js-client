@@ -1,16 +1,15 @@
 // const evernode = require("evernode-js-client");
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 
-const evrIssuerAddress = "rK37c7HwDAuFrog1Cj9PFfWEH69qhsdnwz";
-const registryAddress = "rMAbKPhLod79akExCoqEWRJjsgPFfHWcej";
-const registrySecret = "shVhKzvvZM8333x5Jw2Hj8obAdsAx";
-const hostAddress = "rHHe6aD5yxcKS6uXumaHdCMoHZcoaPZRYJ";
-const hostSecret = "ssutuMaeXzZZuCV3sqjdUJHijqPXe";
-const hostToken = "OXA";
-const foundationAddress = "rKV1gkJwPm4aUaddChuZhVX4LGoAcNYRXp";
-const foundationSecret = "spAsSxYz1SpsFruuZ5WFaztDxbsPT";
-const userAddress = "rJPd1PJJrcEqPNKBWuz5zG4mGepXE211fa";
-const userSecret = "shCMVtVAq8nbxKvWb8bXmoQZzZGbC";
+const evrIssuerAddress = "rfjfQMfbQ4TvCnsmDoYxCV7xxb4WRGchAL";
+const registryAddress = "rMM81n1oCyfYVRoZWG6u1zxnpFbiVjrY9s";
+const registrySecret = "shbX7yYQyrRCseDK3kjPYd6b3o6xG";
+const hostAddress = "rKomzVFWxM7huU4rrbs1xkXipuF8sUjKUG";
+const hostSecret = "snKr9xrsLaLfomLhcGCQxekJZ58mG";
+const foundationAddress = "rL3hukvCSJhDzoK2ELCZVQsJJ3EvdVT8YJ";
+const foundationSecret = "ssBozzhHjCewARkwCSyGDHEhE79fV";
+const userAddress = "rNLMijqrR23eJVwXHsUmSN3uz9hojKhmkJ";
+const userSecret = "shJfUWrrWcm1jzuVehbk9RrTtoJqf";
 
 const clients = [];
 
@@ -38,7 +37,7 @@ async function app() {
         // const nft = await acc1.getNftByUri(uri);
         // console.log(nft);
         // // Make a sell offer (for free) while restricting it to be only purchased by the specified party.
-        // await acc1.offerSellNft(nft.TokenID, hostAddress, '0', 'XRP');
+        // await acc1.offerSellNft(nft.TokenID, '0', 'XRP', null, hostAddress);
 
         // // Account2: Buying party.
         // const acc2 = new evernode.XrplAccount(hostAddress, hostSecret);
@@ -60,9 +59,9 @@ async function app() {
         //     () => registerHost(),
         //     () => getAllHosts(),
         //     () => getActiveHosts(),
-        //     () => redeem("success"),
-        //     () => redeem("error"),
-        //     () => redeem("timeout"),
+        //     () => acquire("success"),
+        //     () => acquire("error"),
+        //     () => acquire("timeout"),
         //     () => deregisterHost(),
         // ];
 
@@ -84,7 +83,7 @@ async function app() {
         // console.log(nfts);
         // await host.register();
         // await initializeConfigs();
-        await registerHost();
+        // await registerHost();
         // await deregisterHost();
 
     }
@@ -124,7 +123,7 @@ async function initializeConfigs() {
         [{ type: 'evnInitialize', format: '', data: '' }]);
 }
 
-async function registerHost(address = hostAddress, secret = hostSecret, token = hostToken) {
+async function registerHost(address = hostAddress, secret = hostSecret) {
     const host = await getHostClient(address, secret);
 
     if (await host.isRegistered())
@@ -145,7 +144,15 @@ async function registerHost(address = hostAddress, secret = hostSecret, token = 
     }
 
     console.log("Register...");
-    await host.register(token, "AU", 10000, 512, 1024, 5, "Test desctiption");
+    const instanceCount = 5;
+    await host.register("AU", 10000, 512, 1024, instanceCount, "Test desctiption", 2);
+
+    console.log("Lease Offer...");
+    for (let i = 0; i < instanceCount; i++) {
+        const buf = Buffer.from('BECF974A2C48C21F39046C1121E5DF7BD55648E1005172868CD5738C23E3C073', 'hex');
+        buf.writeUInt32BE(i);
+        await host.createOfferLease(2, buf.toString('hex'));
+    }
 
     // Verify the registration.
     return await host.isRegistered();
@@ -165,50 +172,44 @@ async function deregisterHost(address = hostAddress, secret = hostSecret) {
     return !await host.isRegistered();
 }
 
-function redeem(scenario) {
-    return new Promise(async (resolve) => {
+async function acquire(scenario) {
+    console.log(`-----------Acquire (${scenario})`);
 
-        console.log(`-----------Redeem (${scenario})`);
+    const user = await getUserClient();
+    await user.prepareAccount();
 
-        let tasks = 0;
+    // Setup host to watch for incoming acquires.
+    const host = await getHostClient();
 
-        const user = await getUserClient();
-        await user.prepareAccount();
+    host.on(evernode.HostEvents.AcquireLease, async (r) => {
+        console.log(`Host received acquire request: '${r.payload}'`);
 
-        // Setup host to watch for incoming redeems.
-        const host = await getHostClient();
+        if (scenario !== "timeout") {
+            console.log(`Host submitting ${scenario} response...`);
+            await new Promise(resolve => setTimeout(resolve, 4000));
 
-        host.on(evernode.HostEvents.Redeem, async (r) => {
-            console.log(`Host received redeem request: '${r.payload}'`);
-
-            if (scenario !== "timeout") {
-                console.log(`Host submitting ${scenario} response...`);
-                await new Promise(resolve => setTimeout(resolve, 4000));
-
-                if (scenario === "success")
-                    await host.redeemSuccess(r.redeemRefId, userAddress, { content: "dummy success" });
-                else if (scenario === "error")
-                    await host.redeemError(r.redeemRefId, userAddress, "dummy_error");
+            if (scenario === "success")
+                await host.acquireSuccess(r.acquireRefId, userAddress, { content: "dummy success" });
+            else if (scenario === "error") {
+                await host.burnOfferLease(r.nfTokenId);
+                const buf = Buffer.from('BECF974A2C48C21F39046C1121E5DF7BD55648E1005172868CD5738C23E3C073', 'hex');
+                buf.writeUInt32BE(Math.floor((Math.random() * 100) + 1));
+                await host.createOfferLease(r.hostingPrice, buf.toString('hex'));
+                await host.acquireError(r.acquireRefId, userAddress, r.hostingPrice, "dummy_error");
             }
-
-            if (++tasks === 2)
-                resolve();
-        })
-
-        await fundUser(user);
-
-        try {
-            const timeout = (scenario === "timeout" ? 10000 : 30000);
-            const result = await user.redeem(hostToken, hostAddress, 1, "dummy request", { timeout: timeout });
-            console.log(`User received instance '${result.instance}'`);
         }
-        catch (err) {
-            console.log("User recieved redeem error: ", err.reason)
-        }
-
-        if (++tasks === 2)
-            resolve();
     })
+
+    await fundUser(user);
+
+    try {
+        const timeout = (scenario === "timeout" ? 10000 : 30000);
+        const result = await user.acquire(hostAddress, "dummy request", { timeout: timeout });
+        console.log(`User received instance '${result.instance}'`);
+    }
+    catch (err) {
+        console.log("User recieved acquire error: ", err.reason)
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -236,10 +237,10 @@ async function getRegistryClient() {
 
 async function fundUser(user) {
     // Send hosting tokens to user if needed.
-    const lines = await user.xrplAcc.getTrustLines(hostToken, hostAddress);
+    const lines = await user.xrplAcc.getTrustLines('EVR', evrIssuerAddress);
     if (lines.length === 0 || parseInt(lines[0].balance) < 1) {
-        await user.xrplAcc.setTrustLine(hostToken, hostAddress, "99999999");
-        await new evernode.XrplAccount(hostAddress, hostSecret).makePayment(userAddress, "1000", hostToken, hostAddress);
+        await user.xrplAcc.setTrustLine('EVR', evrIssuerAddress, "99999999");
+        await new evernode.XrplAccount(foundationAddress, foundationSecret).makePayment(userAddress, "1000", 'EVR', evrIssuerAddress);
     }
 }
 
