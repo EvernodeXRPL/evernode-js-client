@@ -92,9 +92,6 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async createOfferLease(leaseAmount, tosHash) {
-        if (!leaseAmount || isNaN(leaseAmount) || leaseAmount % 1 != 0 || leaseAmount < 0)
-            throw "leaseAmount should be a positive intiger";
-
         // <prefix><half of tos hash><lease amount (uint32)>
         const prefixLen = EvernodeConstants.LEASE_NFT_PREFIX_HEX.length / 2;
         const halfToSLen = tosHash.length / 4;

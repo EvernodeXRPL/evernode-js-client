@@ -127,7 +127,8 @@ class BaseEvernodeClient {
             momentSize: UtilHelpers.getStateData(states, HookStateKeys.MOMENT_SIZE),
             hostHeartbeatFreq: UtilHelpers.getStateData(states, HookStateKeys.HOST_HEARTBEAT_FREQ),
             momentBaseIdx: UtilHelpers.getStateData(states, HookStateKeys.MOMENT_BASE_IDX),
-            purchaserTargetPrice: UtilHelpers.getStateData(states, HookStateKeys.PURCHASER_TARGET_PRICE)
+            purchaserTargetPrice: UtilHelpers.getStateData(states, HookStateKeys.PURCHASER_TARGET_PRICE),
+            leaseAcquireWindow: UtilHelpers.getStateData(states, HookStateKeys.LEASE_ACQUIRE_WINDOW)
         };
     }
 
@@ -177,8 +178,9 @@ class BaseEvernodeClient {
                 name: EvernodeEvents.AcquireLease,
                 data: {
                     transaction: tx,
+                    host: tx.Destination,
                     nfTokenId: tx.SellOffer.TokenID,
-                    hostingPrice: tx.SellOffer.Amount.value,
+                    leaseAmount: tx.SellOffer.Amount.value,
                     acquireRefId: tx.hash,
                     tenant: tx.Account,
                     payload: payload

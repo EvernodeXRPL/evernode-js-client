@@ -194,8 +194,8 @@ async function acquire(scenario) {
                 await host.burnOfferLease(r.nfTokenId);
                 const buf = Buffer.from('BECF974A2C48C21F39046C1121E5DF7BD55648E1005172868CD5738C23E3C073', 'hex');
                 buf.writeUInt32BE(Math.floor((Math.random() * 100) + 1));
-                await host.createOfferLease(r.hostingPrice, buf.toString('hex'));
-                await host.acquireError(r.acquireRefId, userAddress, r.hostingPrice, "dummy_error");
+                await host.createOfferLease(r.leaseAmount, buf.toString('hex'));
+                await host.acquireError(r.acquireRefId, userAddress, r.leaseAmount, "dummy_error");
             }
         }
     })

@@ -6,7 +6,7 @@ const { XflHelpers } = require('./xfl-helpers');
 const NFTOKEN_PREFIX = '00080000';
 
 const HOST_TOKEN_ID_OFFSET = 0;
-const HOST_COUNTRY_CODE_OFFSET = 31;
+const HOST_COUNTRY_CODE_OFFSET = 32;
 const HOST_CPU_MICROSEC_OFFSET = 34;
 const HOST_RAM_MB_OFFSET = 38;
 const HOST_DISK_MB_OFFSET = 42;
@@ -87,7 +87,9 @@ class StateHelpers {
                 value: codec.encodeAccountID(stateData)
             }
         }
-        else if (Buffer.from(HookStateKeys.MOMENT_SIZE, 'hex').compare(stateKey) === 0 || Buffer.from(HookStateKeys.HOST_HEARTBEAT_FREQ, 'hex').compare(stateKey) === 0) {
+        else if (Buffer.from(HookStateKeys.MOMENT_SIZE, 'hex').compare(stateKey) === 0 ||
+            Buffer.from(HookStateKeys.HOST_HEARTBEAT_FREQ, 'hex').compare(stateKey) === 0 ||
+            Buffer.from(HookStateKeys.LEASE_ACQUIRE_WINDOW, 'hex').compare(stateKey) === 0) {
             return {
                 type: this.StateTypes.CONFIGURATION,
                 key: hexKey,
@@ -143,7 +145,8 @@ class StateHelpers {
             Buffer.from(HookStateKeys.PURCHASER_TARGET_PRICE, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.HOST_HEARTBEAT_FREQ, 'hex').compare(stateKey) ||
             Buffer.from(HookStateKeys.MINT_LIMIT, 'hex').compare(stateKey) === 0 ||
-            Buffer.from(HookStateKeys.FIXED_REG_FEE, 'hex').compare(stateKey) === 0) {
+            Buffer.from(HookStateKeys.FIXED_REG_FEE, 'hex').compare(stateKey) === 0 ||
+            Buffer.from(HookStateKeys.LEASE_ACQUIRE_WINDOW, 'hex').compare(stateKey) === 0) {
             return {
                 key: hexKey,
                 type: this.STATE_TYPES.CONFIGURATION
