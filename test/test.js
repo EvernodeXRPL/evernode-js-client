@@ -1,15 +1,17 @@
 // const evernode = require("evernode-js-client");
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 
-const evrIssuerAddress = "rfjfQMfbQ4TvCnsmDoYxCV7xxb4WRGchAL";
-const registryAddress = "rMM81n1oCyfYVRoZWG6u1zxnpFbiVjrY9s";
-const registrySecret = "shbX7yYQyrRCseDK3kjPYd6b3o6xG";
-const hostAddress = "rKomzVFWxM7huU4rrbs1xkXipuF8sUjKUG";
-const hostSecret = "snKr9xrsLaLfomLhcGCQxekJZ58mG";
-const foundationAddress = "rL3hukvCSJhDzoK2ELCZVQsJJ3EvdVT8YJ";
-const foundationSecret = "ssBozzhHjCewARkwCSyGDHEhE79fV";
+const evrIssuerAddress = "rZTjuz2nmrQh87J1bcMVsQCvLC5n3VSBJ";
+const registryAddress = "rnrToYNBc8MG1NEkdk9C4Eg3QFdW8YoD23";
+const registrySecret = "snPo9Spq1rqGe3Pbxgvh1CXejVpTW";
+const hostAddress = "rGJGXZLpDXAqw7BFaKfGYWB4Pz1Cyfosae";
+const hostSecret = "saGpxziejN6kLovCbaX5kUFtWM4VF";
+const foundationAddress = "rNU5xV49XtAZQ2c69wTwHQBBiVrP8gcpNp";
+const foundationSecret = "ssxenwiwoZnu7vC6cGvDpB1UCtVsG";
 const userAddress = "rNLMijqrR23eJVwXHsUmSN3uz9hojKhmkJ";
 const userSecret = "shJfUWrrWcm1jzuVehbk9RrTtoJqf";
+
+const tosHash = "BECF974A2C48C21F39046C1121E5DF7BD55648E1005172868CD5738C23E3C073";
 
 const clients = [];
 
@@ -148,11 +150,8 @@ async function registerHost(address = hostAddress, secret = hostSecret) {
     await host.register("AU", 10000, 512, 1024, instanceCount, "Test desctiption", 2);
 
     console.log("Lease Offer...");
-    for (let i = 0; i < instanceCount; i++) {
-        const buf = Buffer.from('BECF974A2C48C21F39046C1121E5DF7BD55648E1005172868CD5738C23E3C073', 'hex');
-        buf.writeUInt32BE(i);
-        await host.createOfferLease(2, buf.toString('hex'));
-    }
+    for (let i = 0; i < instanceCount; i++)
+        await host.createOfferLease(i, 2, tosHash);
 
     // Verify the registration.
     return await host.isRegistered();
@@ -189,13 +188,15 @@ async function acquire(scenario) {
             await new Promise(resolve => setTimeout(resolve, 4000));
 
             if (scenario === "success")
-                await host.acquireSuccess(r.acquireRefId, userAddress, { content: "dummy success" });
+                await host.acquireSuccess(r.acquireRefId, r.tenant, { content: "dummy success" });
             else if (scenario === "error") {
+                const tenantAcc = new evernode.XrplAccount(r.tenant);
+                const nft = await tenantAcc.getNfts(nfTokenId).find(n => n.TokenID == r.nfTokenId);
+                const leaseIndex = Buffer.from(nft.URI, 'hex').readUint16BE(evernode.EvernodeConstants.LEASE_NFT_PREFIX_HEX.length);
+
                 await host.burnOfferLease(r.nfTokenId);
-                const buf = Buffer.from('BECF974A2C48C21F39046C1121E5DF7BD55648E1005172868CD5738C23E3C073', 'hex');
-                buf.writeUInt32BE(Math.floor((Math.random() * 100) + 1));
-                await host.createOfferLease(r.leaseAmount, buf.toString('hex'));
-                await host.acquireError(r.acquireRefId, userAddress, r.leaseAmount, "dummy_error");
+                await host.createOfferLease(leaseIndex, r.leaseAmount, tosHash);
+                await host.acquireError(r.acquireRefId, r.tenant, r.leaseAmount, "dummy_error");
             }
         }
     })
