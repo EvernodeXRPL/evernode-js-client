@@ -162,8 +162,7 @@ class BaseEvernodeClient {
             }
             return null;
         }
-
-        if (tx.Memos.length >= 1 &&
+        else if (tx.Memos.length >= 1 &&
             tx.Memos[0].type === MemoTypes.REDEEM && tx.Memos[0].format === MemoFormats.BASE64 && tx.Memos[0].data) {
 
             // If our account is the destination host account, then decrypt the payload.
@@ -262,10 +261,61 @@ class BaseEvernodeClient {
             tx.Memos[0].type === MemoTypes.HEARTBEAT) {
 
             return {
-                name: EvernodeEvents.HEARTBEAT,
+                name: EvernodeEvents.Heartbeat,
                 data: {
                     transaction: tx,
                     host: tx.Account
+                }
+            }
+        } 
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.EXTEND_LEASE && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+                
+            let nfTokenId = tx.Memos[0].data;
+
+            return {
+                name: EvernodeEvents.ExtendLease,
+                data: {
+                    transaction: tx,
+                    extendRefId: tx.hash,
+                    tenant: tx.Account,
+                    currency: tx.Amount.currency,
+                    payment: parseInt(tx.Amount.value),
+                    nfTokenId: nfTokenId
+                }
+            }
+        }
+        else if (tx.Memos.length >= 2 &&
+            tx.Memos[0].type === MemoTypes.EXTEND_SUCCESS && tx.Memos[0].data &&
+            tx.Memos[1].type === MemoTypes.EXTEND_REF && tx.Memos[1].data) {
+
+            const extendRefId = tx.Memos[1].data;
+
+            return {
+                name: EvernodeEvents.ExtendSuccess,
+                data: {
+                    transaction: tx,
+                    extendRefId: extendRefId
+                }
+            }
+
+        }
+        else if (tx.Memos.length >= 2 &&
+            tx.Memos[0].type === MemoTypes.EXTEND_ERROR && tx.Memos[0].data &&
+            tx.Memos[1].type === MemoTypes.EXTEND_REF && tx.Memos[1].data) {
+
+            let error = tx.Memos[0].data;
+            const extendRefId = tx.Memos[1].data;
+
+            if (tx.Memos[0].format === MemoFormats.JSON)
+                error = JSON.parse(error).reason;
+
+            return {
+                name: EvernodeEvents.ExtendError,
+                data: {
+                    transaction: tx,
+                    extendRefId: extendRefId,
+                    reason: error
                 }
             }
         }

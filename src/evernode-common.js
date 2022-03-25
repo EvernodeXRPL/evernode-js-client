@@ -10,7 +10,11 @@ const MemoTypes = {
     REDEEM_REF: 'evnRedeemRef',
     HOST_REG: 'evnHostReg',
     HOST_DEREG: 'evnHostDereg',
-    HEARTBEAT: 'evnHeartbeat'
+    HEARTBEAT: 'evnHeartbeat',
+    EXTEND_LEASE: 'evnExtendLease',
+    EXTEND_SUCCESS: 'evnExtendSuccess',
+    EXTEND_ERROR: 'evnExtendError',
+    EXTEND_REF: 'evnExtendRef'
 }
 
 const MemoFormats = {
@@ -22,6 +26,7 @@ const MemoFormats = {
 
 const ErrorCodes = {
     REDEEM_ERR: 'REDEEM_ERR',
+    EXTEND_ERR: 'EXTEND_ERR'
 }
 
 const ErrorReasons = {
@@ -58,6 +63,9 @@ const EvernodeEvents = {
     RedeemError: "RedeemError",
     Heartbeat: "Heartbeat",
     NftOfferCreate: "NftOfferCreate",
+    ExtendLease: "ExtendLease",
+    ExtendSuccess: "ExtendSuccess",
+    ExtendError: "ExtendError"
 }
 
 module.exports = {
