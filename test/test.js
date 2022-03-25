@@ -178,7 +178,7 @@ function redeem(scenario) {
         // Setup host to watch for incoming redeems.
         const host = await getHostClient();
 
-        host.on(evernode.HostEvents.Redeem, async (r) => {
+        host.on(evernode.HostEvents.AcquireLease, async (r) => {
             console.log(`Host received redeem request: '${r.payload}'`);
 
             if (scenario !== "timeout") {
@@ -186,9 +186,9 @@ function redeem(scenario) {
                 await new Promise(resolve => setTimeout(resolve, 4000));
 
                 if (scenario === "success")
-                    await host.redeemSuccess(r.redeemRefId, userAddress, { content: "dummy success" });
+                    await host.redeemSuccess(r.acquireRefId, userAddress, { content: "dummy success" });
                 else if (scenario === "error")
-                    await host.redeemError(r.redeemRefId, userAddress, "dummy_error");
+                    await host.redeemError(r.acquireRefId, userAddress, "dummy_error");
             }
 
             if (++tasks === 2)

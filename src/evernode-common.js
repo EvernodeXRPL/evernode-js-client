@@ -5,12 +5,13 @@ const EvernodeConstants = {
 
 const MemoTypes = {
     REDEEM: 'evnRedeem',
-    REDEEM_SUCCESS: 'evnRedeemSuccess',
-    REDEEM_ERROR: 'evnRedeemError',
-    REDEEM_REF: 'evnRedeemRef',
+    ACQUIRE_SUCCESS: 'evnAcquireSuccess',
+    ACQUIRE_ERROR: 'evnAcquireError',
+    ACQUIRE_REF: 'evnAcquireRef',
     HOST_REG: 'evnHostReg',
     HOST_DEREG: 'evnHostDereg',
-    HEARTBEAT: 'evnHeartbeat'
+    HEARTBEAT: 'evnHeartbeat',
+    LEASE: 'evnAcquireLease'
 }
 
 const MemoFormats = {
@@ -21,7 +22,7 @@ const MemoFormats = {
 }
 
 const ErrorCodes = {
-    REDEEM_ERR: 'REDEEM_ERR',
+    ACQUIRE_ERR: 'ACQUIRE_ERR',
 }
 
 const ErrorReasons = {
@@ -53,9 +54,9 @@ const HookStateKeys = {
 const EvernodeEvents = {
     HostRegistered: "HostRegistered",
     HostDeregistered: "HostDeregistered",
-    Redeem: "Redeem",
-    RedeemSuccess: "RredeemSuccess",
-    RedeemError: "RedeemError",
+    AcquireLease: "AcquireLease",
+    AcquireSuccess: "AcquireSuccess",
+    AcquireError: "AcquireError",
     Heartbeat: "Heartbeat",
     NftOfferCreate: "NftOfferCreate",
 }

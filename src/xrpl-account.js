@@ -274,7 +274,7 @@ class XrplAccount {
             TransactionType: 'NFTokenCreateOffer',
             Account: this.address,
             TokenID: tokenId,
-            Destination: destination,
+            // Destination: destination,
             Amount: amountObj,
             Expiration: expiration,
             Flags: 1, // tfSellToken

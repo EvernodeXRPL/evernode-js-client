@@ -9,7 +9,7 @@ const codec = require('ripple-address-codec');
 const OFFER_WAIT_TIMEOUT = 60;
 
 const HostEvents = {
-    Redeem: EvernodeEvents.Redeem,
+    AcquireLease: EvernodeEvents.AcquireLease,
     NftOfferCreate: EvernodeEvents.NftOfferCreate
 }
 
@@ -225,8 +225,8 @@ class HostClient extends BaseEvernodeClient {
 
         const encrypted = await EncryptionHelper.encrypt(encKey, instanceInfo);
         const memos = [
-            { type: MemoTypes.REDEEM_SUCCESS, format: MemoFormats.BASE64, data: encrypted },
-            { type: MemoTypes.REDEEM_REF, format: MemoFormats.HEX, data: txHash }];
+            { type: MemoTypes.ACQUIRE_SUCCESS, format: MemoFormats.BASE64, data: encrypted },
+            { type: MemoTypes.ACQUIRE_REF, format: MemoFormats.HEX, data: txHash }];
 
         return this.xrplAcc.makePayment(userAddress,
             XrplConstants.MIN_XRP_AMOUNT,
@@ -239,8 +239,8 @@ class HostClient extends BaseEvernodeClient {
     async redeemError(txHash, userAddress, reason, options = {}) {
 
         const memos = [
-            { type: MemoTypes.REDEEM_ERROR, format: MemoFormats.JSON, data: { type: ErrorCodes.REDEEM_ERR, reason: reason } },
-            { type: MemoTypes.REDEEM_REF, format: MemoFormats.HEX, data: txHash }];
+            { type: MemoTypes.ACQUIRE_ERROR, format: MemoFormats.JSON, data: { type: ErrorCodes.ACQUIRE_ERR, reason: reason } },
+            { type: MemoTypes.ACQUIRE_REF, format: MemoFormats.HEX, data: txHash }];
 
         return this.xrplAcc.makePayment(userAddress,
             XrplConstants.MIN_XRP_AMOUNT,

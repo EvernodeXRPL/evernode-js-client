@@ -1,20 +1,22 @@
 const { Defaults } = require('./defaults');
 const { RegistryClient, RegistryEvents } = require("./clients/registry-client");
-const { UserClient, UserEvents } = require("./clients/user-client");
+const { TenantClient, TenantEvents } = require("./clients/tenant-client");
 const { HostClient, HostEvents } = require("./clients/host-client");
 const { XrplApi } = require('./xrpl-api');
 const { XrplApiEvents, XrplConstants } = require('./xrpl-common');
 const { XrplAccount } = require('./xrpl-account');
 const { EvernodeConstants } = require('./evernode-common');
 const { XflHelpers } = require('./xfl-helpers');
-const { FirestoreHandler, FirestoreOperations } = require('./firestore/firestore-handler');
+const { FirestoreHandler } = require('./firestore/firestore-handler');
 const { StateHelpers } = require('./state-helpers');
+const { EncryptionHelper } = require('./encryption-helper');
+const { TransactionHelper } = require('./transaction-helper');
 
 module.exports = {
     RegistryClient,
     RegistryEvents,
-    UserClient,
-    UserEvents,
+    TenantClient,
+    TenantEvents,
     HostClient,
     HostEvents,
     XrplApi,
@@ -25,5 +27,7 @@ module.exports = {
     Defaults,
     XflHelpers,
     StateHelpers,
-    FirestoreHandler
+    FirestoreHandler,
+    EncryptionHelper,
+    TransactionHelper
 }
