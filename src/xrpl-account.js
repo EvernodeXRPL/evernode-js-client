@@ -92,9 +92,9 @@ class XrplAccount {
         return await this.xrplApi.getNftOffers(this.address);
     }
 
-    async getNftByUri(uri, isUriHex = false) {
+    async getNftByUri(uri, isHexUri = false) {
         const nfts = await this.getNfts();
-        const hexUri = isUriHex ? uri : TransactionHelper.asciiToHex(uri).toUpperCase();
+        const hexUri = isHexUri ? uri : TransactionHelper.asciiToHex(uri).toUpperCase();
         return nfts.find(n => n.URI == hexUri);
     }
 

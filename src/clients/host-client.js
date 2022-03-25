@@ -116,7 +116,7 @@ class HostClient extends BaseEvernodeClient {
 
     async burnOfferLease(nfTokenId) {
         // Burn transaction is currently failing even if the burnable flag is set,
-        // So we skip this until it's fixed.
+        // So we keep this commented until it's fixed.
         // await this.xrplAcc.burnNft(nfTokenId);
         return nfTokenId;
     }
@@ -245,11 +245,11 @@ class HostClient extends BaseEvernodeClient {
 
     async acquireSuccess(txHash, tenantAddress, instanceInfo, options = {}) {
 
-        // Encrypt the instance info with the user's encryption key (Specified in MessageKey field of the user account).
-        const userAcc = new XrplAccount(tenantAddress, null, { xrplApi: this.xrplApi });
-        const encKey = await userAcc.getMessageKey();
+        // Encrypt the instance info with the tenant's encryption key (Specified in MessageKey field of the tenant account).
+        const tenantAcc = new XrplAccount(tenantAddress, null, { xrplApi: this.xrplApi });
+        const encKey = await tenantAcc.getMessageKey();
         if (!encKey)
-            throw "User encryption key not set.";
+            throw "Tenant encryption key not set.";
 
         const encrypted = await EncryptionHelper.encrypt(encKey, instanceInfo);
         const memos = [

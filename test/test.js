@@ -8,8 +8,8 @@ const hostAddress = "rGJGXZLpDXAqw7BFaKfGYWB4Pz1Cyfosae";
 const hostSecret = "saGpxziejN6kLovCbaX5kUFtWM4VF";
 const foundationAddress = "rNU5xV49XtAZQ2c69wTwHQBBiVrP8gcpNp";
 const foundationSecret = "ssxenwiwoZnu7vC6cGvDpB1UCtVsG";
-const userAddress = "rNLMijqrR23eJVwXHsUmSN3uz9hojKhmkJ";
-const userSecret = "shJfUWrrWcm1jzuVehbk9RrTtoJqf";
+const tenantAddress = "rNLMijqrR23eJVwXHsUmSN3uz9hojKhmkJ";
+const tenantSecret = "shJfUWrrWcm1jzuVehbk9RrTtoJqf";
 
 const tosHash = "BECF974A2C48C21F39046C1121E5DF7BD55648E1005172868CD5738C23E3C073";
 
@@ -174,8 +174,8 @@ async function deregisterHost(address = hostAddress, secret = hostSecret) {
 async function acquire(scenario) {
     console.log(`-----------Acquire (${scenario})`);
 
-    const user = await getUserClient();
-    await user.prepareAccount();
+    const tenant = await getTenantClient();
+    await tenant.prepareAccount();
 
     // Setup host to watch for incoming acquires.
     const host = await getHostClient();
@@ -190,8 +190,7 @@ async function acquire(scenario) {
             if (scenario === "success")
                 await host.acquireSuccess(r.acquireRefId, r.tenant, { content: "dummy success" });
             else if (scenario === "error") {
-                const tenantAcc = new evernode.XrplAccount(r.tenant);
-                const nft = await tenantAcc.getNfts(nfTokenId).find(n => n.TokenID == r.nfTokenId);
+                const nft = (await (new evernode.XrplAccount(r.tenant)).getNfts())?.find(n => n.TokenID == r.nfTokenId);
                 const leaseIndex = Buffer.from(nft.URI, 'hex').readUint16BE(evernode.EvernodeConstants.LEASE_NFT_PREFIX_HEX.length);
 
                 await host.burnOfferLease(r.nfTokenId);
@@ -199,27 +198,24 @@ async function acquire(scenario) {
                 await host.acquireError(r.acquireRefId, r.tenant, r.leaseAmount, "dummy_error");
             }
         }
-        else {
-            host.off(evernode.HostEvents.AcquireLease)
-        }
     })
 
-    await fundUser(user);
+    await fundTenant(tenant);
 
     try {
         const timeout = (scenario === "timeout" ? 10000 : 30000);
-        const result = await user.acquire(hostAddress, "dummy request", { timeout: timeout });
-        console.log(`User received instance '${result.instance}'`);
+        const result = await tenant.acquire(hostAddress, "dummy request", { timeout: timeout });
+        console.log(`Tenant received instance '${result.instance}'`);
     }
     catch (err) {
-        console.log("User recieved acquire error: ", err.reason)
+        console.log("Tenant recieved acquire error: ", err.reason)
     }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
 
-async function getUserClient() {
-    const client = new evernode.UserClient(userAddress, userSecret);
+async function getTenantClient() {
+    const client = new evernode.UserClient(tenantAddress, tenantSecret);
     await client.connect();
     clients.push(client);
     return client;
@@ -239,12 +235,12 @@ async function getRegistryClient() {
     return client;
 }
 
-async function fundUser(user) {
-    // Send hosting tokens to user if needed.
-    const lines = await user.xrplAcc.getTrustLines('EVR', evrIssuerAddress);
+async function fundTenant(tenant) {
+    // Send hosting tokens to tenant if needed.
+    const lines = await tenant.xrplAcc.getTrustLines('EVR', evrIssuerAddress);
     if (lines.length === 0 || parseInt(lines[0].balance) < 1) {
-        await user.xrplAcc.setTrustLine('EVR', evrIssuerAddress, "99999999");
-        await new evernode.XrplAccount(foundationAddress, foundationSecret).makePayment(userAddress, "1000", 'EVR', evrIssuerAddress);
+        await tenant.xrplAcc.setTrustLine('EVR', evrIssuerAddress, "99999999");
+        await new evernode.XrplAccount(foundationAddress, foundationSecret).makePayment(tenantAddress, "1000", 'EVR', evrIssuerAddress);
     }
 }
 
