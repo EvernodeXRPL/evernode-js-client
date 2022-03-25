@@ -91,14 +91,15 @@ class HostClient extends BaseEvernodeClient {
             await this.xrplAcc.setTrustLine(EvernodeConstants.EVR, this.config.evrIssuerAddress, "99999999999999");
     }
 
-    async createOfferLease(leaseAmount, tosHash) {
-        // <prefix><half of tos hash><lease amount (uint32)>
+    async createOfferLease(leaseIndex, leaseAmount, tosHash) {
+        // <prefix><lease index 16)><half of tos hash><lease amount (uint32)>
         const prefixLen = EvernodeConstants.LEASE_NFT_PREFIX_HEX.length / 2;
         const halfToSLen = tosHash.length / 4;
-        const uriBuf = Buffer.allocUnsafe(prefixLen + halfToSLen + 4);
+        const uriBuf = Buffer.allocUnsafe(prefixLen + halfToSLen + 6);
         Buffer.from(EvernodeConstants.LEASE_NFT_PREFIX_HEX, 'hex').copy(uriBuf);
-        Buffer.from(tosHash, 'hex').copy(uriBuf, prefixLen, 0, halfToSLen);
-        uriBuf.writeUInt32BE(leaseAmount, prefixLen + halfToSLen);
+        uriBuf.writeUInt16BE(leaseIndex, prefixLen);
+        Buffer.from(tosHash, 'hex').copy(uriBuf, prefixLen + 2, 0, halfToSLen);
+        uriBuf.writeUInt32BE(leaseAmount, prefixLen + 2 + halfToSLen);
         const uri = uriBuf.toString('hex').toUpperCase();
 
         await this.xrplAcc.mintNft(uri, 0, 0, { isBurnable: true, isHexUri: true });
