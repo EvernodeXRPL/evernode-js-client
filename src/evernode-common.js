@@ -1,13 +1,14 @@
 const EvernodeConstants = {
     EVR: 'EVR',
     NFT_PREFIX_HEX: '657672686F7374', // evrhost
+    LEASE_NFT_PREFIX_HEX: '6576726C65617365' // evrlease
 }
 
 const MemoTypes = {
-    REDEEM: 'evnRedeem',
-    REDEEM_SUCCESS: 'evnRedeemSuccess',
-    REDEEM_ERROR: 'evnRedeemError',
-    REDEEM_REF: 'evnRedeemRef',
+    ACQUIRE_LEASE: 'evnAquireLease',
+    ACQUIRE_SUCCESS: 'evnAquireSuccess',
+    ACQUIRE_ERROR: 'evnAquireError',
+    ACQUIRE_REF: 'evnAquireRef',
     HOST_REG: 'evnHostReg',
     HOST_DEREG: 'evnHostDereg',
     HEARTBEAT: 'evnHeartbeat',
@@ -25,12 +26,13 @@ const MemoFormats = {
 }
 
 const ErrorCodes = {
-    REDEEM_ERR: 'REDEEM_ERR',
+    ACQUIRE_ERR: 'ACQUIRE_ERR',
     EXTEND_ERR: 'EXTEND_ERR'
 }
 
 const ErrorReasons = {
-    TRANSACTION_FAILURE: 'TRANSACTION_FAILURE'
+    TRANSACTION_FAILURE: 'TRANSACTION_FAILURE',
+    NO_OFFER: 'NO_OFFER'
 }
 
 // All keys are prefixed with 'EVR' (0x455652)
@@ -44,6 +46,7 @@ const HookStateKeys = {
     FIXED_REG_FEE: "4556520100000000000000000000000000000000000000000000000000000005",
     HOST_HEARTBEAT_FREQ: "4556520100000000000000000000000000000000000000000000000000000006",
     PURCHASER_TARGET_PRICE: "4556520100000000000000000000000000000000000000000000000000000007",
+    LEASE_ACQUIRE_WINDOW: "4556520100000000000000000000000000000000000000000000000000000008",
     // Singleton
     HOST_COUNT: "4556523200000000000000000000000000000000000000000000000000000000",
     MOMENT_BASE_IDX: "4556523300000000000000000000000000000000000000000000000000000000",
@@ -58,9 +61,9 @@ const HookStateKeys = {
 const EvernodeEvents = {
     HostRegistered: "HostRegistered",
     HostDeregistered: "HostDeregistered",
-    Redeem: "Redeem",
-    RedeemSuccess: "RredeemSuccess",
-    RedeemError: "RedeemError",
+    AcquireLease: "AcquireLease",
+    AcquireSuccess: "AcquireSuccess",
+    AcquireError: "AcquireError",
     Heartbeat: "Heartbeat",
     NftOfferCreate: "NftOfferCreate",
     ExtendLease: "ExtendLease",
