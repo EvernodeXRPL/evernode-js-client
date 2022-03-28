@@ -299,7 +299,7 @@ class HostClient extends BaseEvernodeClient {
         const memos = [
             { type: MemoTypes.EXTEND_ERROR, format: MemoFormats.JSON, data: { type: ErrorCodes.EXTEND_ERR, reason: reason } },
             { type: MemoTypes.EXTEND_REF, format: MemoFormats.HEX, data: txHash }];
-      
+
         // Required to refund the paid EVR amount as the offer extention is not successfull.
         return this.xrplAcc.makePayment(tenantAddress,
             refund,

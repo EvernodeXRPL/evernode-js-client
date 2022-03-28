@@ -7,6 +7,7 @@ const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
 const { UtilHelpers } = require('../util-helpers');
 const { FirestoreHandler } = require('../firestore/firestore-handler');
+const { TransactionHelper } = require('./transaction-helper');
 
 class BaseEvernodeClient {
 
@@ -266,10 +267,10 @@ class BaseEvernodeClient {
                     host: tx.Account
                 }
             }
-        } 
+        }
         else if (tx.Memos.length >= 1 &&
             tx.Memos[0].type === MemoTypes.EXTEND_LEASE && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
-                
+
             let nfTokenId = tx.Memos[0].data;
 
             return {
@@ -280,7 +281,7 @@ class BaseEvernodeClient {
                     tenant: tx.Account,
                     currency: tx.Amount.currency,
                     payment: parseInt(tx.Amount.value),
-                    nfTokenId: nfTokenId
+                    nfTokenId: TransactionHelper.hexToASCII(nfTokenId)
                 }
             }
         }
