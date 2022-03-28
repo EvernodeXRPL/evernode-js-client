@@ -5,11 +5,12 @@ const { XrplAccount } = require('../xrpl-account');
 const { EncryptionHelper } = require('../encryption-helper');
 const { Buffer } = require('buffer');
 const codec = require('ripple-address-codec');
+const { XflHelpers } = require('../../dist');
 
 const OFFER_WAIT_TIMEOUT = 60;
 
 const HostEvents = {
-    Redeem: EvernodeEvents.Redeem,
+    AcquireLease: EvernodeEvents.AcquireLease,
     NftOfferCreate: EvernodeEvents.NftOfferCreate
 }
 
@@ -91,10 +92,39 @@ class HostClient extends BaseEvernodeClient {
             await this.xrplAcc.setTrustLine(EvernodeConstants.EVR, this.config.evrIssuerAddress, "99999999999999");
     }
 
-    async register(hostingToken, countryCode, cpuMicroSec, ramMb, diskMb, totalInstanceCount, description, options = {}) {
-        if (!/^([A-Z]{3})$/.test(hostingToken))
-            throw "hostingToken should consist of 3 uppercase alphabetical characters";
-        else if (!/^([A-Z]{2})$/.test(countryCode))
+    async offerLease(leaseIndex, leaseAmount, tosHash) {
+        // <prefix><lease index 16)><half of tos hash><lease amount (uint32)>
+        const prefixLen = EvernodeConstants.LEASE_NFT_PREFIX_HEX.length / 2;
+        const halfToSLen = tosHash.length / 4;
+        const uriBuf = Buffer.allocUnsafe(prefixLen + halfToSLen + 10);
+        Buffer.from(EvernodeConstants.LEASE_NFT_PREFIX_HEX, 'hex').copy(uriBuf);
+        uriBuf.writeUInt16BE(leaseIndex, prefixLen);
+        Buffer.from(tosHash, 'hex').copy(uriBuf, prefixLen + 2, 0, halfToSLen);
+        uriBuf.writeBigInt64BE(XflHelpers.getXfl(leaseAmount.toString()), prefixLen + 2 + halfToSLen);
+        const uri = uriBuf.toString('hex').toUpperCase();
+
+        await this.xrplAcc.mintNft(uri, 0, 0, { isBurnable: true, isHexUri: true });
+
+        const nft = await this.xrplAcc.getNftByUri(uri, true);
+        if (!nft)
+            throw "Offer lease NFT creation error.";
+
+        await this.xrplAcc.offerSellNft(nft.TokenID,
+            leaseAmount.toString(),
+            EvernodeConstants.EVR,
+            this.config.evrIssuerAddress);
+    }
+
+    async expireLease(nfTokenId) {
+        // Burn transaction is currently failing even if the burnable flag is set,
+        // So we keep this commented until it's fixed.
+        // Todo: Uncomment this when burn nft in xrpl lib gets fixed.
+        // await this.xrplAcc.burnNft(nfTokenId);
+        return nfTokenId;
+    }
+
+    async register(countryCode, cpuMicroSec, ramMb, diskMb, totalInstanceCount, description, options = {}) {
+        if (!/^([A-Z]{2})$/.test(countryCode))
             throw "countryCode should consist of 2 uppercase alphabetical characters";
         else if (!cpuMicroSec || isNaN(cpuMicroSec) || cpuMicroSec % 1 != 0 || cpuMicroSec < 0)
             throw "cpuMicroSec should be a positive intiger";
@@ -130,7 +160,7 @@ class HostClient extends BaseEvernodeClient {
             }
         }
 
-        const memoData = `${hostingToken};${countryCode};${cpuMicroSec};${ramMb};${diskMb};${totalInstanceCount};${description}`
+        const memoData = `${countryCode};${cpuMicroSec};${ramMb};${diskMb};${totalInstanceCount};${description}`
         const tx = await this.xrplAcc.makePayment(this.registryAddress,
             this.config.hostRegFee.toString(),
             EvernodeConstants.EVR,
@@ -215,20 +245,20 @@ class HostClient extends BaseEvernodeClient {
             options.transactionOptions);
     }
 
-    async redeemSuccess(txHash, userAddress, instanceInfo, options = {}) {
+    async acquireSuccess(txHash, tenantAddress, instanceInfo, options = {}) {
 
-        // Encrypt the instance info with the user's encryption key (Specified in MessageKey field of the user account).
-        const userAcc = new XrplAccount(userAddress, null, { xrplApi: this.xrplApi });
-        const encKey = await userAcc.getMessageKey();
+        // Encrypt the instance info with the tenant's encryption key (Specified in MessageKey field of the tenant account).
+        const tenantAcc = new XrplAccount(tenantAddress, null, { xrplApi: this.xrplApi });
+        const encKey = await tenantAcc.getMessageKey();
         if (!encKey)
-            throw "User encryption key not set.";
+            throw "Tenant encryption key not set.";
 
         const encrypted = await EncryptionHelper.encrypt(encKey, instanceInfo);
         const memos = [
-            { type: MemoTypes.REDEEM_SUCCESS, format: MemoFormats.BASE64, data: encrypted },
-            { type: MemoTypes.REDEEM_REF, format: MemoFormats.HEX, data: txHash }];
+            { type: MemoTypes.ACQUIRE_SUCCESS, format: MemoFormats.BASE64, data: encrypted },
+            { type: MemoTypes.ACQUIRE_REF, format: MemoFormats.HEX, data: txHash }];
 
-        return this.xrplAcc.makePayment(userAddress,
+        return this.xrplAcc.makePayment(tenantAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
@@ -236,16 +266,16 @@ class HostClient extends BaseEvernodeClient {
             options.transactionOptions);
     }
 
-    async redeemError(txHash, userAddress, reason, options = {}) {
+    async acquireError(txHash, tenantAddress, leaseAmount, reason, options = {}) {
 
         const memos = [
-            { type: MemoTypes.REDEEM_ERROR, format: MemoFormats.JSON, data: { type: ErrorCodes.REDEEM_ERR, reason: reason } },
-            { type: MemoTypes.REDEEM_REF, format: MemoFormats.HEX, data: txHash }];
+            { type: MemoTypes.ACQUIRE_ERROR, format: MemoFormats.JSON, data: { type: ErrorCodes.ACQUIRE_ERR, reason: reason } },
+            { type: MemoTypes.ACQUIRE_REF, format: MemoFormats.HEX, data: txHash }];
 
-        return this.xrplAcc.makePayment(userAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
-            null,
+        return this.xrplAcc.makePayment(tenantAddress,
+            leaseAmount.toString(),
+            EvernodeConstants.EVR,
+            this.config.evrIssuerAddress,
             memos,
             options.transactionOptions);
     }

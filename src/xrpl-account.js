@@ -89,14 +89,12 @@ class XrplAccount {
     }
 
     async getNftOffers() {
-        const offers = await this.xrplApi.getAccountObjects(this.address);
-        // TODO: Pass rippled filter parameter when xrpl.js supports it.
-        return offers.filter(o => o.LedgerEntryType == 'NFTokenOffer');
+        return await this.xrplApi.getNftOffers(this.address);
     }
 
-    async getNftByUri(uri) {
+    async getNftByUri(uri, isHexUri = false) {
         const nfts = await this.getNfts();
-        const hexUri = TransactionHelper.asciiToHex(uri).toUpperCase();
+        const hexUri = isHexUri ? uri : TransactionHelper.asciiToHex(uri).toUpperCase();
         return nfts.find(n => n.URI == hexUri);
     }
 
@@ -131,21 +129,21 @@ class XrplAccount {
         for (const [key, value] of Object.entries(fields)) {
 
             switch (key) {
-                case 'Domain' :
+                case 'Domain':
                     tx.Domain = TransactionHelper.asciiToHex(value).toUpperCase();
                     break;
 
-                case 'Flags' :
+                case 'Flags':
                     for (const [flagKey, flagValue] of Object.entries(value)) {
                         tx[(flagValue) ? 'SetFlag' : 'ClearFlag'] |= xrpl.AccountSetAsfFlags[flagKey];
                     }
                     break;
 
-                default : 
+                default:
                     tx[key] = value;
                     break;
             }
-        }          
+        }
 
         return this.#submitAndVerifyTransaction(tx, options);
     }
@@ -187,8 +185,8 @@ class XrplAccount {
 
         return this.#submitAndVerifyTransaction({
             TransactionType: 'SetRegularKey',
-            Account: this.address,  
-            RegularKey: regularKey, 
+            Account: this.address,
+            RegularKey: regularKey,
             Memos: TransactionHelper.formatMemos(memos)
         }, options);
     }
@@ -258,7 +256,7 @@ class XrplAccount {
         return this.#submitAndVerifyTransaction({
             TransactionType: 'NFTokenMint',
             Account: this.address,
-            URI: TransactionHelper.asciiToHex(uri).toUpperCase(),
+            URI: flags.isHexUri ? uri : TransactionHelper.asciiToHex(uri).toUpperCase(),
             TokenTaxon: taxon,
             TransferFee: transferFee,
             Flags: (flags.isBurnable ? 1 : 0) | (flags.isOnlyXRP ? 2 : 0) | (flags.isTrustLine ? 4 : 0) | (flags.isTransferable ? 8 : 0),
@@ -266,20 +264,20 @@ class XrplAccount {
         }, options);
     }
 
-    offerSellNft(tokenId, destination, amount, currency, issuer = null, expiration = 4294967295, memos = null, options = {}) {
+    offerSellNft(tokenId, amount, currency, issuer = null, destination = null, expiration = 4294967295, memos = null, options = {}) {
 
         const amountObj = makeAmountObject(amount, currency, issuer);
-
-        return this.#submitAndVerifyTransaction({
+        const tx = {
             TransactionType: 'NFTokenCreateOffer',
             Account: this.address,
             TokenID: tokenId,
-            Destination: destination,
             Amount: amountObj,
             Expiration: expiration,
             Flags: 1, // tfSellToken
             Memos: TransactionHelper.formatMemos(memos)
-        }, options);
+        }
+
+        return this.#submitAndVerifyTransaction(destination ? { ...tx, Destination: destination } : tx, options);
     }
 
     offerBuyNft(tokenId, owner, amount, currency, issuer = null, expiration = 4294967295, memos = null, options = {}) {

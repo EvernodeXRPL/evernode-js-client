@@ -46,8 +46,27 @@ class XrplApi {
             this.#events.emit(XrplApiEvents.LEDGER, ledger);
         });
 
-        this.#client.on("transaction", (data) => {
+        this.#client.on("transaction", async (data) => {
             if (data.validated) {
+                // NFTokenAcceptOffer transactions does not contain a Destination. So we check whether the accepted offer is created by which subscribed account
+                if (data.transaction.TransactionType === 'NFTokenAcceptOffer') {
+                    // We take all the offers created by subscribed accounts in previous ledger until we get the respective offer.
+                    for (const subscription of this.#addressSubscriptions) {
+                        const offer = (await this.getNftOffers(subscription.address, { ledger_index: data.ledger_index - 1 }))?.find(o => o.index === (data.transaction.SellOffer || data.transaction.BuyOffer));
+                        // When we find the respective offer. We populate the destination and offer info and then we break the loop.
+                        if (offer) {
+                            // We populate some sell offer properties to the transaction to be sent with the event.
+                            data.transaction.Destination = subscription.address;
+                            // Replace the offer with the found offer object.
+                            if (data.transaction.SellOffer)
+                                data.transaction.SellOffer = offer;
+                            else if (data.transaction.BuyOffer)
+                                data.transaction.BuyOffer = offer;
+                            break;
+                        }
+                    }
+                }
+
                 const matches = this.#addressSubscriptions.filter(s => s.address === data.transaction.Destination); // Only incoming transactions.
                 if (matches.length > 0) {
                     const tx = {
@@ -160,6 +179,12 @@ class XrplApi {
         if (resp?.result?.account_objects)
             return resp.result.account_objects;
         return [];
+    }
+
+    async getNftOffers(address, options) {
+        const offers = await this.getAccountObjects(address, options);
+        // TODO: Pass rippled filter parameter when xrpl.js supports it.
+        return offers.filter(o => o.LedgerEntryType == 'NFTokenOffer');
     }
 
     async getTrustlines(address, options) {

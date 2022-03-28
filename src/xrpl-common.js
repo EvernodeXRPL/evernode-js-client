@@ -1,7 +1,8 @@
 const XrplApiEvents = {
     LEDGER: 'ledger',
     PAYMENT: 'payment',
-    NFT_OFFER_CREATE: 'nftokencreateoffer'
+    NFT_OFFER_CREATE: 'nftokencreateoffer',
+    NFT_OFFER_ACCEPT: 'nftokenacceptoffer'
 }
 
 const XrplConstants = {
