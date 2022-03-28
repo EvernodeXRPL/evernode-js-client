@@ -5,6 +5,7 @@ const { XrplAccount } = require('../xrpl-account');
 const { EncryptionHelper } = require('../encryption-helper');
 const { Buffer } = require('buffer');
 const codec = require('ripple-address-codec');
+const { XflHelpers } = require('../../dist');
 
 const OFFER_WAIT_TIMEOUT = 60;
 
@@ -91,15 +92,15 @@ class HostClient extends BaseEvernodeClient {
             await this.xrplAcc.setTrustLine(EvernodeConstants.EVR, this.config.evrIssuerAddress, "99999999999999");
     }
 
-    async createOfferLease(leaseIndex, leaseAmount, tosHash) {
+    async offerLease(leaseIndex, leaseAmount, tosHash) {
         // <prefix><lease index 16)><half of tos hash><lease amount (uint32)>
         const prefixLen = EvernodeConstants.LEASE_NFT_PREFIX_HEX.length / 2;
         const halfToSLen = tosHash.length / 4;
-        const uriBuf = Buffer.allocUnsafe(prefixLen + halfToSLen + 6);
+        const uriBuf = Buffer.allocUnsafe(prefixLen + halfToSLen + 10);
         Buffer.from(EvernodeConstants.LEASE_NFT_PREFIX_HEX, 'hex').copy(uriBuf);
         uriBuf.writeUInt16BE(leaseIndex, prefixLen);
         Buffer.from(tosHash, 'hex').copy(uriBuf, prefixLen + 2, 0, halfToSLen);
-        uriBuf.writeUInt32BE(leaseAmount, prefixLen + 2 + halfToSLen);
+        uriBuf.writeBigInt64BE(XflHelpers.getXfl(leaseAmount.toString()), prefixLen + 2 + halfToSLen);
         const uri = uriBuf.toString('hex').toUpperCase();
 
         await this.xrplAcc.mintNft(uri, 0, 0, { isBurnable: true, isHexUri: true });
@@ -114,7 +115,7 @@ class HostClient extends BaseEvernodeClient {
             this.config.evrIssuerAddress);
     }
 
-    async burnOfferLease(nfTokenId) {
+    async expireLease(nfTokenId) {
         // Burn transaction is currently failing even if the burnable flag is set,
         // So we keep this commented until it's fixed.
         // Todo: Uncomment this when burn nft in xrpl lib gets fixed.
@@ -272,7 +273,7 @@ class HostClient extends BaseEvernodeClient {
             { type: MemoTypes.ACQUIRE_REF, format: MemoFormats.HEX, data: txHash }];
 
         return this.xrplAcc.makePayment(tenantAddress,
-            leaseAmount,
+            leaseAmount.toString(),
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress,
             memos,

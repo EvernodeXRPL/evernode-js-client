@@ -1,15 +1,15 @@
 // const evernode = require("evernode-js-client");
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 
-const evrIssuerAddress = "rZTjuz2nmrQh87J1bcMVsQCvLC5n3VSBJ";
-const registryAddress = "rnrToYNBc8MG1NEkdk9C4Eg3QFdW8YoD23";
-const registrySecret = "snPo9Spq1rqGe3Pbxgvh1CXejVpTW";
-const hostAddress = "rGJGXZLpDXAqw7BFaKfGYWB4Pz1Cyfosae";
-const hostSecret = "saGpxziejN6kLovCbaX5kUFtWM4VF";
-const foundationAddress = "rNU5xV49XtAZQ2c69wTwHQBBiVrP8gcpNp";
-const foundationSecret = "ssxenwiwoZnu7vC6cGvDpB1UCtVsG";
-const tenantAddress = "rNLMijqrR23eJVwXHsUmSN3uz9hojKhmkJ";
-const tenantSecret = "shJfUWrrWcm1jzuVehbk9RrTtoJqf";
+const evrIssuerAddress = "rNGLDfw1gU7aNdEsQ7hbTht6vn8SV9sVFa";
+const registryAddress = "rEFcCFzq9KbQ3HB41s16cqGYB5DV5AMUqs";
+const registrySecret = "sn1ztFuxPkUFABTENtmEMEyxVCUgj";
+const hostAddress = "rwTeakGeRPnE4rnQbasUXyMRGgb5CBFk3a";
+const hostSecret = "ssvJEHo2WajBS2tJwUfhbVVE5eBat";
+const foundationAddress = "rNuDVJovuJZr2TWzWTuA2bEbYWj42pH1xw";
+const foundationSecret = "ssaVEiqwirMaZWTuykmKSXyWP1fGh";
+const tenantAddress = "r9aW6J4SGPQwTqT1KaaFuCuFWT82HfZ3XP";
+const tenantSecret = "spup65VeduJqLNdikzztwGFRfmnUq";
 
 const tosHash = "BECF974A2C48C21F39046C1121E5DF7BD55648E1005172868CD5738C23E3C073";
 
@@ -151,7 +151,7 @@ async function registerHost(address = hostAddress, secret = hostSecret) {
 
     console.log("Lease Offer...");
     for (let i = 0; i < instanceCount; i++)
-        await host.createOfferLease(i, 2, tosHash);
+        await host.offerLease(i, 2, tosHash);
 
     // Verify the registration.
     return await host.isRegistered();
@@ -193,8 +193,8 @@ async function acquire(scenario) {
                 const nft = (await (new evernode.XrplAccount(r.tenant)).getNfts())?.find(n => n.TokenID == r.nfTokenId);
                 const leaseIndex = Buffer.from(nft.URI, 'hex').readUint16BE(evernode.EvernodeConstants.LEASE_NFT_PREFIX_HEX.length);
 
-                await host.burnOfferLease(r.nfTokenId);
-                await host.createOfferLease(leaseIndex, r.leaseAmount, tosHash);
+                await host.expireLease(r.nfTokenId);
+                await host.offerLease(leaseIndex, r.leaseAmount, tosHash);
                 await host.acquireError(r.acquireRefId, r.tenant, r.leaseAmount, "dummy_error");
             }
         }
