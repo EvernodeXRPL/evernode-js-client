@@ -56,21 +56,21 @@ async function app() {
         // const nft2 = await acc2.getNftByUri(uri);
         // console.log(nft2);
 
-        const tests = [
-            // () => initializeConfigs(),
-            () => registerHost(),
-            // () => getAllHosts(),
-            // () => getActiveHosts(),
-            () => acquire("success"),
-            // () => acquire("error"),
-            // () => acquire("timeout"),
-            // () => deregisterHost(),
-        ];
+        // const tests = [
+        //     () => initializeConfigs(),
+        //     () => registerHost(),
+        //     () => getAllHosts(),
+        //     () => getActiveHosts(),
+        //     () => acquire("success"),
+        //     () => acquire("error"),
+        //     () => acquire("timeout"),
+        //     () => deregisterHost(),
+        // ];
 
-        for (const test of tests) {
-            await test();
-            await Promise.all(clients.map(c => c.disconnect())); // Cleanup clients after every test.
-        }
+        // for (const test of tests) {
+        //     await test();
+        //     await Promise.all(clients.map(c => c.disconnect())); // Cleanup clients after every test.
+        // }
 
         // await registerHost();
         // Accepting the sell offer created by registry.
