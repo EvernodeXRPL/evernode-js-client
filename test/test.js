@@ -1,13 +1,13 @@
 // const evernode = require("evernode-js-client");
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 
-const evrIssuerAddress = "rNGLDfw1gU7aNdEsQ7hbTht6vn8SV9sVFa";
-const registryAddress = "rEFcCFzq9KbQ3HB41s16cqGYB5DV5AMUqs";
-const registrySecret = "sn1ztFuxPkUFABTENtmEMEyxVCUgj";
+const evrIssuerAddress = "ra4rVfw7EoaCokA7K1QZTYMgSj43P4c9gf";
+const registryAddress = "rLq8GXR8yei4bvKSabKRCJGz6Zj3gAu4Fr";
+const registrySecret = "shtLUvi185jPzxvDD6dH3UQzE6Tne";
 const hostAddress = "rwTeakGeRPnE4rnQbasUXyMRGgb5CBFk3a";
 const hostSecret = "ssvJEHo2WajBS2tJwUfhbVVE5eBat";
-const foundationAddress = "rNuDVJovuJZr2TWzWTuA2bEbYWj42pH1xw";
-const foundationSecret = "ssaVEiqwirMaZWTuykmKSXyWP1fGh";
+const foundationAddress = "rMr7vasAQjPEzgQ6gnWAtDCjEYuXN3D5HV";
+const foundationSecret = "ssSWTkfYznE1goQXuM4Jx7WcVCW6Z";
 const tenantAddress = "r9aW6J4SGPQwTqT1KaaFuCuFWT82HfZ3XP";
 const tenantSecret = "spup65VeduJqLNdikzztwGFRfmnUq";
 
@@ -56,21 +56,21 @@ async function app() {
         // const nft2 = await acc2.getNftByUri(uri);
         // console.log(nft2);
 
-        // const tests = [
-        //     () => initializeConfigs(),
-        //     () => registerHost(),
-        //     () => getAllHosts(),
-        //     () => getActiveHosts(),
-        //     () => acquire("success"),
-        //     () => acquire("error"),
-        //     () => acquire("timeout"),
-        //     () => deregisterHost(),
-        // ];
+        const tests = [
+            // () => initializeConfigs(),
+            () => registerHost(),
+            // () => getAllHosts(),
+            // () => getActiveHosts(),
+            () => acquire("success"),
+            // () => acquire("error"),
+            // () => acquire("timeout"),
+            // () => deregisterHost(),
+        ];
 
-        // for (const test of tests) {
-        //     await test();
-        //     await Promise.all(clients.map(c => c.disconnect())); // Cleanup clients after every test.
-        // }
+        for (const test of tests) {
+            await test();
+            await Promise.all(clients.map(c => c.disconnect())); // Cleanup clients after every test.
+        }
 
         // await registerHost();
         // Accepting the sell offer created by registry.
@@ -204,7 +204,7 @@ async function acquire(scenario) {
 
     try {
         const timeout = (scenario === "timeout" ? 10000 : 30000);
-        const result = await tenant.acquire(hostAddress, "dummy request", { timeout: timeout });
+        const result = await tenant.acquireLease(hostAddress, "dummy request", { timeout: timeout });
         console.log(`Tenant received instance '${result.instance}'`);
     }
     catch (err) {
@@ -215,7 +215,7 @@ async function acquire(scenario) {
 //////////////////////////////////////////////////////////////////////////////////////
 
 async function getTenantClient() {
-    const client = new evernode.UserClient(tenantAddress, tenantSecret);
+    const client = new evernode.TenantClient(tenantAddress, tenantSecret);
     await client.connect();
     clients.push(client);
     return client;

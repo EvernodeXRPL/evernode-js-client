@@ -5,7 +5,7 @@ const { EncryptionHelper } = require('../encryption-helper');
 const { XrplAccount } = require('../xrpl-account');
 const { TransactionHelper } = require('../transaction-helper');
 
-const ACQUIRE_WATCH_PREFIX = 'aquire_';
+const ACQUIRE_WATCH_PREFIX = 'acquire_';
 
 const TenantEvents = {
     AcquireSuccess: EvernodeEvents.AcquireSuccess,
@@ -55,7 +55,7 @@ class TenantClient extends BaseEvernodeClient {
                 iv: options.iv, // Must be null or 16 bytes.
                 ephemPrivateKey: options.ephemPrivateKey // Must be null or 32 bytes.
             });
-            return this.xrplAcc.buyNft(nftOffers[0].index, [{ type: MemoTypes.LEASE, format: MemoFormats.BASE64, data: ecrypted }], options.transactionOptions);
+            return this.xrplAcc.buyNft(nftOffers[0].index, [{ type: MemoTypes.ACQUIRE_LEASE, format: MemoFormats.BASE64, data: ecrypted }], options.transactionOptions);
         } else
             throw "No offers available.";
     }
@@ -68,7 +68,7 @@ class TenantClient extends BaseEvernodeClient {
 
             const failTimeout = setTimeout(() => {
                 this.#respWatcher.off(watchEvent);
-                reject({ error: ErrorCodes.ACQUIRE_ERR, reason: `acquire_timeout` });
+                reject({ error: ErrorCodes.ACQUIRE_ERR, reason: ErrorReasons.TIMEOUT });
             }, options.timeout);
 
             this.#respWatcher.once(watchEvent, async (ev) => {
