@@ -5,7 +5,7 @@ const { XrplAccount } = require('../xrpl-account');
 const { EncryptionHelper } = require('../encryption-helper');
 const { Buffer } = require('buffer');
 const codec = require('ripple-address-codec');
-const { XflHelpers } = require('../../dist');
+const { XflHelpers } = require('../xfl-helpers');
 
 const OFFER_WAIT_TIMEOUT = 60;
 
