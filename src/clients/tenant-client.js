@@ -37,7 +37,7 @@ class TenantClient extends BaseEvernodeClient {
         }
     }
 
-    async aquireLeaseSubmit(hostAddress, requirement, options = {}) {
+    async acquireLeaseSubmit(hostAddress, requirement, options = {}) {
         const host = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
         const hostNfts = (await host.getNfts()).filter(nft => nft.URI.startsWith(TransactionHelper.asciiToHex('evrlease').toUpperCase()));
         const hostTokenIDs = hostNfts.map(nft => nft.TokenID);
@@ -62,7 +62,7 @@ class TenantClient extends BaseEvernodeClient {
 
     watchAcquireResponse(tx, options = { timeout: 60000 }) {
         return new Promise(async (resolve, reject) => {
-            console.log(`Waiting for aquire response... (txHash: ${tx.id})`);
+            console.log(`Waiting for acquire response... (txHash: ${tx.id})`);
 
             const watchEvent = ACQUIRE_WATCH_PREFIX + tx.id;
 
@@ -86,7 +86,7 @@ class TenantClient extends BaseEvernodeClient {
 
     acquireLease(hostAddress, requirement, options = {}) {
         return new Promise(async (resolve, reject) => {
-            const tx = await this.aquireLeaseSubmit(hostAddress, requirement, options).catch(errtx => {
+            const tx = await this.acquireLeaseSubmit(hostAddress, requirement, options).catch(errtx => {
                 reject({ error: ErrorCodes.ACQUIRE_ERR, reason: ErrorReasons.TRANSACTION_FAILURE, transaction: errtx });
             });
             if (tx) {

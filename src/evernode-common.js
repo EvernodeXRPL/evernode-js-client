@@ -6,9 +6,9 @@ const EvernodeConstants = {
 
 const MemoTypes = {
     ACQUIRE_LEASE: 'evnAcquireLease',
-    ACQUIRE_SUCCESS: 'evnAquireSuccess',
-    ACQUIRE_ERROR: 'evnAquireError',
-    ACQUIRE_REF: 'evnAquireRef',
+    ACQUIRE_SUCCESS: 'evnAcquireSuccess',
+    ACQUIRE_ERROR: 'evnAcquireError',
+    ACQUIRE_REF: 'evnAcquireRef',
     HOST_REG: 'evnHostReg',
     HOST_DEREG: 'evnHostDereg',
     HEARTBEAT: 'evnHeartbeat'
