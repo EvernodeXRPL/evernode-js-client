@@ -5,10 +5,10 @@ const EvernodeConstants = {
 }
 
 const MemoTypes = {
-    ACQUIRE_LEASE: 'evnAquireLease',
-    ACQUIRE_SUCCESS: 'evnAquireSuccess',
-    ACQUIRE_ERROR: 'evnAquireError',
-    ACQUIRE_REF: 'evnAquireRef',
+    ACQUIRE_LEASE: 'evnAcquireLease',
+    ACQUIRE_SUCCESS: 'evnAcquireSuccess',
+    ACQUIRE_ERROR: 'evnAcquireError',
+    ACQUIRE_REF: 'evnAcquireRef',
     HOST_REG: 'evnHostReg',
     HOST_DEREG: 'evnHostDereg',
     HEARTBEAT: 'evnHeartbeat',
@@ -32,7 +32,8 @@ const ErrorCodes = {
 
 const ErrorReasons = {
     TRANSACTION_FAILURE: 'TRANSACTION_FAILURE',
-    NO_OFFER: 'NO_OFFER'
+    NO_OFFER: 'NO_OFFER',
+    TIMEOUT: 'TIMEOUT'
 }
 
 // All keys are prefixed with 'EVR' (0x455652)
