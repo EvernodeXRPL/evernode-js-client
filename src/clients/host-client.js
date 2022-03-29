@@ -48,21 +48,6 @@ class HostClient extends BaseEvernodeClient {
         return null;
     }
 
-    async getTokenOffer() {
-        const hostingToken = (await this.getRegistration())?.token;
-        if (!hostingToken)
-            throw "Error getting hosting hosting token";
-        const offer = (await this.xrplAcc.getOffers()).find(o => o.taker_gets.currency === hostingToken && o.taker_gets.issuer === this.xrplAcc.address);
-        return offer || null;
-    }
-
-    async createTokenSellOffer(sellAmount, valueInEVRs) {
-        const hostingToken = (await this.getRegistration())?.token;
-        if (!hostingToken)
-            throw "Error getting hosting hosting token";
-        return this.xrplAcc.offerSell(sellAmount, hostingToken, this.xrplAcc.address, valueInEVRs, EvernodeConstants.EVR, this.config.evrIssuerAddress);
-    }
-
     async cancelOffer(offerIndex) {
         return this.xrplAcc.cancelOffer(offerIndex);
     }
