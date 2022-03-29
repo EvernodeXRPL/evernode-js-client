@@ -7,7 +7,6 @@ const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
 const { UtilHelpers } = require('../util-helpers');
 const { FirestoreHandler } = require('../firestore/firestore-handler');
-const { TransactionHelper } = require('./transaction-helper');
 
 class BaseEvernodeClient {
 
@@ -280,8 +279,8 @@ class BaseEvernodeClient {
                     extendRefId: tx.hash,
                     tenant: tx.Account,
                     currency: tx.Amount.currency,
-                    payment: parseInt(tx.Amount.value),
-                    nfTokenId: TransactionHelper.hexToASCII(nfTokenId)
+                    payment: parseFloat(tx.Amount.value),
+                    nfTokenId: nfTokenId
                 }
             }
         }
