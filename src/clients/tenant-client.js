@@ -1,9 +1,8 @@
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { EvernodeEvents, MemoFormats, MemoTypes, ErrorCodes, ErrorReasons } = require('../evernode-common');
+const { EvernodeEvents, MemoFormats, MemoTypes, ErrorCodes, ErrorReasons, EvernodeConstants } = require('../evernode-common');
 const { EventEmitter } = require('../event-emitter');
 const { EncryptionHelper } = require('../encryption-helper');
 const { XrplAccount } = require('../xrpl-account');
-const { TransactionHelper } = require('../transaction-helper');
 
 const ACQUIRE_WATCH_PREFIX = 'acquire_';
 
@@ -19,10 +18,10 @@ class TenantClient extends BaseEvernodeClient {
     constructor(xrpAddress, xrpSecret, options = {}) {
         super(xrpAddress, xrpSecret, Object.values(TenantEvents), true, options);
 
-        this.on(TenantEvents.AcquireSuccess, async (ev) => {
+        this.on(TenantEvents.AcquireSuccess, (ev) => {
             this.#respWatcher.emit(ACQUIRE_WATCH_PREFIX + ev.acquireRefId, { success: true, data: ev.payload, transaction: ev.transaction });
         });
-        this.on(TenantEvents.AcquireError, async (ev) => {
+        this.on(TenantEvents.AcquireError, (ev) => {
             this.#respWatcher.emit(ACQUIRE_WATCH_PREFIX + ev.acquireRefId, { success: false, data: ev.reason, transaction: ev.transaction });
         });
     }
@@ -39,7 +38,7 @@ class TenantClient extends BaseEvernodeClient {
 
     async acquireLeaseSubmit(hostAddress, requirement, options = {}) {
         const host = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
-        const hostNfts = (await host.getNfts()).filter(nft => nft.URI.startsWith(TransactionHelper.asciiToHex('evrlease').toUpperCase()));
+        const hostNfts = (await host.getNfts()).filter(nft => nft.URI.startsWith(EvernodeConstants.LEASE_NFT_PREFIX_HEX));
         const hostTokenIDs = hostNfts.map(nft => nft.TokenID);
         const nftOffers = (await host.getNftOffers())?.filter(offer => (offer.Flags == 1 && hostTokenIDs.includes(offer.TokenID))); // Filter only sell offers
 
