@@ -11,7 +11,8 @@ const OFFER_WAIT_TIMEOUT = 60;
 
 const HostEvents = {
     AcquireLease: EvernodeEvents.AcquireLease,
-    NftOfferCreate: EvernodeEvents.NftOfferCreate
+    NftOfferCreate: EvernodeEvents.NftOfferCreate,
+    ExtendLease: EvernodeEvents.ExtendLease
 }
 
 class HostClient extends BaseEvernodeClient {
@@ -45,21 +46,6 @@ class HostClient extends BaseEvernodeClient {
         }
 
         return null;
-    }
-
-    async getTokenOffer() {
-        const hostingToken = (await this.getRegistration())?.token;
-        if (!hostingToken)
-            throw "Error getting hosting hosting token";
-        const offer = (await this.xrplAcc.getOffers()).find(o => o.taker_gets.currency === hostingToken && o.taker_gets.issuer === this.xrplAcc.address);
-        return offer || null;
-    }
-
-    async createTokenSellOffer(sellAmount, valueInEVRs) {
-        const hostingToken = (await this.getRegistration())?.token;
-        if (!hostingToken)
-            throw "Error getting hosting hosting token";
-        return this.xrplAcc.offerSell(sellAmount, hostingToken, this.xrplAcc.address, valueInEVRs, EvernodeConstants.EVR, this.config.evrIssuerAddress);
     }
 
     async cancelOffer(offerIndex) {
@@ -274,6 +260,34 @@ class HostClient extends BaseEvernodeClient {
 
         return this.xrplAcc.makePayment(tenantAddress,
             leaseAmount.toString(),
+            EvernodeConstants.EVR,
+            this.config.evrIssuerAddress,
+            memos,
+            options.transactionOptions);
+    }
+
+    async extendSuccess(txHash, tenantAddress, options = {}) {
+        const memos = [
+            { type: MemoTypes.EXTEND_SUCCESS, format: '', data: '' },
+            { type: MemoTypes.EXTEND_REF, format: MemoFormats.HEX, data: txHash }];
+
+        return this.xrplAcc.makePayment(tenantAddress,
+            XrplConstants.MIN_XRP_AMOUNT,
+            XrplConstants.XRP,
+            null,
+            memos,
+            options.transactionOptions);
+    }
+
+    async extendError(txHash, tenantAddress, reason, refund, options = {}) {
+
+        const memos = [
+            { type: MemoTypes.EXTEND_ERROR, format: MemoFormats.JSON, data: { type: ErrorCodes.EXTEND_ERR, reason: reason } },
+            { type: MemoTypes.EXTEND_REF, format: MemoFormats.HEX, data: txHash }];
+
+        // Required to refund the paid EVR amount as the offer extention is not successfull.
+        return this.xrplAcc.makePayment(tenantAddress,
+            refund,
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress,
             memos,

@@ -11,7 +11,11 @@ const MemoTypes = {
     ACQUIRE_REF: 'evnAcquireRef',
     HOST_REG: 'evnHostReg',
     HOST_DEREG: 'evnHostDereg',
-    HEARTBEAT: 'evnHeartbeat'
+    HEARTBEAT: 'evnHeartbeat',
+    EXTEND_LEASE: 'evnExtendLease',
+    EXTEND_SUCCESS: 'evnExtendSuccess',
+    EXTEND_ERROR: 'evnExtendError',
+    EXTEND_REF: 'evnExtendRef'
 }
 
 const MemoFormats = {
@@ -23,6 +27,7 @@ const MemoFormats = {
 
 const ErrorCodes = {
     ACQUIRE_ERR: 'ACQUIRE_ERR',
+    EXTEND_ERR: 'EXTEND_ERR'
 }
 
 const ErrorReasons = {
@@ -62,6 +67,9 @@ const EvernodeEvents = {
     AcquireError: "AcquireError",
     Heartbeat: "Heartbeat",
     NftOfferCreate: "NftOfferCreate",
+    ExtendLease: "ExtendLease",
+    ExtendSuccess: "ExtendSuccess",
+    ExtendError: "ExtendError"
 }
 
 module.exports = {
