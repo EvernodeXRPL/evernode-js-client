@@ -268,7 +268,7 @@ class HostClient extends BaseEvernodeClient {
 
     async extendSuccess(txHash, tenantAddress, options = {}) {
         const memos = [
-            { type: MemoTypes.EXTEND_SUCCESS, format: '', data: ''},
+            { type: MemoTypes.EXTEND_SUCCESS, format: '', data: '' },
             { type: MemoTypes.EXTEND_REF, format: MemoFormats.HEX, data: txHash }];
 
         return this.xrplAcc.makePayment(tenantAddress,
