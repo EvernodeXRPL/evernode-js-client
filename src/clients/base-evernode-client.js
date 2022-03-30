@@ -285,8 +285,8 @@ class BaseEvernodeClient {
             }
         }
         else if (tx.Memos.length >= 2 &&
-            tx.Memos[0].type === MemoTypes.EXTEND_SUCCESS && tx.Memos[0].data &&
-            tx.Memos[1].type === MemoTypes.EXTEND_REF && tx.Memos[1].data) {
+            tx.Memos[0].type === MemoTypes.EXTEND_SUCCESS &&
+            tx.Memos[1].type === MemoTypes.EXTEND_REF && tx.Memos[1].format === MemoFormats.HEX && tx.Memos[1].data) {
 
             const extendRefId = tx.Memos[1].data;
 

@@ -5,10 +5,13 @@ const { EncryptionHelper } = require('../encryption-helper');
 const { XrplAccount } = require('../xrpl-account');
 
 const ACQUIRE_WATCH_PREFIX = 'acquire_';
+const EXTEND_WATCH_PREFIX = 'extend_';
 
 const TenantEvents = {
     AcquireSuccess: EvernodeEvents.AcquireSuccess,
     AcquireError: EvernodeEvents.AcquireError,
+    ExtendSuccess: EvernodeEvents.ExtendSuccess,
+    ExtendError: EvernodeEvents.ExtendError,
 }
 
 class TenantClient extends BaseEvernodeClient {
@@ -23,6 +26,13 @@ class TenantClient extends BaseEvernodeClient {
         });
         this.on(TenantEvents.AcquireError, (ev) => {
             this.#respWatcher.emit(ACQUIRE_WATCH_PREFIX + ev.acquireRefId, { success: false, data: ev.reason, transaction: ev.transaction });
+        });
+
+        this.on(TenantEvents.ExtendSuccess, (ev) => {
+            this.#respWatcher.emit(EXTEND_WATCH_PREFIX + ev.extendRefId, { success: true, transaction: ev.transaction });
+        });
+        this.on(TenantEvents.ExtendError, (ev) => {
+            this.#respWatcher.emit(EXTEND_WATCH_PREFIX + ev.extendRefId, { success: false, data: ev.reason, transaction: ev.transaction });
         });
     }
 
@@ -96,6 +106,53 @@ class TenantClient extends BaseEvernodeClient {
                 if (response) {
                     response.acquireRefId = tx.id;
                     resolve(response);
+                }
+            }
+        });
+    }
+
+    async extendLeaseSubmit(hostAddress, amount, tokenID, options = {}) {
+        return this.xrplAcc.makePayment(hostAddress, amount, EvernodeConstants.EVR, this.config.evrIssuerAddress,
+            [{ type: MemoTypes.EXTEND_LEASE, format: MemoFormats.HEX, data: tokenID }], options.transactionOptions);
+    }
+
+    watchExtendResponse(tx, options = { timeout: 60000 }) {
+        return new Promise(async (resolve, reject) => {
+            console.log(`Waiting for extend lease response... (txHash: ${tx.id})`);
+
+            const watchEvent = EXTEND_WATCH_PREFIX + tx.id;
+
+            const failTimeout = setTimeout(() => {
+                this.#respWatcher.off(watchEvent);
+                reject({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.TIMEOUT });
+            }, options.timeout);
+
+            this.#respWatcher.once(watchEvent, async (ev) => {
+                clearTimeout(failTimeout);
+                if (ev.success) {
+                    resolve({ transaction: ev.transaction });
+                }
+                else {
+                    reject({ error: ErrorCodes.EXTEND_ERR, reason: ev.data, transaction: ev.transaction });
+                }
+            })
+        });
+    }
+
+    extendLease(hostAddress, amount, tokenID, options = {}) {
+        return new Promise(async (resolve, reject) => {
+            const tx = await this.extendLeaseSubmit(hostAddress, amount, tokenID, options).catch(errtx => {
+                reject({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.TRANSACTION_FAILURE, transaction: errtx });
+            });
+            if (tx) {
+                const response = await this.watchExtendResponse(tx, options).catch(error => {
+                    error.extendeRefId = tx.id;
+                    reject(error);
+                });
+                if (response) {
+                    response.extendeRefId = tx.id;
+                    resolve(response);
+
                 }
             }
         });
