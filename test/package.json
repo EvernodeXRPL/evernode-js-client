@@ -4,6 +4,6 @@
         "build": "ncc build test.js --minify -o dist"
     },
     "dependencies": {
-        "evernode-js-client": "0.4.21"
+        "evernode-js-client": "0.4.23"
     }
 }

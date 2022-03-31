@@ -57,14 +57,17 @@ async function app() {
         // console.log(nft2);
 
         // const tests = [
-        //     () => initializeConfigs(),
-        //     () => registerHost(),
-        //     () => getAllHosts(),
-        //     () => getActiveHosts(),
-        //     () => acquire("success"),
-        //     () => acquire("error"),
-        //     () => acquire("timeout"),
-        //     () => deregisterHost(),
+            // () => initializeConfigs(),
+            // () => registerHost(),
+            // () => getAllHosts(),
+            // () => getActiveHosts(),
+            // () => acquire("success"),
+            // () => acquire("error"),
+            // () => acquire("timeout"),
+            // () => extendLease("success"),
+            // () => extendLease("error"),
+            // () => extendLease("timeout"),
+            // () => deregisterHost(),
         // ];
 
         // for (const test of tests) {
@@ -93,6 +96,8 @@ async function app() {
         console.error("Error occured:", e);
     }
     finally {
+        // Added this timeout since some tests failed with not connected error.
+        await new Promise(resolve => setTimeout(resolve, 4000)); // Wait for four seconds before disconnecting.
         await xrplApi.disconnect();
     }
 }
@@ -212,6 +217,41 @@ async function acquire(scenario) {
     }
 }
 
+async function extendLease(scenario) {
+    console.log(`-----------Extend lease (${scenario})`);
+
+    const tenant = await getTenantClient();
+    await tenant.prepareAccount();
+
+    // Setup host to watch for incoming acquires.
+    const host = await getHostClient();
+
+    host.on(evernode.HostEvents.ExtendLease, async (r) => {
+
+        console.log(`Host received extend request for: '${r.nfTokenId}'`);
+
+        console.log(`Host submitting ${scenario} response...`);
+        await new Promise(resolve => setTimeout(resolve, 4000));
+
+        if (scenario === "success")
+            await host.extendSuccess(r.extendRefId, r.tenant, { content: "dummy success" }).catch(console.error);
+        else if (scenario === "error") {
+            await host.extendError(r.extendRefId, r.tenant, "dummy_error", r.payment.toString()).catch(console.error);
+        }
+    })
+
+    await fundTenant(tenant);
+
+    try {
+        const timeout = (scenario === "timeout" ? 10000 : 30000);
+        const tokenIDs = (await tenant.xrplAcc.getNfts()).map(n => n.TokenID);
+        const result = await tenant.extendLease(hostAddress, '20', tokenIDs[0], { timeout: timeout });
+        console.log(`Extend ref id: ${result.extendeRefId}`);
+    }
+    catch (err) {
+        console.log("Tenant recieved extend error: ", err.reason)
+    }
+}
 //////////////////////////////////////////////////////////////////////////////////////
 
 async function getTenantClient() {
