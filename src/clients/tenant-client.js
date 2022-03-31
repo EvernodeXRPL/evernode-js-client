@@ -55,10 +55,9 @@ class TenantClient extends BaseEvernodeClient {
         // Accept the offer.
         if (nftOffers && nftOffers.length > 0) {
             // Encrypt the requirements with the host's encryption key (Specified in MessageKey field of the host account).
-            const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
-            const encKey = await hostAcc.getMessageKey();
+            const encKey = await host.getMessageKey();
             if (!encKey)
-                throw "Host encryption key not set.";
+                throw { reason: ErrorReasons.INVALID_HOST, error: "Host encryption key not set." };
 
             const ecrypted = await EncryptionHelper.encrypt(encKey, requirement, {
                 iv: options.iv, // Must be null or 16 bytes.
@@ -66,7 +65,7 @@ class TenantClient extends BaseEvernodeClient {
             });
             return this.xrplAcc.buyNft(nftOffers[0].index, [{ type: MemoTypes.ACQUIRE_LEASE, format: MemoFormats.BASE64, data: ecrypted }], options.transactionOptions);
         } else
-            throw "No offers available.";
+            throw { reason: ErrorReasons.NO_OFFER, error: "No offers available." };
     }
 
     watchAcquireResponse(tx, options = { timeout: 60000 }) {
@@ -95,8 +94,8 @@ class TenantClient extends BaseEvernodeClient {
 
     acquireLease(hostAddress, requirement, options = {}) {
         return new Promise(async (resolve, reject) => {
-            const tx = await this.acquireLeaseSubmit(hostAddress, requirement, options).catch(errtx => {
-                reject({ error: ErrorCodes.ACQUIRE_ERR, reason: ErrorReasons.TRANSACTION_FAILURE, transaction: errtx });
+            const tx = await this.acquireLeaseSubmit(hostAddress, requirement, options).catch(error => {
+                reject({ error: ErrorCodes.ACQUIRE_ERR, reason: error.reason || ErrorReasons.TRANSACTION_FAILURE, message: error.error || error });
             });
             if (tx) {
                 const response = await this.watchAcquireResponse(tx, options).catch(error => {

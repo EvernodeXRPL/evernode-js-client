@@ -33,6 +33,7 @@ const ErrorCodes = {
 const ErrorReasons = {
     TRANSACTION_FAILURE: 'TRANSACTION_FAILURE',
     NO_OFFER: 'NO_OFFER',
+    INVALID_HOST: 'INVALID_HOST',
     TIMEOUT: 'TIMEOUT'
 }
 
