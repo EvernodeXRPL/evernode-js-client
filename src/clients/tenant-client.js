@@ -30,7 +30,7 @@ class TenantClient extends BaseEvernodeClient {
         });
 
         this.on(TenantEvents.ExtendSuccess, (ev) => {
-            this.#respWatcher.emit(EXTEND_WATCH_PREFIX + ev.extendRefId, { success: true, transaction: ev.transaction });
+            this.#respWatcher.emit(EXTEND_WATCH_PREFIX + ev.extendRefId, { success: true, transaction: ev.transaction, expiryMoment: ev.expiryMoment });
         });
         this.on(TenantEvents.ExtendError, (ev) => {
             this.#respWatcher.emit(EXTEND_WATCH_PREFIX + ev.extendRefId, { success: false, data: ev.reason, transaction: ev.transaction });
@@ -130,7 +130,7 @@ class TenantClient extends BaseEvernodeClient {
             this.#respWatcher.once(watchEvent, async (ev) => {
                 clearTimeout(failTimeout);
                 if (ev.success) {
-                    resolve({ transaction: ev.transaction });
+                    resolve({ transaction: ev.transaction, expiryMoment: ev.expiryMoment });
                 }
                 else {
                     reject({ error: ErrorCodes.EXTEND_ERR, reason: ev.data, transaction: ev.transaction });
@@ -143,8 +143,10 @@ class TenantClient extends BaseEvernodeClient {
         return new Promise(async (resolve, reject) => {
             const nft = (await this.xrplAcc.getNfts())?.find(n => n.TokenID == tokenID);
 
-            if (!nft)
+            if (!nft) {
                 reject({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.NO_NFT, content: 'Could not find the nft for lease extend request.' });
+                return;
+            }
 
             // Get the agreement lease amount from the nft and calculate EVR amount to be sent.
             const uriInfo = UtilHelpers.decodeLeaseNftUri(nft.URI);
@@ -159,7 +161,6 @@ class TenantClient extends BaseEvernodeClient {
                 if (response) {
                     response.extendeRefId = tx.id;
                     resolve(response);
-
                 }
             }
         });

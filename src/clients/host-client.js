@@ -266,9 +266,12 @@ class HostClient extends BaseEvernodeClient {
             options.transactionOptions);
     }
 
-    async extendSuccess(txHash, tenantAddress, options = {}) {
+    async extendSuccess(txHash, tenantAddress, expiryMoment, options = {}) {
+        let buf = Buffer.allocUnsafe(4);
+        buf.writeUInt32BE(expiryMoment);
+
         const memos = [
-            { type: MemoTypes.EXTEND_SUCCESS, format: '', data: '' },
+            { type: MemoTypes.EXTEND_SUCCESS, format: MemoFormats.HEX, data: buf.toString('hex') },
             { type: MemoTypes.EXTEND_REF, format: MemoFormats.HEX, data: txHash }];
 
         return this.xrplAcc.makePayment(tenantAddress,

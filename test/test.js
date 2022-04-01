@@ -246,7 +246,7 @@ async function extendLease(scenario) {
         const timeout = (scenario === "timeout" ? 10000 : 30000);
         const tokenIDs = (await tenant.xrplAcc.getNfts()).map(n => n.TokenID);
         const result = await tenant.extendLease(hostAddress, 2, tokenIDs[0], { timeout: timeout });
-        console.log(`Extend ref id: ${result.extendeRefId}`);
+        console.log(`Extend ref id: ${result.extendeRefId}, Expiry moments: ${result.expiryMoment}`);
     }
     catch (err) {
         console.log("Tenant recieved extend error: ", err.reason)
