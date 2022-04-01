@@ -287,7 +287,7 @@ class HostClient extends BaseEvernodeClient {
 
         // Required to refund the paid EVR amount as the offer extention is not successfull.
         return this.xrplAcc.makePayment(tenantAddress,
-            refund,
+            refund.toString(),
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress,
             memos,

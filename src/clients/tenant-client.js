@@ -3,6 +3,7 @@ const { EvernodeEvents, MemoFormats, MemoTypes, ErrorCodes, ErrorReasons, Everno
 const { EventEmitter } = require('../event-emitter');
 const { EncryptionHelper } = require('../encryption-helper');
 const { XrplAccount } = require('../xrpl-account');
+const { UtilHelpers } = require('../util-helpers');
 
 const ACQUIRE_WATCH_PREFIX = 'acquire_';
 const EXTEND_WATCH_PREFIX = 'extend_';
@@ -57,7 +58,7 @@ class TenantClient extends BaseEvernodeClient {
             // Encrypt the requirements with the host's encryption key (Specified in MessageKey field of the host account).
             const encKey = await host.getMessageKey();
             if (!encKey)
-                throw { reason: ErrorReasons.INVALID_HOST, error: "Host encryption key not set." };
+                throw { reason: ErrorReasons.INTERNAL_ERR, error: "Host encryption key not set." };
 
             const ecrypted = await EncryptionHelper.encrypt(encKey, requirement, {
                 iv: options.iv, // Must be null or 16 bytes.
@@ -95,7 +96,7 @@ class TenantClient extends BaseEvernodeClient {
     acquireLease(hostAddress, requirement, options = {}) {
         return new Promise(async (resolve, reject) => {
             const tx = await this.acquireLeaseSubmit(hostAddress, requirement, options).catch(error => {
-                reject({ error: ErrorCodes.ACQUIRE_ERR, reason: error.reason || ErrorReasons.TRANSACTION_FAILURE, message: error.error || error });
+                reject({ error: ErrorCodes.ACQUIRE_ERR, reason: error.reason || ErrorReasons.TRANSACTION_FAILURE, content: error.error || error });
             });
             if (tx) {
                 const response = await this.watchAcquireResponse(tx, options).catch(error => {
@@ -111,7 +112,7 @@ class TenantClient extends BaseEvernodeClient {
     }
 
     async extendLeaseSubmit(hostAddress, amount, tokenID, options = {}) {
-        return this.xrplAcc.makePayment(hostAddress, amount, EvernodeConstants.EVR, this.config.evrIssuerAddress,
+        return this.xrplAcc.makePayment(hostAddress, amount.toString(), EvernodeConstants.EVR, this.config.evrIssuerAddress,
             [{ type: MemoTypes.EXTEND_LEASE, format: MemoFormats.HEX, data: tokenID }], options.transactionOptions);
     }
 
@@ -138,9 +139,16 @@ class TenantClient extends BaseEvernodeClient {
         });
     }
 
-    extendLease(hostAddress, amount, tokenID, options = {}) {
+    extendLease(hostAddress, moments, tokenID, options = {}) {
         return new Promise(async (resolve, reject) => {
-            const tx = await this.extendLeaseSubmit(hostAddress, amount, tokenID, options).catch(errtx => {
+            const nft = (await this.xrplAcc.getNfts())?.find(n => n.TokenID == tokenID);
+
+            if (!nft)
+                reject({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.NO_NFT, content: 'Could not find the nft for lease extend request.' });
+
+            // Get the agreement lease amount from the nft and calculate EVR amount to be sent.
+            const uriInfo = UtilHelpers.decodeLeaseNftUri(nft.URI);
+            const tx = await this.extendLeaseSubmit(hostAddress, moments * uriInfo.leaseAmount, tokenID, options).catch(errtx => {
                 reject({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.TRANSACTION_FAILURE, transaction: errtx });
             });
             if (tx) {

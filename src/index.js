@@ -9,6 +9,7 @@ const { EvernodeConstants } = require('./evernode-common');
 const { XflHelpers } = require('./xfl-helpers');
 const { FirestoreHandler } = require('./firestore/firestore-handler');
 const { StateHelpers } = require('./state-helpers');
+const { UtilHelpers } = require('./util-helpers');
 
 module.exports = {
     RegistryClient,
@@ -25,5 +26,6 @@ module.exports = {
     Defaults,
     XflHelpers,
     StateHelpers,
-    FirestoreHandler
+    FirestoreHandler,
+    UtilHelpers
 }
