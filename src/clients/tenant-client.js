@@ -3,6 +3,7 @@ const { EvernodeEvents, MemoFormats, MemoTypes, ErrorCodes, ErrorReasons, Everno
 const { EventEmitter } = require('../event-emitter');
 const { EncryptionHelper } = require('../encryption-helper');
 const { XrplAccount } = require('../xrpl-account');
+const { UtilHelpers } = require('../util-helpers');
 
 const ACQUIRE_WATCH_PREFIX = 'acquire_';
 const EXTEND_WATCH_PREFIX = 'extend_';
@@ -29,7 +30,7 @@ class TenantClient extends BaseEvernodeClient {
         });
 
         this.on(TenantEvents.ExtendSuccess, (ev) => {
-            this.#respWatcher.emit(EXTEND_WATCH_PREFIX + ev.extendRefId, { success: true, transaction: ev.transaction });
+            this.#respWatcher.emit(EXTEND_WATCH_PREFIX + ev.extendRefId, { success: true, transaction: ev.transaction, expiryMoment: ev.expiryMoment });
         });
         this.on(TenantEvents.ExtendError, (ev) => {
             this.#respWatcher.emit(EXTEND_WATCH_PREFIX + ev.extendRefId, { success: false, data: ev.reason, transaction: ev.transaction });
@@ -55,10 +56,9 @@ class TenantClient extends BaseEvernodeClient {
         // Accept the offer.
         if (nftOffers && nftOffers.length > 0) {
             // Encrypt the requirements with the host's encryption key (Specified in MessageKey field of the host account).
-            const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
-            const encKey = await hostAcc.getMessageKey();
+            const encKey = await host.getMessageKey();
             if (!encKey)
-                throw "Host encryption key not set.";
+                throw { reason: ErrorReasons.INTERNAL_ERR, error: "Host encryption key not set." };
 
             const ecrypted = await EncryptionHelper.encrypt(encKey, requirement, {
                 iv: options.iv, // Must be null or 16 bytes.
@@ -66,7 +66,7 @@ class TenantClient extends BaseEvernodeClient {
             });
             return this.xrplAcc.buyNft(nftOffers[0].index, [{ type: MemoTypes.ACQUIRE_LEASE, format: MemoFormats.BASE64, data: ecrypted }], options.transactionOptions);
         } else
-            throw "No offers available.";
+            throw { reason: ErrorReasons.NO_OFFER, error: "No offers available." };
     }
 
     watchAcquireResponse(tx, options = { timeout: 60000 }) {
@@ -95,8 +95,8 @@ class TenantClient extends BaseEvernodeClient {
 
     acquireLease(hostAddress, requirement, options = {}) {
         return new Promise(async (resolve, reject) => {
-            const tx = await this.acquireLeaseSubmit(hostAddress, requirement, options).catch(errtx => {
-                reject({ error: ErrorCodes.ACQUIRE_ERR, reason: ErrorReasons.TRANSACTION_FAILURE, transaction: errtx });
+            const tx = await this.acquireLeaseSubmit(hostAddress, requirement, options).catch(error => {
+                reject({ error: ErrorCodes.ACQUIRE_ERR, reason: error.reason || ErrorReasons.TRANSACTION_FAILURE, content: error.error || error });
             });
             if (tx) {
                 const response = await this.watchAcquireResponse(tx, options).catch(error => {
@@ -112,7 +112,7 @@ class TenantClient extends BaseEvernodeClient {
     }
 
     async extendLeaseSubmit(hostAddress, amount, tokenID, options = {}) {
-        return this.xrplAcc.makePayment(hostAddress, amount, EvernodeConstants.EVR, this.config.evrIssuerAddress,
+        return this.xrplAcc.makePayment(hostAddress, amount.toString(), EvernodeConstants.EVR, this.config.evrIssuerAddress,
             [{ type: MemoTypes.EXTEND_LEASE, format: MemoFormats.HEX, data: tokenID }], options.transactionOptions);
     }
 
@@ -130,7 +130,7 @@ class TenantClient extends BaseEvernodeClient {
             this.#respWatcher.once(watchEvent, async (ev) => {
                 clearTimeout(failTimeout);
                 if (ev.success) {
-                    resolve({ transaction: ev.transaction });
+                    resolve({ transaction: ev.transaction, expiryMoment: ev.expiryMoment });
                 }
                 else {
                     reject({ error: ErrorCodes.EXTEND_ERR, reason: ev.data, transaction: ev.transaction });
@@ -139,9 +139,18 @@ class TenantClient extends BaseEvernodeClient {
         });
     }
 
-    extendLease(hostAddress, amount, tokenID, options = {}) {
+    extendLease(hostAddress, moments, tokenID, options = {}) {
         return new Promise(async (resolve, reject) => {
-            const tx = await this.extendLeaseSubmit(hostAddress, amount, tokenID, options).catch(errtx => {
+            const nft = (await this.xrplAcc.getNfts())?.find(n => n.TokenID == tokenID);
+
+            if (!nft) {
+                reject({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.NO_NFT, content: 'Could not find the nft for lease extend request.' });
+                return;
+            }
+
+            // Get the agreement lease amount from the nft and calculate EVR amount to be sent.
+            const uriInfo = UtilHelpers.decodeLeaseNftUri(nft.URI);
+            const tx = await this.extendLeaseSubmit(hostAddress, moments * uriInfo.leaseAmount, tokenID, options).catch(errtx => {
                 reject({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.TRANSACTION_FAILURE, transaction: errtx });
             });
             if (tx) {
@@ -152,7 +161,6 @@ class TenantClient extends BaseEvernodeClient {
                 if (response) {
                     response.extendeRefId = tx.id;
                     resolve(response);
-
                 }
             }
         });

@@ -1,4 +1,6 @@
 const { Buffer } = require('buffer');
+const { XflHelpers } = require('./xfl-helpers');
+const { EvernodeConstants } = require('./evernode-common');
 
 // Utility helper functions.
 class UtilHelpers {
@@ -24,6 +26,19 @@ class UtilHelpers {
                 return isBE ? Number(buf.readBigUInt64BE()) : Number(buf.readBigUInt64LE());
             default:
                 throw 'Invalid base value';
+        }
+    }
+
+    static decodeLeaseNftUri(hexUri) {
+        // Get the lease index from the nft URI.
+        // <prefix><lease index (uint16)><half of tos hash (16 bytes)><lease amount (uint32)>
+        const prefixLen = EvernodeConstants.LEASE_NFT_PREFIX_HEX.length / 2;
+        const halfToSLen = 16;
+        const uriBuf = Buffer.from(hexUri, 'hex');
+        return {
+            leaseIndex: uriBuf.readUint16BE(prefixLen),
+            halfTos: uriBuf.slice(prefixLen + 2, halfToSLen),
+            leaseAmount: parseFloat(XflHelpers.toString(uriBuf.readBigInt64BE(prefixLen + 2 + halfToSLen)))
         }
     }
 }
