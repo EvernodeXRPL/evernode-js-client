@@ -93,7 +93,7 @@ class TenantClient extends BaseEvernodeClient {
         });
     }
 
-    acquireLease(hostAddress, requirement, options = {}) {
+    acquireLease(hostAddress, requirement, options) {
         return new Promise(async (resolve, reject) => {
             const tx = await this.acquireLeaseSubmit(hostAddress, requirement, options).catch(error => {
                 reject({ error: ErrorCodes.ACQUIRE_ERR, reason: error.reason || ErrorReasons.TRANSACTION_FAILURE, content: error.error || error });
@@ -139,8 +139,9 @@ class TenantClient extends BaseEvernodeClient {
         });
     }
 
-    extendLease(hostAddress, moments, tokenID, options = {}) {
+    extendLease(hostAddress, moments, instanceName, options) {
         return new Promise(async (resolve, reject) => {
+            const tokenID = instanceName;
             const nft = (await this.xrplAcc.getNfts())?.find(n => n.TokenID == tokenID);
 
             if (!nft) {
