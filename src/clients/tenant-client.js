@@ -8,6 +8,8 @@ const { UtilHelpers } = require('../util-helpers');
 const ACQUIRE_WATCH_PREFIX = 'acquire_';
 const EXTEND_WATCH_PREFIX = 'extend_';
 
+const DEFAULT_WAIT_TIMEOUT = 60000;
+
 const TenantEvents = {
     AcquireSuccess: EvernodeEvents.AcquireSuccess,
     AcquireError: EvernodeEvents.AcquireError,
@@ -78,7 +80,7 @@ class TenantClient extends BaseEvernodeClient {
             const failTimeout = setTimeout(() => {
                 this.#respWatcher.off(watchEvent);
                 reject({ error: ErrorCodes.ACQUIRE_ERR, reason: ErrorReasons.TIMEOUT });
-            }, options.timeout || 60000);
+            }, options.timeout || DEFAULT_WAIT_TIMEOUT);
 
             this.#respWatcher.once(watchEvent, async (ev) => {
                 clearTimeout(failTimeout);
@@ -125,7 +127,7 @@ class TenantClient extends BaseEvernodeClient {
             const failTimeout = setTimeout(() => {
                 this.#respWatcher.off(watchEvent);
                 reject({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.TIMEOUT });
-            }, options.timeout || 60000);
+            }, options.timeout || DEFAULT_WAIT_TIMEOUT);
 
             this.#respWatcher.once(watchEvent, async (ev) => {
                 clearTimeout(failTimeout);

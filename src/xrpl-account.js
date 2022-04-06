@@ -275,7 +275,7 @@ class XrplAccount {
             Expiration: expiration,
             Flags: 1, // tfSellToken
             Memos: TransactionHelper.formatMemos(memos)
-        }
+        };
 
         return this.#submitAndVerifyTransaction(destination ? { ...tx, Destination: destination } : tx, options);
     }
@@ -316,14 +316,16 @@ class XrplAccount {
         }, options);
     }
 
-    burnNft(tokenId, memos = null, options = {}) {
+    burnNft(tokenId, owner = null, memos = null, options = {}) {
 
-        return this.#submitAndVerifyTransaction({
+        const tx = {
             TransactionType: 'NFTokenBurn',
             Account: this.address,
             TokenID: tokenId,
             Memos: TransactionHelper.formatMemos(memos)
-        }, options);
+        };
+
+        return this.#submitAndVerifyTransaction(owner ? { ...tx, Owner: owner } : tx, options);
     }
 
     async subscribe() {

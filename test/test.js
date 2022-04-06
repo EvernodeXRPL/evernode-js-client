@@ -198,7 +198,7 @@ async function acquire(scenario) {
                 const nft = (await (new evernode.XrplAccount(r.tenant)).getNfts())?.find(n => n.TokenID == r.nfTokenId);
                 const leaseIndex = Buffer.from(nft.URI, 'hex').readUint16BE(evernode.EvernodeConstants.LEASE_NFT_PREFIX_HEX.length);
 
-                await host.expireLease(r.nfTokenId);
+                await host.expireLease(r.nfTokenId, r.tenant);
                 await host.offerLease(leaseIndex, r.leaseAmount, tosHash);
                 await host.acquireError(r.acquireRefId, r.tenant, r.leaseAmount, "dummy_error");
             }
