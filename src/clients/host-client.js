@@ -101,12 +101,8 @@ class HostClient extends BaseEvernodeClient {
             this.config.evrIssuerAddress);
     }
 
-    async expireLease(nfTokenId) {
-        // Burn transaction is currently failing even if the burnable flag is set,
-        // So we keep this commented until it's fixed.
-        // Todo: Uncomment this when burn nft in xrpl lib gets fixed.
-        // await this.xrplAcc.burnNft(nfTokenId);
-        return nfTokenId;
+    async expireLease(nfTokenId, tenantAddress = null) {
+        await this.xrplAcc.burnNft(nfTokenId, tenantAddress);
     }
 
     async register(countryCode, cpuMicroSec, ramMb, diskMb, totalInstanceCount, description, options = {}) {

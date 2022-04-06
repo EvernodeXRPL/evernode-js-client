@@ -8,6 +8,8 @@ const { UtilHelpers } = require('../util-helpers');
 const ACQUIRE_WATCH_PREFIX = 'acquire_';
 const EXTEND_WATCH_PREFIX = 'extend_';
 
+const DEFAULT_WAIT_TIMEOUT = 60000;
+
 const TenantEvents = {
     AcquireSuccess: EvernodeEvents.AcquireSuccess,
     AcquireError: EvernodeEvents.AcquireError,
@@ -69,7 +71,7 @@ class TenantClient extends BaseEvernodeClient {
             throw { reason: ErrorReasons.NO_OFFER, error: "No offers available." };
     }
 
-    watchAcquireResponse(tx, options = { timeout: 60000 }) {
+    watchAcquireResponse(tx, options = {}) {
         return new Promise(async (resolve, reject) => {
             console.log(`Waiting for acquire response... (txHash: ${tx.id})`);
 
@@ -78,7 +80,7 @@ class TenantClient extends BaseEvernodeClient {
             const failTimeout = setTimeout(() => {
                 this.#respWatcher.off(watchEvent);
                 reject({ error: ErrorCodes.ACQUIRE_ERR, reason: ErrorReasons.TIMEOUT });
-            }, options.timeout);
+            }, options.timeout || DEFAULT_WAIT_TIMEOUT);
 
             this.#respWatcher.once(watchEvent, async (ev) => {
                 clearTimeout(failTimeout);
@@ -116,7 +118,7 @@ class TenantClient extends BaseEvernodeClient {
             [{ type: MemoTypes.EXTEND_LEASE, format: MemoFormats.HEX, data: tokenID }], options.transactionOptions);
     }
 
-    watchExtendResponse(tx, options = { timeout: 60000 }) {
+    watchExtendResponse(tx, options = {}) {
         return new Promise(async (resolve, reject) => {
             console.log(`Waiting for extend lease response... (txHash: ${tx.id})`);
 
@@ -125,7 +127,7 @@ class TenantClient extends BaseEvernodeClient {
             const failTimeout = setTimeout(() => {
                 this.#respWatcher.off(watchEvent);
                 reject({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.TIMEOUT });
-            }, options.timeout);
+            }, options.timeout || DEFAULT_WAIT_TIMEOUT);
 
             this.#respWatcher.once(watchEvent, async (ev) => {
                 clearTimeout(failTimeout);
@@ -139,8 +141,9 @@ class TenantClient extends BaseEvernodeClient {
         });
     }
 
-    extendLease(hostAddress, moments, tokenID, options = {}) {
+    extendLease(hostAddress, moments, instanceName, options = {}) {
         return new Promise(async (resolve, reject) => {
+            const tokenID = instanceName;
             const nft = (await this.xrplAcc.getNfts())?.find(n => n.TokenID == tokenID);
 
             if (!nft) {
