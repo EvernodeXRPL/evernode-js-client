@@ -35,7 +35,9 @@ const ErrorReasons = {
     NO_OFFER: 'NO_OFFER',
     NO_NFT: 'NO_NFT',
     INTERNAL_ERR: 'INTERNAL_ERR',
-    TIMEOUT: 'TIMEOUT'
+    TIMEOUT: 'TIMEOUT',
+    HOST_INVALID: 'HOST_INVALID',
+    HOST_INACTIVE: 'HOST_INACTIVE'
 }
 
 // All keys are prefixed with 'EVR' (0x455652)

@@ -50,6 +50,13 @@ class TenantClient extends BaseEvernodeClient {
     }
 
     async acquireLeaseSubmit(hostAddress, requirement, options = {}) {
+        // Check whether the host is registered and active.
+        const hosts = await this.getHosts({ address: hostAddress });
+        if (!hosts || !hosts.length)
+            throw { reason: ErrorReasons.HOST_INVALID, error: "Host is not registered." };
+        else if (!hosts[0].active)
+            throw { reason: ErrorReasons.HOST_INACTIVE, error: "Host is not active." };
+
         const host = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
         const hostNfts = (await host.getNfts()).filter(nft => nft.URI.startsWith(EvernodeConstants.LEASE_NFT_PREFIX_HEX));
         const hostTokenIDs = hostNfts.map(nft => nft.TokenID);
@@ -114,6 +121,13 @@ class TenantClient extends BaseEvernodeClient {
     }
 
     async extendLeaseSubmit(hostAddress, amount, tokenID, options = {}) {
+        // Check whether the host is registered and active.
+        const hosts = await this.getHosts({ address: hostAddress });
+        if (!hosts || !hosts.length)
+            throw { reason: ErrorReasons.HOST_INVALID, error: "Host is not registered." };
+        else if (!hosts[0].active)
+            throw { reason: ErrorReasons.HOST_INACTIVE, error: "Host is not active." };
+
         return this.xrplAcc.makePayment(hostAddress, amount.toString(), EvernodeConstants.EVR, this.config.evrIssuerAddress,
             [{ type: MemoTypes.EXTEND_LEASE, format: MemoFormats.HEX, data: tokenID }], options.transactionOptions);
     }
@@ -153,8 +167,8 @@ class TenantClient extends BaseEvernodeClient {
 
             // Get the agreement lease amount from the nft and calculate EVR amount to be sent.
             const uriInfo = UtilHelpers.decodeLeaseNftUri(nft.URI);
-            const tx = await this.extendLeaseSubmit(hostAddress, moments * uriInfo.leaseAmount, tokenID, options).catch(errtx => {
-                reject({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.TRANSACTION_FAILURE, transaction: errtx });
+            const tx = await this.extendLeaseSubmit(hostAddress, moments * uriInfo.leaseAmount, tokenID, options).catch(error => {
+                reject({ error: ErrorCodes.EXTEND_ERR, reason: error.reason || ErrorReasons.TRANSACTION_FAILURE, content: error.error || error });
             });
             if (tx) {
                 const response = await this.watchExtendResponse(tx, options).catch(error => {
