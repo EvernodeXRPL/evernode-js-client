@@ -4,6 +4,8 @@ const { EventEmitter } = require('../event-emitter');
 const { EncryptionHelper } = require('../encryption-helper');
 const { XrplAccount } = require('../xrpl-account');
 const { UtilHelpers } = require('../util-helpers');
+const { Buffer } = require('buffer');
+const codec = require('ripple-address-codec');
 
 const ACQUIRE_WATCH_PREFIX = 'acquire_';
 const EXTEND_WATCH_PREFIX = 'extend_';
@@ -49,15 +51,31 @@ class TenantClient extends BaseEvernodeClient {
         }
     }
 
-    async acquireLeaseSubmit(hostAddress, requirement, options = {}) {
-        // Check whether the host is registered and active.
-        const hosts = await this.getHosts({ address: hostAddress });
+    async getLeaseHost(hostAddress) {
+        const host = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
+        // Find an owned NFT with matching Evernode host NFT prefix.
+        const nft = (await host.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX));
+        if (!nft)
+            throw { reason: ErrorReasons.HOST_INVALID, error: "Host is not registered." };
+
+        // Check whether the token was actually issued from Evernode registry contract.
+        const issuerHex = nft.TokenID.substr(8, 40);
+        const issuerAddr = codec.encodeAccountID(Buffer.from(issuerHex, 'hex'));
+        if (issuerAddr != this.registryAddress)
+            throw { reason: ErrorReasons.HOST_INVALID, error: "Host is not registered." };
+
+        // Check whether active.
+        const hosts = await this.getHosts({ address: host.address });
         if (!hosts || !hosts.length)
             throw { reason: ErrorReasons.HOST_INVALID, error: "Host is not registered." };
         else if (!hosts[0].active)
             throw { reason: ErrorReasons.HOST_INACTIVE, error: "Host is not active." };
 
-        const host = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
+        return host;
+    }
+
+    async acquireLeaseSubmit(hostAddress, requirement, options = {}) {
+        const host = await this.getLeaseHost(hostAddress);
         const hostNfts = (await host.getNfts()).filter(nft => nft.URI.startsWith(EvernodeConstants.LEASE_NFT_PREFIX_HEX));
         const hostTokenIDs = hostNfts.map(nft => nft.TokenID);
         const nftOffers = (await host.getNftOffers())?.filter(offer => (offer.Flags == 1 && hostTokenIDs.includes(offer.TokenID))); // Filter only sell offers
@@ -121,14 +139,8 @@ class TenantClient extends BaseEvernodeClient {
     }
 
     async extendLeaseSubmit(hostAddress, amount, tokenID, options = {}) {
-        // Check whether the host is registered and active.
-        const hosts = await this.getHosts({ address: hostAddress });
-        if (!hosts || !hosts.length)
-            throw { reason: ErrorReasons.HOST_INVALID, error: "Host is not registered." };
-        else if (!hosts[0].active)
-            throw { reason: ErrorReasons.HOST_INACTIVE, error: "Host is not active." };
-
-        return this.xrplAcc.makePayment(hostAddress, amount.toString(), EvernodeConstants.EVR, this.config.evrIssuerAddress,
+        const host = await this.getLeaseHost(hostAddress);
+        return this.xrplAcc.makePayment(host.address, amount.toString(), EvernodeConstants.EVR, this.config.evrIssuerAddress,
             [{ type: MemoTypes.EXTEND_LEASE, format: MemoFormats.HEX, data: tokenID }], options.transactionOptions);
     }
 
