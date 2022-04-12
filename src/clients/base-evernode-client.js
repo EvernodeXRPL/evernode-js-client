@@ -180,7 +180,7 @@ class BaseEvernodeClient {
                 data: {
                     transaction: tx,
                     host: tx.Destination,
-                    nfTokenId: tx.SellOffer.TokenID,
+                    nfTokenId: tx.SellOffer.NFTokenID,
                     leaseAmount: tx.SellOffer.Amount.value,
                     acquireRefId: tx.hash,
                     tenant: tx.Account,
