@@ -1,15 +1,15 @@
 // const evernode = require("evernode-js-client");
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 
-const registryAddress = "rBH5qwB6644oFQ1HDeFTuw9t2PvSjLGN5i";
-const hostAddress = "rPWNYfiQBwkZfWiT1wDRzkKKshYdN1rVmy";
-const hostSecret = "spygqB6AwNtHk5K4Fp65fHRjnktqe";
-const tenantAddress = "rLLXbc1vBUTqKcYGQtmE15gpSZRB94NGvr";
-const tenantSecret = "spFEintsB4ucepfNNDfMmu76SFkW9";
+const registryAddress = "rpXcQDQaJLjJ9EjdgrMLuR2gmeibakndLj";
+const hostAddress = "rfwdKLAo3L5tTsRQq4CqsxmysiG68KoLUh";
+const hostSecret = "shHq52ZsMegpPVK7YQMMMgeFvk2U5";
+const tenantAddress = "rhQQzyFbKTHgB9kzQQnxkGaFxJH4ay7h7j";
+const tenantSecret = "spkVnwaD3KEUozoLK8YBSdDN9inW3";
 
-const foundationAddress = "rM9vgogfGrkt8Qa7DGiyKRg5UVJp1sw71S";
-const foundationSecret = "spvkyyAwTyiaL3AYdFhiujnYWYZYs";
-const evrIssuerAddress = "rQEgEKaj2fXpi8jZ9EdTu4Y37BVar777fN";
+const foundationAddress = "rsSoJ6WeR9KAenEJh4Ui9iobAoNsitb95a";
+const foundationSecret = "ssx2HoxoNRMiw4ocqwvaPQG9weybs";
+const evrIssuerAddress = "rsm4jMJHAFExgu2L8Gk63ykM5xiSMhjGEd";
 
 const tosHash = "BECF974A2C48C21F39046C1121E5DF7BD55648E1005172868CD5738C23E3C073";
 
@@ -64,7 +64,7 @@ async function app() {
             // () => acquire("success"),
             // () => acquire("error"),
             // () => acquire("timeout"),
-            () => extendLease("success"),
+            // () => extendLease("success"),
             // () => extendLease("error"),
             // () => extendLease("timeout"),
             // () => deregisterHost(),
