@@ -59,7 +59,7 @@ class TenantClient extends BaseEvernodeClient {
             throw { reason: ErrorReasons.HOST_INVALID, error: "Host is not registered." };
 
         // Check whether the token was actually issued from Evernode registry contract.
-        const issuerHex = nft.TokenID.substr(8, 40);
+        const issuerHex = nft.NFTokenID.substr(8, 40);
         const issuerAddr = codec.encodeAccountID(Buffer.from(issuerHex, 'hex'));
         if (issuerAddr != this.registryAddress)
             throw { reason: ErrorReasons.HOST_INVALID, error: "Host is not registered." };
@@ -77,8 +77,8 @@ class TenantClient extends BaseEvernodeClient {
     async acquireLeaseSubmit(hostAddress, requirement, options = {}) {
         const host = await this.getLeaseHost(hostAddress);
         const hostNfts = (await host.getNfts()).filter(nft => nft.URI.startsWith(EvernodeConstants.LEASE_NFT_PREFIX_HEX));
-        const hostTokenIDs = hostNfts.map(nft => nft.TokenID);
-        const nftOffers = (await host.getNftOffers())?.filter(offer => (offer.Flags == 1 && hostTokenIDs.includes(offer.TokenID))); // Filter only sell offers
+        const hostTokenIDs = hostNfts.map(nft => nft.NFTokenID);
+        const nftOffers = (await host.getNftOffers())?.filter(offer => (offer.Flags == 1 && hostTokenIDs.includes(offer.NFTokenID))); // Filter only sell offers
 
         // Accept the offer.
         if (nftOffers && nftOffers.length > 0) {
@@ -170,7 +170,7 @@ class TenantClient extends BaseEvernodeClient {
     extendLease(hostAddress, moments, instanceName, options = {}) {
         return new Promise(async (resolve, reject) => {
             const tokenID = instanceName;
-            const nft = (await this.xrplAcc.getNfts())?.find(n => n.TokenID == tokenID);
+            const nft = (await this.xrplAcc.getNfts())?.find(n => n.NFTokenID == tokenID);
 
             if (!nft) {
                 reject({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.NO_NFT, content: 'Could not find the nft for lease extend request.' });

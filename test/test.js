@@ -1,15 +1,15 @@
 // const evernode = require("evernode-js-client");
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 
-const evrIssuerAddress = "ra4rVfw7EoaCokA7K1QZTYMgSj43P4c9gf";
-const registryAddress = "rLq8GXR8yei4bvKSabKRCJGz6Zj3gAu4Fr";
-const registrySecret = "shtLUvi185jPzxvDD6dH3UQzE6Tne";
-const hostAddress = "rwTeakGeRPnE4rnQbasUXyMRGgb5CBFk3a";
-const hostSecret = "ssvJEHo2WajBS2tJwUfhbVVE5eBat";
-const foundationAddress = "rMr7vasAQjPEzgQ6gnWAtDCjEYuXN3D5HV";
-const foundationSecret = "ssSWTkfYznE1goQXuM4Jx7WcVCW6Z";
-const tenantAddress = "r9aW6J4SGPQwTqT1KaaFuCuFWT82HfZ3XP";
-const tenantSecret = "spup65VeduJqLNdikzztwGFRfmnUq";
+const registryAddress = "rpXcQDQaJLjJ9EjdgrMLuR2gmeibakndLj";
+const hostAddress = "rfwdKLAo3L5tTsRQq4CqsxmysiG68KoLUh";
+const hostSecret = "shHq52ZsMegpPVK7YQMMMgeFvk2U5";
+const tenantAddress = "rhQQzyFbKTHgB9kzQQnxkGaFxJH4ay7h7j";
+const tenantSecret = "spkVnwaD3KEUozoLK8YBSdDN9inW3";
+
+const foundationAddress = "rsSoJ6WeR9KAenEJh4Ui9iobAoNsitb95a";
+const foundationSecret = "ssx2HoxoNRMiw4ocqwvaPQG9weybs";
+const evrIssuerAddress = "rsm4jMJHAFExgu2L8Gk63ykM5xiSMhjGEd";
 
 const tosHash = "BECF974A2C48C21F39046C1121E5DF7BD55648E1005172868CD5738C23E3C073";
 
@@ -39,16 +39,16 @@ async function app() {
         // const nft = await acc1.getNftByUri(uri);
         // console.log(nft);
         // // Make a sell offer (for free) while restricting it to be only purchased by the specified party.
-        // await acc1.offerSellNft(nft.TokenID, '0', 'XRP', null, hostAddress);
+        // await acc1.offerSellNft(nft.NFTokenID, '0', 'XRP', null, hostAddress);
 
         // // Account2: Buying party.
         // const acc2 = new evernode.XrplAccount(hostAddress, hostSecret);
-        // // await acc2.offerBuyNft(nft.TokenID, registryAddress, '10', 'EVR', evrIssuerAddress);
+        // // await acc2.offerBuyNft(nft.NFTokenID, registryAddress, '10', 'EVR', evrIssuerAddress);
 
         // // const offers = await acc1.getNftOffers();
         // // console.log(offers);
         // // Find the sellOffer information from seller's account.
-        // const sellOffer = (await acc1.getNftOffers()).find(o => o.TokenID == nft.TokenID);
+        // const sellOffer = (await acc1.getNftOffers()).find(o => o.NFTokenID == nft.NFTokenID);
         // console.log(sellOffer);
         // // Buy the NFT by accepting the sell offer.
         // await acc2.buyNft(sellOffer.index);
@@ -56,7 +56,7 @@ async function app() {
         // const nft2 = await acc2.getNftByUri(uri);
         // console.log(nft2);
 
-        // const tests = [
+        const tests = [
             // () => initializeConfigs(),
             // () => registerHost(),
             // () => getAllHosts(),
@@ -68,19 +68,19 @@ async function app() {
             // () => extendLease("error"),
             // () => extendLease("timeout"),
             // () => deregisterHost(),
-        // ];
+        ];
 
-        // for (const test of tests) {
-        //     await test();
-        //     await Promise.all(clients.map(c => c.disconnect())); // Cleanup clients after every test.
-        // }
+        for (const test of tests) {
+            await test();
+            await Promise.all(clients.map(c => c.disconnect())); // Cleanup clients after every test.
+        }
 
         // await registerHost();
         // Accepting the sell offer created by registry.
 
         // const tokenID = '0008000083CD166E1806EF2076C55077AEFD418E771A516CB30E8CAE00000013';
         // const reg = new evernode.XrplAccount(registryAddress, registrySecret);
-        // const sellOffer = (await reg.getNftOffers()).find(o => o.TokenID == tokenID);
+        // const sellOffer = (await reg.getNftOffers()).find(o => o.NFTokenID == tokenID);
         // console.log(sellOffer);
         // const host = new evernode.XrplAccount(hostAddress, hostSecret);
         // await host.buyNft(sellOffer.index);
@@ -195,7 +195,7 @@ async function acquire(scenario) {
             if (scenario === "success")
                 await host.acquireSuccess(r.acquireRefId, r.tenant, { content: "dummy success" });
             else if (scenario === "error") {
-                const nft = (await (new evernode.XrplAccount(r.tenant)).getNfts())?.find(n => n.TokenID == r.nfTokenId);
+                const nft = (await (new evernode.XrplAccount(r.tenant)).getNfts())?.find(n => n.NFTokenID == r.nfTokenId);
                 const leaseIndex = Buffer.from(nft.URI, 'hex').readUint16BE(evernode.EvernodeConstants.LEASE_NFT_PREFIX_HEX.length);
 
                 await host.expireLease(r.nfTokenId, r.tenant);
@@ -244,7 +244,7 @@ async function extendLease(scenario) {
 
     try {
         const timeout = (scenario === "timeout" ? 10000 : 30000);
-        const tokenIDs = (await tenant.xrplAcc.getNfts()).map(n => n.TokenID);
+        const tokenIDs = (await tenant.xrplAcc.getNfts()).map(n => n.NFTokenID);
         const result = await tenant.extendLease(hostAddress, 2, tokenIDs[0], { timeout: timeout });
         console.log(`Extend ref id: ${result.extendeRefId}, Expiry moments: ${result.expiryMoment}`);
     }
