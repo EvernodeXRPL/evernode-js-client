@@ -101,8 +101,10 @@ class HostClient extends BaseEvernodeClient {
             this.config.evrIssuerAddress);
     }
 
-    async expireLease(nfTokenId, tenantAddress = null) {
+    async expireLease(nfTokenId, tenantAddress = null, decreaseInstCount = false) {
         await this.xrplAcc.burnNft(nfTokenId, tenantAddress);
+        if (decreaseInstCount)
+            await this.#decreaseCount();
     }
 
     async register(countryCode, cpuMicroSec, ramMb, diskMb, totalInstanceCount, description, options = {}) {
@@ -227,6 +229,24 @@ class HostClient extends BaseEvernodeClient {
             options.transactionOptions);
     }
 
+    async #increaseCount(options = {}) {
+        return this.xrplAcc.makePayment(this.registryAddress,
+            XrplConstants.MIN_XRP_AMOUNT,
+            XrplConstants.XRP,
+            null,
+            [{ type: MemoTypes.INC_INST_COUNT, format: "", data: "" }],
+            options.transactionOptions);
+    }
+
+    async #decreaseCount(options = {}) {
+        return this.xrplAcc.makePayment(this.registryAddress,
+            XrplConstants.MIN_XRP_AMOUNT,
+            XrplConstants.XRP,
+            null,
+            [{ type: MemoTypes.DEC_INST_COUNT, format: "", data: "" }],
+            options.transactionOptions);
+    }
+
     async acquireSuccess(txHash, tenantAddress, instanceInfo, options = {}) {
 
         // Encrypt the instance info with the tenant's encryption key (Specified in MessageKey field of the tenant account).
@@ -240,12 +260,14 @@ class HostClient extends BaseEvernodeClient {
             { type: MemoTypes.ACQUIRE_SUCCESS, format: MemoFormats.BASE64, data: encrypted },
             { type: MemoTypes.ACQUIRE_REF, format: MemoFormats.HEX, data: txHash }];
 
-        return this.xrplAcc.makePayment(tenantAddress,
+        await this.xrplAcc.makePayment(tenantAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
             memos,
             options.transactionOptions);
+
+        return this.#increaseCount();
     }
 
     async acquireError(txHash, tenantAddress, leaseAmount, reason, options = {}) {
