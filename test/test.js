@@ -1,15 +1,16 @@
 // const evernode = require("evernode-js-client");
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 
-const registryAddress = "rpXcQDQaJLjJ9EjdgrMLuR2gmeibakndLj";
-const hostAddress = "rfwdKLAo3L5tTsRQq4CqsxmysiG68KoLUh";
-const hostSecret = "shHq52ZsMegpPVK7YQMMMgeFvk2U5";
-const tenantAddress = "rhQQzyFbKTHgB9kzQQnxkGaFxJH4ay7h7j";
-const tenantSecret = "spkVnwaD3KEUozoLK8YBSdDN9inW3";
+const registryAddress = "rhGEwP89jYJsZdZfQLh6Yb7QqqoLbRPyPY";
+const registrySecret = "snFCUgysHMBwJCai5t3VU5yrx1XtF";
+const hostAddress = "rceoq38ZjisAmTGLsTnz7xUy9NmwuHxnR";
+const hostSecret = "snKrws2eHc7dtWcSmoXcckJ4kBUrG";
+const tenantAddress = "r4wqNpGch7hzN7XombYEckC2hDncdXpm6F";
+const tenantSecret = "snaRMzHLTYyomzT8pdJMf1guKW2i3";
 
-const foundationAddress = "rsSoJ6WeR9KAenEJh4Ui9iobAoNsitb95a";
-const foundationSecret = "ssx2HoxoNRMiw4ocqwvaPQG9weybs";
-const evrIssuerAddress = "rsm4jMJHAFExgu2L8Gk63ykM5xiSMhjGEd";
+const foundationAddress = "r9UaHXeamCmmfSXm5yh4R2KCijmGMi6dnN";
+const foundationSecret = "shiTTY9GSPR9NhumoJpezJEBpWaZ2";
+const evrIssuerAddress = "rL84X2zJDBv8zJNYhvyNj6vGJwGvHka76b";
 
 const tosHash = "BECF974A2C48C21F39046C1121E5DF7BD55648E1005172868CD5738C23E3C073";
 
@@ -61,6 +62,7 @@ async function app() {
             // () => registerHost(),
             // () => getAllHosts(),
             // () => getActiveHosts(),
+            // () => heartbeatHost(),
             // () => acquire("success"),
             // () => acquire("error"),
             // () => acquire("timeout"),
@@ -151,7 +153,7 @@ async function registerHost(address = hostAddress, secret = hostSecret) {
     }
 
     console.log("Register...");
-    const instanceCount = 5;
+    const instanceCount = 1;
     await host.register("AU", 10000, 512, 1024, instanceCount, "Test desctiption", 2);
 
     console.log("Lease Offer...");
@@ -172,8 +174,28 @@ async function deregisterHost(address = hostAddress, secret = hostSecret) {
 
     await host.deregister();
 
+    // Burn NFTs.
+    const nfts = (await host.xrplAcc.getNfts()).filter(n => n.URI.startsWith(evernode.EvernodeConstants.LEASE_NFT_PREFIX_HEX))
+        .map(o => { return { nfTokenId: o.NFTokenID, ownerAddress: host.xrplAcc.address }; });
+    for (const nft of nfts) {
+        const sold = nft.ownerAddress !== host.xrplAcc.address;
+        await host.xrplAcc.burnNft(nft.nfTokenId, sold ? nft.ownerAddress : null);
+        console.log(`Burnt ${sold ? 'sold' : 'unsold'} hosting NFT (${nft.nfTokenId}) of ${nft.ownerAddress + (sold ? ' tenant' : '')} account`);
+    }
+
     // Verify the deregistration.
     return !await host.isRegistered();
+}
+
+async function heartbeatHost(address = hostAddress, secret = hostSecret) {
+    const host = await getHostClient(address, secret);
+
+    if (!await host.isRegistered())
+        return true;
+
+    console.log(`-----------Heartbeat host`);
+
+    await host.heartbeat();
 }
 
 async function acquire(scenario) {
