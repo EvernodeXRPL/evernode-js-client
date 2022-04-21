@@ -218,7 +218,7 @@ class HostClient extends BaseEvernodeClient {
 
         // Wait until the next ledger after the offer is created.
         // Otherwise if the offer accepted in the same legder which it's been created,
-        // We cannot fetch the offer from regisry contract event handler since it's getting deleted immediately.
+        // We cannot fetch the offer from registry contract event handler since it's getting deleted immediately.
         await new Promise(async resolve => {
             while (this.xrplApi.ledgerIndex <= offerLedgerIndex)
                 await new Promise(resolve2 => setTimeout(resolve2, 1000));
