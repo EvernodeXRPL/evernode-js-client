@@ -59,7 +59,6 @@ async function app() {
         const tests = [
             // () => initializeConfigs(),
             () => registerHost(),
-            // () => heartbeat(),
             () => updateInfo(),
             // () => getAllHosts(),
             // () => getActiveHosts(),
@@ -102,11 +101,6 @@ async function app() {
         await new Promise(resolve => setTimeout(resolve, 4000)); // Wait for four seconds before disconnecting.
         await xrplApi.disconnect();
     }
-}
-
-async function heartbeat() {
-    const client = await getHostClient();
-    await client.heartbeat();
 }
 
 async function updateInfo() {
