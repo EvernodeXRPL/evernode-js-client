@@ -59,11 +59,11 @@ async function app() {
         const tests = [
             // () => initializeConfigs(),
             () => registerHost(),
-            () => updateInfo(),
+            // () => updateInfo(),
             // () => getAllHosts(),
             // () => getActiveHosts(),
             // () => heartbeatHost(),
-            // () => acquire("success"),
+            () => acquire("success"),
             // () => acquire("error"),
             // () => acquire("timeout"),
             // () => extendLease("success"),
@@ -106,9 +106,7 @@ async function app() {
 
 async function updateInfo() {
     const client = await getHostClient();
-    await client.updateRegInfo({
-        activeInstances: 10
-    });
+    await client.updateRegInfo(null, null, null, null, null, null, 10);
 }
 
 async function getAllHosts() {
