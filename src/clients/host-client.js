@@ -265,13 +265,12 @@ class HostClient extends BaseEvernodeClient {
             { type: MemoTypes.ACQUIRE_SUCCESS, format: MemoFormats.BASE64, data: encrypted },
             { type: MemoTypes.ACQUIRE_REF, format: MemoFormats.HEX, data: txHash }];
 
-        return await this.xrplAcc.makePayment(tenantAddress,
+        return this.xrplAcc.makePayment(tenantAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
             memos,
             options.transactionOptions);
-
     }
 
     async acquireError(txHash, tenantAddress, leaseAmount, reason, options = {}) {
