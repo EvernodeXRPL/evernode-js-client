@@ -233,7 +233,7 @@ class HostClient extends BaseEvernodeClient {
         return await this.isRegistered();
     }
 
-    async updateRegInfo(tokenID, countryCode, cpuMicroSec, ramMb, diskMb, totalInstanceCount, activeInstanceCount, description, options = {}) {
+    async updateRegInfo(activeInstanceCount = null, totalInstanceCount = null, tokenID = null, countryCode = null, cpuMicroSec = null, ramMb = null, diskMb = null, description = null, options = {}) {
         const dataStr = `${tokenID ? tokenID : ''};${countryCode ? countryCode : ''};${cpuMicroSec ? cpuMicroSec : ''};${ramMb ? ramMb : ''};${diskMb ? diskMb : ''};${totalInstanceCount ? totalInstanceCount : ''};${activeInstanceCount !== undefined ? activeInstanceCount : ''};${description ? description : ''}`;
         return await this.xrplAcc.makePayment(this.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,

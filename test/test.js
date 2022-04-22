@@ -106,7 +106,7 @@ async function app() {
 
 async function updateInfo() {
     const client = await getHostClient();
-    await client.updateRegInfo(null, null, null, null, null, null, 10);
+    await client.updateRegInfo(10);
 }
 
 async function getAllHosts() {
