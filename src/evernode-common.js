@@ -12,6 +12,7 @@ const MemoTypes = {
     HOST_REG: 'evnHostReg',
     HOST_DEREG: 'evnHostDereg',
     HEARTBEAT: 'evnHeartbeat',
+    HOST_POST_DEREG: 'evnHostPostDereg',
     EXTEND_LEASE: 'evnExtendLease',
     EXTEND_SUCCESS: 'evnExtendSuccess',
     EXTEND_ERROR: 'evnExtendError',

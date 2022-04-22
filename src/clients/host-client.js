@@ -23,7 +23,7 @@ class HostClient extends BaseEvernodeClient {
 
     async getRegistrationNft() {
         // Find an owned NFT with matching Evernode host NFT prefix.
-        const nft = (await this.xrplAcc.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX));
+        const nft = (await this.xrplAcc.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.registryAddress);
         if (nft) {
             // Check whether the token was actually issued from Evernode registry contract.
             const issuerHex = nft.NFTokenID.substr(8, 40);
@@ -202,8 +202,10 @@ class HostClient extends BaseEvernodeClient {
         const regAcc = new XrplAccount(this.registryAddress, null, { xrplApi: this.xrplApi });
         let offer = null;
         let attempts = 0;
+        let offerLedgerIndex = 0;
         while (attempts < OFFER_WAIT_TIMEOUT) {
             offer = (await regAcc.getNftOffers()).find(o => (o.NFTokenID == regNFT.NFTokenID) && (o.Flags === 0));
+            offerLedgerIndex = this.xrplApi.ledgerIndex;
             if (offer)
                 break;
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -213,7 +215,20 @@ class HostClient extends BaseEvernodeClient {
             throw 'No offer found within timeout.';
 
         console.log('Accepting buy offer..');
-        await this.xrplAcc.sellNft(offer.index);
+
+        // Wait until the next ledger after the offer is created.
+        // Otherwise if the offer accepted in the same legder which it's been created,
+        // We cannot fetch the offer from registry contract event handler since it's getting deleted immediately.
+        await new Promise(async resolve => {
+            while (this.xrplApi.ledgerIndex <= offerLedgerIndex)
+                await new Promise(resolve2 => setTimeout(resolve2, 1000));
+            resolve();
+        });
+
+        await this.xrplAcc.sellNft(
+            offer.index,
+            [{ type: MemoTypes.HOST_POST_DEREG, format: MemoFormats.HEX, data: regNFT.NFTokenID }]
+        );
 
         return await this.isRegistered();
     }
