@@ -62,6 +62,7 @@ async function app() {
             () => updateInfo(),
             // () => getAllHosts(),
             // () => getActiveHosts(),
+            // () => heartbeatHost(),
             // () => acquire("success"),
             // () => acquire("error"),
             // () => acquire("timeout"),
@@ -159,7 +160,7 @@ async function registerHost(address = hostAddress, secret = hostSecret) {
     }
 
     console.log("Register...");
-    const instanceCount = 5;
+    const instanceCount = 1;
     await host.register("AU", 10000, 512, 1024, instanceCount, "Test desctiption", 2);
 
     console.log("Lease Offer...");
@@ -180,8 +181,28 @@ async function deregisterHost(address = hostAddress, secret = hostSecret) {
 
     await host.deregister();
 
+    // Burn NFTs.
+    const nfts = (await host.xrplAcc.getNfts()).filter(n => n.URI.startsWith(evernode.EvernodeConstants.LEASE_NFT_PREFIX_HEX))
+        .map(o => { return { nfTokenId: o.NFTokenID, ownerAddress: host.xrplAcc.address }; });
+    for (const nft of nfts) {
+        const sold = nft.ownerAddress !== host.xrplAcc.address;
+        await host.xrplAcc.burnNft(nft.nfTokenId, sold ? nft.ownerAddress : null);
+        console.log(`Burnt ${sold ? 'sold' : 'unsold'} hosting NFT (${nft.nfTokenId}) of ${nft.ownerAddress + (sold ? ' tenant' : '')} account`);
+    }
+
     // Verify the deregistration.
     return !await host.isRegistered();
+}
+
+async function heartbeatHost(address = hostAddress, secret = hostSecret) {
+    const host = await getHostClient(address, secret);
+
+    if (!await host.isRegistered())
+        return true;
+
+    console.log(`-----------Heartbeat host`);
+
+    await host.heartbeat();
 }
 
 async function acquire(scenario) {
