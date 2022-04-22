@@ -1,15 +1,15 @@
 // const evernode = require("evernode-js-client");
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 
-const registryAddress = "rpXcQDQaJLjJ9EjdgrMLuR2gmeibakndLj";
-const hostAddress = "rfwdKLAo3L5tTsRQq4CqsxmysiG68KoLUh";
-const hostSecret = "shHq52ZsMegpPVK7YQMMMgeFvk2U5";
-const tenantAddress = "rhQQzyFbKTHgB9kzQQnxkGaFxJH4ay7h7j";
-const tenantSecret = "spkVnwaD3KEUozoLK8YBSdDN9inW3";
-
-const foundationAddress = "rsSoJ6WeR9KAenEJh4Ui9iobAoNsitb95a";
-const foundationSecret = "ssx2HoxoNRMiw4ocqwvaPQG9weybs";
-const evrIssuerAddress = "rsm4jMJHAFExgu2L8Gk63ykM5xiSMhjGEd";
+const evrIssuerAddress = "ray8Ts3Eai2Qghman6PdNGYxq63K9iGqMW";
+const registryAddress = "rGoxnVeLagXLBmeTkhYXYiEYMquz8QrWB8";
+const registrySecret = "safBYXaiNZsPq3kHZ5BFNhYnp1PLW";
+const hostAddress = "rnfndoYTFeSf6xc5kfuzHCAC2fbva5zk7e";
+const hostSecret = "sn7k8nKy1dbc3LterSNm19sNAYU2W";
+const foundationAddress = "rJqt24KdDrY2Dk7sSpCkRmC4rTMG3HeaNt";
+const foundationSecret = "snsjv1cNCN36igTxpEGUAGkSVDQS8";
+const tenantAddress = "rMWfKusKivyScqoybmLose9enQbD2Loa1G";
+const tenantSecret = "spuU5nC3SxobhGAd81kXMUgWtky8W";
 
 const tosHash = "BECF974A2C48C21F39046C1121E5DF7BD55648E1005172868CD5738C23E3C073";
 
@@ -58,7 +58,9 @@ async function app() {
 
         const tests = [
             // () => initializeConfigs(),
-            // () => registerHost(),
+            () => registerHost(),
+            // () => heartbeat(),
+            () => updateInfo(),
             // () => getAllHosts(),
             // () => getActiveHosts(),
             // () => acquire("success"),
@@ -100,6 +102,18 @@ async function app() {
         await new Promise(resolve => setTimeout(resolve, 4000)); // Wait for four seconds before disconnecting.
         await xrplApi.disconnect();
     }
+}
+
+async function heartbeat() {
+    const client = await getHostClient();
+    await client.heartbeat();
+}
+
+async function updateInfo() {
+    const client = await getHostClient();
+    await client.updateRegInfo({
+        activeInstances: 10
+    });
 }
 
 async function getAllHosts() {
@@ -209,7 +223,13 @@ async function acquire(scenario) {
 
     try {
         const timeout = (scenario === "timeout" ? 10000 : 30000);
-        const result = await tenant.acquireLease(hostAddress, "dummy request", { timeout: timeout });
+        const result = await tenant.acquireLease(hostAddress, {
+            container_name: "dc411912-bcdd-4f73-af43-32ec45844b9a",
+            owner_pubkey: "ed06868b3dbc8f342eb10029bd8c11af6dfc4ce60be733a19cbb00ea11773081d6",
+            contract_id: "dc411912-bcdd-4f73-af43-32ec45844b9a",
+            image: "hp.latest-ubt.20.04",
+            config: {}
+        }, { timeout: timeout });
         console.log(`Tenant received instance '${result.instance}'`);
     }
     catch (err) {

@@ -220,6 +220,16 @@ class HostClient extends BaseEvernodeClient {
         return await this.isRegistered();
     }
 
+    async updateRegInfo(newRegInfo, options = {}) {
+        const dataStr = `${newRegInfo?.tokenID ? newRegInfo?.tokenID : ''};${newRegInfo?.countryCode ? newRegInfo?.countryCode : ''};${newRegInfo?.cpuMicroSec ? newRegInfo?.cpuMicroSec : ''};${newRegInfo?.ramMB ? newRegInfo?.ramMB : ''};${newRegInfo?.diskMB ? newRegInfo?.diskMB : ''};${newRegInfo?.totalInstanceCount ? newRegInfo?.totalInstanceCount : ''};${newRegInfo?.activeInstances ? newRegInfo?.activeInstances : ''};${newRegInfo?.description ? newRegInfo?.description : ''}`;
+        return await this.xrplAcc.makePayment(this.registryAddress,
+            XrplConstants.MIN_XRP_AMOUNT,
+            XrplConstants.XRP,
+            null,
+            [{ type: MemoTypes.HOST_UPDATE_INFO, format: MemoFormats.TEXT, data: dataStr }],
+            options.transactionOptions);
+    }
+
     async heartbeat(options = {}) {
         return this.xrplAcc.makePayment(this.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,

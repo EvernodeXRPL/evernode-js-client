@@ -11,6 +11,7 @@ const MemoTypes = {
     ACQUIRE_REF: 'evnAcquireRef',
     HOST_REG: 'evnHostReg',
     HOST_DEREG: 'evnHostDereg',
+    HOST_UPDATE_INFO: 'evnHostUpdateReg',
     HEARTBEAT: 'evnHeartbeat',
     INC_INST_COUNT: 'evnInstanceInc',
     DEC_INST_COUNT: 'evnInstanceDec',
