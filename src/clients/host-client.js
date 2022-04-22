@@ -234,7 +234,7 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async updateRegInfo(newRegInfo, options = {}) {
-        const dataStr = `${newRegInfo?.tokenID ? newRegInfo?.tokenID : ''};${newRegInfo?.countryCode ? newRegInfo?.countryCode : ''};${newRegInfo?.cpuMicroSec ? newRegInfo?.cpuMicroSec : ''};${newRegInfo?.ramMB ? newRegInfo?.ramMB : ''};${newRegInfo?.diskMB ? newRegInfo?.diskMB : ''};${newRegInfo?.totalInstanceCount ? newRegInfo?.totalInstanceCount : ''};${newRegInfo?.activeInstances ? newRegInfo?.activeInstances : ''};${newRegInfo?.description ? newRegInfo?.description : ''}`;
+        const dataStr = `${newRegInfo?.tokenID ? newRegInfo?.tokenID : ''};${newRegInfo?.countryCode ? newRegInfo?.countryCode : ''};${newRegInfo?.cpuMicroSec ? newRegInfo?.cpuMicroSec : ''};${newRegInfo?.ramMB ? newRegInfo?.ramMB : ''};${newRegInfo?.diskMB ? newRegInfo?.diskMB : ''};${newRegInfo?.totalInstanceCount ? newRegInfo?.totalInstanceCount : ''};${newRegInfo?.activeInstances !== undefined ? newRegInfo?.activeInstances : ''};${newRegInfo?.description ? newRegInfo?.description : ''}`;
         return await this.xrplAcc.makePayment(this.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
