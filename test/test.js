@@ -1,15 +1,15 @@
 // const evernode = require("evernode-js-client");
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 
-const evrIssuerAddress = "ray8Ts3Eai2Qghman6PdNGYxq63K9iGqMW";
-const registryAddress = "rGoxnVeLagXLBmeTkhYXYiEYMquz8QrWB8";
-const registrySecret = "safBYXaiNZsPq3kHZ5BFNhYnp1PLW";
-const hostAddress = "rnfndoYTFeSf6xc5kfuzHCAC2fbva5zk7e";
-const hostSecret = "sn7k8nKy1dbc3LterSNm19sNAYU2W";
-const foundationAddress = "rJqt24KdDrY2Dk7sSpCkRmC4rTMG3HeaNt";
-const foundationSecret = "snsjv1cNCN36igTxpEGUAGkSVDQS8";
-const tenantAddress = "rMWfKusKivyScqoybmLose9enQbD2Loa1G";
-const tenantSecret = "spuU5nC3SxobhGAd81kXMUgWtky8W";
+const evrIssuerAddress = "rshgz7gh6qsyCcVAe3vSG793Vd5JjGm9m4";
+const registryAddress = "rPgQM5j4uHJbZs4huYuLDU8TaaBy8tn3kf";
+const registrySecret = "snnHrLVZDhgfrKpLTaRw8pvzg3oUT";
+const hostAddress = "rHtvy2juKs5cQmomHxtu4tjD6PWVrQyh1B";
+const hostSecret = "ssGtCwfoLcxRGcQ8k6To9WF6pynWb";
+const foundationAddress = "rsppptwmNdhygwXrPca6dfan1PkSN4hszV";
+const foundationSecret = "spzeDpUKRdLdF3Y2U3n6pNGBvSqrj";
+const tenantAddress = "raaUyLJ9YmkeHjBFEj53AsuKyHN8czW8zF";
+const tenantSecret = "snLrRFs9ngayHg1CEoRTtT87XaDPy";
 
 const tosHash = "BECF974A2C48C21F39046C1121E5DF7BD55648E1005172868CD5738C23E3C073";
 
@@ -59,17 +59,17 @@ async function app() {
         const tests = [
             // () => initializeConfigs(),
             () => registerHost(),
-            // () => updateInfo(),
-            // () => getAllHosts(),
-            // () => getActiveHosts(),
-            // () => heartbeatHost(),
+            () => updateInfo(),
+            () => getAllHosts(),
+            () => getActiveHosts(),
+            () => heartbeatHost(),
             () => acquire("success"),
-            // () => acquire("error"),
-            // () => acquire("timeout"),
-            // () => extendLease("success"),
-            // () => extendLease("error"),
-            // () => extendLease("timeout"),
-            // () => deregisterHost(),
+            () => acquire("error"),
+            () => acquire("timeout"),
+            () => extendLease("success"),
+            () => extendLease("error"),
+            () => extendLease("timeout"),
+            () => deregisterHost(),
         ];
 
         for (const test of tests) {
@@ -158,7 +158,7 @@ async function registerHost(address = hostAddress, secret = hostSecret) {
     }
 
     console.log("Register...");
-    const instanceCount = 1;
+    const instanceCount = 3;
     await host.register("AU", 10000, 512, 1024, instanceCount, "Test desctiption", 2);
 
     console.log("Lease Offer...");
@@ -213,7 +213,7 @@ async function acquire(scenario) {
     const host = await getHostClient();
 
     host.on(evernode.HostEvents.AcquireLease, async (r) => {
-        console.log(`Host received acquire request: '${r.payload}'`);
+        console.log("Host received acquire request: ", r.payload);
 
         if (scenario !== "timeout") {
             console.log(`Host submitting ${scenario} response...`);

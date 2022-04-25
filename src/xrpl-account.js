@@ -257,20 +257,20 @@ class XrplAccount {
             TransactionType: 'NFTokenMint',
             Account: this.address,
             URI: flags.isHexUri ? uri : TransactionHelper.asciiToHex(uri).toUpperCase(),
-            TokenTaxon: taxon,
+            NFTokenTaxon: taxon,
             TransferFee: transferFee,
             Flags: (flags.isBurnable ? 1 : 0) | (flags.isOnlyXRP ? 2 : 0) | (flags.isTrustLine ? 4 : 0) | (flags.isTransferable ? 8 : 0),
             Memos: TransactionHelper.formatMemos(memos)
         }, options);
     }
 
-    offerSellNft(tokenId, amount, currency, issuer = null, destination = null, expiration = 4294967295, memos = null, options = {}) {
+    offerSellNft(nfTokenId, amount, currency, issuer = null, destination = null, expiration = 4294967295, memos = null, options = {}) {
 
         const amountObj = makeAmountObject(amount, currency, issuer);
         const tx = {
             TransactionType: 'NFTokenCreateOffer',
             Account: this.address,
-            TokenID: tokenId,
+            NFTokenID: nfTokenId,
             Amount: amountObj,
             Expiration: expiration,
             Flags: 1, // tfSellToken
@@ -301,7 +301,7 @@ class XrplAccount {
         return this.#submitAndVerifyTransaction({
             TransactionType: 'NFTokenAcceptOffer',
             Account: this.address,
-            BuyOffer: offerId,
+            NFTokenBuyOffer: offerId,
             Memos: TransactionHelper.formatMemos(memos)
         }, options);
     }
@@ -311,17 +311,17 @@ class XrplAccount {
         return this.#submitAndVerifyTransaction({
             TransactionType: 'NFTokenAcceptOffer',
             Account: this.address,
-            SellOffer: offerId,
+            NFTokenSellOffer: offerId,
             Memos: TransactionHelper.formatMemos(memos)
         }, options);
     }
 
-    burnNft(tokenId, owner = null, memos = null, options = {}) {
+    burnNft(nfTokenId, owner = null, memos = null, options = {}) {
 
         const tx = {
             TransactionType: 'NFTokenBurn',
             Account: this.address,
-            TokenID: tokenId,
+            NFTokenID: nfTokenId,
             Memos: TransactionHelper.formatMemos(memos)
         };
 
