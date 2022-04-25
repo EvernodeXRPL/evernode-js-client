@@ -280,14 +280,14 @@ class XrplAccount {
         return this.#submitAndVerifyTransaction(destination ? { ...tx, Destination: destination } : tx, options);
     }
 
-    offerBuyNft(tokenId, owner, amount, currency, issuer = null, expiration = 4294967295, memos = null, options = {}) {
+    offerBuyNft(nfTokenId, owner, amount, currency, issuer = null, expiration = 4294967295, memos = null, options = {}) {
 
         const amountObj = makeAmountObject(amount, currency, issuer);
 
         return this.#submitAndVerifyTransaction({
             TransactionType: 'NFTokenCreateOffer',
             Account: this.address,
-            TokenID: tokenId,
+            NFTokenID: nfTokenId,
             Owner: owner,
             Amount: amountObj,
             Expiration: expiration,
