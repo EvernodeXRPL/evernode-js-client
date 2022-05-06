@@ -16,6 +16,7 @@ const HOST_REG_FEE_OFFSET = 88;
 const HOST_TOT_INS_COUNT_OFFSET = 96;
 const HOST_ACT_INS_COUNT_OFFSET = 100;
 const HOST_HEARTBEAT_LEDGER_IDX_OFFSET = 104;
+const HOST_VERSION_OFFSET = 112;
 
 class StateHelpers {
     static StateTypes = {
@@ -38,7 +39,8 @@ class StateHelpers {
             registrationFee: Number(stateDataBuf.readBigUInt64BE(HOST_REG_FEE_OFFSET)),
             noOfTotalInstances: stateDataBuf.readUInt32BE(HOST_TOT_INS_COUNT_OFFSET),
             noOfActiveInstances: stateDataBuf.readUInt32BE(HOST_ACT_INS_COUNT_OFFSET),
-            lastHeartbeatLedger: Number(stateDataBuf.readBigUInt64BE(HOST_HEARTBEAT_LEDGER_IDX_OFFSET))
+            lastHeartbeatLedger: Number(stateDataBuf.readBigUInt64BE(HOST_HEARTBEAT_LEDGER_IDX_OFFSET)),
+            version: `${stateDataBuf.readUInt8(HOST_VERSION_OFFSET)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 1)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 2)}`
         }
     }
 
