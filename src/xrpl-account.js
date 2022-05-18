@@ -57,6 +57,14 @@ class XrplAccount {
         return (await this.getInfo())?.Sequence;
     }
 
+    async getMintedNFTokens() {
+        return ((await this.getInfo())?.MintedNFTokens || 0);
+    }
+
+    async getBurnedNFTokens() {
+        return ((await this.getInfo())?.BurnedNFTokens || 0);
+    }
+
     async getMessageKey() {
         return (await this.getInfo())?.MessageKey;
     }
