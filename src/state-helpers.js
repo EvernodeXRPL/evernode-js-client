@@ -18,6 +18,11 @@ const HOST_ACT_INS_COUNT_OFFSET = 100;
 const HOST_HEARTBEAT_LEDGER_IDX_OFFSET = 104;
 const HOST_VERSION_OFFSET = 112;
 
+const HOST_ADDRESS_OFFSET = 0;
+const HOST_CPU_MODEl_NAME_OFFSET = 20;
+const HOST_CPU_COUNT_OFFSET = 60;
+const HOST_CPU_SPEED_OFFSET = 62;
+
 class StateHelpers {
     static StateTypes = {
         TOKEN_ID: 'tokenId',
@@ -44,6 +49,15 @@ class StateHelpers {
         }
     }
 
+    static decodeTokenIdState(stateDataBuf) {
+        return {
+            address: codec.encodeAccountID(stateDataBuf.slice(HOST_ADDRESS_OFFSET, HOST_CPU_MODEl_NAME_OFFSET)),
+            cpuModelName: stateDataBuf.slice(HOST_CPU_MODEl_NAME_OFFSET, HOST_CPU_COUNT_OFFSET).toString(),
+            cpuCount: stateDataBuf.readUInt16BE(HOST_CPU_COUNT_OFFSET),
+            cpuMHz: stateDataBuf.readUInt16BE(HOST_CPU_SPEED_OFFSET)
+          }
+    }
+
     static decodeStateData(stateKey, stateData) {
         const hexKey = stateKey.toString('hex').toUpperCase();
         if (Buffer.from(HookStateKeys.PREFIX_HOST_ADDR, 'hex').compare(stateKey, 0, 4) === 0) {
@@ -58,7 +72,7 @@ class StateHelpers {
                 type: this.StateTypes.TOKEN_ID,
                 key: hexKey,
                 nfTokenId: `${NFTOKEN_PREFIX}${stateKey.slice(4).toString('hex')}`.toUpperCase(),
-                address: codec.encodeAccountID(stateData)
+                ...this.decodeTokenIdState(stateData)
             }
         }
         else if (Buffer.from(HookStateKeys.HOST_COUNT, 'hex').compare(stateKey) === 0) {
