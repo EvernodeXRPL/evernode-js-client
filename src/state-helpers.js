@@ -72,7 +72,7 @@ class StateHelpers {
             // Generate the address state key.
             const addressKeyBuf = Buffer.alloc(32, 0);
             Buffer.from(HookStateKeys.PREFIX_HOST_ADDR, 'hex').copy(addressKeyBuf);
-            stateDataBuf.copy(addressKeyBuf, 12, HOST_ADDRESS_OFFSET, HOST_CPU_MODEl_NAME_OFFSET)
+            stateData.copy(addressKeyBuf, 12, HOST_ADDRESS_OFFSET, HOST_CPU_MODEl_NAME_OFFSET)
             return {
                 type: this.StateTypes.TOKEN_ID,
                 key: hexKey,
