@@ -121,7 +121,7 @@ class HostClient extends BaseEvernodeClient {
         else if (!cpuSpeed || isNaN(cpuSpeed) || cpuSpeed % 1 != 0 || cpuSpeed < 0)
             throw "CPU speed should be a positive integer";
         else if (!cpuModel)
-            throw "cpu model should cannot be empty";
+            throw "cpu model cannot be empty";
 
         // Need to use control characters inside this regex to match ascii characters.
         // Here we allow all the characters in ascii range except ";" for the description.
