@@ -17,7 +17,7 @@ const HOST_HEARTBEAT_LEDGER_IDX_OFFSET = 92;
 const HOST_VERSION_OFFSET = 100;
 
 const HOST_ADDRESS_OFFSET = 0;
-const HOST_CPU_MODEl_NAME_OFFSET = 20;
+const HOST_CPU_MODEL_NAME_OFFSET = 20;
 const HOST_CPU_COUNT_OFFSET = 60;
 const HOST_CPU_SPEED_OFFSET = 62;
 const HOST_CPU_MICROSEC_OFFSET = 64;
@@ -49,8 +49,8 @@ class StateHelpers {
 
     static decodeTokenIdState(stateDataBuf) {
         return {
-            address: codec.encodeAccountID(stateDataBuf.slice(HOST_ADDRESS_OFFSET, HOST_CPU_MODEl_NAME_OFFSET)),
-            cpuModelName: stateDataBuf.slice(HOST_CPU_MODEl_NAME_OFFSET, HOST_CPU_COUNT_OFFSET).toString(),
+            address: codec.encodeAccountID(stateDataBuf.slice(HOST_ADDRESS_OFFSET, HOST_CPU_MODEL_NAME_OFFSET)),
+            cpuModelName: stateDataBuf.slice(HOST_CPU_MODEL_NAME_OFFSET, HOST_CPU_COUNT_OFFSET).toString(),
             cpuCount: stateDataBuf.readUInt16BE(HOST_CPU_COUNT_OFFSET),
             cpuMHz: stateDataBuf.readUInt16BE(HOST_CPU_SPEED_OFFSET),
             cpuMicrosec: stateDataBuf.readUInt32BE(HOST_CPU_MICROSEC_OFFSET),
@@ -72,7 +72,7 @@ class StateHelpers {
             // Generate the address state key.
             const addressKeyBuf = Buffer.alloc(32, 0);
             Buffer.from(HookStateKeys.PREFIX_HOST_ADDR, 'hex').copy(addressKeyBuf);
-            stateData.copy(addressKeyBuf, 12, HOST_ADDRESS_OFFSET, HOST_CPU_MODEl_NAME_OFFSET)
+            stateData.copy(addressKeyBuf, 12, HOST_ADDRESS_OFFSET, HOST_CPU_MODEL_NAME_OFFSET)
             return {
                 type: this.StateTypes.TOKEN_ID,
                 key: hexKey,
