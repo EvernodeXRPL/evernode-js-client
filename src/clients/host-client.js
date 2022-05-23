@@ -105,17 +105,24 @@ class HostClient extends BaseEvernodeClient {
         await this.xrplAcc.burnNft(nfTokenId, tenantAddress);
     }
 
-    async register(countryCode, cpuMicroSec, ramMb, diskMb, totalInstanceCount, description, options = {}) {
+    async register(countryCode, cpuMicroSec, ramMb, diskMb, totalInstanceCount, cpuModel, cpuCount, cpuSpeed, description, options = {}) {
         if (!/^([A-Z]{2})$/.test(countryCode))
             throw "countryCode should consist of 2 uppercase alphabetical characters";
         else if (!cpuMicroSec || isNaN(cpuMicroSec) || cpuMicroSec % 1 != 0 || cpuMicroSec < 0)
-            throw "cpuMicroSec should be a positive intiger";
+            throw "cpuMicroSec should be a positive integer";
         else if (!ramMb || isNaN(ramMb) || ramMb % 1 != 0 || ramMb < 0)
-            throw "ramMb should be a positive intiger";
+            throw "ramMb should be a positive integer";
         else if (!diskMb || isNaN(diskMb) || diskMb % 1 != 0 || diskMb < 0)
-            throw "diskMb should be a positive intiger";
+            throw "diskMb should be a positive integer";
         else if (!totalInstanceCount || isNaN(totalInstanceCount) || totalInstanceCount % 1 != 0 || totalInstanceCount < 0)
             throw "totalInstanceCount should be a positive intiger";
+        else if (!cpuCount || isNaN(cpuCount) || cpuCount % 1 != 0 || cpuCount < 0)
+            throw "CPU count should be a positive integer";
+        else if (!cpuSpeed || isNaN(cpuSpeed) || cpuSpeed % 1 != 0 || cpuSpeed < 0)
+            throw "CPU speed should be a positive integer";
+        else if (!cpuModel)
+            throw "cpu model cannot be empty";
+
         // Need to use control characters inside this regex to match ascii characters.
         // Here we allow all the characters in ascii range except ";" for the description.
         // no-control-regex is enabled default by eslint:recommended, So we disable it only for next line.
@@ -142,7 +149,7 @@ class HostClient extends BaseEvernodeClient {
             }
         }
 
-        const memoData = `${countryCode};${cpuMicroSec};${ramMb};${diskMb};${totalInstanceCount};${description}`
+        const memoData = `${countryCode};${cpuMicroSec};${ramMb};${diskMb};${totalInstanceCount};${cpuModel};${cpuCount};${cpuSpeed};${description}`
         const tx = await this.xrplAcc.makePayment(this.registryAddress,
             this.config.hostRegFee.toString(),
             EvernodeConstants.EVR,
