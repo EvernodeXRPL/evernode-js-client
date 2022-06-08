@@ -56,6 +56,10 @@ class BaseEvernodeClient {
 
         await this.xrplApi.connect();
 
+        // Invoking the info command to check the account existence. This is important to 
+        // identify a network reset from XRPL.
+        const info = await this.xrplAcc.getInfo();
+
         this.config = await this.#getEvernodeConfig();
         this.connected = true;
 
@@ -288,7 +292,7 @@ class BaseEvernodeClient {
             tx.Memos[0].type === MemoTypes.EXTEND_SUCCESS && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data &&
             tx.Memos[1].type === MemoTypes.EXTEND_REF && tx.Memos[1].format === MemoFormats.HEX && tx.Memos[1].data) {
 
-            const extendResBuf =  Buffer.from(tx.Memos[0].data, 'hex');
+            const extendResBuf = Buffer.from(tx.Memos[0].data, 'hex');
             const extendRefId = tx.Memos[1].data;
 
             return {
