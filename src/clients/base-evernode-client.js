@@ -57,7 +57,7 @@ class BaseEvernodeClient {
         await this.xrplApi.connect();
 
         // Invoking the info command to check the account existence. This is important to 
-        // identify a network reset from XRPL.
+        // identify a network reset from XRPL. 
         await this.xrplAcc.getInfo();
 
         this.config = await this.#getEvernodeConfig();
