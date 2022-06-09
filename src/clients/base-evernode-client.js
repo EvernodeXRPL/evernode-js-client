@@ -52,19 +52,21 @@ class BaseEvernodeClient {
 
     async connect() {
         if (this.connected)
-            return;
+            return true;
 
         await this.xrplApi.connect();
 
         // Invoking the info command to check the account existence. This is important to 
-        // identify a network reset from XRPL.
-        const info = await this.xrplAcc.getInfo();
+        // identify a network reset from XRPL. 
+        await this.xrplAcc.getInfo();
 
         this.config = await this.#getEvernodeConfig();
         this.connected = true;
 
         if (this.#autoSubscribe)
             await this.subscribe();
+
+        return true;
     }
 
     async disconnect() {
