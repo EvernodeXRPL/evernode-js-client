@@ -326,6 +326,31 @@ class BaseEvernodeClient {
                 }
             }
         }
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.REGISTRY_INIT && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+
+            return {
+                name: EvernodeEvents.RegistryInitialized,
+                data: {
+                    transaction: tx
+                }
+            }
+        }
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.HOST_UPDATE_INFO && tx.Memos[0].format === MemoFormats.TEXT && tx.Memos[0].data) {
+
+            const specs = tx.Memos[0].data.split(';');
+
+            return {
+                name: EvernodeEvents.HostRegUpdated,
+                data: {
+                    transaction: tx,
+                    host: tx.Account,
+                    version: specs[specs.length-1],
+                    specs: specs,
+                }
+            }
+        }
 
         return null;
     }

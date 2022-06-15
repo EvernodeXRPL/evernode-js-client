@@ -181,6 +181,13 @@ class XrplApi {
         return [];
     }
 
+    async getNamespaceEntries(address, namespaceId, options) {
+        const resp = (await this.#client.request({ command: 'account_namespace', account: address, namespace_id: namespaceId, ...options }));
+        if (resp?.result?.namespace_entries)
+            return resp.result.namespace_entries;
+        return [];
+    }
+
     async getNftOffers(address, options) {
         const offers = await this.getAccountObjects(address, options);
         // TODO: Pass rippled filter parameter when xrpl.js supports it.

@@ -4,7 +4,11 @@ const { DefaultValues } = require('../defaults');
 
 const RegistryEvents = {
     HostRegistered: EvernodeEvents.HostRegistered,
-    HostDeregistered: EvernodeEvents.HostDeregistered
+    HostDeregistered: EvernodeEvents.HostDeregistered,
+    HostRegUpdated: EvernodeEvents.HostRegUpdated,
+    RegistryInitialized: EvernodeEvents.RegistryInitialized,
+    Heartbeat: EvernodeEvents.Heartbeat,
+    NftOfferCreate: EvernodeEvents.NftOfferCreate
 }
 
 class RegistryClient extends BaseEvernodeClient {
@@ -17,6 +21,13 @@ class RegistryClient extends BaseEvernodeClient {
         const hosts = await this.getHosts();
         // Filter only active hosts.
         return hosts.filter(h => h.active);
+    }
+
+    async getHookStates() {
+        const hookNamespace = (await this.xrplAcc.getInfo())?.HookNamespaces[0];
+        if (hookNamespace)
+            return await this.xrplAcc.getNamespaceEntries(hookNamespace);
+        return [];
     }
 }
 

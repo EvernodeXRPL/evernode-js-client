@@ -110,6 +110,10 @@ class XrplAccount {
         return await this.xrplApi.getAccountObjects(this.address, options);
     }
 
+    async getNamespaceEntries(namespaceId, options = {}) {
+        return await this.xrplApi.getNamespaceEntries(this.address, namespaceId, options);
+    }
+
     async getFlags() {
         return xrpl.parseAccountRootFlags((await this.getInfo()).Flags);
     }
