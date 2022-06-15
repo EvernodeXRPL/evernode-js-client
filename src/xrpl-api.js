@@ -226,7 +226,7 @@ class XrplApi {
         await this.#client.request({ command: 'unsubscribe', accounts: [address] });
     }
 
-    async fee(txBlob) {
+    async getTransactionFee(txBlob) {
         const fees = await this.#client.request({ command: 'fee', tx_blob: txBlob });
         return fees?.result?.drops?.base_fee;
     }
