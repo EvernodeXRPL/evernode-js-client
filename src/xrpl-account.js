@@ -6,7 +6,7 @@ const { XrplConstants } = require('./xrpl-common');
 const { TransactionHelper } = require('./transaction-helper');
 const { EventEmitter } = require('./event-emitter');
 const { DefaultValues } = require('./defaults');
-const rbc = require('xrpl-binary-codec');
+const xrplCodec = require('xrpl-binary-codec');
 
 
 class XrplAccount {
@@ -379,7 +379,7 @@ class XrplAccount {
                 Fee: '0'
             }
             Object.assign(tx, txOptions);
-            const txnBlob = rbc.encode(tx);
+            const txnBlob = xrplCodec.encode(tx);
             const fees = await this.xrplApi.fee(txnBlob);
             delete tx['SigningPubKey']
             tx.Fee = fees + '';
