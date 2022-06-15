@@ -6,6 +6,7 @@ const { XrplConstants } = require('./xrpl-common');
 const { TransactionHelper } = require('./transaction-helper');
 const { EventEmitter } = require('./event-emitter');
 const { DefaultValues } = require('./defaults');
+const xrplCodec = require('xrpl-binary-codec');
 
 class XrplAccount {
 
@@ -376,9 +377,15 @@ class XrplAccount {
             // Attach tx options to the transaction.
             const txOptions = {
                 LastLedgerSequence: options.maxLedgerIndex || (this.xrplApi.ledgerIndex + XrplConstants.MAX_LEDGER_OFFSET),
-                Sequence: options.sequence || await this.getSequence()
+                Sequence: options.sequence || await this.getSequence(),
+                SigningPubKey: '', // This field is required for fee calculation.
+                Fee: '0' // This field is required for fee calculation.
             }
             Object.assign(tx, txOptions);
+            const txnBlob = xrplCodec.encode(tx);
+            const fees = await this.xrplApi.getTransactionFee(txnBlob);
+            delete tx['SigningPubKey']
+            tx.Fee = fees + '';
 
             try {
                 const submission = await this.xrplApi.submitAndVerify(tx, { wallet: this.wallet });
