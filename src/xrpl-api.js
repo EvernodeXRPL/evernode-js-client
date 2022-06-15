@@ -226,6 +226,11 @@ class XrplApi {
         await this.#client.request({ command: 'unsubscribe', accounts: [address] });
     }
 
+    async fee(txBlob) {
+        const fees = await this.#client.request({ command: 'fee', tx_blob: txBlob });
+        return fees?.result?.drops?.base_fee;
+    }
+
     async #subscribeToStream(streamName) {
         await this.#client.request({ command: 'subscribe', streams: [streamName] });
     }
