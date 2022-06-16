@@ -201,6 +201,20 @@ class BaseEvernodeClient {
                 }
             }
         }
+
+        else if (tx.TransactionType === 'NFTokenAcceptOffer' && tx.NFTokenBuyOffer && tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.HOST_POST_DEREG && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+            return {
+                name: EvernodeEvents.HostPostDeregistered,
+                data: {
+                    transaction: tx,
+                    nfTokenId: tx.NFTokenBuyOffer.NFTokenID,
+                    flags: tx.Flags,
+                    hash: tx.hash
+                }
+            }
+        }
+
         else if (tx.Memos.length >= 2 &&
             tx.Memos[0].type === MemoTypes.ACQUIRE_SUCCESS && tx.Memos[0].data &&
             tx.Memos[1].type === MemoTypes.ACQUIRE_REF && tx.Memos[1].data) {
