@@ -61,7 +61,7 @@ async function app() {
         const tests = [
             // () => initializeConfigs(),
             // () => getHookStates(),
-            () => registerHost(),
+            // () => registerHost(),
             // () => updateInfo(),
             // () => getAllHosts(),
             // () => getActiveHosts(),
@@ -109,6 +109,8 @@ async function app() {
 }
 
 async function updateInfo() {
+    onsole.log(`-----------Update host`);
+
     const client = await getHostClient();
     await client.updateRegInfo(10);
 }
