@@ -384,7 +384,7 @@ class XrplAccount {
             Object.assign(tx, txOptions);
             const txnBlob = xrplCodec.encode(tx);
             const fees = await this.xrplApi.getTransactionFee(txnBlob);
-            delete tx['SigningPubKey']
+            delete tx['SigningPubKey'];
             tx.Fee = fees + '';
 
             try {
