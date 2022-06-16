@@ -92,6 +92,7 @@ async function app() {
         // await initializeConfigs();
         // await registerHost();
         // await deregisterHost();
+        // await getHookStates()
 
     }
     catch (e) {
@@ -315,6 +316,13 @@ async function fundTenant(tenant) {
         await tenant.xrplAcc.setTrustLine('EVR', evrIssuerAddress, "99999999");
         await new evernode.XrplAccount(foundationAddress, foundationSecret).makePayment(tenantAddress, "1000", 'EVR', evrIssuerAddress);
     }
+}
+
+async function getHookStates() {
+    const registryClient = new evernode.RegistryClient(registryAddress, registrySecret);
+    await registryClient.connect();
+    const states = await registryClient.getHookStates();
+    console.log(states);
 }
 
 app();
