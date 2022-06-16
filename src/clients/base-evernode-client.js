@@ -1,3 +1,4 @@
+const codec = require('ripple-address-codec');
 const { Buffer } = require('buffer');
 const { XrplApi } = require('../xrpl-api');
 const { XrplAccount } = require('../xrpl-account');
@@ -8,6 +9,7 @@ const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
 const { UtilHelpers } = require('../util-helpers');
 const { FirestoreHandler } = require('../firestore/firestore-handler');
+const { XflHelpers } = require('../xfl-helpers');
 
 class BaseEvernodeClient {
 
@@ -104,9 +106,15 @@ class BaseEvernodeClient {
         return hosts
     }
 
-    async getConfigs() {
-        const configs = await this.#firestoreHandler.getConfigs();
-        return configs.map(c => { return { key: c.key, data: c.value } });
+    async getHookStates() {
+        const regAcc = new XrplAccount(this.registryAddress, null, { xrplApi: this.xrplApi });
+        const hookNamespace = (await regAcc.getInfo())?.HookNamespaces[0];
+        if (hookNamespace) {
+            const configs = await regAcc.getNamespaceEntries(hookNamespace);
+            return configs.filter(c => c.LedgerEntryType === 'HookState').map(c => { return { key: c.HookStateKey, data: c.HookStateData } });
+        }
+        return [];
+
     }
 
     async getMoment(ledgerIndex = null) {
@@ -126,16 +134,16 @@ class BaseEvernodeClient {
     }
 
     async #getEvernodeConfig() {
-        let states = await this.getConfigs();
+        let states = await this.getHookStates();
         return {
-            evrIssuerAddress: UtilHelpers.getStateData(states, HookStateKeys.EVR_ISSUER_ADDR),
-            foundationAddress: UtilHelpers.getStateData(states, HookStateKeys.FOUNDATION_ADDR),
-            hostRegFee: UtilHelpers.getStateData(states, HookStateKeys.HOST_REG_FEE),
-            momentSize: UtilHelpers.getStateData(states, HookStateKeys.MOMENT_SIZE),
-            hostHeartbeatFreq: UtilHelpers.getStateData(states, HookStateKeys.HOST_HEARTBEAT_FREQ),
-            momentBaseIdx: UtilHelpers.getStateData(states, HookStateKeys.MOMENT_BASE_IDX),
-            purchaserTargetPrice: UtilHelpers.getStateData(states, HookStateKeys.PURCHASER_TARGET_PRICE),
-            leaseAcquireWindow: UtilHelpers.getStateData(states, HookStateKeys.LEASE_ACQUIRE_WINDOW)
+            evrIssuerAddress: codec.encodeAccountID(Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.EVR_ISSUER_ADDR), 'hex')),
+            foundationAddress: codec.encodeAccountID(Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.FOUNDATION_ADDR), 'hex')),
+            hostRegFee: Number(Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.HOST_REG_FEE), 'hex').readBigUInt64BE()),
+            momentSize: Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.MOMENT_SIZE), 'hex').readUInt16BE(),
+            hostHeartbeatFreq: Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.HOST_HEARTBEAT_FREQ), 'hex').readUInt16BE(),
+            momentBaseIdx: Number(Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.MOMENT_BASE_IDX), 'hex').readBigInt64BE()),
+            purchaserTargetPrice: XflHelpers.toString(Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.PURCHASER_TARGET_PRICE), 'hex').readBigInt64BE()),
+            leaseAcquireWindow: Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.LEASE_ACQUIRE_WINDOW), 'hex').readUInt16BE()
         };
     }
 
@@ -346,7 +354,7 @@ class BaseEvernodeClient {
                 data: {
                     transaction: tx,
                     host: tx.Account,
-                    version: specs[specs.length-1],
+                    version: specs[specs.length - 1],
                     specs: specs,
                 }
             }

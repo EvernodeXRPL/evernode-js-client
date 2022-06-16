@@ -22,13 +22,6 @@ class RegistryClient extends BaseEvernodeClient {
         // Filter only active hosts.
         return hosts.filter(h => h.active);
     }
-
-    async getHookStates() {
-        const hookNamespace = (await this.xrplAcc.getInfo())?.HookNamespaces[0];
-        if (hookNamespace)
-            return await this.xrplAcc.getNamespaceEntries(hookNamespace);
-        return [];
-    }
 }
 
 module.exports = {

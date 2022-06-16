@@ -179,7 +179,7 @@ class XrplAccount {
         if (typeof limit !== 'string')
             throw "Limit must be a string.";
 
-        return this.#submitAndVerifyTransaction({
+        let tx = {
             TransactionType: 'TrustSet',
             Account: this.address,
             LimitAmount: {
@@ -187,11 +187,13 @@ class XrplAccount {
                 issuer: issuer,
                 value: limit
             },
-            Flags: {
-                tfSetNoRipple: !allowRippling
-            },
             Memos: TransactionHelper.formatMemos(memos)
-        }, options);
+        };
+
+        if (!allowRippling)
+            tx.Flags = 131072; // tfSetNoRipple;
+
+        return this.#submitAndVerifyTransaction(tx, options);
     }
 
     setRegularKey(regularKey, memos = null, options = {}) {
