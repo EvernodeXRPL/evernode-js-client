@@ -109,7 +109,7 @@ async function app() {
 }
 
 async function updateInfo() {
-    onsole.log(`-----------Update host`);
+    console.log(`-----------Update host`);
 
     const client = await getHostClient();
     await client.updateRegInfo(10);
