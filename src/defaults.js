@@ -1,8 +1,8 @@
 const DefaultValues = {
     registryAddress: 'rDPqJv7zu6DfeXexAYseABNM2hT2j2rpHv',
-    rippledServer: 'wss://xls20-sandbox.rippletest.net:51233',
+    rippledServer: 'wss://hooks-testnet-v2.xrpl-labs.com',
     xrplApi: null,
-    stateIndexId: 'evernodeindex' 
+    stateIndexId: 'evernodeindex'
 }
 
 class Defaults {

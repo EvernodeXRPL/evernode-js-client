@@ -4,7 +4,11 @@ const { DefaultValues } = require('../defaults');
 
 const RegistryEvents = {
     HostRegistered: EvernodeEvents.HostRegistered,
-    HostDeregistered: EvernodeEvents.HostDeregistered
+    HostDeregistered: EvernodeEvents.HostDeregistered,
+    HostRegUpdated: EvernodeEvents.HostRegUpdated,
+    RegistryInitialized: EvernodeEvents.RegistryInitialized,
+    Heartbeat: EvernodeEvents.Heartbeat,
+    HostPostDeregistered: EvernodeEvents.HostPostDeregistered
 }
 
 class RegistryClient extends BaseEvernodeClient {

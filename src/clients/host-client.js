@@ -11,7 +11,6 @@ const OFFER_WAIT_TIMEOUT = 60;
 
 const HostEvents = {
     AcquireLease: EvernodeEvents.AcquireLease,
-    NftOfferCreate: EvernodeEvents.NftOfferCreate,
     ExtendLease: EvernodeEvents.ExtendLease
 }
 
@@ -157,39 +156,40 @@ class HostClient extends BaseEvernodeClient {
             [{ type: MemoTypes.HOST_REG, format: MemoFormats.TEXT, data: memoData }],
             options.transactionOptions);
 
-        // Added this attribute as an indication for the sell offer acceptance
-        tx.isSellOfferAccepted = false;
-
-        this.on(HostEvents.NftOfferCreate, r => this.handleNftOffer(r, tx));
-
-        let attemps = 0;
-
-        while (attemps < OFFER_WAIT_TIMEOUT) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            if (tx.isSellOfferAccepted) {
-                break;
+        console.log('Waiting for the sell offer')
+        const regAcc = new XrplAccount(this.registryAddress, null, { xrplApi: this.xrplApi });
+        let offer = null;
+        let attempts = 0;
+        let offerLedgerIndex = 0;
+        while (attempts < OFFER_WAIT_TIMEOUT) {
+            const nft = (await regAcc.getNfts()).find(n => n.URI === `${EvernodeConstants.NFT_PREFIX_HEX}${tx.id}`);
+            if (nft) {
+                offer = (await regAcc.getNftOffers()).find(o => o.Destination === this.xrplAcc.address && o.NFTokenID === nft.NFTokenID && o.Flags === 1);
+                offerLedgerIndex = this.xrplApi.ledgerIndex;
+                if (offer)
+                    break;
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                attempts++;
             }
-            attemps++;
-        }
 
-        if (!tx.isSellOfferAccepted)
-            throw "No sell offer was found within timeout.";
+        }
+        if (!offer)
+            throw 'No sell offer found within timeout.';
+
+        console.log('Accepting the sell offer..');
+
+        // Wait until the next ledger after the offer is created.
+        // Otherwise if the offer accepted in the same legder which it's been created,
+        // We cannot fetch the offer from registry contract event handler since it's getting deleted immediately.
+        await new Promise(async resolve => {
+            while (this.xrplApi.ledgerIndex <= offerLedgerIndex)
+                await new Promise(resolve2 => setTimeout(resolve2, 1000));
+            resolve();
+        });
+
+        await this.xrplAcc.buyNft(offer.index);
 
         return await this.isRegistered();
-    }
-
-    async handleNftOffer(r, tx) {
-        if (this.xrplAcc.address === r.transaction.Destination) {
-            const registryAcc = new XrplAccount(this.registryAddress, null, { xrplApi: this.xrplApi });
-            const nft = (await registryAcc.getNfts()).find(n => n.URI === `${EvernodeConstants.NFT_PREFIX_HEX}${tx.id}`);
-            if (nft) {
-                const sellOffer = (await registryAcc.getNftOffers()).find(o => o.NFTokenID === nft.NFTokenID && o.Flags === 1);
-                if (sellOffer) {
-                    await this.xrplAcc.buyNft(sellOffer.index);
-                    tx.isSellOfferAccepted = true;
-                }
-            }
-        }
     }
 
     async deregister(options = {}) {
@@ -219,9 +219,9 @@ class HostClient extends BaseEvernodeClient {
             attempts++;
         }
         if (!offer)
-            throw 'No offer found within timeout.';
+            throw 'No buy offer found within timeout.';
 
-        console.log('Accepting buy offer..');
+        console.log('Accepting the buy offer..');
 
         // Wait until the next ledger after the offer is created.
         // Otherwise if the offer accepted in the same legder which it's been created,

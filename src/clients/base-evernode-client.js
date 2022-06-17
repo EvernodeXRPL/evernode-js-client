@@ -1,3 +1,4 @@
+const codec = require('ripple-address-codec');
 const { Buffer } = require('buffer');
 const { XrplApi } = require('../xrpl-api');
 const { XrplAccount } = require('../xrpl-account');
@@ -8,6 +9,7 @@ const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
 const { UtilHelpers } = require('../util-helpers');
 const { FirestoreHandler } = require('../firestore/firestore-handler');
+const { XflHelpers } = require('../xfl-helpers');
 
 class BaseEvernodeClient {
 
@@ -104,9 +106,15 @@ class BaseEvernodeClient {
         return hosts
     }
 
-    async getConfigs() {
-        const configs = await this.#firestoreHandler.getConfigs();
-        return configs.map(c => { return { key: c.key, data: c.value } });
+    async getHookStates() {
+        const regAcc = new XrplAccount(this.registryAddress, null, { xrplApi: this.xrplApi });
+        const hookNamespace = (await regAcc.getInfo())?.HookNamespaces[0];
+        if (hookNamespace) {
+            const configs = await regAcc.getNamespaceEntries(hookNamespace);
+            return configs.filter(c => c.LedgerEntryType === 'HookState').map(c => { return { key: c.HookStateKey, data: c.HookStateData } });
+        }
+        return [];
+
     }
 
     async getMoment(ledgerIndex = null) {
@@ -126,16 +134,16 @@ class BaseEvernodeClient {
     }
 
     async #getEvernodeConfig() {
-        let states = await this.getConfigs();
+        let states = await this.getHookStates();
         return {
-            evrIssuerAddress: UtilHelpers.getStateData(states, HookStateKeys.EVR_ISSUER_ADDR),
-            foundationAddress: UtilHelpers.getStateData(states, HookStateKeys.FOUNDATION_ADDR),
-            hostRegFee: UtilHelpers.getStateData(states, HookStateKeys.HOST_REG_FEE),
-            momentSize: UtilHelpers.getStateData(states, HookStateKeys.MOMENT_SIZE),
-            hostHeartbeatFreq: UtilHelpers.getStateData(states, HookStateKeys.HOST_HEARTBEAT_FREQ),
-            momentBaseIdx: UtilHelpers.getStateData(states, HookStateKeys.MOMENT_BASE_IDX),
-            purchaserTargetPrice: UtilHelpers.getStateData(states, HookStateKeys.PURCHASER_TARGET_PRICE),
-            leaseAcquireWindow: UtilHelpers.getStateData(states, HookStateKeys.LEASE_ACQUIRE_WINDOW)
+            evrIssuerAddress: codec.encodeAccountID(Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.EVR_ISSUER_ADDR), 'hex')),
+            foundationAddress: codec.encodeAccountID(Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.FOUNDATION_ADDR), 'hex')),
+            hostRegFee: Number(Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.HOST_REG_FEE), 'hex').readBigUInt64BE()),
+            momentSize: Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.MOMENT_SIZE), 'hex').readUInt16BE(),
+            hostHeartbeatFreq: Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.HOST_HEARTBEAT_FREQ), 'hex').readUInt16BE(),
+            momentBaseIdx: Number(Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.MOMENT_BASE_IDX), 'hex').readBigInt64BE()),
+            purchaserTargetPrice: XflHelpers.toString(Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.PURCHASER_TARGET_PRICE), 'hex').readBigInt64BE()),
+            leaseAcquireWindow: Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.LEASE_ACQUIRE_WINDOW), 'hex').readUInt16BE()
         };
     }
 
@@ -156,18 +164,7 @@ class BaseEvernodeClient {
     }
 
     async #extractEvernodeEvent(tx) {
-        if (tx.TransactionType === 'NFTokenCreateOffer' && (!tx.Memos || tx.Memos.length === 0)) {
-            return {
-                name: EvernodeEvents.NftOfferCreate,
-                data: {
-                    transaction: tx,
-                    nfTokenId: tx.NFTokenID,
-                    flags: tx.Flags,
-                    hash: tx.hash
-                }
-            }
-        }
-        else if (tx.TransactionType === 'NFTokenAcceptOffer' && tx.NFTokenSellOffer && tx.Memos.length >= 1 &&
+        if (tx.TransactionType === 'NFTokenAcceptOffer' && tx.NFTokenSellOffer && tx.Memos.length >= 1 &&
             tx.Memos[0].type === MemoTypes.ACQUIRE_LEASE && tx.Memos[0].format === MemoFormats.BASE64 && tx.Memos[0].data) {
 
             // If our account is the destination host account, then decrypt the payload.
@@ -193,6 +190,20 @@ class BaseEvernodeClient {
                 }
             }
         }
+
+        else if (tx.TransactionType === 'NFTokenAcceptOffer' && tx.NFTokenBuyOffer && tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.HOST_POST_DEREG && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+            return {
+                name: EvernodeEvents.HostPostDeregistered,
+                data: {
+                    transaction: tx,
+                    nfTokenId: tx.NFTokenBuyOffer.NFTokenID,
+                    flags: tx.Flags,
+                    hash: tx.hash
+                }
+            }
+        }
+
         else if (tx.Memos.length >= 2 &&
             tx.Memos[0].type === MemoTypes.ACQUIRE_SUCCESS && tx.Memos[0].data &&
             tx.Memos[1].type === MemoTypes.ACQUIRE_REF && tx.Memos[1].data) {
@@ -323,6 +334,31 @@ class BaseEvernodeClient {
                     transaction: tx,
                     extendRefId: extendRefId,
                     reason: error
+                }
+            }
+        }
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.REGISTRY_INIT && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+
+            return {
+                name: EvernodeEvents.RegistryInitialized,
+                data: {
+                    transaction: tx
+                }
+            }
+        }
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.HOST_UPDATE_INFO && tx.Memos[0].format === MemoFormats.TEXT && tx.Memos[0].data) {
+
+            const specs = tx.Memos[0].data.split(';');
+
+            return {
+                name: EvernodeEvents.HostRegUpdated,
+                data: {
+                    transaction: tx,
+                    host: tx.Account,
+                    version: specs[specs.length - 1],
+                    specs: specs,
                 }
             }
         }

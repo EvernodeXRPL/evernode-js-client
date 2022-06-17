@@ -17,7 +17,8 @@ const MemoTypes = {
     EXTEND_LEASE: 'evnExtendLease',
     EXTEND_SUCCESS: 'evnExtendSuccess',
     EXTEND_ERROR: 'evnExtendError',
-    EXTEND_REF: 'evnExtendRef'
+    EXTEND_REF: 'evnExtendRef',
+    REGISTRY_INIT: 'evnInitialize'
 }
 
 const MemoFormats = {
@@ -39,7 +40,8 @@ const ErrorReasons = {
     INTERNAL_ERR: 'INTERNAL_ERR',
     TIMEOUT: 'TIMEOUT',
     HOST_INVALID: 'HOST_INVALID',
-    HOST_INACTIVE: 'HOST_INACTIVE'
+    HOST_INACTIVE: 'HOST_INACTIVE',
+    NO_STATE_KEY: 'NO_STATE_KEY'
 }
 
 // All keys are prefixed with 'EVR' (0x455652)
@@ -68,14 +70,17 @@ const HookStateKeys = {
 const EvernodeEvents = {
     HostRegistered: "HostRegistered",
     HostDeregistered: "HostDeregistered",
+    HostPostDeregistered: "HostPostDeregistered",
     AcquireLease: "AcquireLease",
     AcquireSuccess: "AcquireSuccess",
     AcquireError: "AcquireError",
     Heartbeat: "Heartbeat",
-    NftOfferCreate: "NftOfferCreate",
     ExtendLease: "ExtendLease",
     ExtendSuccess: "ExtendSuccess",
-    ExtendError: "ExtendError"
+    ExtendError: "ExtendError",
+    HostRegUpdated: "HostRegUpdated",
+    HostReRegistered: "HostReRegistered",
+    RegistryInitialized: "RegistryInitialized"
 }
 
 module.exports = {

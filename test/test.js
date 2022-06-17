@@ -1,5 +1,6 @@
 // const evernode = require("evernode-js-client");
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
+const codec = require('ripple-address-codec');
 
 const evrIssuerAddress = "rshgz7gh6qsyCcVAe3vSG793Vd5JjGm9m4";
 const registryAddress = "rPgQM5j4uHJbZs4huYuLDU8TaaBy8tn3kf";
@@ -8,17 +9,18 @@ const hostAddress = "rHtvy2juKs5cQmomHxtu4tjD6PWVrQyh1B";
 const hostSecret = "ssGtCwfoLcxRGcQ8k6To9WF6pynWb";
 const foundationAddress = "rsppptwmNdhygwXrPca6dfan1PkSN4hszV";
 const foundationSecret = "spzeDpUKRdLdF3Y2U3n6pNGBvSqrj";
-const tenantAddress = "raaUyLJ9YmkeHjBFEj53AsuKyHN8czW8zF";
-const tenantSecret = "snLrRFs9ngayHg1CEoRTtT87XaDPy";
 
-const tosHash = "BECF974A2C48C21F39046C1121E5DF7BD55648E1005172868CD5738C23E3C073";
+const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
+const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
+
+const tosHash = "757A0237B44D8B2BBB04AE2BAD5813858E0AECD2F0B217075E27E0630BA74314";
 
 const clients = [];
 
 async function app() {
 
     // Use a singleton xrplApi for all tests.
-    const xrplApi = new evernode.XrplApi();
+    const xrplApi = new evernode.XrplApi('wss://hooks-testnet-v2.xrpl-labs.com');
     evernode.Defaults.set({
         registryAddress: registryAddress,
         xrplApi: xrplApi
@@ -58,18 +60,19 @@ async function app() {
 
         const tests = [
             // () => initializeConfigs(),
-            () => registerHost(),
-            () => updateInfo(),
-            () => getAllHosts(),
-            () => getActiveHosts(),
-            () => heartbeatHost(),
-            () => acquire("success"),
-            () => acquire("error"),
-            () => acquire("timeout"),
-            () => extendLease("success"),
-            () => extendLease("error"),
-            () => extendLease("timeout"),
-            () => deregisterHost(),
+            // () => getHookStates(),
+            // () => registerHost(),
+            // () => updateInfo(),
+            // () => getAllHosts(),
+            // () => getActiveHosts(),
+            // () => heartbeatHost(),
+            // () => acquire("success"),
+            // () => acquire("error"),
+            // () => acquire("timeout"),
+            // () => extendLease("success"),
+            // () => extendLease("error"),
+            // () => extendLease("timeout"),
+            // () => deregisterHost(),
         ];
 
         for (const test of tests) {
@@ -92,6 +95,7 @@ async function app() {
         // await initializeConfigs();
         // await registerHost();
         // await deregisterHost();
+        // await getHookStates()
 
     }
     catch (e) {
@@ -105,6 +109,8 @@ async function app() {
 }
 
 async function updateInfo() {
+    console.log(`-----------Update host`);
+
     const client = await getHostClient();
     await client.updateRegInfo(10);
 }
@@ -129,12 +135,13 @@ async function getActiveHosts() {
 
 async function initializeConfigs() {
     console.log(`-----------Initialize configs`);
-    const foundationAcc = new evernode.XrplAccount(foundationAddress, foundationSecret);
-    await foundationAcc.makePayment(registryAddress,
-        '1',
-        'XRP',
-        null,
-        [{ type: 'evnInitialize', format: '', data: '' }]);
+    let memoData = Buffer.allocUnsafe(40);
+    codec.decodeAccountID(evrIssuerAddress).copy(memoData);
+    codec.decodeAccountID(foundationAddress).copy(memoData, 20);
+
+    const initAccount = new evernode.XrplAccount(initializerAddress, initializerSecret);
+    await initAccount.makePayment(registryAddress, '1', 'XRP', null,
+        [{ type: 'evnInitialize', format: 'hex', data: memoData.toString('hex') }]);
 }
 
 async function registerHost(address = hostAddress, secret = hostSecret) {
@@ -159,7 +166,7 @@ async function registerHost(address = hostAddress, secret = hostSecret) {
 
     console.log("Register...");
     const instanceCount = 3;
-    await host.register("AU", 10000, 512, 1024, instanceCount, "Test desctiption", 2);
+    await host.register("AU", 10000, 512, 1024, instanceCount,'Intel', 10, 10, "Test desctiption", 2);
 
     console.log("Lease Offer...");
     for (let i = 0; i < instanceCount; i++)
@@ -315,6 +322,13 @@ async function fundTenant(tenant) {
         await tenant.xrplAcc.setTrustLine('EVR', evrIssuerAddress, "99999999");
         await new evernode.XrplAccount(foundationAddress, foundationSecret).makePayment(tenantAddress, "1000", 'EVR', evrIssuerAddress);
     }
+}
+
+async function getHookStates() {
+    const registryClient = new evernode.RegistryClient(registryAddress, registrySecret);
+    await registryClient.connect();
+    const states = await registryClient.getHookStates();
+    console.log(states.length, states);
 }
 
 app();

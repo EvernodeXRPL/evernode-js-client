@@ -1,6 +1,6 @@
 const { Buffer } = require('buffer');
 const { XflHelpers } = require('./xfl-helpers');
-const { EvernodeConstants } = require('./evernode-common');
+const { EvernodeConstants, ErrorReasons } = require('./evernode-common');
 
 // Utility helper functions.
 class UtilHelpers {
@@ -8,7 +8,7 @@ class UtilHelpers {
     static getStateData(states, key) {
         const state = states.find(s => key === s.key);
         if (!state)
-            throw `State key '${key}' not found.`;
+            throw { code: ErrorReasons.NO_STATE_KEY, error: `State key '${key}' not found.` };
 
         return state.data;
     }
