@@ -75,7 +75,6 @@ const EvernodeEvents = {
     AcquireSuccess: "AcquireSuccess",
     AcquireError: "AcquireError",
     Heartbeat: "Heartbeat",
-    NftOfferCreate: "NftOfferCreate",
     ExtendLease: "ExtendLease",
     ExtendSuccess: "ExtendSuccess",
     ExtendError: "ExtendError",
