@@ -11,7 +11,6 @@ const OFFER_WAIT_TIMEOUT = 60;
 
 const HostEvents = {
     AcquireLease: EvernodeEvents.AcquireLease,
-    NftOfferCreate: EvernodeEvents.NftOfferCreate,
     ExtendLease: EvernodeEvents.ExtendLease
 }
 

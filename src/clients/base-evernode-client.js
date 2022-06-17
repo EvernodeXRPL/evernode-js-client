@@ -164,18 +164,7 @@ class BaseEvernodeClient {
     }
 
     async #extractEvernodeEvent(tx) {
-        if (tx.TransactionType === 'NFTokenCreateOffer' && (!tx.Memos || tx.Memos.length === 0)) {
-            return {
-                name: EvernodeEvents.NftOfferCreate,
-                data: {
-                    transaction: tx,
-                    nfTokenId: tx.NFTokenID,
-                    flags: tx.Flags,
-                    hash: tx.hash
-                }
-            }
-        }
-        else if (tx.TransactionType === 'NFTokenAcceptOffer' && tx.NFTokenSellOffer && tx.Memos.length >= 1 &&
+        if (tx.TransactionType === 'NFTokenAcceptOffer' && tx.NFTokenSellOffer && tx.Memos.length >= 1 &&
             tx.Memos[0].type === MemoTypes.ACQUIRE_LEASE && tx.Memos[0].format === MemoFormats.BASE64 && tx.Memos[0].data) {
 
             // If our account is the destination host account, then decrypt the payload.
