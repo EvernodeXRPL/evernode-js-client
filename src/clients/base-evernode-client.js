@@ -108,9 +108,9 @@ class BaseEvernodeClient {
 
     async getHookStates() {
         const regAcc = new XrplAccount(this.registryAddress, null, { xrplApi: this.xrplApi });
-        const hookNamespace = (await regAcc.getInfo())?.HookNamespaces[0];
-        if (hookNamespace) {
-            const configs = await regAcc.getNamespaceEntries(hookNamespace);
+        const hookNamespaces = (await regAcc.getInfo())?.HookNamespaces;
+        if (hookNamespaces) {
+            const configs = await regAcc.getNamespaceEntries(hookNamespaces[0]);
             return configs.filter(c => c.LedgerEntryType === 'HookState').map(c => { return { key: c.HookStateKey, data: c.HookStateData } });
         }
         return [];
