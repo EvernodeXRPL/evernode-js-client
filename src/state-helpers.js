@@ -24,6 +24,14 @@ const HOST_CPU_MICROSEC_OFFSET = 64;
 const HOST_RAM_MB_OFFSET = 68;
 const HOST_DISK_MB_OFFSET = 72;
 
+const STATE_KEY_TYPES = {
+    TOKEN_ID: 2,
+    HOST_ADDR: 3
+}
+
+const EVERNODE_PREFIX = 'EVR';
+const HOST_ADDR_KEY_ZERO_COUNT = 8;
+
 class StateHelpers {
     static StateTypes = {
         TOKEN_ID: 'tokenId',
@@ -56,7 +64,7 @@ class StateHelpers {
             cpuMicrosec: stateDataBuf.readUInt32BE(HOST_CPU_MICROSEC_OFFSET),
             ramMb: stateDataBuf.readUInt32BE(HOST_RAM_MB_OFFSET),
             diskMb: stateDataBuf.readUInt32BE(HOST_DISK_MB_OFFSET)
-          }
+        }
     }
 
     static decodeStateData(stateKey, stateData) {
@@ -175,6 +183,30 @@ class StateHelpers {
         }
         else
             throw { type: 'Validation Error', message: 'Invalid state key.' };
+    }
+
+    static generateTokenIdStateKey(nfTokenId) {
+        // 1 byte - Key Type.
+        let buf = Buffer.allocUnsafe(1);
+        buf.writeUInt8(STATE_KEY_TYPES.TOKEN_ID);
+
+        const nfTokenIdBuf = Buffer.from(nfTokenId, "hex");
+        const stateKeyBuf = (Buffer.concat([Buffer.from(EVERNODE_PREFIX, "utf-8"), buf, nfTokenIdBuf.slice(4, 32)]));
+        return stateKeyBuf.toString('hex').toUpperCase();
+    }
+
+    static generateHostAddrStateKey(address) {
+        // 1 byte - Key Type.
+        // 8 bytes - Zeros.
+        let buf = Buffer.allocUnsafe(9);
+        buf.writeUInt8(STATE_KEY_TYPES.HOST_ADDR);
+        for (let i = 0; i < HOST_ADDR_KEY_ZERO_COUNT; i++) {
+            buf.writeUInt8(0, i+1);
+        }
+
+        const addrBuf = Buffer.from(codec.decodeAccountID(address), "hex");
+        const stateKeyBuf = Buffer.concat([Buffer.from(EVERNODE_PREFIX, "utf-8"), buf, addrBuf]);
+        return stateKeyBuf.toString('hex').toUpperCase();
     }
 }
 
