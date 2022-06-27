@@ -21,10 +21,14 @@ class RegistryClient extends BaseEvernodeClient {
         let fullHostList = [];
         const hosts = await this.getHosts();
         if (hosts.nextPageToken) {
+            let currentPageToken = hosts.nextPageToken;
+            let nextHosts = null;
             fullHostList = fullHostList.concat(hosts.data);
-            const nextHosts = await this.getHosts(null, null, hosts.nextPageToken);
-            fullHostList = fullHostList.concat(nextHosts.nextPageToken ? nextHosts.data : nextHosts);
-
+            while (currentPageToken) {
+                nextHosts = await this.getHosts(null, null, currentPageToken);
+                fullHostList = fullHostList.concat(nextHosts.nextPageToken ? nextHosts.data : nextHosts);
+                currentPageToken = nextHosts.nextPageToken;   
+            }
         } else {
             fullHostList = fullHostList.concat(hosts);
         }
