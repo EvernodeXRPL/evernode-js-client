@@ -103,7 +103,7 @@ class BaseEvernodeClient {
                 (h.lastHeartbeatLedger >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
                 (h.lastHeartbeatLedger > 0))
         });
-        return hosts
+        return hosts;
     }
 
     async getHookStates() {
