@@ -18,9 +18,18 @@ class RegistryClient extends BaseEvernodeClient {
     }
 
     async getActiveHosts() {
+        let fullHostList = [];
         const hosts = await this.getHosts();
+        if (hosts.nextPageToken) {
+            fullHostList = fullHostList.concat(hosts.data);
+            const nextHosts = await this.getHosts(null, null, hosts.nextPageToken);
+            fullHostList = fullHostList.concat(nextHosts.nextPageToken ? nextHosts.data : nextHosts);
+
+        } else {
+            fullHostList = fullHostList.concat(hosts);
+        }
         // Filter only active hosts.
-        return hosts.filter(h => h.active);
+        return fullHostList.filter(h => h.active);
     }
 }
 
