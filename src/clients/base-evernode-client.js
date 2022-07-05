@@ -106,6 +106,45 @@ class BaseEvernodeClient {
         return hosts;
     }
 
+
+    async getAllConfigs() {
+        let fullConfigList = [];
+        const configs = await this.#firestoreHandler.getConfigs();
+        if (configs.nextPageToken) {
+            let currentPageToken = configs.nextPageToken;
+            let nextConfigs = null;
+            fullConfigList = fullConfigList.concat(configs.data);
+            while (currentPageToken) {
+                nextConfigs = await this.#firestoreHandler.getConfigs(null, 50, currentPageToken);
+                fullConfigList = fullConfigList.concat(nextConfigs.nextPageToken ? nextConfigs.data : nextConfigs);
+                currentPageToken = nextConfigs.nextPageToken;
+            }
+        } else {
+            fullConfigList = fullConfigList.concat(configs);
+        }
+
+        return fullConfigList;
+    }
+
+    async getAllHosts() {
+        let fullHostList = [];
+        const hosts = await this.#firestoreHandler.getHosts();
+        if (hosts.nextPageToken) {
+            let currentPageToken = hosts.nextPageToken;
+            let nextHosts = null;
+            fullHostList = fullHostList.concat(hosts.data);
+            while (currentPageToken) {
+                nextHosts = await this.#firestoreHandler.getHosts(null, 50, currentPageToken);
+                fullHostList = fullHostList.concat(nextHosts.nextPageToken ? nextHosts.data : nextHosts);
+                currentPageToken = nextHosts.nextPageToken;
+            }
+        } else {
+            fullHostList = fullHostList.concat(hosts);
+        }
+
+        return fullHostList;
+    }
+
     async getHookStates() {
         const regAcc = new XrplAccount(this.registryAddress, null, { xrplApi: this.xrplApi });
         const hookNamespaces = (await regAcc.getInfo())?.HookNamespaces;
