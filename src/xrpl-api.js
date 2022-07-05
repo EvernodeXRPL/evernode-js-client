@@ -13,13 +13,13 @@ class XrplApi {
     #addressSubscriptions = [];
     #maintainConnection = false;
 
-    constructor(rippledServer = null) {
+    constructor(rippledServer = null, options = {}) {
 
         this.#rippledServer = rippledServer || DefaultValues.rippledServer;
-        this.#initXrplClient();
+        this.#initXrplClient(options.xrplClientOptions);
     }
 
-    async #initXrplClient() {
+    async #initXrplClient(xrplClientOptions = null) {
 
         if (this.#client) { // If the client already exists, clean it up.
             this.#client.removeAllListeners(); // Remove existing event listeners to avoid them getting called from the old client object.
@@ -27,7 +27,7 @@ class XrplApi {
             this.#client = null;
         }
 
-        this.#client = new xrpl.Client(this.#rippledServer);
+        this.#client = new xrpl.Client(this.#rippledServer, xrplClientOptions);
 
         this.#client.on('error', (errorCode, errorMessage) => {
             console.log(errorCode + ': ' + errorMessage);
