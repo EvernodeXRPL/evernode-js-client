@@ -19,7 +19,7 @@ class XrplApi {
         this.#initXrplClient(options.xrplClientOptions);
     }
 
-    async #initXrplClient(xrplClientOptions = null) {
+    async #initXrplClient(xrplClientOptions = {}) {
 
         if (this.#client) { // If the client already exists, clean it up.
             this.#client.removeAllListeners(); // Remove existing event listeners to avoid them getting called from the old client object.
