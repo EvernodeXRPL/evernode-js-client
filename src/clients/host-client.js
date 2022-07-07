@@ -6,6 +6,7 @@ const { EncryptionHelper } = require('../encryption-helper');
 const { Buffer } = require('buffer');
 const codec = require('ripple-address-codec');
 const { XflHelpers } = require('../xfl-helpers');
+const { EvernodeHelpers } = require('../evernode-helpers');
 
 const OFFER_WAIT_TIMEOUT = 60;
 
@@ -45,6 +46,10 @@ class HostClient extends BaseEvernodeClient {
         }
 
         return null;
+    }
+
+    async getLeaseOffers() {
+        return await EvernodeHelpers.getLeaseOffers(this.xrplAcc);
     }
 
     async cancelOffer(offerIndex) {
