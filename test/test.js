@@ -73,6 +73,9 @@ async function app() {
             // () => extendLease("error"),
             // () => extendLease("timeout"),
             // () => deregisterHost(),
+            // () => getAllHosts(),
+            // () => getAllConfigs(),
+
         ];
 
         for (const test of tests) {
@@ -329,6 +332,20 @@ async function getHookStates() {
     await registryClient.connect();
     const states = await registryClient.getHookStates();
     console.log(states.length, states);
+}
+
+async function getAllHosts() {
+    const registryClient = new evernode.RegistryClient(registryAddress, registrySecret);
+    await registryClient.connect();
+    const hosts = await registryClient.getAllHosts();
+    console.log(hosts.length, hosts);
+}
+
+async function getAllConfigs() {
+    const registryClient = new evernode.RegistryClient(registryAddress, registrySecret);
+    await registryClient.connect();
+    const configs = await registryClient.getAllConfigs();
+    console.log(configs.length, configs);
 }
 
 app();
