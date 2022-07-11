@@ -329,6 +329,27 @@ class HostClient extends BaseEvernodeClient {
             memos,
             options.transactionOptions);
     }
+
+    async refundTenant(txHash, tenantAddress, refundAmount, options = {}) {
+        const memos = [
+            { type: MemoTypes.REFUND, format: '', data: '' },
+            { type: MemoTypes.REFUND_REF, format: MemoFormats.HEX, data: txHash }];
+
+        return this.xrplAcc.makePayment(tenantAddress,
+            refundAmount.toString(),
+            EvernodeConstants.EVR,
+            this.config.evrIssuerAddress,
+            memos,
+            options.transactionOptions);
+    }
+
+    getLeaseNFTokenIdPrefix() {
+        let buf = Buffer.allocUnsafe(24);
+        buf.writeUInt16BE(1);
+        buf.writeUInt16BE(0, 2);
+        codec.decodeAccountID(this.xrplAcc.address).copy(buf, 4);
+        return buf.toString('hex');
+    }
 }
 
 module.exports = {
