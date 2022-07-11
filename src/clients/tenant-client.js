@@ -6,6 +6,7 @@ const { XrplAccount } = require('../xrpl-account');
 const { UtilHelpers } = require('../util-helpers');
 const { Buffer } = require('buffer');
 const codec = require('ripple-address-codec');
+const { EvernodeHelpers } = require('../evernode-helpers');
 
 const ACQUIRE_WATCH_PREFIX = 'acquire_';
 const EXTEND_WATCH_PREFIX = 'extend_';
@@ -75,25 +76,30 @@ class TenantClient extends BaseEvernodeClient {
     }
 
     async acquireLeaseSubmit(hostAddress, requirement, options = {}) {
-        const host = await this.getLeaseHost(hostAddress);
-        const hostNfts = (await host.getNfts()).filter(nft => nft.URI.startsWith(EvernodeConstants.LEASE_NFT_PREFIX_HEX));
-        const hostTokenIDs = hostNfts.map(nft => nft.NFTokenID);
-        const nftOffers = (await host.getNftOffers())?.filter(offer => (offer.Flags == 1 && hostTokenIDs.includes(offer.NFTokenID))); // Filter only sell offers
 
-        // Accept the offer.
-        if (nftOffers && nftOffers.length > 0) {
-            // Encrypt the requirements with the host's encryption key (Specified in MessageKey field of the host account).
-            const encKey = await host.getMessageKey();
-            if (!encKey)
-                throw { reason: ErrorReasons.INTERNAL_ERR, error: "Host encryption key not set." };
+        const hostAcc = await this.getLeaseHost(hostAddress);
+        let selectedOfferIndex = options.leaseOfferIndex;
 
-            const ecrypted = await EncryptionHelper.encrypt(encKey, requirement, {
-                iv: options.iv, // Must be null or 16 bytes.
-                ephemPrivateKey: options.ephemPrivateKey // Must be null or 32 bytes.
-            });
-            return this.xrplAcc.buyNft(nftOffers[0].index, [{ type: MemoTypes.ACQUIRE_LEASE, format: MemoFormats.BASE64, data: ecrypted }], options.transactionOptions);
-        } else
-            throw { reason: ErrorReasons.NO_OFFER, error: "No offers available." };
+        // Attempt to get first available offer, if offer is not specified in options.
+        if (!selectedOfferIndex) {
+            const nftOffers = EvernodeHelpers.getLeaseOffers(hostAcc);
+            selectedOfferIndex = nftOffers && nftOffers[0] && nftOffers[0].index;
+
+            if (!selectedOfferIndex)
+                throw { reason: ErrorReasons.NO_OFFER, error: "No offers available." };
+        }
+
+        // Encrypt the requirements with the host's encryption key (Specified in MessageKey field of the host account).
+        const encKey = await hostAcc.getMessageKey();
+        if (!encKey)
+            throw { reason: ErrorReasons.INTERNAL_ERR, error: "Host encryption key not set." };
+
+        const ecrypted = await EncryptionHelper.encrypt(encKey, requirement, {
+            iv: options.iv, // Must be null or 16 bytes.
+            ephemPrivateKey: options.ephemPrivateKey // Must be null or 32 bytes.
+        });
+
+        return this.xrplAcc.buyNft(selectedOfferIndex, [{ type: MemoTypes.ACQUIRE_LEASE, format: MemoFormats.BASE64, data: ecrypted }], options.transactionOptions);
     }
 
     watchAcquireResponse(tx, options = {}) {
