@@ -19,8 +19,8 @@ const MemoTypes = {
     EXTEND_ERROR: 'evnExtendError',
     EXTEND_REF: 'evnExtendRef',
     REGISTRY_INIT: 'evnInitialize',
-    PRUNE_RES: 'evnPruneRes',
-    PRUNE_REF: 'evnPruneRef'
+    REFUND: 'evnRefund',
+    REFUND_REF: 'evnRefundRef'
 }
 
 const MemoFormats = {

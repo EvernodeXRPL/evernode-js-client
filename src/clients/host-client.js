@@ -325,10 +325,10 @@ class HostClient extends BaseEvernodeClient {
             options.transactionOptions);
     }
 
-    async pruneInstance(txHash, tenantAddress, refundAmount, options = {}) {
+    async refundTenant(txHash, tenantAddress, refundAmount, options = {}) {
         const memos = [
-            { type: MemoTypes.PRUNE_RES, format: '', data: '' },
-            { type: MemoTypes.PRUNE_REF, format: MemoFormats.HEX, data: txHash }];
+            { type: MemoTypes.REFUND, format: '', data: '' },
+            { type: MemoTypes.REFUND_REF, format: MemoFormats.HEX, data: txHash }];
 
         return this.xrplAcc.makePayment(tenantAddress,
             refundAmount.toString(),
