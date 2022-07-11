@@ -94,18 +94,6 @@ class BaseEvernodeClient {
             return '0';
     }
 
-    async getHosts(filters = null, pageSize = null, nextPageToken = null) {
-        const hosts = await this.#firestoreHandler.getHosts(filters, pageSize, nextPageToken);
-        const curMomentStartIdx = await this.getMomentStartIndex();
-        // Populate the host active status.
-        (hosts.nextPageToken ? hosts.data : hosts).forEach(h => {
-            h.active = (h.lastHeartbeatLedger > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
-                (h.lastHeartbeatLedger >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
-                (h.lastHeartbeatLedger > 0))
-        });
-        return hosts;
-    }
-
     async getHookStates() {
         const regAcc = new XrplAccount(this.registryAddress, null, { xrplApi: this.xrplApi });
         const hookNamespaces = (await regAcc.getInfo())?.HookNamespaces;
@@ -364,6 +352,59 @@ class BaseEvernodeClient {
         }
 
         return null;
+    }
+
+    // To fetch records from host collection in Firestore database. (Pagination is applied - default page size :20)
+    async getHosts(filters = null, pageSize = null, nextPageToken = null) {
+        const hosts = await this.#firestoreHandler.getHosts(filters, pageSize, nextPageToken);
+        const curMomentStartIdx = await this.getMomentStartIndex();
+        // Populate the host active status.
+        (hosts.nextPageToken ? hosts.data : hosts).forEach(h => {
+            h.active = (h.lastHeartbeatLedger > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
+                (h.lastHeartbeatLedger >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
+                (h.lastHeartbeatLedger > 0))
+        });
+        return hosts;
+    }
+
+    // To fetch all records from config collection in Firestore database.
+    async getAllConfigs() {
+        let fullConfigList = [];
+        const configs = await this.#firestoreHandler.getConfigs();
+        if (configs.nextPageToken) {
+            let currentPageToken = configs.nextPageToken;
+            let nextConfigs = null;
+            fullConfigList = fullConfigList.concat(configs.data);
+            while (currentPageToken) {
+                nextConfigs = await this.#firestoreHandler.getConfigs(null, 50, currentPageToken);
+                fullConfigList = fullConfigList.concat(nextConfigs.nextPageToken ? nextConfigs.data : nextConfigs);
+                currentPageToken = nextConfigs.nextPageToken;
+            }
+        } else {
+            fullConfigList = fullConfigList.concat(configs);
+        }
+
+        return fullConfigList;
+    }
+
+    // To fetch all records from host collection in Firestore database.
+    async getAllHosts() {
+        let fullHostList = [];
+        const hosts = await this.#firestoreHandler.getHosts();
+        if (hosts.nextPageToken) {
+            let currentPageToken = hosts.nextPageToken;
+            let nextHosts = null;
+            fullHostList = fullHostList.concat(hosts.data);
+            while (currentPageToken) {
+                nextHosts = await this.#firestoreHandler.getHosts(null, 50, currentPageToken);
+                fullHostList = fullHostList.concat(nextHosts.nextPageToken ? nextHosts.data : nextHosts);
+                currentPageToken = nextHosts.nextPageToken;
+            }
+        } else {
+            fullHostList = fullHostList.concat(hosts);
+        }
+
+        return fullHostList;
     }
 }
 
