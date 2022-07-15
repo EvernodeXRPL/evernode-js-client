@@ -97,13 +97,11 @@ class BaseEvernodeClient {
 
     async getHookStates() {
         const regAcc = new XrplAccount(this.registryAddress, null, { xrplApi: this.xrplApi });
-        const hookNamespaces = (await regAcc.getInfo())?.HookNamespaces;
-        if (hookNamespaces) {
-            const configs = await regAcc.getNamespaceEntries(hookNamespaces[0]);
-            return configs.filter(c => c.LedgerEntryType === 'HookState').map(c => { return { key: c.HookStateKey, data: c.HookStateData } });
-        }
-        return [];
+        const configs = await regAcc.getNamespaceEntries(EvernodeConstants.HOOK_NAMESPACE);
 
+        if (configs)
+            return configs.filter(c => c.LedgerEntryType === 'HookState').map(c => { return { key: c.HookStateKey, data: c.HookStateData } });
+        return [];
     }
 
     async getMoment(ledgerIndex = null) {
@@ -355,15 +353,15 @@ class BaseEvernodeClient {
         return null;
     }
 
-    // To Host details from Hook States.
+    // To get Host details from Hook States.
     async getHostInfo(hostAddress = this.xrplAcc.address) {
-        const hostAddrsStatekey = StateHelpers.generateHostAddrStateKey(hostAddress);
-        const stateLedgerIndex = StateHelpers.getHookStateIndex(this.registryAddress, hostAddrsStatekey);
+        const hostAddrStatekey = StateHelpers.generateHostAddrStateKey(hostAddress);
+        const stateLedgerIndex = StateHelpers.getHookStateIndex(this.registryAddress, hostAddrStatekey);
         const ledgerEntry = await this.xrplApi.getLedgerEntry(stateLedgerIndex);
         const curMomentStartIdx = await this.getMomentStartIndex();
         if (ledgerEntry?.HookStateData) {
-            const hostAddrsStateData = ledgerEntry.HookStateData;
-            const hostInfo = StateHelpers.decodeHostAddressState(Buffer.from(hostAddrsStatekey, 'hex'), Buffer.from(hostAddrsStateData, 'hex'));
+            const hostAddrStateData = ledgerEntry.HookStateData;
+            const hostInfo = StateHelpers.decodeHostAddressState(Buffer.from(hostAddrStatekey, 'hex'), Buffer.from(hostAddrStateData, 'hex'));
             hostInfo.active = (hostInfo.lastHeartbeatLedger > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
                 (hostInfo.lastHeartbeatLedger >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
                 (hostInfo.lastHeartbeatLedger > 0))

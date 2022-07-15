@@ -1,9 +1,8 @@
 const codec = require('ripple-address-codec');
 const { Buffer } = require('buffer');
-const { HookStateKeys } = require('./evernode-common');
+const { HookStateKeys, EvernodeConstants } = require('./evernode-common');
 const { XflHelpers } = require('./xfl-helpers');
 const crypto = require("crypto");
-
 
 const NFTOKEN_PREFIX = '00080000';
 
@@ -34,7 +33,6 @@ const STATE_KEY_TYPES = {
 const EVERNODE_PREFIX = 'EVR';
 const HOST_ADDR_KEY_ZERO_COUNT = 8;
 const HOOK_STATE_LEDGER_TYPE_PREFIX = 118; // Decimal value of ASCII 'v'
-const HOOK_NAMESPACE = '01EAF09326B4911554384121FF56FA8FECC215FDDE2EC35D9E59F2C53EC665A0';
 
 class StateHelpers {
     static StateTypes = {
@@ -213,7 +211,7 @@ class StateHelpers {
         return stateKeyBuf.toString('hex').toUpperCase();
     }
 
-    static  getHookStateIndex(hookAccount, stateKey, hookNamespace = HOOK_NAMESPACE) {
+    static  getHookStateIndex(hookAccount, stateKey, hookNamespace = EvernodeConstants.HOOK_NAMESPACE) {
         const typeBuf = Buffer.allocUnsafe(2);
         typeBuf.writeInt16BE(HOOK_STATE_LEDGER_TYPE_PREFIX);
 
