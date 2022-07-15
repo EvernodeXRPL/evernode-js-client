@@ -10,6 +10,7 @@ const { EventEmitter } = require('../event-emitter');
 const { UtilHelpers } = require('../util-helpers');
 const { FirestoreHandler } = require('../firestore/firestore-handler');
 const { XflHelpers } = require('../xfl-helpers');
+const { StateHelpers } = require('../state-helpers');
 
 class BaseEvernodeClient {
 
@@ -349,6 +350,24 @@ class BaseEvernodeClient {
                     specs: specs,
                 }
             }
+        }
+
+        return null;
+    }
+
+    // To Host details from Hook States.
+    async getHostInfo(hostAddress = this.xrplAcc.address) {
+        const hostAddrsStatekey = StateHelpers.generateHostAddrStateKey(hostAddress);
+        const stateLedgerIndex = StateHelpers.getHookStateIndex(this.registryAddress, hostAddrsStatekey);
+        const ledgerEntry = await this.xrplApi.getLedgerEntry(stateLedgerIndex);
+        const curMomentStartIdx = await this.getMomentStartIndex();
+        if (ledgerEntry?.HookStateData) {
+            const hostAddrsStateData = ledgerEntry.HookStateData;
+            const hostInfo = StateHelpers.decodeHostAddressState(Buffer.from(hostAddrsStatekey, 'hex'), Buffer.from(hostAddrsStateData, 'hex'));
+            hostInfo.active = (hostInfo.lastHeartbeatLedger > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
+                (hostInfo.lastHeartbeatLedger >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
+                (hostInfo.lastHeartbeatLedger > 0))
+            return hostInfo;
         }
 
         return null;
