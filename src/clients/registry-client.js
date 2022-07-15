@@ -27,7 +27,7 @@ class RegistryClient extends BaseEvernodeClient {
             while (currentPageToken) {
                 nextHosts = await this.getHosts(null, null, currentPageToken);
                 fullHostList = fullHostList.concat(nextHosts.nextPageToken ? nextHosts.data : nextHosts);
-                currentPageToken = nextHosts.nextPageToken;   
+                currentPageToken = nextHosts.nextPageToken;
             }
         } else {
             fullHostList = fullHostList.concat(hosts);
