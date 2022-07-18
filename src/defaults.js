@@ -1,5 +1,5 @@
 const DefaultValues = {
-    registryAddress: 'rDPqJv7zu6DfeXexAYseABNM2hT2j2rpHv',
+    registryAddress: 'raaFre81618XegCrzTzVotAmarBcqNSAvK',
     rippledServer: 'wss://hooks-testnet-v2.xrpl-labs.com',
     xrplApi: null,
     stateIndexId: 'evernodeindex'

@@ -2,14 +2,15 @@
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 const codec = require('ripple-address-codec');
 
-const evrIssuerAddress = "rshgz7gh6qsyCcVAe3vSG793Vd5JjGm9m4";
-const registryAddress = "rPgQM5j4uHJbZs4huYuLDU8TaaBy8tn3kf";
-const registrySecret = "snnHrLVZDhgfrKpLTaRw8pvzg3oUT";
-const hostAddress = "rHtvy2juKs5cQmomHxtu4tjD6PWVrQyh1B";
-const hostSecret = "ssGtCwfoLcxRGcQ8k6To9WF6pynWb";
-const foundationAddress = "rsppptwmNdhygwXrPca6dfan1PkSN4hszV";
-const foundationSecret = "spzeDpUKRdLdF3Y2U3n6pNGBvSqrj";
-
+const evrIssuerAddress = "rEm71QHHXJzGULG4mkR3yhLz6EZYgvuwwP";
+const registryAddress = "raaFre81618XegCrzTzVotAmarBcqNSAvK";
+const registrySecret = "snrUSoLVodmhVCDNL92K1UafzQDjH";
+const hostAddress = "rNJDQu9pUretQetmxeHRPkasM4o7chdML2";
+const hostSecret = "ss11mwRSG4UxXQ9LakyYTmAzisnN2";
+const foundationAddress = "rMRRzwe2mPhtVJYkBsPYbxkrHdExAduqWi";
+const foundationSecret = "sncQEvGmeMrVGAvkMiLkmE3hrtVH9";
+const tenantAddress = "rw7GPreCDX2nuJVHSwNdH38ZGsiEH8qiY";
+const tenantSecret = "shdQBGbF9d3Tgp3D28pXoBdhWoZ9N";
 const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
 const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
 
@@ -62,6 +63,7 @@ async function app() {
             // () => initializeConfigs(),
             // () => getHookStates(),
             // () => registerHost(),
+            // () => getHostInfo(),
             // () => updateInfo(),
             // () => getAllHosts(),
             // () => getActiveHosts(),
@@ -73,7 +75,6 @@ async function app() {
             // () => extendLease("error"),
             // () => extendLease("timeout"),
             // () => deregisterHost(),
-            // () => getAllHosts(),
             // () => getAllConfigs(),
 
         ];
@@ -116,15 +117,6 @@ async function updateInfo() {
 
     const client = await getHostClient();
     await client.updateRegInfo(10);
-}
-
-async function getAllHosts() {
-    console.log(`-----------Getting all hosts (including inactive)`);
-
-    const regClient = await getRegistryClient();
-    const hosts = await regClient.getHosts();
-
-    console.log("All hosts", hosts || "No hosts");
 }
 
 async function getActiveHosts() {
@@ -335,17 +327,27 @@ async function getHookStates() {
 }
 
 async function getAllHosts() {
+    console.log(`-----------Getting all hosts (including inactive)`);
     const registryClient = new evernode.RegistryClient(registryAddress, registrySecret);
     await registryClient.connect();
     const hosts = await registryClient.getAllHosts();
     console.log(hosts.length, hosts);
 }
 
+
 async function getAllConfigs() {
+    console.log(`-----------Getting all configs`);
     const registryClient = new evernode.RegistryClient(registryAddress, registrySecret);
     await registryClient.connect();
     const configs = await registryClient.getAllConfigs();
     console.log(configs.length, configs);
+}
+
+async function getHostInfo() {
+    const host = await getHostClient();
+    const hostInfo =  await host.getHostInfo();
+    console.log(hostInfo);
+    return hostInfo;
 }
 
 app();

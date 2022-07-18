@@ -40,9 +40,8 @@ class HostClient extends BaseEvernodeClient {
         // Check whether we own an evernode host token.
         const nft = await this.getRegistrationNft();
         if (nft) {
-            const host = await this.getHosts({ nfTokenId: nft.NFTokenID });
-            if (host && host.length == 1)
-                return host[0];
+            const host = await this.getHostInfo();
+            return (host?.nfTokenId == nft.NFTokenID) ? host : null;
         }
 
         return null;
@@ -141,10 +140,10 @@ class HostClient extends BaseEvernodeClient {
         // from the client-side in order to complete the registration.
         const regNft = await this.getRegistrationNft();
         if (!regNft) {
-            const regInfo = await this.getHosts({ address: this.xrplAcc.address });
-            if (regInfo.length !== 0) {
+            const regInfo = await this.getHostInfo(this.xrplAcc.address);
+            if (regInfo) {
                 const registryAcc = new XrplAccount(this.registryAddress, null, { xrplApi: this.xrplApi });
-                const sellOffer = (await registryAcc.getNftOffers()).find(o => o.NFTokenID == regInfo[0].nfTokenId);
+                const sellOffer = (await registryAcc.getNftOffers()).find(o => o.NFTokenID == regInfo.nfTokenId);
                 if (sellOffer) {
                     await this.xrplAcc.buyNft(sellOffer.index);
                     console.log("Registration was successfully completed after acquiring the NFT.");

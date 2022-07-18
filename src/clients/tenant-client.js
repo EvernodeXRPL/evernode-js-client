@@ -66,10 +66,10 @@ class TenantClient extends BaseEvernodeClient {
             throw { reason: ErrorReasons.HOST_INVALID, error: "Host is not registered." };
 
         // Check whether active.
-        const hosts = await this.getHosts({ address: host.address });
-        if (!hosts || !hosts.length)
+        const hostInfo = await this.getHostInfo(host.address);
+        if (hostInfo)
             throw { reason: ErrorReasons.HOST_INVALID, error: "Host is not registered." };
-        else if (!hosts[0].active)
+        else if (hostInfo.active)
             throw { reason: ErrorReasons.HOST_INACTIVE, error: "Host is not active." };
 
         return host;
@@ -82,7 +82,7 @@ class TenantClient extends BaseEvernodeClient {
 
         // Attempt to get first available offer, if offer is not specified in options.
         if (!selectedOfferIndex) {
-            const nftOffers = EvernodeHelpers.getLeaseOffers(hostAcc);
+            const nftOffers = await EvernodeHelpers.getLeaseOffers(hostAcc);
             selectedOfferIndex = nftOffers && nftOffers[0] && nftOffers[0].index;
 
             if (!selectedOfferIndex)
