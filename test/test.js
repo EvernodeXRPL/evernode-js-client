@@ -75,7 +75,6 @@ async function app() {
             // () => extendLease("error"),
             // () => extendLease("timeout"),
             // () => deregisterHost(),
-            // () => getAllHosts(),
             // () => getAllConfigs(),
 
         ];
@@ -118,15 +117,6 @@ async function updateInfo() {
 
     const client = await getHostClient();
     await client.updateRegInfo(10);
-}
-
-async function getAllHosts() {
-    console.log(`-----------Getting all hosts (including inactive)`);
-
-    const regClient = await getRegistryClient();
-    const hosts = await regClient.getHosts();
-
-    console.log("All hosts", hosts || "No hosts");
 }
 
 async function getActiveHosts() {
@@ -337,13 +327,16 @@ async function getHookStates() {
 }
 
 async function getAllHosts() {
+    console.log(`-----------Getting all hosts (including inactive)`);
     const registryClient = new evernode.RegistryClient(registryAddress, registrySecret);
     await registryClient.connect();
     const hosts = await registryClient.getAllHosts();
     console.log(hosts.length, hosts);
 }
 
+
 async function getAllConfigs() {
+    console.log(`-----------Getting all configs`);
     const registryClient = new evernode.RegistryClient(registryAddress, registrySecret);
     await registryClient.connect();
     const configs = await registryClient.getAllConfigs();
