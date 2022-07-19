@@ -161,7 +161,7 @@ async function registerHost(address = hostAddress, secret = hostSecret) {
 
     console.log("Register...");
     const instanceCount = 3;
-    await host.register("AU", 10000, 512, 1024, instanceCount,'Intel', 10, 10, "Test desctiption", 2);
+    await host.register("AU", 10000, 512, 1024, instanceCount, 'Intel', 10, 10, "Test desctiption", 2);
 
     console.log("Lease Offer...");
     for (let i = 0; i < instanceCount; i++)
@@ -239,13 +239,12 @@ async function acquire(scenario) {
     try {
         const timeout = (scenario === "timeout" ? 10000 : 30000);
         const result = await tenant.acquireLease(hostAddress, {
-            container_name: "dc411912-bcdd-4f73-af43-32ec45844b9a",
-            owner_pubkey: "ed06868b3dbc8f342eb10029bd8c11af6dfc4ce60be733a19cbb00ea11773081d6",
+            owner_pubkey: "ed5cb83404120ac759609819591ef839b7d222c84f1f08b3012f490586159d2b50",
             contract_id: "dc411912-bcdd-4f73-af43-32ec45844b9a",
-            image: "hp.latest-ubt.20.04",
+            image: "hp.latest-ubt.20.04-njs.16",
             config: {}
         }, { timeout: timeout });
-        console.log(`Tenant received instance '${result.instance}'`);
+        console.log('Tenant received instance ', result.instance);
     }
     catch (err) {
         console.log("Tenant recieved acquire error: ", err.reason)
@@ -345,7 +344,7 @@ async function getAllConfigs() {
 
 async function getHostInfo() {
     const host = await getHostClient();
-    const hostInfo =  await host.getHostInfo();
+    const hostInfo = await host.getHostInfo();
     console.log(hostInfo);
     return hostInfo;
 }

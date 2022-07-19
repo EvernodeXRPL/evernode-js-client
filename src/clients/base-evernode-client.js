@@ -355,17 +355,24 @@ class BaseEvernodeClient {
 
     // To get Host details from Hook States.
     async getHostInfo(hostAddress = this.xrplAcc.address) {
-        const hostAddrStatekey = StateHelpers.generateHostAddrStateKey(hostAddress);
-        const stateLedgerIndex = StateHelpers.getHookStateIndex(this.registryAddress, hostAddrStatekey);
-        const ledgerEntry = await this.xrplApi.getLedgerEntry(stateLedgerIndex);
-        const curMomentStartIdx = await this.getMomentStartIndex();
-        if (ledgerEntry?.HookStateData) {
-            const hostAddrStateData = ledgerEntry.HookStateData;
-            const hostInfo = StateHelpers.decodeHostAddressState(Buffer.from(hostAddrStatekey, 'hex'), Buffer.from(hostAddrStateData, 'hex'));
-            hostInfo.active = (hostInfo.lastHeartbeatLedger > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
-                (hostInfo.lastHeartbeatLedger >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
-                (hostInfo.lastHeartbeatLedger > 0))
-            return hostInfo;
+        try {
+            const hostAddrStatekey = StateHelpers.generateHostAddrStateKey(hostAddress);
+            const stateLedgerIndex = StateHelpers.getHookStateIndex(this.registryAddress, hostAddrStatekey);
+            const ledgerEntry = await this.xrplApi.getLedgerEntry(stateLedgerIndex);
+            const curMomentStartIdx = await this.getMomentStartIndex();
+            if (ledgerEntry?.HookStateData) {
+                const hostAddrStateData = ledgerEntry.HookStateData;
+                const hostInfo = StateHelpers.decodeHostAddressState(Buffer.from(hostAddrStatekey, 'hex'), Buffer.from(hostAddrStateData, 'hex'));
+                hostInfo.active = (hostInfo.lastHeartbeatLedger > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
+                    (hostInfo.lastHeartbeatLedger >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
+                    (hostInfo.lastHeartbeatLedger > 0))
+                return hostInfo;
+            }
+        }
+        catch (e) {
+            // If the exeption is entryNotFound from Rippled there's no entry for the host, So return null.
+            if (e?.data?.error !== 'entryNotFound')
+                throw e;
         }
 
         return null;

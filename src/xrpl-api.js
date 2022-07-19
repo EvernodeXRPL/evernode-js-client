@@ -217,7 +217,7 @@ class XrplApi {
 
     async getLedgerEntry(index, options) {
         const resp = (await this.#client.request({ command: 'ledger_entry', index: index, ledger_index: "validated", ...options }));
-            return resp?.result?.node;
+        return resp?.result?.node;
     }
 
     async submitAndVerify(tx, options) {
