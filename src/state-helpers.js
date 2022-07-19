@@ -4,7 +4,7 @@ const { HookStateKeys, EvernodeConstants } = require('./evernode-common');
 const { XflHelpers } = require('./xfl-helpers');
 const crypto = require("crypto");
 
-const NFTOKEN_PREFIX = '00080000';
+const NFTOKEN_PREFIX = '00000000';
 
 const HOST_TOKEN_ID_OFFSET = 0;
 const HOST_COUNTRY_CODE_OFFSET = 32;

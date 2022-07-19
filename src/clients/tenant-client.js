@@ -67,9 +67,9 @@ class TenantClient extends BaseEvernodeClient {
 
         // Check whether active.
         const hostInfo = await this.getHostInfo(host.address);
-        if (hostInfo)
+        if (!hostInfo)
             throw { reason: ErrorReasons.HOST_INVALID, error: "Host is not registered." };
-        else if (hostInfo.active)
+        else if (!hostInfo.active)
             throw { reason: ErrorReasons.HOST_INACTIVE, error: "Host is not active." };
 
         return host;
