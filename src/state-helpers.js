@@ -4,7 +4,7 @@ const { HookStateKeys, EvernodeConstants } = require('./evernode-common');
 const { XflHelpers } = require('./xfl-helpers');
 const crypto = require("crypto");
 
-const NFTOKEN_PREFIX = '00080000';
+const NFTOKEN_PREFIX = '00000000';
 
 const HOST_TOKEN_ID_OFFSET = 0;
 const HOST_COUNTRY_CODE_OFFSET = 32;
@@ -60,7 +60,7 @@ class StateHelpers {
     static decodeTokenIdState(stateDataBuf) {
         return {
             address: codec.encodeAccountID(stateDataBuf.slice(HOST_ADDRESS_OFFSET, HOST_CPU_MODEL_NAME_OFFSET)),
-            cpuModelName: stateDataBuf.slice(HOST_CPU_MODEL_NAME_OFFSET, HOST_CPU_COUNT_OFFSET).toString(),
+            cpuModelName: stateDataBuf.slice(HOST_CPU_MODEL_NAME_OFFSET, HOST_CPU_COUNT_OFFSET).toString().replace(/\x00+$/, ''), // Remove trailing \x00 characters.
             cpuCount: stateDataBuf.readUInt16BE(HOST_CPU_COUNT_OFFSET),
             cpuMHz: stateDataBuf.readUInt16BE(HOST_CPU_SPEED_OFFSET),
             cpuMicrosec: stateDataBuf.readUInt32BE(HOST_CPU_MICROSEC_OFFSET),

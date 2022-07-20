@@ -356,17 +356,26 @@ class BaseEvernodeClient {
     // To get Host details from Hook States.
     async getHostInfo(hostAddress = this.xrplAcc.address) {
         try {
-            const hostAddrStatekey = StateHelpers.generateHostAddrStateKey(hostAddress);
-            const stateLedgerIndex = StateHelpers.getHookStateIndex(this.registryAddress, hostAddrStatekey);
-            const ledgerEntry = await this.xrplApi.getLedgerEntry(stateLedgerIndex);
-            const curMomentStartIdx = await this.getMomentStartIndex();
-            if (ledgerEntry?.HookStateData) {
-                const hostAddrStateData = ledgerEntry.HookStateData;
-                const hostInfo = StateHelpers.decodeHostAddressState(Buffer.from(hostAddrStatekey, 'hex'), Buffer.from(hostAddrStateData, 'hex'));
-                hostInfo.active = (hostInfo.lastHeartbeatLedger > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
-                    (hostInfo.lastHeartbeatLedger >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
-                    (hostInfo.lastHeartbeatLedger > 0))
-                return hostInfo;
+            const addrStateKey = StateHelpers.generateHostAddrStateKey(hostAddress);
+            const addrStateIndex = StateHelpers.getHookStateIndex(this.registryAddress, addrStateKey);
+            const addrLedgerEntry = await this.xrplApi.getLedgerEntry(addrStateIndex);
+            const addrStateData = addrLedgerEntry?.HookStateData;
+            if (addrStateData) {
+                const addrStateDecoded = StateHelpers.decodeHostAddressState(Buffer.from(addrStateKey, 'hex'), Buffer.from(addrStateData, 'hex'));
+                const curMomentStartIdx = await this.getMomentStartIndex();
+                addrStateDecoded.active = (addrStateDecoded.lastHeartbeatLedger > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
+                    (addrStateDecoded.lastHeartbeatLedger >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
+                    (addrStateDecoded.lastHeartbeatLedger > 0))
+
+                const nftIdStatekey = StateHelpers.generateTokenIdStateKey(addrStateDecoded.nfTokenId);
+                const nftIdStateIndex = StateHelpers.getHookStateIndex(this.registryAddress, nftIdStatekey);
+                const nftIdLedgerEntry = await this.xrplApi.getLedgerEntry(nftIdStateIndex);
+                
+                const nftIdStateData = nftIdLedgerEntry?.HookStateData;
+                if (nftIdStateData) {
+                    const nftIdStateDecoded = StateHelpers.decodeTokenIdState(Buffer.from(nftIdStateData, 'hex'));
+                    return {...addrStateDecoded, ...nftIdStateDecoded};
+                }
             }
         }
         catch (e) {
