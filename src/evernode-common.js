@@ -21,7 +21,8 @@ const MemoTypes = {
     EXTEND_REF: 'evnExtendRef',
     REGISTRY_INIT: 'evnInitialize',
     REFUND: 'evnRefund',
-    REFUND_REF: 'evnRefundRef'
+    REFUND_REF: 'evnRefundRef',
+    DEAD_HOST_PRUNE: 'evnDeadHostPrune'
 }
 
 const MemoFormats = {
@@ -64,6 +65,7 @@ const HookStateKeys = {
     MOMENT_BASE_IDX: "4556523300000000000000000000000000000000000000000000000000000000",
     HOST_REG_FEE: "4556523400000000000000000000000000000000000000000000000000000000",
     MAX_REG: "4556523500000000000000000000000000000000000000000000000000000000",
+    MAX_TOLERABLE_DOWNTIME: "4556523700000000000000000000000000000000000000000000000000000000",
 
     // Prefixes
     PREFIX_HOST_TOKENID: "45565202",
@@ -83,7 +85,8 @@ const EvernodeEvents = {
     ExtendError: "ExtendError",
     HostRegUpdated: "HostRegUpdated",
     HostReRegistered: "HostReRegistered",
-    RegistryInitialized: "RegistryInitialized"
+    RegistryInitialized: "RegistryInitialized",
+    DeadHostPrune: "DeadHostPrune"
 }
 
 module.exports = {

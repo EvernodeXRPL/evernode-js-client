@@ -111,6 +111,13 @@ class StateHelpers {
                 value: Number(stateData.readBigUInt64BE())
             }
         }
+        else if (Buffer.from(HookStateKeys.MAX_TOLERABLE_DOWNTIME, 'hex').compare(stateKey) === 0) {
+            return {
+                type: this.StateTypes.SIGLETON,
+                key: hexKey,
+                value: stateData.readUInt16BE()
+            }
+        }
         else if (Buffer.from(HookStateKeys.EVR_ISSUER_ADDR, 'hex').compare(stateKey) === 0 || Buffer.from(HookStateKeys.FOUNDATION_ADDR, 'hex').compare(stateKey) === 0) {
             return {
                 type: this.StateTypes.CONFIGURATION,
@@ -203,7 +210,7 @@ class StateHelpers {
         let buf = Buffer.allocUnsafe(9);
         buf.writeUInt8(STATE_KEY_TYPES.HOST_ADDR);
         for (let i = 0; i < HOST_ADDR_KEY_ZERO_COUNT; i++) {
-            buf.writeUInt8(0, i+1);
+            buf.writeUInt8(0, i + 1);
         }
 
         const addrBuf = Buffer.from(codec.decodeAccountID(address), "hex");
@@ -211,7 +218,7 @@ class StateHelpers {
         return stateKeyBuf.toString('hex').toUpperCase();
     }
 
-    static  getHookStateIndex(hookAccount, stateKey, hookNamespace = EvernodeConstants.HOOK_NAMESPACE) {
+    static getHookStateIndex(hookAccount, stateKey, hookNamespace = EvernodeConstants.HOOK_NAMESPACE) {
         const typeBuf = Buffer.allocUnsafe(2);
         typeBuf.writeInt16BE(HOOK_STATE_LEDGER_TYPE_PREFIX);
 

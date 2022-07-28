@@ -349,6 +349,17 @@ class BaseEvernodeClient {
                 }
             }
         }
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.DEAD_HOST_PRUNE && tx.Memos[0].format === MemoFormats.TEXT && tx.Memos[0].data) {
+
+            return {
+                name: EvernodeEvents.DeadHostPrune,
+                data: {
+                    transaction: tx,
+                    host: tx.Memos[0].data
+                }
+            }
+        }
 
         return null;
     }
@@ -370,11 +381,11 @@ class BaseEvernodeClient {
                 const nftIdStatekey = StateHelpers.generateTokenIdStateKey(addrStateDecoded.nfTokenId);
                 const nftIdStateIndex = StateHelpers.getHookStateIndex(this.registryAddress, nftIdStatekey);
                 const nftIdLedgerEntry = await this.xrplApi.getLedgerEntry(nftIdStateIndex);
-                
+
                 const nftIdStateData = nftIdLedgerEntry?.HookStateData;
                 if (nftIdStateData) {
                     const nftIdStateDecoded = StateHelpers.decodeTokenIdState(Buffer.from(nftIdStateData, 'hex'));
-                    return {...addrStateDecoded, ...nftIdStateDecoded};
+                    return { ...addrStateDecoded, ...nftIdStateDecoded };
                 }
             }
         }

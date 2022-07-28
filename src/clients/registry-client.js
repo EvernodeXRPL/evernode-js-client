@@ -8,7 +8,8 @@ const RegistryEvents = {
     HostRegUpdated: EvernodeEvents.HostRegUpdated,
     RegistryInitialized: EvernodeEvents.RegistryInitialized,
     Heartbeat: EvernodeEvents.Heartbeat,
-    HostPostDeregistered: EvernodeEvents.HostPostDeregistered
+    HostPostDeregistered: EvernodeEvents.HostPostDeregistered,
+    DeadHostPrune: EvernodeEvents.DeadHostPrune
 }
 
 class RegistryClient extends BaseEvernodeClient {

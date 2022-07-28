@@ -76,6 +76,7 @@ async function app() {
             // () => extendLease("timeout"),
             // () => deregisterHost(),
             // () => getAllConfigs(),
+            // () => pruneDeadHost(),
 
         ];
 
@@ -347,6 +348,18 @@ async function getHostInfo() {
     const hostInfo = await host.getHostInfo();
     console.log(hostInfo);
     return hostInfo;
+}
+
+async function pruneDeadHost(address = hostAddress, options = {}) {
+    console.log(`-----------Prune host`);
+
+    // Send host pruning request to Registry.
+    await new evernode.XrplAccount(tenantAddress, tenantSecret).makePayment(registryAddress,
+        '1',
+        "XRP",
+        null,
+        [{ type: 'evnDeadHostPrune', format: 'text/plain', data: address }],
+        options.transactionOptions);
 }
 
 app();
