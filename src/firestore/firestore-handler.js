@@ -33,6 +33,13 @@ class FirestoreHandler {
             case 'floatValue':
                 parsed = parseFloat(value[type]);
                 break;
+            case 'mapValue':
+                parsed = {};
+                for (const [subKey, subValue] of Object.entries(value[type].fields)) {
+                    const field = this.#parseValue(subKey, subValue);
+                    parsed[field.key] = field.value;
+                }
+                break;
             default:
                 parsed = value[type];
                 break;
@@ -240,9 +247,34 @@ class FirestoreHandler {
     convertValue(key, value) {
         // Convert camelCase to snake_case.
         const uKey = key.replace(/([A-Z])/g, function (g) { return `_${g[0].toLocaleLowerCase()}`; });
-        const type = `${typeof value !== 'number' ? 'string' : (value % 1 > 0 ? 'float' : 'integer')}Value`;
+        let val = {};
+        if (typeof value != 'object')
+            val = value;
+        else
+            Object.assign(val, value);
+        let type
+        switch (typeof value) {
+            case 'number':
+                type = (value % 1 > 0 ? 'float' : 'integer');
+                break;
+            case 'object':
+                type = 'map';
+                val = {
+                    fields: {}
+                }
+                // Prepare the firestore write body with the given data object.
+                for (const [subKey, subValue] of Object.entries(value)) {
+                    const field = this.convertValue(subKey, subValue);
+                    val.fields[field.key] = field.value;
+                }
+                break;
+            default:
+                type = 'string';
+                break;
+        }
+        type = `${type}Value`;
         let obj = {};
-        obj[type] = value;
+        obj[type] = val;
         return { key: uKey, value: obj };
     }
 
