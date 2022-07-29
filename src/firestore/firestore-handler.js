@@ -248,14 +248,11 @@ class FirestoreHandler {
         // Convert camelCase to snake_case.
         const uKey = key.replace(/([A-Z])/g, function (g) { return `_${g[0].toLocaleLowerCase()}`; });
         let val = {};
-        if (typeof value != 'object')
-            val = value;
-        else
-            Object.assign(val, value);
         let type
         switch (typeof value) {
             case 'number':
                 type = (value % 1 > 0 ? 'float' : 'integer');
+                val = value;
                 break;
             case 'object':
                 type = 'map';
@@ -270,6 +267,7 @@ class FirestoreHandler {
                 break;
             default:
                 type = 'string';
+                val = value;
                 break;
         }
         type = `${type}Value`;
