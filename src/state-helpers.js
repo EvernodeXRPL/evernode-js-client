@@ -111,13 +111,6 @@ class StateHelpers {
                 value: Number(stateData.readBigUInt64BE())
             }
         }
-        else if (Buffer.from(HookStateKeys.MAX_TOLERABLE_DOWNTIME, 'hex').compare(stateKey) === 0) {
-            return {
-                type: this.StateTypes.SIGLETON,
-                key: hexKey,
-                value: stateData.readUInt16BE()
-            }
-        }
         else if (Buffer.from(HookStateKeys.EVR_ISSUER_ADDR, 'hex').compare(stateKey) === 0 || Buffer.from(HookStateKeys.FOUNDATION_ADDR, 'hex').compare(stateKey) === 0) {
             return {
                 type: this.StateTypes.CONFIGURATION,
@@ -148,6 +141,13 @@ class StateHelpers {
                 type: this.StateTypes.CONFIGURATION,
                 key: hexKey,
                 value: val
+            }
+        }
+        else if (Buffer.from(HookStateKeys.MAX_TOLERABLE_DOWNTIME, 'hex').compare(stateKey) === 0) {
+            return {
+                type: this.StateTypes.CONFIGURATION,
+                key: hexKey,
+                value: stateData.readUInt16BE()
             }
         }
         else

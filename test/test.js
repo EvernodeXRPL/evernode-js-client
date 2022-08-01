@@ -350,16 +350,12 @@ async function getHostInfo() {
     return hostInfo;
 }
 
-async function pruneDeadHost(address = hostAddress, options = {}) {
+async function pruneDeadHost(address = hostAddress) {
     console.log(`-----------Prune host`);
 
-    // Send host pruning request to Registry.
-    await new evernode.XrplAccount(tenantAddress, tenantSecret).makePayment(registryAddress,
-        '1',
-        "XRP",
-        null,
-        [{ type: 'evnDeadHostPrune', format: 'text/plain', data: address }],
-        options.transactionOptions);
+    // Create a cleint to send the prune request (the client can be a tenant or another host).
+    const tenantClient = await getTenantClient();
+    await tenantClient.pruneDeadHost(address);
 }
 
 app();
