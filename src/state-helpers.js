@@ -143,6 +143,13 @@ class StateHelpers {
                 value: val
             }
         }
+        else if (Buffer.from(HookStateKeys.MAX_TOLERABLE_DOWNTIME, 'hex').compare(stateKey) === 0) {
+            return {
+                type: this.StateTypes.CONFIGURATION,
+                key: hexKey,
+                value: stateData.readUInt16BE()
+            }
+        }
         else
             throw { type: 'Validation Error', message: 'Invalid state key.' };
     }
@@ -177,7 +184,8 @@ class StateHelpers {
             Buffer.from(HookStateKeys.HOST_HEARTBEAT_FREQ, 'hex').compare(stateKey) ||
             Buffer.from(HookStateKeys.MINT_LIMIT, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.FIXED_REG_FEE, 'hex').compare(stateKey) === 0 ||
-            Buffer.from(HookStateKeys.LEASE_ACQUIRE_WINDOW, 'hex').compare(stateKey) === 0) {
+            Buffer.from(HookStateKeys.LEASE_ACQUIRE_WINDOW, 'hex').compare(stateKey) === 0 ||
+            Buffer.from(HookStateKeys.MAX_TOLERABLE_DOWNTIME, 'hex').compare(stateKey) === 0) {
             return {
                 key: hexKey,
                 type: this.STATE_TYPES.CONFIGURATION
@@ -203,7 +211,7 @@ class StateHelpers {
         let buf = Buffer.allocUnsafe(9);
         buf.writeUInt8(STATE_KEY_TYPES.HOST_ADDR);
         for (let i = 0; i < HOST_ADDR_KEY_ZERO_COUNT; i++) {
-            buf.writeUInt8(0, i+1);
+            buf.writeUInt8(0, i + 1);
         }
 
         const addrBuf = Buffer.from(codec.decodeAccountID(address), "hex");
@@ -211,7 +219,7 @@ class StateHelpers {
         return stateKeyBuf.toString('hex').toUpperCase();
     }
 
-    static  getHookStateIndex(hookAccount, stateKey, hookNamespace = EvernodeConstants.HOOK_NAMESPACE) {
+    static getHookStateIndex(hookAccount, stateKey, hookNamespace = EvernodeConstants.HOOK_NAMESPACE) {
         const typeBuf = Buffer.allocUnsafe(2);
         typeBuf.writeInt16BE(HOOK_STATE_LEDGER_TYPE_PREFIX);
 
