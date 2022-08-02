@@ -76,6 +76,7 @@ async function app() {
             // () => extendLease("timeout"),
             // () => deregisterHost(),
             // () => getAllConfigs(),
+            // () => pruneDeadHost(),
 
         ];
 
@@ -347,6 +348,14 @@ async function getHostInfo() {
     const hostInfo = await host.getHostInfo();
     console.log(hostInfo);
     return hostInfo;
+}
+
+async function pruneDeadHost(address = hostAddress) {
+    console.log(`-----------Prune host`);
+
+    // Create a cleint to send the prune request (the client can be a tenant or another host).
+    const tenantClient = await getTenantClient();
+    await tenantClient.pruneDeadHost(address);
 }
 
 app();

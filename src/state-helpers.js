@@ -179,6 +179,13 @@ class StateHelpers {
                 }
             }
         }
+        else if (Buffer.from(HookStateKeys.MAX_TOLERABLE_DOWNTIME, 'hex').compare(stateKey) === 0) {
+            return {
+                type: this.StateTypes.CONFIGURATION,
+                key: hexKey,
+                value: stateData.readUInt16BE()
+            }
+        }
         else
             throw { type: 'Validation Error', message: 'Invalid state key.' };
     }
@@ -215,7 +222,8 @@ class StateHelpers {
             Buffer.from(HookStateKeys.MINT_LIMIT, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.FIXED_REG_FEE, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.LEASE_ACQUIRE_WINDOW, 'hex').compare(stateKey) === 0 ||
-            Buffer.from(HookStateKeys.REWARD_CONFIGURATION, 'hex').compare(stateKey) === 0) {
+            Buffer.from(HookStateKeys.REWARD_CONFIGURATION, 'hex').compare(stateKey) === 0 ||
+            Buffer.from(HookStateKeys.MAX_TOLERABLE_DOWNTIME, 'hex').compare(stateKey) === 0) {
             return {
                 key: hexKey,
                 type: this.STATE_TYPES.CONFIGURATION
