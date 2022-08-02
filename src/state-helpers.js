@@ -6,6 +6,17 @@ const crypto = require("crypto");
 
 const NFTOKEN_PREFIX = '00000000';
 
+const EPOCH_OFFSET = 0;
+const SAVED_MOMENT_OFFSET = 1;
+const PREV_MOMENT_ACTIVE_HOST_COUNT_OFFSET = 5;
+const CUR_MOMENT_ACTIVE_HOST_COUNT_OFFSET = 9;
+const EPOCH_POOL_OFFSET = 13;
+
+const EPOCH_COUNT_OFFSET = 0;
+const FIRST_EPOCH_REWARD_QUOTA_OFFSET = 1;
+const EPOCH_REWARD_AMOUNT_OFFSET = 5;
+const REWARD_START_MOMENT_OFFSET = 9;
+
 const HOST_TOKEN_ID_OFFSET = 0;
 const HOST_COUNTRY_CODE_OFFSET = 32;
 const HOST_RESERVED_OFFSET = 34;
@@ -143,6 +154,31 @@ class StateHelpers {
                 value: val
             }
         }
+        else if (Buffer.from(HookStateKeys.REWARD_CONFIGURATION, 'hex').compare(stateKey) === 0) {
+            return {
+                type: this.StateTypes.CONFIGURATION,
+                key: hexKey,
+                value: {
+                    epochCount: stateData.readUInt8(EPOCH_COUNT_OFFSET),
+                    firstEpochRewardQuota: stateData.readUInt32BE(FIRST_EPOCH_REWARD_QUOTA_OFFSET),
+                    epochRewardAmount: stateData.readUInt32BE(EPOCH_REWARD_AMOUNT_OFFSET),
+                    rewardStartMoment: stateData.readUInt32BE(REWARD_START_MOMENT_OFFSET)
+                }
+            }
+        }
+        else if (Buffer.from(HookStateKeys.REWARD_INFO, 'hex').compare(stateKey) === 0) {
+            return {
+                type: this.StateTypes.SIGLETON,
+                key: hexKey,
+                value: {
+                    epoch: stateData.readUInt8(EPOCH_OFFSET),
+                    savedMoment: stateData.readUInt32BE(SAVED_MOMENT_OFFSET),
+                    prevMomentActiveHostCount: stateData.readUInt32BE(PREV_MOMENT_ACTIVE_HOST_COUNT_OFFSET),
+                    curMomentActiveHostCount: stateData.readUInt32BE(CUR_MOMENT_ACTIVE_HOST_COUNT_OFFSET),
+                    epochPool: XflHelpers.toString(stateData.readBigInt64BE(EPOCH_POOL_OFFSET))
+                }
+            }
+        }
         else if (Buffer.from(HookStateKeys.MAX_TOLERABLE_DOWNTIME, 'hex').compare(stateKey) === 0) {
             return {
                 type: this.StateTypes.CONFIGURATION,
@@ -171,7 +207,8 @@ class StateHelpers {
         else if (Buffer.from(HookStateKeys.HOST_COUNT, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.MOMENT_BASE_IDX, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.HOST_REG_FEE, 'hex').compare(stateKey) === 0 ||
-            Buffer.from(HookStateKeys.MAX_REG, 'hex').compare(stateKey) === 0) {
+            Buffer.from(HookStateKeys.MAX_REG, 'hex').compare(stateKey) === 0 ||
+            Buffer.from(HookStateKeys.REWARD_INFO, 'hex').compare(stateKey) === 0) {
             return {
                 key: hexKey,
                 type: this.STATE_TYPES.SIGLETON
@@ -185,6 +222,7 @@ class StateHelpers {
             Buffer.from(HookStateKeys.MINT_LIMIT, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.FIXED_REG_FEE, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.LEASE_ACQUIRE_WINDOW, 'hex').compare(stateKey) === 0 ||
+            Buffer.from(HookStateKeys.REWARD_CONFIGURATION, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.MAX_TOLERABLE_DOWNTIME, 'hex').compare(stateKey) === 0) {
             return {
                 key: hexKey,
