@@ -1,15 +1,13 @@
-const codec = require('ripple-address-codec');
 const { Buffer } = require('buffer');
 const { XrplApi } = require('../xrpl-api');
 const { XrplAccount } = require('../xrpl-account');
-const { XrplApiEvents, XrplConstants } = require('../xrpl-common');
+const { XrplApiEvents } = require('../xrpl-common');
 const { EvernodeEvents, MemoTypes, MemoFormats, EvernodeConstants, HookStateKeys } = require('../evernode-common');
 const { DefaultValues } = require('../defaults');
 const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
 const { UtilHelpers } = require('../util-helpers');
 const { FirestoreHandler } = require('../firestore/firestore-handler');
-const { XflHelpers } = require('../xfl-helpers');
 const { StateHelpers } = require('../state-helpers');
 
 class BaseEvernodeClient {
@@ -360,19 +358,6 @@ class BaseEvernodeClient {
                 }
             }
         }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.DEAD_HOST_PRUNE && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
-
-            const addrsBuf = Buffer.from(tx.Memos[0].data, 'hex');
-
-            return {
-                name: EvernodeEvents.DeadHostPrune,
-                data: {
-                    transaction: tx,
-                    host: codec.encodeAccountID(addrsBuf)
-                }
-            }
-        }
 
         return null;
     }
@@ -394,11 +379,11 @@ class BaseEvernodeClient {
                 const nftIdStatekey = StateHelpers.generateTokenIdStateKey(addrStateDecoded.nfTokenId);
                 const nftIdStateIndex = StateHelpers.getHookStateIndex(this.registryAddress, nftIdStatekey);
                 const nftIdLedgerEntry = await this.xrplApi.getLedgerEntry(nftIdStateIndex);
-
+                
                 const nftIdStateData = nftIdLedgerEntry?.HookStateData;
                 if (nftIdStateData) {
                     const nftIdStateDecoded = StateHelpers.decodeTokenIdState(Buffer.from(nftIdStateData, 'hex'));
-                    return { ...addrStateDecoded, ...nftIdStateDecoded };
+                    return {...addrStateDecoded, ...nftIdStateDecoded};
                 }
             }
         }
@@ -462,22 +447,6 @@ class BaseEvernodeClient {
         }
 
         return fullHostList;
-    }
-
-    // To prune an inactive host/
-    async pruneDeadHost(hostAddress) {
-        if (this.xrplAcc.address === this.registryAddress)
-            throw 'Invalid function call';
-
-        let memoData = Buffer.allocUnsafe(20);
-        codec.decodeAccountID(hostAddress).copy(memoData);
-
-        await this.xrplAcc.makePayment(this.registryAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
-            null,
-            [{ type: MemoTypes.DEAD_HOST_PRUNE, format: MemoFormats.HEX, data: memoData.toString('hex') }]);
-
     }
 }
 
