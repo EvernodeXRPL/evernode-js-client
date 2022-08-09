@@ -1,15 +1,13 @@
-const codec = require('ripple-address-codec');
 const { Buffer } = require('buffer');
 const { XrplApi } = require('../xrpl-api');
 const { XrplAccount } = require('../xrpl-account');
-const { XrplApiEvents, XrplConstants } = require('../xrpl-common');
+const { XrplApiEvents } = require('../xrpl-common');
 const { EvernodeEvents, MemoTypes, MemoFormats, EvernodeConstants, HookStateKeys } = require('../evernode-common');
 const { DefaultValues } = require('../defaults');
 const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
 const { UtilHelpers } = require('../util-helpers');
 const { FirestoreHandler } = require('../firestore/firestore-handler');
-const { XflHelpers } = require('../xfl-helpers');
 const { StateHelpers } = require('../state-helpers');
 
 class BaseEvernodeClient {
@@ -122,16 +120,27 @@ class BaseEvernodeClient {
 
     async #getEvernodeConfig() {
         let states = await this.getHookStates();
-        return {
-            evrIssuerAddress: codec.encodeAccountID(Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.EVR_ISSUER_ADDR), 'hex')),
-            foundationAddress: codec.encodeAccountID(Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.FOUNDATION_ADDR), 'hex')),
-            hostRegFee: Number(Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.HOST_REG_FEE), 'hex').readBigUInt64BE()),
-            momentSize: Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.MOMENT_SIZE), 'hex').readUInt16BE(),
-            hostHeartbeatFreq: Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.HOST_HEARTBEAT_FREQ), 'hex').readUInt16BE(),
-            momentBaseIdx: Number(Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.MOMENT_BASE_IDX), 'hex').readBigInt64BE()),
-            purchaserTargetPrice: XflHelpers.toString(Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.PURCHASER_TARGET_PRICE), 'hex').readBigInt64BE()),
-            leaseAcquireWindow: Buffer.from(UtilHelpers.getStateData(states, HookStateKeys.LEASE_ACQUIRE_WINDOW), 'hex').readUInt16BE()
-        };
+        const configStateKeys = {
+            evrIssuerAddress: HookStateKeys.EVR_ISSUER_ADDR,
+            foundationAddress: HookStateKeys.FOUNDATION_ADDR,
+            hostRegFee: HookStateKeys.HOST_REG_FEE,
+            momentSize: HookStateKeys.MOMENT_SIZE,
+            hostHeartbeatFreq: HookStateKeys.HOST_HEARTBEAT_FREQ,
+            momentBaseIdx: HookStateKeys.MOMENT_BASE_IDX,
+            purchaserTargetPrice: HookStateKeys.PURCHASER_TARGET_PRICE,
+            leaseAcquireWindow: HookStateKeys.LEASE_ACQUIRE_WINDOW,
+            rewardInfo: HookStateKeys.REWARD_INFO,
+            rewardConfiguaration: HookStateKeys.REWARD_CONFIGURATION,
+            hostCount: HookStateKeys.HOST_COUNT
+        }
+        let config = {};
+        for (const [key, value] of Object.entries(configStateKeys)) {
+            const stateKey = Buffer.from(value, 'hex');
+            const stateData = Buffer.from(UtilHelpers.getStateData(states, value), 'hex');
+            const decoded = StateHelpers.decodeStateData(stateKey, stateData);
+            config[key] = decoded.value;
+        }
+        return config;
     }
 
     async refreshConfig() {
@@ -349,19 +358,6 @@ class BaseEvernodeClient {
                 }
             }
         }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.DEAD_HOST_PRUNE && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
-
-            const addrsBuf = Buffer.from(tx.Memos[0].data, 'hex');
-
-            return {
-                name: EvernodeEvents.DeadHostPrune,
-                data: {
-                    transaction: tx,
-                    host: codec.encodeAccountID(addrsBuf)
-                }
-            }
-        }
 
         return null;
     }
@@ -383,11 +379,11 @@ class BaseEvernodeClient {
                 const nftIdStatekey = StateHelpers.generateTokenIdStateKey(addrStateDecoded.nfTokenId);
                 const nftIdStateIndex = StateHelpers.getHookStateIndex(this.registryAddress, nftIdStatekey);
                 const nftIdLedgerEntry = await this.xrplApi.getLedgerEntry(nftIdStateIndex);
-
+                
                 const nftIdStateData = nftIdLedgerEntry?.HookStateData;
                 if (nftIdStateData) {
                     const nftIdStateDecoded = StateHelpers.decodeTokenIdState(Buffer.from(nftIdStateData, 'hex'));
-                    return { ...addrStateDecoded, ...nftIdStateDecoded };
+                    return {...addrStateDecoded, ...nftIdStateDecoded};
                 }
             }
         }
@@ -451,22 +447,6 @@ class BaseEvernodeClient {
         }
 
         return fullHostList;
-    }
-
-    // To prune an inactive host/
-    async pruneDeadHost(hostAddress) {
-        if (this.xrplAcc.address === this.registryAddress)
-            throw 'Invalid function call';
-
-        let memoData = Buffer.allocUnsafe(20);
-        codec.decodeAccountID(hostAddress).copy(memoData);
-
-        await this.xrplAcc.makePayment(this.registryAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
-            null,
-            [{ type: MemoTypes.DEAD_HOST_PRUNE, format: MemoFormats.HEX, data: memoData.toString('hex') }]);
-
     }
 }
 
