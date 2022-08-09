@@ -2,7 +2,7 @@ const codec = require('ripple-address-codec');
 const { Buffer } = require('buffer');
 const { XrplApi } = require('../xrpl-api');
 const { XrplAccount } = require('../xrpl-account');
-const { XrplApiEvents,  XrplConstants } = require('../xrpl-common');
+const { XrplApiEvents, XrplConstants } = require('../xrpl-common');
 const { EvernodeEvents, MemoTypes, MemoFormats, EvernodeConstants, HookStateKeys } = require('../evernode-common');
 const { DefaultValues } = require('../defaults');
 const { EncryptionHelper } = require('../encryption-helper');
@@ -394,7 +394,7 @@ class BaseEvernodeClient {
                 const nftIdStatekey = StateHelpers.generateTokenIdStateKey(addrStateDecoded.nfTokenId);
                 const nftIdStateIndex = StateHelpers.getHookStateIndex(this.registryAddress, nftIdStatekey);
                 const nftIdLedgerEntry = await this.xrplApi.getLedgerEntry(nftIdStateIndex);
-                
+
                 const nftIdStateData = nftIdLedgerEntry?.HookStateData;
                 if (nftIdStateData) {
                     const nftIdStateDecoded = StateHelpers.decodeTokenIdState(Buffer.from(nftIdStateData, 'hex'));
