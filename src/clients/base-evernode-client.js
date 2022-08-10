@@ -9,7 +9,6 @@ const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
 const { UtilHelpers } = require('../util-helpers');
 const { FirestoreHandler } = require('../firestore/firestore-handler');
-const { XflHelpers } = require('../xfl-helpers');
 const { StateHelpers } = require('../state-helpers');
 
 class BaseEvernodeClient {
