@@ -201,6 +201,26 @@ class XrplApi {
         return [];
     }
 
+    async getAccountTrx(address, options) {
+        const req = {
+            command: "account_tx",
+            account: address,
+            limit: 200,
+            ...options
+        };
+
+        let txns = [];
+        let resp = (await this.#client.request(req));
+        while (resp?.result?.marker) {
+            txns = txns.concat(resp.result.transactions);
+            resp = (await this.#client.request({ ...req, marker: resp.result.marker }));
+        }
+
+        if (resp?.result)
+            txns = txns.concat(resp.result.transactions);
+        return txns;
+    }
+
     async getNfts(address, options) {
         const resp = (await this.#client.request({ command: 'account_nfts', account: address, ledger_index: "validated", ...options }));
         if (resp?.result?.account_nfts)

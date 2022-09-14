@@ -119,6 +119,9 @@ class XrplAccount {
         return xrpl.parseAccountRootFlags((await this.getInfo()).Flags);
     }
 
+    async getAccountTrx(minLedgerIndex = -1, maxLedgerIndex = -1, isForward = true) {
+        return await this.xrplApi.getAccountTrx(this.address, { ledger_index_min: minLedgerIndex, ledger_index_max: maxLedgerIndex, forward: isForward});
+    }
 
     setAccountFields(fields, options = {}) {
         /**
