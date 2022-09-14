@@ -10,6 +10,7 @@ const { XflHelpers } = require('./xfl-helpers');
 const { FirestoreHandler } = require('./firestore/firestore-handler');
 const { StateHelpers } = require('./state-helpers');
 const { UtilHelpers } = require('./util-helpers');
+const { TransactionHelper } = require('./transaction-helper');
 
 module.exports = {
     RegistryClient,
@@ -28,6 +29,7 @@ module.exports = {
     StateHelpers,
     FirestoreHandler,
     UtilHelpers,
+    TransactionHelper,
     HookStateKeys,
     MemoTypes
 }
