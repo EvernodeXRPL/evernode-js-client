@@ -11,6 +11,7 @@ const { FirestoreHandler } = require('./firestore/firestore-handler');
 const { StateHelpers } = require('./state-helpers');
 const { UtilHelpers } = require('./util-helpers');
 const { TransactionHelper } = require('./transaction-helper');
+const { EncryptionHelper } = require('./encryption-helper');
 
 module.exports = {
     RegistryClient,
@@ -30,6 +31,7 @@ module.exports = {
     FirestoreHandler,
     UtilHelpers,
     TransactionHelper,
+    EncryptionHelper,
     HookStateKeys,
     MemoTypes
 }
