@@ -235,6 +235,20 @@ class XrplApi {
         return [];
     }
 
+    async getSellOffers(nfTokenId, options = {}) {
+        const resp = (await this.#client.request({ command: 'nft_sell_offers', nft_id: nfTokenId, ledger_index: "validated", ...options }));
+        if (resp?.result?.offers)
+            return resp.result.offers;
+        return [];
+    }
+
+    async getBuyOffers(nfTokenId, options = {}) {
+        const resp = (await this.#client.request({ command: 'nft_buy_offers', nft_id: nfTokenId, ledger_index: "validated", ...options }));
+        if (resp?.result?.offers)
+            return resp.result.offers;
+        return [];
+    }
+
     async getLedgerEntry(index, options) {
         const resp = (await this.#client.request({ command: 'ledger_entry', index: index, ledger_index: "validated", ...options }));
         return resp?.result?.node;
