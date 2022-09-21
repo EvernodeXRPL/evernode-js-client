@@ -478,6 +478,16 @@ class BaseEvernodeClient {
             [{ type: MemoTypes.DEAD_HOST_PRUNE, format: MemoFormats.HEX, data: memoData.toString('hex') }]);
 
     }
+
+    async extractClientEvent(event, trx) {
+        // Currently considered only two events.
+        switch (event) {
+            case EvernodeEvents.AcquireLease:
+            case EvernodeEvents.ExtendLease:
+                return (await this.#extractEvernodeEvent(trx));
+        }
+        throw 'Invalid event was found.';
+    }
 }
 
 module.exports = {
