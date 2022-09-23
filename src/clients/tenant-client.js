@@ -7,6 +7,7 @@ const { UtilHelpers } = require('../util-helpers');
 const { Buffer } = require('buffer');
 const codec = require('ripple-address-codec');
 const { EvernodeHelpers } = require('../evernode-helpers');
+const { TransactionHelper } = require('../transaction-helper');
 
 const ACQUIRE_WATCH_PREFIX = 'acquire_';
 const EXTEND_WATCH_PREFIX = 'extend_';
@@ -152,9 +153,9 @@ class TenantClient extends BaseEvernodeClient {
 
     watchExtendResponse(tx, options = {}) {
         return new Promise(async (resolve, reject) => {
-            console.log(`Waiting for extend lease response... (txHash: ${tx.id})`);
+            console.log(`Waiting for extend lease response... (txHash: ${tx.extendRefId})`);
 
-            const watchEvent = EXTEND_WATCH_PREFIX + tx.id;
+            const watchEvent = EXTEND_WATCH_PREFIX + tx.extendRefId;
 
             const failTimeout = setTimeout(() => {
                 this.#respWatcher.off(watchEvent);
@@ -183,19 +184,45 @@ class TenantClient extends BaseEvernodeClient {
                 return;
             }
 
+            let minLedgerIndex = this.xrplApi.ledgerIndex;
+
             // Get the agreement lease amount from the nft and calculate EVR amount to be sent.
             const uriInfo = UtilHelpers.decodeLeaseNftUri(nft.URI);
             const tx = await this.extendLeaseSubmit(hostAddress, moments * uriInfo.leaseAmount, tokenID, options).catch(error => {
                 reject({ error: ErrorCodes.EXTEND_ERR, reason: error.reason || ErrorReasons.TRANSACTION_FAILURE, content: error.error || error });
             });
+
             if (tx) {
-                const response = await this.watchExtendResponse(tx, options).catch(error => {
-                    error.extendeRefId = tx.id;
-                    reject(error);
-                });
-                if (response) {
-                    response.extendeRefId = tx.id;
-                    resolve(response);
+                const failTimeout = setTimeout(() => {
+                    reject({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.TIMEOUT });
+                }, options.timeout || DEFAULT_WAIT_TIMEOUT);
+
+                let relevantTx = null;
+                while (!relevantTx) {
+                    const txList = await this.xrplAcc.getAccountTrx(minLedgerIndex);
+                    for (let t of txList) {
+                        t.tx.Memos = TransactionHelper.deserializeMemos(t.tx.Memos);
+                        const res = await this.extractEvernodeEvent(t.tx);
+                        if ((res?.name === TenantEvents.ExtendSuccess || res?.name === TenantEvents.ExtendError) && res?.data?.extendRefId === tx.id) {
+                            clearTimeout(failTimeout);
+                            relevantTx = res;
+                            break;
+                        }
+                    }
+                }
+
+                if (relevantTx?.name === TenantEvents.ExtendSuccess) {
+                    resolve({
+                        transaction: relevantTx?.data.transaction,
+                        expiryMoment: relevantTx?.data.expiryMoment,
+                        extendeRefId: relevantTx?.data.extendRefId
+                    });
+                } else if (relevantTx?.name === TenantEvents.ExtendError) {
+                    reject({
+                        error: ErrorCodes.EXTEND_ERR,
+                        transaction: relevantTx?.data.transaction,
+                        reason: relevantTx?.data.reason
+                    })
                 }
             }
         });
