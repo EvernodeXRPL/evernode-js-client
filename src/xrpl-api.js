@@ -4,7 +4,7 @@ const { EventEmitter } = require('./event-emitter');
 const { DefaultValues } = require('./defaults');
 const { TransactionHelper } = require('./transaction-helper');
 const { XrplApiEvents } = require('./xrpl-common');
- 
+
 class XrplApi {
 
     #rippledServer;
