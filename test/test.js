@@ -2,22 +2,17 @@
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 const codec = require('ripple-address-codec');
 
-const evrIssuerAddress = "rfxLPXCcSmwR99dV97yFozBzrzpvCa2VCf";
-
-const registryAddress = "r3cNR2bdao1NyvQ5ZuQvCUgqkoWGmgF34E";
-const registrySecret = "saNjrsgXSB14J27mimdgqNnJpTaP9";
-
-const hostAddress = "rGhvPCX1x2qyUTEEGQNneVYwgwXWYCvp8P";
-const hostSecret = "snN6SWtT3gaPFWg2RLeXhy9aSfzgE";
-
-const foundationAddress = "rppVLpTDks7tjAGw9TRcwqMGzuDvzV72Vh";
-const foundationSecret = "shdAf9oUv1TLVTTR26Ke7w7Gv44HN";
-
+const evrIssuerAddress = "rEm71QHHXJzGULG4mkR3yhLz6EZYgvuwwP";
+const registryAddress = "raaFre81618XegCrzTzVotAmarBcqNSAvK";
+const registrySecret = "snrUSoLVodmhVCDNL92K1UafzQDjH";
+const hostAddress = "rNJDQu9pUretQetmxeHRPkasM4o7chdML2";
+const hostSecret = "ss11mwRSG4UxXQ9LakyYTmAzisnN2";
+const foundationAddress = "rMRRzwe2mPhtVJYkBsPYbxkrHdExAduqWi";
+const foundationSecret = "sncQEvGmeMrVGAvkMiLkmE3hrtVH9";
+const tenantAddress = "rw7GPreCDX2nuJVHSwNdH38ZGsiEH8qiY";
+const tenantSecret = "shdQBGbF9d3Tgp3D28pXoBdhWoZ9N";
 const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
 const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
-
-const tenantAddress = "rs63UeFAv9oRPp4du3PVKkYfqS4y7493SS";
-const tenantSecret = "snmU1t5djNYwm2zMpqLcSNbze6na8";
 
 const tosHash = "757A0237B44D8B2BBB04AE2BAD5813858E0AECD2F0B217075E27E0630BA74314";
 
@@ -76,7 +71,7 @@ async function app() {
             // () => acquire("success"),
             // () => acquire("error"),
             // () => acquire("timeout"),
-            () => extendLease("success"),
+            // () => extendLease("success"),
             // () => extendLease("error"),
             // () => extendLease("timeout"),
             // () => deregisterHost(),
@@ -218,27 +213,27 @@ async function acquire(scenario) {
     await tenant.prepareAccount();
 
     // Setup host to watch for incoming acquires.
-    // const host = await getHostClient();
+    const host = await getHostClient();
 
-    // host.on(evernode.HostEvents.AcquireLease, async (r) => {
-    //     console.log("Host received acquire request: ", r.payload);
+    host.on(evernode.HostEvents.AcquireLease, async (r) => {
+        console.log("Host received acquire request: ", r.payload);
 
-    //     if (scenario !== "timeout") {
-    //         console.log(`Host submitting ${scenario} response...`);
-    //         await new Promise(resolve => setTimeout(resolve, 4000));
+        if (scenario !== "timeout") {
+            console.log(`Host submitting ${scenario} response...`);
+            await new Promise(resolve => setTimeout(resolve, 4000));
 
-    //         if (scenario === "success")
-    //             await host.acquireSuccess(r.acquireRefId, r.tenant, { content: "dummy success" });
-    //         else if (scenario === "error") {
-    //             const nft = (await (new evernode.XrplAccount(r.tenant)).getNfts())?.find(n => n.NFTokenID == r.nfTokenId);
-    //             const leaseIndex = Buffer.from(nft.URI, 'hex').readUint16BE(evernode.EvernodeConstants.LEASE_NFT_PREFIX_HEX.length);
+            if (scenario === "success")
+                await host.acquireSuccess(r.acquireRefId, r.tenant, { content: "dummy success" });
+            else if (scenario === "error") {
+                const nft = (await (new evernode.XrplAccount(r.tenant)).getNfts())?.find(n => n.NFTokenID == r.nfTokenId);
+                const leaseIndex = Buffer.from(nft.URI, 'hex').readUint16BE(evernode.EvernodeConstants.LEASE_NFT_PREFIX_HEX.length);
 
-    //             await host.expireLease(r.nfTokenId, r.tenant);
-    //             await host.offerLease(leaseIndex, r.leaseAmount, tosHash);
-    //             await host.acquireError(r.acquireRefId, r.tenant, r.leaseAmount, "dummy_error");
-    //         }
-    //     }
-    // })
+                await host.expireLease(r.nfTokenId, r.tenant);
+                await host.offerLease(leaseIndex, r.leaseAmount, tosHash);
+                await host.acquireError(r.acquireRefId, r.tenant, r.leaseAmount, "dummy_error");
+            }
+        }
+    })
 
     await fundTenant(tenant);
 
@@ -250,7 +245,7 @@ async function acquire(scenario) {
             image: "hp.latest-ubt.20.04-njs.16",
             config: {}
         }, { timeout: timeout });
-        console.log('Tenant received instance ', result);
+        console.log('Tenant received instance ', result.instance);
     }
     catch (err) {
         console.log("Tenant recieved acquire error: ", err.reason)
@@ -263,29 +258,29 @@ async function extendLease(scenario) {
     const tenant = await getTenantClient();
     await tenant.prepareAccount();
 
-    // Setup host to watch for incoming acquires.
-    // const host = await getHostClient();
+    Setup host to watch for incoming acquires.
+    const host = await getHostClient();
 
-    // host.on(evernode.HostEvents.ExtendLease, async (r) => {
+    host.on(evernode.HostEvents.ExtendLease, async (r) => {
 
-    //     console.log(`Host received extend request for: '${r.nfTokenId}'`);
+        console.log(`Host received extend request for: '${r.nfTokenId}'`);
 
-    //     console.log(`Host submitting ${scenario} response...`);
-    //     await new Promise(resolve => setTimeout(resolve, 4000));
+        console.log(`Host submitting ${scenario} response...`);
+        await new Promise(resolve => setTimeout(resolve, 4000));
 
-    //     if (scenario === "success")
-    //         await host.extendSuccess(r.extendRefId, r.tenant, { content: "dummy success" }).catch(console.error);
-    //     else if (scenario === "error") {
-    //         await host.extendError(r.extendRefId, r.tenant, "dummy_error", r.payment.toString()).catch(console.error);
-    //     }
-    // })
+        if (scenario === "success")
+            await host.extendSuccess(r.extendRefId, r.tenant, { content: "dummy success" }).catch(console.error);
+        else if (scenario === "error") {
+            await host.extendError(r.extendRefId, r.tenant, "dummy_error", r.payment.toString()).catch(console.error);
+        }
+    })
 
     await fundTenant(tenant);
 
     try {
-        const timeout = (scenario === "timeout" ? 4000 : 1000);
+        const timeout = (scenario === "timeout" ? 10000 : 30000);
         const tokenIDs = (await tenant.xrplAcc.getNfts()).map(n => n.NFTokenID);
-        const result = await tenant.extendLease(hostAddress, 2, "00010000A547B3F85414A33C2AB38F7788E42AC0F4D27347E8822E4E000001B3", { timeout: timeout });
+        const result = await tenant.extendLease(hostAddress, 2, tokenIDs[0], { timeout: timeout });
         console.log(`Extend ref id: ${result.extendeRefId}, Expiry moments: ${result.expiryMoment}`);
     }
     catch (err) {
