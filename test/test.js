@@ -258,7 +258,7 @@ async function extendLease(scenario) {
     const tenant = await getTenantClient();
     await tenant.prepareAccount();
 
-    Setup host to watch for incoming acquires.
+    // Setup host to watch for incoming acquires.
     const host = await getHostClient();
 
     host.on(evernode.HostEvents.ExtendLease, async (r) => {
