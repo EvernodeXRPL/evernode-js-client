@@ -312,7 +312,7 @@ class HostClient extends BaseEvernodeClient {
             null,
             memos,
             options.transactionOptions);
-    } 
+    }
 
     async extendError(txHash, tenantAddress, reason, refund, options = {}) {
 
