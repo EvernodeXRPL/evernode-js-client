@@ -151,27 +151,41 @@ class TenantClient extends BaseEvernodeClient {
             [{ type: MemoTypes.EXTEND_LEASE, format: MemoFormats.HEX, data: tokenID }], options.transactionOptions);
     }
 
-    watchExtendResponse(tx, options = {}) {
-        return new Promise(async (resolve, reject) => {
-            console.log(`Waiting for extend lease response... (txHash: ${tx.extendRefId})`);
+    async watchExtendResponse(tx, minLedgerIndex, options = {}) {
+        console.log(`Waiting for extend lease response... (txHash: ${tx.id})`);
 
-            const watchEvent = EXTEND_WATCH_PREFIX + tx.extendRefId;
+        const failTimeout = setTimeout(() => {
+            throw({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.TIMEOUT });
+        }, options.timeout || DEFAULT_WAIT_TIMEOUT);
 
-            const failTimeout = setTimeout(() => {
-                this.#respWatcher.off(watchEvent);
-                reject({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.TIMEOUT });
-            }, options.timeout || DEFAULT_WAIT_TIMEOUT);
-
-            this.#respWatcher.once(watchEvent, async (ev) => {
-                clearTimeout(failTimeout);
-                if (ev.success) {
-                    resolve({ transaction: ev.transaction, expiryMoment: ev.expiryMoment });
+        let relevantTx = null;
+        while (!relevantTx) {
+            const txList = await this.xrplAcc.getAccountTrx(minLedgerIndex);
+            for (let t of txList) {
+                t.tx.Memos = TransactionHelper.deserializeMemos(t.tx.Memos);
+                const res = await this.extractEvernodeEvent(t.tx);
+                if ((res?.name === TenantEvents.ExtendSuccess || res?.name === TenantEvents.ExtendError) && res?.data?.extendRefId === tx.id) {
+                    clearTimeout(failTimeout);
+                    relevantTx = res;
+                    break;
                 }
-                else {
-                    reject({ error: ErrorCodes.EXTEND_ERR, reason: ev.data, transaction: ev.transaction });
-                }
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+        if (relevantTx?.name === TenantEvents.ExtendSuccess) {
+            return({
+                transaction: relevantTx?.data.transaction,
+                expiryMoment: relevantTx?.data.expiryMoment,
+                extendeRefId: relevantTx?.data.extendRefId
+            });
+        } else if (relevantTx?.name === TenantEvents.ExtendError) {
+            throw({
+                error: ErrorCodes.EXTEND_ERR,
+                transaction: relevantTx?.data.transaction,
+                reason: relevantTx?.data.reason
             })
-        });
+        }
     }
 
     extendLease(hostAddress, moments, instanceName, options = {}) {
@@ -193,36 +207,11 @@ class TenantClient extends BaseEvernodeClient {
             });
 
             if (tx) {
-                const failTimeout = setTimeout(() => {
-                    reject({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.TIMEOUT });
-                }, options.timeout || DEFAULT_WAIT_TIMEOUT);
-
-                let relevantTx = null;
-                while (!relevantTx) {
-                    const txList = await this.xrplAcc.getAccountTrx(minLedgerIndex);
-                    for (let t of txList) {
-                        t.tx.Memos = TransactionHelper.deserializeMemos(t.tx.Memos);
-                        const res = await this.extractEvernodeEvent(t.tx);
-                        if ((res?.name === TenantEvents.ExtendSuccess || res?.name === TenantEvents.ExtendError) && res?.data?.extendRefId === tx.id) {
-                            clearTimeout(failTimeout);
-                            relevantTx = res;
-                            break;
-                        }
-                    }
-                }
-
-                if (relevantTx?.name === TenantEvents.ExtendSuccess) {
-                    resolve({
-                        transaction: relevantTx?.data.transaction,
-                        expiryMoment: relevantTx?.data.expiryMoment,
-                        extendeRefId: relevantTx?.data.extendRefId
-                    });
-                } else if (relevantTx?.name === TenantEvents.ExtendError) {
-                    reject({
-                        error: ErrorCodes.EXTEND_ERR,
-                        transaction: relevantTx?.data.transaction,
-                        reason: relevantTx?.data.reason
-                    })
+                try {
+                    const response = await this.watchExtendResponse(tx, minLedgerIndex, options)
+                    resolve(response);
+                } catch (error) {
+                    reject(error);
                 }
             }
         });
