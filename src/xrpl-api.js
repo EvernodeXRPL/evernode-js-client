@@ -5,6 +5,16 @@ const { DefaultValues } = require('./defaults');
 const { TransactionHelper } = require('./transaction-helper');
 const { XrplApiEvents } = require('./xrpl-common');
 
+const MAX_PAGE_LIMIT = 400;
+const API_REQ_TYPE = {
+    NAMESPACE_ENTRIES: 'namespace_entries',
+    ACCOUNT_OBJECTS: 'account_objects',
+    LINES: 'lines',
+    ACCOUNT_NFTS: 'account_nfts',
+    OFFERS: 'offers',
+    TRANSACTIONS: 'transactions'
+}
+
 class XrplApi {
 
     #rippledServer;
@@ -127,6 +137,29 @@ class XrplApi {
         }
     }
 
+    async #requestWithPaging(requestObj, requestType) {
+        let res = [];
+        let checked = false;
+        let resp;
+        let count = requestObj?.limit;
+
+        while ((!count || count > 0) && (!checked || resp?.result?.marker)) {
+            checked = true;
+            requestObj.limit = count ? Math.min(count, MAX_PAGE_LIMIT) : MAX_PAGE_LIMIT;
+            if (resp?.result?.marker)
+                requestObj.marker = resp?.result?.marker;
+            else
+                delete requestObj.marker;
+            resp = (await this.#client.request(requestObj));
+            if (resp?.result && resp?.result[requestType])
+                res.push(...resp.result[requestType]);
+            if (count)
+                count -= requestObj.limit;
+        }
+
+        return res;
+    }
+
     on(event, handler) {
         this.#events.on(event, handler);
     }
@@ -175,17 +208,11 @@ class XrplApi {
     }
 
     async getAccountObjects(address, options) {
-        const resp = (await this.#client.request({ command: 'account_objects', account: address, ...options }));
-        if (resp?.result?.account_objects)
-            return resp.result.account_objects;
-        return [];
+        return this.#requestWithPaging({ command: 'account_objects', account: address, ...options }, API_REQ_TYPE.ACCOUNT_OBJECTS);
     }
 
     async getNamespaceEntries(address, namespaceId, options) {
-        const resp = (await this.#client.request({ command: 'account_namespace', account: address, namespace_id: namespaceId, ...options }));
-        if (resp?.result?.namespace_entries)
-            return resp.result.namespace_entries;
-        return [];
+        return this.#requestWithPaging({ command: 'account_namespace', account: address, namespace_id: namespaceId, ...options }, API_REQ_TYPE.NAMESPACE_ENTRIES);
     }
 
     async getNftOffers(address, options) {
@@ -195,44 +222,19 @@ class XrplApi {
     }
 
     async getTrustlines(address, options) {
-        const resp = (await this.#client.request({ command: 'account_lines', account: address, ledger_index: "validated", ...options }));
-        if (resp?.result?.lines)
-            return resp.result.lines;
-        return [];
+        return this.#requestWithPaging({ command: 'account_lines', account: address, ledger_index: "validated", ...options }, API_REQ_TYPE.LINES);
     }
 
     async getAccountTrx(address, options) {
-        const req = {
-            command: "account_tx",
-            account: address,
-            limit: 200,
-            ...options
-        };
-
-        let txns = [];
-        let resp = (await this.#client.request(req));
-        while (resp?.result?.marker) {
-            txns = txns.concat(resp.result.transactions);
-            resp = (await this.#client.request({ ...req, marker: resp.result.marker }));
-        }
-
-        if (resp?.result)
-            txns = txns.concat(resp.result.transactions);
-        return txns;
+        return this.#requestWithPaging({ command: 'account_tx', account: address, ...options }, API_REQ_TYPE.TRANSACTIONS);
     }
 
     async getNfts(address, options) {
-        const resp = (await this.#client.request({ command: 'account_nfts', account: address, ledger_index: "validated", ...options }));
-        if (resp?.result?.account_nfts)
-            return resp.result.account_nfts;
-        return [];
+        return this.#requestWithPaging({ command: 'account_nfts', account: address, ledger_index: "validated", ...options }, API_REQ_TYPE.ACCOUNT_NFTS);
     }
 
     async getOffers(address, options) {
-        const resp = (await this.#client.request({ command: 'account_offers', account: address, ledger_index: "validated", ...options }));
-        if (resp?.result?.offers)
-            return resp.result.offers;
-        return [];
+        return this.#requestWithPaging({ command: 'account_offers', account: address, ledger_index: "validated", ...options }, API_REQ_TYPE.OFFERS);
     }
 
     async getLedgerEntry(index, options) {

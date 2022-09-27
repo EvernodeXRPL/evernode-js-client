@@ -231,7 +231,7 @@ class BaseEvernodeClient {
             tx.Memos[0].type === MemoTypes.ACQUIRE_ERROR && tx.Memos[0].data &&
             tx.Memos[1].type === MemoTypes.ACQUIRE_REF && tx.Memos[1].data) {
 
-                let error = tx.Memos[0].data;
+            let error = tx.Memos[0].data;
             const acquireRefId = tx.Memos[1].data;
 
             if (tx.Memos[0].format === MemoFormats.JSON)
