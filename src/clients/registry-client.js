@@ -18,6 +18,10 @@ class RegistryClient extends BaseEvernodeClient {
         super((options.registryAddress || DefaultValues.registryAddress), null, Object.values(RegistryEvents), false, options);
     }
 
+    /**
+     * Get all the active hosts registered in Evernode without paginating.
+     * @returns List of active hosts.
+     */
     async getActiveHosts() {
         let fullHostList = [];
         const hosts = await this.getHosts();
