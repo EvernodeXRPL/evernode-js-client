@@ -212,7 +212,7 @@ class BaseEvernodeClient {
         else if (!tx)
             console.log('handleEvernodeEvent: Invalid transaction.');
         else {
-            const ev = await this.#extractEvernodeEvent(tx);
+            const ev = await this.extractEvernodeEvent(tx);
             if (ev && this.#watchEvents.find(e => e === ev.name))
                 this.events.emit(ev.name, ev.data);
         }
@@ -223,7 +223,7 @@ class BaseEvernodeClient {
      * @param {object} tx Transaction to be deserialized and extracted.
      * @returns The event object in the format {name: '', data: {}}. Returns null if not handled. Note: You need to deserialize memos before passing the transaction to this function.
      */
-    async #extractEvernodeEvent(tx) {
+    async extractEvernodeEvent(tx) {
         if (tx.TransactionType === 'NFTokenAcceptOffer' && tx.NFTokenSellOffer && tx.Memos.length >= 1 &&
             tx.Memos[0].type === MemoTypes.ACQUIRE_LEASE && tx.Memos[0].format === MemoFormats.BASE64 && tx.Memos[0].data) {
 
@@ -242,8 +242,8 @@ class BaseEvernodeClient {
                 data: {
                     transaction: tx,
                     host: tx.Destination,
-                    nfTokenId: tx.NFTokenSellOffer.NFTokenID,
-                    leaseAmount: tx.NFTokenSellOffer.Amount.value,
+                    nfTokenId: tx.NFTokenSellOffer?.NFTokenID,
+                    leaseAmount: tx.NFTokenSellOffer?.Amount?.value,
                     acquireRefId: tx.hash,
                     tenant: tx.Account,
                     payload: payload
