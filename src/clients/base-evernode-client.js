@@ -41,7 +41,7 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Listens to the subscribed events. This will listen for the event without detaching the handler untill it's 'off'.
+     * Listens to the subscribed events. This will listen for the event without detaching the handler until it's 'off'.
      * @param {string} event Event name.
      * @param {function(event)} handler Callback function to handle the event.
      */
@@ -59,9 +59,9 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Detach the listner event.
+     * Detach the listener event.
      * @param {string} event Event name.
-     * @param {function(event)} handler (optional) Can be sent if a specific handler need to be deattached. All the handlers will be detached if not specified.
+     * @param {function(event)} handler (optional) Can be sent if a specific handler need to be detached. All the handlers will be detached if not specified.
      */
     off(event, handler = null) {
         this.events.off(event, handler);
@@ -91,7 +91,7 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Disconnects the client to xrpl server and do the unsubscriptions. 'unsubscribe' is called inside this.
+     * Disconnects the client to xrpl server and do the un-subscriptions. 'unsubscribe' is called inside this.
      */
     async disconnect() {
         await this.unsubscribe();
@@ -128,7 +128,7 @@ class BaseEvernodeClient {
 
     /**
      * Get all XRPL hook states in the registry account.
-     * @returns The list of hook states including evernode configurations and hosts.
+     * @returns The list of hook states including Evernode configurations and hosts.
      */
     async getHookStates() {
         const regAcc = new XrplAccount(this.registryAddress, null, { xrplApi: this.xrplApi });
@@ -166,7 +166,7 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get evernode configuration
+     * Get Evernode configuration
      * @returns A object with all the configuration and their values.
      */
     async #getEvernodeConfig() {
@@ -202,7 +202,7 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Extacts transaction info and emits the evernode event.
+     * Extracts transaction info and emits the Evernode event.
      * @param {object} tx XRPL transaction to be handled.
      * @param {any} error Error if there's any.
      */
@@ -469,7 +469,7 @@ class BaseEvernodeClient {
             }
         }
         catch (e) {
-            // If the exeption is entryNotFound from Rippled there's no entry for the host, So return null.
+            // If the exception is entryNotFound from Rippled there's no entry for the host, So return null.
             if (e?.data?.error !== 'entryNotFound')
                 throw e;
         }
@@ -478,7 +478,7 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get all the hosts registered in Evernode. The result's are paginated. Default page size is 20. Note: Specifing both filter and pagination does not supported.
+     * Get all the hosts registered in Evernode. The result's are paginated. Default page size is 20. Note: Specifying both filter and pagination does not supported.
      * @param {object} filters Filter criteria to filter the hosts. The filter key can be a either property of the host.
      * @param {number} pageSize Page size for the results.
      * @param {string} nextPageToken Next page's token, If received by the previous result set.
@@ -543,7 +543,7 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Remove a host which is inactive for a long period. The inactivity is checked by evernode it self and only pruned if inactive thresholds are met.
+     * Remove a host which is inactive for a long period. The inactivity is checked by Evernode it self and only pruned if inactive thresholds are met.
      * @param {string} hostAddress XRPL address of the host to be pruned.
      */
     async pruneDeadHost(hostAddress) {
