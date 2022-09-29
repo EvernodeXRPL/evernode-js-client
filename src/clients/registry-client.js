@@ -19,8 +19,8 @@ class RegistryClient extends BaseEvernodeClient {
     }
 
     /**
-     * Get all the active hosts registered in Evernode without paginating.
-     * @returns List of active hosts.
+     * Gets all the active hosts registered in Evernode without paginating.
+     * @returns The list of active hosts.
      */
     async getActiveHosts() {
         let fullHostList = [];

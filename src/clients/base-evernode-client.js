@@ -41,7 +41,7 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Listen to the subscribed events. This will listen for the event without deattaching the handler untill it's 'off'.
+     * Listens to the subscribed events. This will listen for the event without detaching the handler untill it's 'off'.
      * @param {string} event Event name.
      * @param {function(event)} handler Callback function to handle the event.
      */
@@ -50,7 +50,7 @@ class BaseEvernodeClient {
     }
 
     /**
-    * Listen to the subscribed events. This will listen only once and deattach the handler.
+    * Listens to the subscribed events. This will listen only once and detach the handler.
     * @param {string} event Event name.
     * @param {function(event)} handler Callback function to handle the event.
     */
@@ -59,7 +59,7 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Deattach the listner event.
+     * Detach the listner event.
      * @param {string} event Event name.
      * @param {function(event)} handler (optional) Can be sent if a specific handler need to be deattached. All the handlers will be de attached if not specified.
      */
@@ -68,8 +68,8 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Connect the client to xrpl server and do the config loading and subscriptions. 'subscribe' is called inside this.
-     * @returns Returns boolean. 'true' if success.
+     * Connects the client to xrpl server and do the config loading and subscriptions. 'subscribe' is called inside this.
+     * @returns boolean value, 'true' if success.
      */
     async connect() {
         if (this.connected)
@@ -91,7 +91,7 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Disconnect the client to xrpl server and do the unsubscriptions. 'unsubscribe' is called inside this.
+     * Disconnects the client to xrpl server and do the unsubscriptions. 'unsubscribe' is called inside this.
      */
     async disconnect() {
         await this.unsubscribe();
@@ -101,14 +101,14 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Subscribe to the registry client events.
+     * Subscribes to the registry client events.
      */
     async subscribe() {
         await this.xrplAcc.subscribe();
     }
 
     /**
-     * Unsubscribe from the registry client events.
+     * Unsubscribes from the registry client events.
      */
     async unsubscribe() {
         await this.xrplAcc.unsubscribe();
@@ -116,7 +116,7 @@ class BaseEvernodeClient {
 
     /**
      * Get the EVR balance in the registry account.
-     * @returns Returns the available EVR amount as a 'string'.
+     * @returns The available EVR amount as a 'string'.
      */
     async getEVRBalance() {
         const lines = await this.xrplAcc.getTrustLines(EvernodeConstants.EVR, this.config.evrIssuerAddress);
@@ -127,8 +127,8 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get XRPL all hook states in the registry account.
-     * @returns Returns the list of hook states including evernode configurations and hosts.
+     * Get all XRPL hook states in the registry account.
+     * @returns The list of hook states including evernode configurations and hosts.
      */
     async getHookStates() {
         const regAcc = new XrplAccount(this.registryAddress, null, { xrplApi: this.xrplApi });
@@ -140,9 +140,9 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get the moment from the given XRPL index. (1 Moment - 1190 XRP ledgers).
+     * Get the moment from the given XRP ledger index. (1 Moment - 1190 XRP ledgers).
      * @param {number} ledgerIndex Ledger index to get the moment value.
-     * @returns Returns the moment of the given XPR ledger index as 'number'. Returns current moment if ledger index is not given.
+     * @returns The moment of the given XPR ledger index as 'number'. Returns current moment if XRP ledger index is not given.
      */
     async getMoment(ledgerIndex = null) {
         const lv = ledgerIndex || this.xrplApi.ledgerIndex;
@@ -155,7 +155,7 @@ class BaseEvernodeClient {
     /**
      * Get start XRP ledger index of the moment (of the given XRPL index).
      * @param {number} ledgerIndex Ledger index to get the moment value.
-     * @returns Returns the XRP ledger index of the moment (of the given XRPL index) as 'number'. Returns the current moment's start XRP ledger index if ledger index parameter is not given.
+     * @returns The XRP ledger index of the moment (of the given XRPL index) as a 'number'. Returns the current moment's start XRP ledger index if ledger index parameter is not given.
      */
     async getMomentStartIndex(ledgerIndex = null) {
         const lv = ledgerIndex || this.xrplApi.ledgerIndex;
@@ -165,6 +165,10 @@ class BaseEvernodeClient {
         return this.config.momentBaseIdx + (m * this.config.momentSize);
     }
 
+    /**
+     * Get evernode configuration
+     * @returns A object with all the configuration and their values.
+     */
     async #getEvernodeConfig() {
         let states = await this.getHookStates();
         const configStateKeys = {
@@ -183,7 +187,7 @@ class BaseEvernodeClient {
         let config = {};
         for (const [key, value] of Object.entries(configStateKeys)) {
             const stateKey = Buffer.from(value, 'hex');
-            const stateData = Buffer.from(UtilHelpers.getStateData(states, value), 'hex');
+            const stateData = Buffer.from(UtilHelpers.gettateData(states, value), 'hex');
             const decoded = StateHelpers.decodeStateData(stateKey, stateData);
             config[key] = decoded.value;
         }
@@ -191,12 +195,17 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Loads the configs from XRPL hook and updates the in memory config.
+     * Loads the configs from XRPL hook and updates the in-memory config.
      */
     async refreshConfig() {
         this.config = await this.#getEvernodeConfig();
     }
 
+    /**
+     * Extacts transaction info and emits the evernode event.
+     * @param {object} tx XRPL transaction to be handled.
+     * @param {any} error Error if there's any.
+     */
     async #handleEvernodeEvent(tx, error) {
         if (error)
             console.error(error);
@@ -210,9 +219,9 @@ class BaseEvernodeClient {
     }
 
     /**
-     * 
+     * Extracts the transaction info from a given transaction.
      * @param {object} tx Transaction to be deserialized and extracted.
-     * @returns Returns the event object in the format {name: '', data: {}}. Returns null if not handled. Note: You need to deserialize memos before passing the transaction to this function.
+     * @returns The event object in the format {name: '', data: {}}. Returns null if not handled. Note: You need to deserialize memos before passing the transaction to this function.
      */
     async #extractEvernodeEvent(tx) {
         if (tx.TransactionType === 'NFTokenAcceptOffer' && tx.NFTokenSellOffer && tx.Memos.length >= 1 &&
@@ -431,9 +440,9 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get registered host information.
+     * Get the registered host information.
      * @param {string} hostAddress Address of the host.
-     * @returns Returns registered host information object. Returns null is not registered.
+     * @returns The registered host information object. Returns null is not registered.
      */
     async getHostInfo(hostAddress = this.xrplAcc.address) {
         try {
@@ -469,11 +478,11 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get all the hosts registered in Evernode in paginated manar. The result's are paginated. Default page size is 20. Note: Specifing both filter and pagination does not supported.
+     * Get all the hosts registered in Evernode. The result's are paginated. Default page size is 20. Note: Specifing both filter and pagination does not supported.
      * @param {object} filters Filter criteria to filter the hosts. The filter key can be a either property of the host.
      * @param {number} pageSize Page size for the results.
      * @param {string} nextPageToken Next page's token, If received by the previous result set.
-     * @returns Returns the list of active hosts. The response will be in '{data: [], nextPageToken: ''}' only if there are more pages. Otherwise the response will only contain the host list. 
+     * @returns The list of active hosts. The response will be in '{data: [], nextPageToken: ''}' only if there are more pages. Otherwise the response will only contain the host list. 
      */
     async getHosts(filters = null, pageSize = null, nextPageToken = null) {
         const hosts = await this.#firestoreHandler.getHosts(filters, pageSize, nextPageToken);
@@ -488,8 +497,8 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get all the evernode configuarations without paginating.
-     * @returns Returns the list of configurations.
+     * Get all Evernode configurations without paginating.
+     * @returns The list of configurations.
      */
     async getAllConfigs() {
         let fullConfigList = [];
@@ -512,7 +521,7 @@ class BaseEvernodeClient {
 
     /**
      * Get all the hosts without paginating.
-     * @returns Returns the list of hosts.
+     * @returns The list of hosts.
      */
     async getAllHosts() {
         let fullHostList = [];
@@ -533,7 +542,10 @@ class BaseEvernodeClient {
         return fullHostList;
     }
 
-    // To prune an inactive host/
+    /**
+     * Remove a host which is inactive for a long period. The inactivity is checked by evernode it self and only pruned if inactive thresholds are met.
+     * @param {string} hostAddress XRPL address of the host to be pruned.
+     */
     async pruneDeadHost(hostAddress) {
         if (this.xrplAcc.address === this.registryAddress)
             throw 'Invalid function call';
