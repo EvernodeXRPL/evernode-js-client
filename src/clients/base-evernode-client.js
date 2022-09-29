@@ -187,7 +187,7 @@ class BaseEvernodeClient {
         let config = {};
         for (const [key, value] of Object.entries(configStateKeys)) {
             const stateKey = Buffer.from(value, 'hex');
-            const stateData = Buffer.from(UtilHelpers.gettateData(states, value), 'hex');
+            const stateData = Buffer.from(UtilHelpers.getStateData(states, value), 'hex');
             const decoded = StateHelpers.decodeStateData(stateKey, stateData);
             config[key] = decoded.value;
         }
