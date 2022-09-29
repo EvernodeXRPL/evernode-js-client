@@ -61,7 +61,7 @@ class BaseEvernodeClient {
     /**
      * Detach the listner event.
      * @param {string} event Event name.
-     * @param {function(event)} handler (optional) Can be sent if a specific handler need to be deattached. All the handlers will be de attached if not specified.
+     * @param {function(event)} handler (optional) Can be sent if a specific handler need to be deattached. All the handlers will be detached if not specified.
      */
     off(event, handler = null) {
         this.events.off(event, handler);
