@@ -167,7 +167,7 @@ class BaseEvernodeClient {
 
     /**
      * Get Evernode configuration
-     * @returns A object with all the configuration and their values.
+     * @returns An object with all the configuration and their values.
      */
     async #getEvernodeConfig() {
         let states = await this.getHookStates();
