@@ -179,7 +179,7 @@ class TenantClient extends BaseEvernodeClient {
 
     /**
      * 
-     * @param {object} tx response of extendLeaseSubmit
+     * @param {object} tx response of extendLeaseSubmit.
      * @param {object} options this is an optional field and contains necessary details for the transactions.
      * @returns An object including transaction details.
      */
@@ -226,7 +226,7 @@ class TenantClient extends BaseEvernodeClient {
      * @param {number} moments 1190 ledgers (est. 1 hour).
      * @param {string	} instanceName tenant received instance name. this name can be retrieve by performing acquire Lease.
      * @param {object} options this is an optional field and contains necessary details for the transactions.
-     * @returns An object including transaction details
+     * @returns An object including transaction details.
      */
     extendLease(hostAddress, moments, instanceName, options = {}) {
         return new Promise(async (resolve, reject) => {
