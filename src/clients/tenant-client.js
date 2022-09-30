@@ -164,7 +164,7 @@ class TenantClient extends BaseEvernodeClient {
     }
 
     /**
-     * 
+     * This function is called by a tenant client to submit the extend lease transaction in certain host. This function will be called inside extendLease function. This function can take four parameters as follows.
      * @param {string} hostAddress XRPL account address of the host.
      * @param {number} amount Cost for the extended moments , in EVRs.
      * @param {string} tokenID Tenant received instance name. this name can be retrieve by performing acquire Lease.
@@ -178,7 +178,7 @@ class TenantClient extends BaseEvernodeClient {
     }
 
     /**
-     * 
+     * This function watches for an extendlease-success response(transaction) and returns the response or throws the error response on extendlease-error response from the host XRPL account. This function is called within the extendLease function.
      * @param {object} tx Response of extendLeaseSubmit.
      * @param {object} options This is an optional field and contains necessary details for the transactions.
      * @returns An object including transaction details.
@@ -221,7 +221,7 @@ class TenantClient extends BaseEvernodeClient {
     }
 
     /**
-     * 
+     * This function is called by a tenant client to extend an available instance in certain host. This function can take four parameters as follows.
      * @param {string} hostAddress XRPL account address of the host.
      * @param {number} moments 1190 ledgers (est. 1 hour).
      * @param {string} instanceName Tenant received instance name. this name can be retrieve by performing acquire Lease.
