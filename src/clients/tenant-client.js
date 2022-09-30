@@ -20,9 +20,9 @@ const TenantEvents = {
 class TenantClient extends BaseEvernodeClient {
 
     /**
-     * 
-     * @param {string} xrpAddress The address of the XRPL account of the tenant.
-     * @param {string} xrpSecret The secret of the XRPL account of the tenant.
+     * Constructs a tenant client instance.
+     * @param {string} xrpAddress XRPL address of the tenant.
+     * @param {string} XRPL secret of the tenant.
      * @param {object} options [Optional] An object with 'rippledServer' URL and 'registryAddress'.
      */
     constructor(xrpAddress, xrpSecret, options = {}) {
@@ -64,10 +64,10 @@ class TenantClient extends BaseEvernodeClient {
 
     /**
      * 
-     * @param {string} hostAddress he address of the XRPL account of the host.
-     * @param {object} requirement The instance configuration.
-     * @param {object} options The transaction configuration.
-     * @returns 
+     * @param {string} hostAddress XRPL address of the host to acquire the lease.
+     * @param {object} requirement The instance requirements and configuration.
+     * @param {object} options [Optional] Options for the XRPL transaction.
+     * @returns The transaction result.
      */
     async acquireLeaseSubmit(hostAddress, requirement, options = {}) {
 
@@ -97,10 +97,10 @@ class TenantClient extends BaseEvernodeClient {
     }
 
     /**
-     * Watch for the acquire-success response after the acquiring request made.
-     * @param {object} tx The transaction resolved by the acquireLeaseSubmit function.
-     * @param {object} options The transaction configuration passed to the acquireLease function.
-     * @returns A promise that resolves with an object including transaction details,instance info, and acquireReference Id.
+     * Watch for the acquire-success response after the acquire request is made.
+     * @param {object} tx The transaction returned by the acquireLeaseSubmit function.
+     * @param {object} options [Optional] Options for the XRPL transaction.
+     * @returns An object including transaction details,instance info, and acquireReference Id.
      */
     async watchAcquireResponse(tx, options = {}) {
             console.log(`Waiting for acquire response... (txHash: ${tx.id})`);
@@ -142,10 +142,10 @@ class TenantClient extends BaseEvernodeClient {
 
     /**
      * Acquire an instance from a host
-     * @param {string} hostAddress The address of the XRPL account of the host.
-     * @param {object} requirement The instance configuration.
-     * @param {object} options The transaction configuration.
-     * @returns A promise that resolves with an object including transaction details,instance info, and acquireReference Id.
+     * @param {string} hostAddress XRPL address of the host to acquire the lease.
+     * @param {object} requirement The instance requirements and configuration.
+     * @param {object} options [Optional] Options for the XRPL transaction.
+     * @returns An object including transaction details,instance info, and acquireReference Id.
      */
     acquireLease(hostAddress, requirement, options = {}) {
         return new Promise(async (resolve, reject) => {
