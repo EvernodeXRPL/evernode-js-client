@@ -141,7 +141,7 @@ class BaseEvernodeClient {
 
     /**
      * Get the moment from the given XRP ledger index. (1 Moment - 1190 XRP ledgers).
-     * @param {number} ledgerIndex Ledger index to get the moment value.
+     * @param {number} ledgerIndex [Optional] Ledger index to get the moment value.
      * @returns The moment of the given XPR ledger index as 'number'. Returns current moment if XRP ledger index is not given.
      */
     async getMoment(ledgerIndex = null) {
@@ -154,7 +154,7 @@ class BaseEvernodeClient {
 
     /**
      * Get start XRP ledger index of the moment (of the given XRPL index).
-     * @param {number} ledgerIndex Ledger index to get the moment value.
+     * @param {number} ledgerIndex [Optional] Ledger index to get the moment value.
      * @returns The XRP ledger index of the moment (of the given XRPL index) as a 'number'. Returns the current moment's start XRP ledger index if ledger index parameter is not given.
      */
     async getMomentStartIndex(ledgerIndex = null) {
@@ -441,7 +441,7 @@ class BaseEvernodeClient {
 
     /**
      * Get the registered host information.
-     * @param {string} hostAddress Address of the host.
+     * @param {string} hostAddress [Optional] Address of the host.
      * @returns The registered host information object. Returns null is not registered.
      */
     async getHostInfo(hostAddress = this.xrplAcc.address) {
@@ -479,9 +479,9 @@ class BaseEvernodeClient {
 
     /**
      * Get all the hosts registered in Evernode. The result's are paginated. Default page size is 20. Note: Specifying both filter and pagination does not supported.
-     * @param {object} filters Filter criteria to filter the hosts. The filter key can be a either property of the host.
-     * @param {number} pageSize Page size for the results.
-     * @param {string} nextPageToken Next page's token, If received by the previous result set.
+     * @param {object} filters [Optional] Filter criteria to filter the hosts. The filter key can be a either property of the host.
+     * @param {number} pageSize [Optional] Page size for the results.
+     * @param {string} nextPageToken [Optional] Next page's token, If received by the previous result set.
      * @returns The list of active hosts. The response will be in '{data: [], nextPageToken: ''}' only if there are more pages. Otherwise the response will only contain the host list. 
      */
     async getHosts(filters = null, pageSize = null, nextPageToken = null) {
