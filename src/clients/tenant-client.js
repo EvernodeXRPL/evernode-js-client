@@ -19,6 +19,12 @@ const TenantEvents = {
 
 class TenantClient extends BaseEvernodeClient {
 
+    /**
+     * 
+     * @param {string} xrpAddress The address of the XRPL account of the tenant.
+     * @param {string} xrpSecret The secret of the XRPL account of the tenant.
+     * @param {object} options [Optional] An object with 'rippledServer' URL and 'registryAddress'.
+     */
     constructor(xrpAddress, xrpSecret, options = {}) {
         super(xrpAddress, xrpSecret, Object.values(TenantEvents), false, options);
     }
@@ -56,6 +62,13 @@ class TenantClient extends BaseEvernodeClient {
         return host;
     }
 
+    /**
+     * 
+     * @param {string} hostAddress he address of the XRPL account of the host.
+     * @param {object} requirement The instance configuration.
+     * @param {object} options The transaction configuration.
+     * @returns 
+     */
     async acquireLeaseSubmit(hostAddress, requirement, options = {}) {
 
         const hostAcc = await this.getLeaseHost(hostAddress);
@@ -83,6 +96,12 @@ class TenantClient extends BaseEvernodeClient {
         return this.xrplAcc.buyNft(selectedOfferIndex, [{ type: MemoTypes.ACQUIRE_LEASE, format: MemoFormats.BASE64, data: ecrypted }], options.transactionOptions);
     }
 
+    /**
+     * Watch for the acquire-success response after the acquiring request made.
+     * @param {object} tx The transaction resolved by the acquireLeaseSubmit function.
+     * @param {object} options The transaction configuration passed to the acquireLease function.
+     * @returns A promise that resolves with an object including transaction details,instance info, and acquireReference Id.
+     */
     async watchAcquireResponse(tx, options = {}) {
             console.log(`Waiting for acquire response... (txHash: ${tx.id})`);
 
@@ -121,6 +140,13 @@ class TenantClient extends BaseEvernodeClient {
             }
     }
 
+    /**
+     * Acquire an instance from a host
+     * @param {string} hostAddress The address of the XRPL account of the host.
+     * @param {object} requirement The instance configuration.
+     * @param {object} options The transaction configuration.
+     * @returns A promise that resolves with an object including transaction details,instance info, and acquireReference Id.
+     */
     acquireLease(hostAddress, requirement, options = {}) {
         return new Promise(async (resolve, reject) => {
             const tx = await this.acquireLeaseSubmit(hostAddress, requirement, options).catch(error => {
