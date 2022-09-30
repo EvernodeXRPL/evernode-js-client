@@ -14,6 +14,10 @@ const RegistryEvents = {
 
 class RegistryClient extends BaseEvernodeClient {
 
+    /**
+     * Constructs a registry client instance.
+     * @param {object} options [Optional] An object with 'rippledServer' URL and 'registryAddress'.
+     */
     constructor(options = {}) {
         super((options.registryAddress || DefaultValues.registryAddress), null, Object.values(RegistryEvents), false, options);
     }
