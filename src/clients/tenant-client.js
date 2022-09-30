@@ -165,10 +165,10 @@ class TenantClient extends BaseEvernodeClient {
 
     /**
      * 
-     * @param {string} hostAddress cryptographic code that allows a user to receive cryptocurrencies.
-     * @param {number} amount cost for the extended moments , in EVRs.
-     * @param {string} tokenID tenant received instance name. this name can be retrieve by performing acquire Lease.
-     * @param {object} options this is an optional field and contains necessary details for the transactions.
+     * @param {string} hostAddress XRPL account address of the host.
+     * @param {number} amount Cost for the extended moments , in EVRs.
+     * @param {string} tokenID Tenant received instance name. this name can be retrieve by performing acquire Lease.
+     * @param {object} options This is an optional field and contains necessary details for the transactions.
      * @returns The transaction result.
      */
     async extendLeaseSubmit(hostAddress, amount, tokenID, options = {}) {
@@ -179,8 +179,8 @@ class TenantClient extends BaseEvernodeClient {
 
     /**
      * 
-     * @param {object} tx response of extendLeaseSubmit.
-     * @param {object} options this is an optional field and contains necessary details for the transactions.
+     * @param {object} tx Response of extendLeaseSubmit.
+     * @param {object} options This is an optional field and contains necessary details for the transactions.
      * @returns An object including transaction details.
      */
     async watchExtendResponse(tx, options = {}) {
@@ -222,10 +222,10 @@ class TenantClient extends BaseEvernodeClient {
 
     /**
      * 
-     * @param {string} hostAddress cryptographic code that allows a user to receive cryptocurrencies.
+     * @param {string} hostAddress XRPL account address of the host.
      * @param {number} moments 1190 ledgers (est. 1 hour).
-     * @param {string	} instanceName tenant received instance name. this name can be retrieve by performing acquire Lease.
-     * @param {object} options this is an optional field and contains necessary details for the transactions.
+     * @param {string	} instanceName Tenant received instance name. this name can be retrieve by performing acquire Lease.
+     * @param {object} options This is an optional field and contains necessary details for the transactions.
      * @returns An object including transaction details.
      */
     extendLease(hostAddress, moments, instanceName, options = {}) {
