@@ -128,7 +128,7 @@ class BaseEvernodeClient {
 
     /**
      * Get all XRPL hook states in the registry account.
-     * @returns The list of hook states including Evernode configurations and hosts.
+     * @returns The list of hook states including Evernode configuration and hosts.
      */
     async getHookStates() {
         const regAcc = new XrplAccount(this.registryAddress, null, { xrplApi: this.xrplApi });
@@ -497,8 +497,8 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get all Evernode configurations without paginating.
-     * @returns The list of configurations.
+     * Get all Evernode configuration without paginating.
+     * @returns The list of configuration.
      */
     async getAllConfigs() {
         let fullConfigList = [];
