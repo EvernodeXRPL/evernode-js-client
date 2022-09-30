@@ -19,6 +19,12 @@ const TenantEvents = {
 
 class TenantClient extends BaseEvernodeClient {
 
+    /**
+     * Constructs a tenant client instance.
+     * @param {string} xrpAddress XRPL address of the tenant.
+     * @param {string} XRPL secret of the tenant.
+     * @param {object} options [Optional] An object with 'rippledServer' URL and 'registryAddress'.
+     */
     constructor(xrpAddress, xrpSecret, options = {}) {
         super(xrpAddress, xrpSecret, Object.values(TenantEvents), false, options);
     }
@@ -56,6 +62,13 @@ class TenantClient extends BaseEvernodeClient {
         return host;
     }
 
+    /**
+     * 
+     * @param {string} hostAddress XRPL address of the host to acquire the lease.
+     * @param {object} requirement The instance requirements and configuration.
+     * @param {object} options [Optional] Options for the XRPL transaction.
+     * @returns The transaction result.
+     */
     async acquireLeaseSubmit(hostAddress, requirement, options = {}) {
 
         const hostAcc = await this.getLeaseHost(hostAddress);
@@ -83,6 +96,12 @@ class TenantClient extends BaseEvernodeClient {
         return this.xrplAcc.buyNft(selectedOfferIndex, [{ type: MemoTypes.ACQUIRE_LEASE, format: MemoFormats.BASE64, data: ecrypted }], options.transactionOptions);
     }
 
+    /**
+     * Watch for the acquire-success response after the acquire request is made.
+     * @param {object} tx The transaction returned by the acquireLeaseSubmit function.
+     * @param {object} options [Optional] Options for the XRPL transaction.
+     * @returns An object including transaction details,instance info, and acquireReference Id.
+     */
     async watchAcquireResponse(tx, options = {}) {
             console.log(`Waiting for acquire response... (txHash: ${tx.id})`);
 
@@ -121,6 +140,13 @@ class TenantClient extends BaseEvernodeClient {
             }
     }
 
+    /**
+     * Acquire an instance from a host
+     * @param {string} hostAddress XRPL address of the host to acquire the lease.
+     * @param {object} requirement The instance requirements and configuration.
+     * @param {object} options [Optional] Options for the XRPL transaction.
+     * @returns An object including transaction details,instance info, and acquireReference Id.
+     */
     acquireLease(hostAddress, requirement, options = {}) {
         return new Promise(async (resolve, reject) => {
             const tx = await this.acquireLeaseSubmit(hostAddress, requirement, options).catch(error => {
@@ -143,7 +169,7 @@ class TenantClient extends BaseEvernodeClient {
             [{ type: MemoTypes.EXTEND_LEASE, format: MemoFormats.HEX, data: tokenID }], options.transactionOptions);
     }
 
-    async watchExtendResponse(tx, minLedgerIndex, options = {}) {
+    async watchExtendResponse(tx, options = {}) {
         console.log(`Waiting for extend lease response... (txHash: ${tx.id})`);
 
         const failTimeout = setTimeout(() => {
@@ -152,7 +178,7 @@ class TenantClient extends BaseEvernodeClient {
 
         let relevantTx = null;
         while (!relevantTx) {
-            const txList = await this.xrplAcc.getAccountTrx(minLedgerIndex);
+            const txList = await this.xrplAcc.getAccountTrx(tx.details.ledger_index);
             for (let t of txList) {
                 t.tx.Memos = TransactionHelper.deserializeMemos(t.tx.Memos);
                 const res = await this.extractEvernodeEvent(t.tx);
