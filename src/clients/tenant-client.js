@@ -169,7 +169,7 @@ class TenantClient extends BaseEvernodeClient {
             [{ type: MemoTypes.EXTEND_LEASE, format: MemoFormats.HEX, data: tokenID }], options.transactionOptions);
     }
 
-    async watchExtendResponse(tx, minLedgerIndex, options = {}) {
+    async watchExtendResponse(tx, options = {}) {
         console.log(`Waiting for extend lease response... (txHash: ${tx.id})`);
 
         const failTimeout = setTimeout(() => {
@@ -178,7 +178,7 @@ class TenantClient extends BaseEvernodeClient {
 
         let relevantTx = null;
         while (!relevantTx) {
-            const txList = await this.xrplAcc.getAccountTrx(minLedgerIndex);
+            const txList = await this.xrplAcc.getAccountTrx(tx.details.ledger_index);
             for (let t of txList) {
                 t.tx.Memos = TransactionHelper.deserializeMemos(t.tx.Memos);
                 const res = await this.extractEvernodeEvent(t.tx);
