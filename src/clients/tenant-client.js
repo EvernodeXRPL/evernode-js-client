@@ -163,12 +163,26 @@ class TenantClient extends BaseEvernodeClient {
         });
     }
 
+    /**
+     * 
+     * @param {string} hostAddress cryptographic code that allows a user to receive cryptocurrencies.
+     * @param {number} amount cost for the extended moments , in EVRs.
+     * @param {string} tokenID tenant received instance name. this name can be retrieve by performing acquire Lease.
+     * @param {object} options this is an optional field and contains necessary details for the transactions.
+     * @returns The transaction result.
+     */
     async extendLeaseSubmit(hostAddress, amount, tokenID, options = {}) {
         const host = await this.getLeaseHost(hostAddress);
         return this.xrplAcc.makePayment(host.address, amount.toString(), EvernodeConstants.EVR, this.config.evrIssuerAddress,
             [{ type: MemoTypes.EXTEND_LEASE, format: MemoFormats.HEX, data: tokenID }], options.transactionOptions);
     }
 
+    /**
+     * 
+     * @param {object} tx response of extendLeaseSubmit
+     * @param {object} options this is an optional field and contains necessary details for the transactions.
+     * @returns An object including transaction details.
+     */
     async watchExtendResponse(tx, options = {}) {
         console.log(`Waiting for extend lease response... (txHash: ${tx.id})`);
 
@@ -206,6 +220,14 @@ class TenantClient extends BaseEvernodeClient {
         }
     }
 
+    /**
+     * 
+     * @param {string} hostAddress cryptographic code that allows a user to receive cryptocurrencies.
+     * @param {number} moments 1190 ledgers (est. 1 hour).
+     * @param {string	} instanceName tenant received instance name. this name can be retrieve by performing acquire Lease.
+     * @param {object} options this is an optional field and contains necessary details for the transactions.
+     * @returns An object including transaction details
+     */
     extendLease(hostAddress, moments, instanceName, options = {}) {
         return new Promise(async (resolve, reject) => {
             const tokenID = instanceName;
