@@ -224,7 +224,7 @@ class TenantClient extends BaseEvernodeClient {
      * 
      * @param {string} hostAddress XRPL account address of the host.
      * @param {number} moments 1190 ledgers (est. 1 hour).
-     * @param {string	} instanceName Tenant received instance name. this name can be retrieve by performing acquire Lease.
+     * @param {string} instanceName Tenant received instance name. this name can be retrieve by performing acquire Lease.
      * @param {object} options This is an optional field and contains necessary details for the transactions.
      * @returns An object including transaction details.
      */
