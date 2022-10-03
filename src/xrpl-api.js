@@ -239,7 +239,6 @@ class XrplApi {
 
     async getSellOffers(nfTokenId, options = {}) {
         return this.#requestWithPaging({ command: 'nft_sell_offers', nft_id: nfTokenId, ledger_index: "validated", ...options }, API_REQ_TYPE.OFFERS);
-
     }
 
     async getBuyOffers(nfTokenId, options = {}) {
