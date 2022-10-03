@@ -238,17 +238,12 @@ class XrplApi {
     }
 
     async getSellOffers(nfTokenId, options = {}) {
-        const resp = (await this.#client.request({ command: 'nft_sell_offers', nft_id: nfTokenId, ledger_index: "validated", ...options }));
-        if (resp?.result?.offers)
-            return resp.result.offers;
-        return [];
+        return this.#requestWithPaging({ command: 'nft_sell_offers', nft_id: nfTokenId, ledger_index: "validated", ...options }, API_REQ_TYPE.OFFERS);
+
     }
 
     async getBuyOffers(nfTokenId, options = {}) {
-        const resp = (await this.#client.request({ command: 'nft_buy_offers', nft_id: nfTokenId, ledger_index: "validated", ...options }));
-        if (resp?.result?.offers)
-            return resp.result.offers;
-        return [];
+        return this.#requestWithPaging({ command: 'nft_buy_offers', nft_id: nfTokenId, ledger_index: "validated", ...options }, API_REQ_TYPE.OFFERS);
     }
 
     async getLedgerEntry(index, options) {
