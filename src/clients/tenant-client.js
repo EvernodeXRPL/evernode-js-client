@@ -1,15 +1,12 @@
 const { BaseEvernodeClient } = require('./base-evernode-client');
 const { EvernodeEvents, MemoFormats, MemoTypes, ErrorCodes, ErrorReasons, EvernodeConstants } = require('../evernode-common');
-const { EventEmitter } = require('../event-emitter');
 const { EncryptionHelper } = require('../encryption-helper');
 const { XrplAccount } = require('../xrpl-account');
 const { UtilHelpers } = require('../util-helpers');
 const { Buffer } = require('buffer');
 const codec = require('ripple-address-codec');
 const { EvernodeHelpers } = require('../evernode-helpers');
-
-const ACQUIRE_WATCH_PREFIX = 'acquire_';
-const EXTEND_WATCH_PREFIX = 'extend_';
+const { TransactionHelper } = require('../transaction-helper');
 
 const DEFAULT_WAIT_TIMEOUT = 60000;
 
@@ -22,24 +19,14 @@ const TenantEvents = {
 
 class TenantClient extends BaseEvernodeClient {
 
-    #respWatcher = new EventEmitter();
-
+    /**
+     * Constructs a tenant client instance.
+     * @param {string} xrpAddress XRPL address of the tenant.
+     * @param {string} XRPL secret of the tenant.
+     * @param {object} options [Optional] An object with 'rippledServer' URL and 'registryAddress'.
+     */
     constructor(xrpAddress, xrpSecret, options = {}) {
-        super(xrpAddress, xrpSecret, Object.values(TenantEvents), true, options);
-
-        this.on(TenantEvents.AcquireSuccess, (ev) => {
-            this.#respWatcher.emit(ACQUIRE_WATCH_PREFIX + ev.acquireRefId, { success: true, data: ev.payload, transaction: ev.transaction });
-        });
-        this.on(TenantEvents.AcquireError, (ev) => {
-            this.#respWatcher.emit(ACQUIRE_WATCH_PREFIX + ev.acquireRefId, { success: false, data: ev.reason, transaction: ev.transaction });
-        });
-
-        this.on(TenantEvents.ExtendSuccess, (ev) => {
-            this.#respWatcher.emit(EXTEND_WATCH_PREFIX + ev.extendRefId, { success: true, transaction: ev.transaction, expiryMoment: ev.expiryMoment });
-        });
-        this.on(TenantEvents.ExtendError, (ev) => {
-            this.#respWatcher.emit(EXTEND_WATCH_PREFIX + ev.extendRefId, { success: false, data: ev.reason, transaction: ev.transaction });
-        });
+        super(xrpAddress, xrpSecret, Object.values(TenantEvents), false, options);
     }
 
     async prepareAccount() {
@@ -75,6 +62,13 @@ class TenantClient extends BaseEvernodeClient {
         return host;
     }
 
+    /**
+     * 
+     * @param {string} hostAddress XRPL address of the host to acquire the lease.
+     * @param {object} requirement The instance requirements and configuration.
+     * @param {object} options [Optional] Options for the XRPL transaction.
+     * @returns The transaction result.
+     */
     async acquireLeaseSubmit(hostAddress, requirement, options = {}) {
 
         const hostAcc = await this.getLeaseHost(hostAddress);
@@ -102,77 +96,138 @@ class TenantClient extends BaseEvernodeClient {
         return this.xrplAcc.buyNft(selectedOfferIndex, [{ type: MemoTypes.ACQUIRE_LEASE, format: MemoFormats.BASE64, data: ecrypted }], options.transactionOptions);
     }
 
-    watchAcquireResponse(tx, options = {}) {
-        return new Promise(async (resolve, reject) => {
+    /**
+     * Watch for the acquire-success response after the acquire request is made.
+     * @param {object} tx The transaction returned by the acquireLeaseSubmit function.
+     * @param {object} options [Optional] Options for the XRPL transaction.
+     * @returns An object including transaction details,instance info, and acquireReference Id.
+     */
+    async watchAcquireResponse(tx, options = {}) {
             console.log(`Waiting for acquire response... (txHash: ${tx.id})`);
 
-            const watchEvent = ACQUIRE_WATCH_PREFIX + tx.id;
-
             const failTimeout = setTimeout(() => {
-                this.#respWatcher.off(watchEvent);
-                reject({ error: ErrorCodes.ACQUIRE_ERR, reason: ErrorReasons.TIMEOUT });
+                throw({ error: ErrorCodes.ACQUIRE_ERR, reason: ErrorReasons.TIMEOUT });
             }, options.timeout || DEFAULT_WAIT_TIMEOUT);
-
-            this.#respWatcher.once(watchEvent, async (ev) => {
-                clearTimeout(failTimeout);
-                if (ev.success) {
-                    const instanceInfo = ev.data;
-                    resolve({ instance: instanceInfo.content, transaction: ev.transaction });
+    
+            let relevantTx = null;
+            while (!relevantTx) {
+                const txList = await this.xrplAcc.getAccountTrx(tx.details.ledger_index);
+                for (let t of txList) {
+                    t.tx.Memos = TransactionHelper.deserializeMemos(t.tx?.Memos);
+                        const res = await this.extractEvernodeEvent(t.tx);
+                        if ((res?.name === EvernodeEvents.AcquireSuccess || res?.name === EvernodeEvents.AcquireError) && res?.data?.acquireRefId === tx.id) {
+                            clearTimeout(failTimeout);
+                            relevantTx = res;
+                            break;
+                        }
                 }
-                else {
-                    reject({ error: ErrorCodes.ACQUIRE_ERR, reason: ev.data, transaction: ev.transaction });
-                }
-            })
-        });
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+    
+            if (relevantTx?.name === TenantEvents.AcquireSuccess) {
+                return({
+                    transaction: relevantTx?.data.transaction,
+                    instance: relevantTx?.data.payload.content,
+                    acquireRefId: relevantTx?.data.acquireRefId
+                });
+            } else if (relevantTx?.name === TenantEvents.AcquireError) {
+                throw({
+                    error: ErrorCodes.ACQUIRE_ERR,
+                    transaction: relevantTx?.data.transaction,
+                    reason: relevantTx?.data.reason,
+                    acquireRefId: relevantTx?.data.acquireRefId
+                })
+            }
     }
 
+    /**
+     * Acquire an instance from a host
+     * @param {string} hostAddress XRPL address of the host to acquire the lease.
+     * @param {object} requirement The instance requirements and configuration.
+     * @param {object} options [Optional] Options for the XRPL transaction.
+     * @returns An object including transaction details,instance info, and acquireReference Id.
+     */
     acquireLease(hostAddress, requirement, options = {}) {
         return new Promise(async (resolve, reject) => {
             const tx = await this.acquireLeaseSubmit(hostAddress, requirement, options).catch(error => {
                 reject({ error: ErrorCodes.ACQUIRE_ERR, reason: error.reason || ErrorReasons.TRANSACTION_FAILURE, content: error.error || error });
             });
             if (tx) {
-                const response = await this.watchAcquireResponse(tx, options).catch(error => {
-                    error.acquireRefId = tx.id;
-                    reject(error);
-                });
-                if (response) {
-                    response.acquireRefId = tx.id;
+                try {
+                    const response = await this.watchAcquireResponse(tx, options);
                     resolve(response);
+                } catch (error) {
+                    reject(error);
                 }
             }
         });
     }
 
+    /**
+     * This function is called by a tenant client to submit the extend lease transaction in certain host. This function will be called inside extendLease function. This function can take four parameters as follows.
+     * @param {string} hostAddress XRPL account address of the host.
+     * @param {number} amount Cost for the extended moments , in EVRs.
+     * @param {string} tokenID Tenant received instance name. this name can be retrieve by performing acquire Lease.
+     * @param {object} options This is an optional field and contains necessary details for the transactions.
+     * @returns The transaction result.
+     */
     async extendLeaseSubmit(hostAddress, amount, tokenID, options = {}) {
         const host = await this.getLeaseHost(hostAddress);
         return this.xrplAcc.makePayment(host.address, amount.toString(), EvernodeConstants.EVR, this.config.evrIssuerAddress,
             [{ type: MemoTypes.EXTEND_LEASE, format: MemoFormats.HEX, data: tokenID }], options.transactionOptions);
     }
 
-    watchExtendResponse(tx, options = {}) {
-        return new Promise(async (resolve, reject) => {
-            console.log(`Waiting for extend lease response... (txHash: ${tx.id})`);
+    /**
+     * This function watches for an extendlease-success response(transaction) and returns the response or throws the error response on extendlease-error response from the host XRPL account. This function is called within the extendLease function.
+     * @param {object} tx Response of extendLeaseSubmit.
+     * @param {object} options This is an optional field and contains necessary details for the transactions.
+     * @returns An object including transaction details.
+     */
+    async watchExtendResponse(tx, options = {}) {
+        console.log(`Waiting for extend lease response... (txHash: ${tx.id})`);
 
-            const watchEvent = EXTEND_WATCH_PREFIX + tx.id;
+        const failTimeout = setTimeout(() => {
+            throw({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.TIMEOUT });
+        }, options.timeout || DEFAULT_WAIT_TIMEOUT);
 
-            const failTimeout = setTimeout(() => {
-                this.#respWatcher.off(watchEvent);
-                reject({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.TIMEOUT });
-            }, options.timeout || DEFAULT_WAIT_TIMEOUT);
-
-            this.#respWatcher.once(watchEvent, async (ev) => {
-                clearTimeout(failTimeout);
-                if (ev.success) {
-                    resolve({ transaction: ev.transaction, expiryMoment: ev.expiryMoment });
+        let relevantTx = null;
+        while (!relevantTx) {
+            const txList = await this.xrplAcc.getAccountTrx(tx.details.ledger_index);
+            for (let t of txList) {
+                t.tx.Memos = TransactionHelper.deserializeMemos(t.tx.Memos);
+                const res = await this.extractEvernodeEvent(t.tx);
+                if ((res?.name === TenantEvents.ExtendSuccess || res?.name === TenantEvents.ExtendError) && res?.data?.extendRefId === tx.id) {
+                    clearTimeout(failTimeout);
+                    relevantTx = res;
+                    break;
                 }
-                else {
-                    reject({ error: ErrorCodes.EXTEND_ERR, reason: ev.data, transaction: ev.transaction });
-                }
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+        if (relevantTx?.name === TenantEvents.ExtendSuccess) {
+            return({
+                transaction: relevantTx?.data.transaction,
+                expiryMoment: relevantTx?.data.expiryMoment,
+                extendeRefId: relevantTx?.data.extendRefId
+            });
+        } else if (relevantTx?.name === TenantEvents.ExtendError) {
+            throw({
+                error: ErrorCodes.EXTEND_ERR,
+                transaction: relevantTx?.data.transaction,
+                reason: relevantTx?.data.reason
             })
-        });
+        }
     }
 
+    /**
+     * This function is called by a tenant client to extend an available instance in certain host. This function can take four parameters as follows.
+     * @param {string} hostAddress XRPL account address of the host.
+     * @param {number} moments 1190 ledgers (est. 1 hour).
+     * @param {string} instanceName Tenant received instance name. this name can be retrieve by performing acquire Lease.
+     * @param {object} options This is an optional field and contains necessary details for the transactions.
+     * @returns An object including transaction details.
+     */
     extendLease(hostAddress, moments, instanceName, options = {}) {
         return new Promise(async (resolve, reject) => {
             const tokenID = instanceName;
@@ -183,19 +238,20 @@ class TenantClient extends BaseEvernodeClient {
                 return;
             }
 
+            let minLedgerIndex = this.xrplApi.ledgerIndex;
+
             // Get the agreement lease amount from the nft and calculate EVR amount to be sent.
             const uriInfo = UtilHelpers.decodeLeaseNftUri(nft.URI);
             const tx = await this.extendLeaseSubmit(hostAddress, moments * uriInfo.leaseAmount, tokenID, options).catch(error => {
                 reject({ error: ErrorCodes.EXTEND_ERR, reason: error.reason || ErrorReasons.TRANSACTION_FAILURE, content: error.error || error });
             });
+
             if (tx) {
-                const response = await this.watchExtendResponse(tx, options).catch(error => {
-                    error.extendeRefId = tx.id;
-                    reject(error);
-                });
-                if (response) {
-                    response.extendeRefId = tx.id;
+                try {
+                    const response = await this.watchExtendResponse(tx, minLedgerIndex, options)
                     resolve(response);
+                } catch (error) {
+                    reject(error);
                 }
             }
         });
