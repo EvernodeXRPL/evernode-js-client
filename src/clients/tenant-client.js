@@ -103,41 +103,41 @@ class TenantClient extends BaseEvernodeClient {
      * @returns An object including transaction details,instance info, and acquireReference Id.
      */
     async watchAcquireResponse(tx, options = {}) {
-            console.log(`Waiting for acquire response... (txHash: ${tx.id})`);
+        console.log(`Waiting for acquire response... (txHash: ${tx.id})`);
 
-            const failTimeout = setTimeout(() => {
-                throw({ error: ErrorCodes.ACQUIRE_ERR, reason: ErrorReasons.TIMEOUT });
-            }, options.timeout || DEFAULT_WAIT_TIMEOUT);
-    
-            let relevantTx = null;
-            while (!relevantTx) {
-                const txList = await this.xrplAcc.getAccountTrx(tx.details.ledger_index);
-                for (let t of txList) {
-                    t.tx.Memos = TransactionHelper.deserializeMemos(t.tx?.Memos);
-                        const res = await this.extractEvernodeEvent(t.tx);
-                        if ((res?.name === EvernodeEvents.AcquireSuccess || res?.name === EvernodeEvents.AcquireError) && res?.data?.acquireRefId === tx.id) {
-                            clearTimeout(failTimeout);
-                            relevantTx = res;
-                            break;
-                        }
+        const failTimeout = setTimeout(() => {
+            throw { error: ErrorCodes.ACQUIRE_ERR, reason: ErrorReasons.TIMEOUT };
+        }, options.timeout || DEFAULT_WAIT_TIMEOUT);
+
+        let relevantTx = null;
+        while (!relevantTx) {
+            const txList = await this.xrplAcc.getAccountTrx(tx.details.ledger_index);
+            for (let t of txList) {
+                t.tx.Memos = TransactionHelper.deserializeMemos(t.tx?.Memos);
+                const res = await this.extractEvernodeEvent(t.tx);
+                if ((res?.name === EvernodeEvents.AcquireSuccess || res?.name === EvernodeEvents.AcquireError) && res?.data?.acquireRefId === tx.id) {
+                    clearTimeout(failTimeout);
+                    relevantTx = res;
+                    break;
                 }
-                await new Promise(resolve => setTimeout(resolve, 2000));
             }
-    
-            if (relevantTx?.name === TenantEvents.AcquireSuccess) {
-                return({
-                    transaction: relevantTx?.data.transaction,
-                    instance: relevantTx?.data.payload.content,
-                    acquireRefId: relevantTx?.data.acquireRefId
-                });
-            } else if (relevantTx?.name === TenantEvents.AcquireError) {
-                throw({
-                    error: ErrorCodes.ACQUIRE_ERR,
-                    transaction: relevantTx?.data.transaction,
-                    reason: relevantTx?.data.reason,
-                    acquireRefId: relevantTx?.data.acquireRefId
-                })
-            }
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+
+        if (relevantTx?.name === TenantEvents.AcquireSuccess) {
+            return {
+                transaction: relevantTx?.data.transaction,
+                instance: relevantTx?.data.payload.content,
+                acquireRefId: relevantTx?.data.acquireRefId
+            };
+        } else if (relevantTx?.name === TenantEvents.AcquireError) {
+            throw {
+                error: ErrorCodes.ACQUIRE_ERR,
+                transaction: relevantTx?.data.transaction,
+                reason: relevantTx?.data.reason,
+                acquireRefId: relevantTx?.data.acquireRefId
+            };
+        }
     }
 
     /**
@@ -187,7 +187,7 @@ class TenantClient extends BaseEvernodeClient {
         console.log(`Waiting for extend lease response... (txHash: ${tx.id})`);
 
         const failTimeout = setTimeout(() => {
-            throw({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.TIMEOUT });
+            throw { error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.TIMEOUT };
         }, options.timeout || DEFAULT_WAIT_TIMEOUT);
 
         let relevantTx = null;
@@ -206,17 +206,17 @@ class TenantClient extends BaseEvernodeClient {
         }
 
         if (relevantTx?.name === TenantEvents.ExtendSuccess) {
-            return({
+            return {
                 transaction: relevantTx?.data.transaction,
                 expiryMoment: relevantTx?.data.expiryMoment,
                 extendeRefId: relevantTx?.data.extendRefId
-            });
+            };
         } else if (relevantTx?.name === TenantEvents.ExtendError) {
-            throw({
+            throw {
                 error: ErrorCodes.EXTEND_ERR,
                 transaction: relevantTx?.data.transaction,
                 reason: relevantTx?.data.reason
-            })
+            };
         }
     }
 
