@@ -103,41 +103,47 @@ class TenantClient extends BaseEvernodeClient {
      * @returns An object including transaction details,instance info, and acquireReference Id.
      */
     async watchAcquireResponse(tx, options = {}) {
-            console.log(`Waiting for acquire response... (txHash: ${tx.id})`);
+        console.log(`Waiting for acquire response... (txHash: ${tx.id})`);
 
+        return new Promise(async (resolve, reject) => {
+            let rejected = false;
             const failTimeout = setTimeout(() => {
-                throw({ error: ErrorCodes.ACQUIRE_ERR, reason: ErrorReasons.TIMEOUT });
+                rejected = true;
+                reject({ error: ErrorCodes.ACQUIRE_ERR, reason: ErrorReasons.TIMEOUT });
             }, options.timeout || DEFAULT_WAIT_TIMEOUT);
-    
+
             let relevantTx = null;
-            while (!relevantTx) {
+            while (!rejected && !relevantTx) {
                 const txList = await this.xrplAcc.getAccountTrx(tx.details.ledger_index);
                 for (let t of txList) {
                     t.tx.Memos = TransactionHelper.deserializeMemos(t.tx?.Memos);
-                        const res = await this.extractEvernodeEvent(t.tx);
-                        if ((res?.name === EvernodeEvents.AcquireSuccess || res?.name === EvernodeEvents.AcquireError) && res?.data?.acquireRefId === tx.id) {
-                            clearTimeout(failTimeout);
-                            relevantTx = res;
-                            break;
-                        }
+                    const res = await this.extractEvernodeEvent(t.tx);
+                    if ((res?.name === EvernodeEvents.AcquireSuccess || res?.name === EvernodeEvents.AcquireError) && res?.data?.acquireRefId === tx.id) {
+                        clearTimeout(failTimeout);
+                        relevantTx = res;
+                        break;
+                    }
                 }
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                await new Promise(resolveSleep => setTimeout(resolveSleep, 2000));
             }
-    
-            if (relevantTx?.name === TenantEvents.AcquireSuccess) {
-                return({
-                    transaction: relevantTx?.data.transaction,
-                    instance: relevantTx?.data.payload.content,
-                    acquireRefId: relevantTx?.data.acquireRefId
-                });
-            } else if (relevantTx?.name === TenantEvents.AcquireError) {
-                throw({
-                    error: ErrorCodes.ACQUIRE_ERR,
-                    transaction: relevantTx?.data.transaction,
-                    reason: relevantTx?.data.reason,
-                    acquireRefId: relevantTx?.data.acquireRefId
-                })
+
+            if (!rejected) {
+                if (relevantTx?.name === TenantEvents.AcquireSuccess) {
+                    resolve({
+                        transaction: relevantTx?.data.transaction,
+                        instance: relevantTx?.data.payload.content,
+                        acquireRefId: relevantTx?.data.acquireRefId
+                    });
+                } else if (relevantTx?.name === TenantEvents.AcquireError) {
+                    reject({
+                        error: ErrorCodes.ACQUIRE_ERR,
+                        transaction: relevantTx?.data.transaction,
+                        reason: relevantTx?.data.reason,
+                        acquireRefId: relevantTx?.data.acquireRefId
+                    });
+                }
             }
+        });
     }
 
     /**
@@ -186,38 +192,44 @@ class TenantClient extends BaseEvernodeClient {
     async watchExtendResponse(tx, options = {}) {
         console.log(`Waiting for extend lease response... (txHash: ${tx.id})`);
 
-        const failTimeout = setTimeout(() => {
-            throw({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.TIMEOUT });
-        }, options.timeout || DEFAULT_WAIT_TIMEOUT);
+        return new Promise(async (resolve, reject) => {
+            let rejected = false;
+            const failTimeout = setTimeout(() => {
+                rejected = true;
+                reject({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.TIMEOUT });
+            }, options.timeout || DEFAULT_WAIT_TIMEOUT);
 
-        let relevantTx = null;
-        while (!relevantTx) {
-            const txList = await this.xrplAcc.getAccountTrx(tx.details.ledger_index);
-            for (let t of txList) {
-                t.tx.Memos = TransactionHelper.deserializeMemos(t.tx.Memos);
-                const res = await this.extractEvernodeEvent(t.tx);
-                if ((res?.name === TenantEvents.ExtendSuccess || res?.name === TenantEvents.ExtendError) && res?.data?.extendRefId === tx.id) {
-                    clearTimeout(failTimeout);
-                    relevantTx = res;
-                    break;
+            let relevantTx = null;
+            while (!rejected && !relevantTx) {
+                const txList = await this.xrplAcc.getAccountTrx(tx.details.ledger_index);
+                for (let t of txList) {
+                    t.tx.Memos = TransactionHelper.deserializeMemos(t.tx.Memos);
+                    const res = await this.extractEvernodeEvent(t.tx);
+                    if ((res?.name === TenantEvents.ExtendSuccess || res?.name === TenantEvents.ExtendError) && res?.data?.extendRefId === tx.id) {
+                        clearTimeout(failTimeout);
+                        relevantTx = res;
+                        break;
+                    }
+                }
+                await new Promise(resolveSleep => setTimeout(resolveSleep, 1000));
+            }
+
+            if (!rejected) {
+                if (relevantTx?.name === TenantEvents.ExtendSuccess) {
+                    resolve({
+                        transaction: relevantTx?.data.transaction,
+                        expiryMoment: relevantTx?.data.expiryMoment,
+                        extendeRefId: relevantTx?.data.extendRefId
+                    });
+                } else if (relevantTx?.name === TenantEvents.ExtendError) {
+                    reject({
+                        error: ErrorCodes.EXTEND_ERR,
+                        transaction: relevantTx?.data.transaction,
+                        reason: relevantTx?.data.reason
+                    });
                 }
             }
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-
-        if (relevantTx?.name === TenantEvents.ExtendSuccess) {
-            return({
-                transaction: relevantTx?.data.transaction,
-                expiryMoment: relevantTx?.data.expiryMoment,
-                extendeRefId: relevantTx?.data.extendRefId
-            });
-        } else if (relevantTx?.name === TenantEvents.ExtendError) {
-            throw({
-                error: ErrorCodes.EXTEND_ERR,
-                transaction: relevantTx?.data.transaction,
-                reason: relevantTx?.data.reason
-            })
-        }
+        });
     }
 
     /**
