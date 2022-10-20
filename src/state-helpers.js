@@ -17,6 +17,13 @@ const FIRST_EPOCH_REWARD_QUOTA_OFFSET = 1;
 const EPOCH_REWARD_AMOUNT_OFFSET = 5;
 const REWARD_START_MOMENT_OFFSET = 9;
 
+const TRANSITION_IDX_OFFSET = 0;
+const TRANSITION_MOMENT_SIZE_OFFSET = 8;
+const TRANSITION_MOMENT_DEF_TYPE = 12;
+
+const BASE_MOMENT_IDX_OFFSET = 0;
+const BASE_TRANSITION_MOMENT = 8;
+
 const HOST_TOKEN_ID_OFFSET = 0;
 const HOST_COUNTRY_CODE_OFFSET = 32;
 const HOST_RESERVED_OFFSET = 34;
@@ -44,9 +51,6 @@ const STATE_KEY_TYPES = {
 const EVERNODE_PREFIX = 'EVR';
 const HOST_ADDR_KEY_ZERO_COUNT = 8;
 const HOOK_STATE_LEDGER_TYPE_PREFIX = 118; // Decimal value of ASCII 'v'
-
-const TRANSITION_TIME_STAMP = 0;
-const TRANSITION_MOMENT = 0;
 
 class StateHelpers {
     static StateTypes = {
@@ -120,8 +124,8 @@ class StateHelpers {
                 type: this.StateTypes.SIGLETON,
                 key: hexKey,
                 value: {
-                    transtionTimeStamp: stateData.readUInt32BE(TRANSITION_TIME_STAMP),
-                    transitionMoment: stateData.readUInt32BE(TRANSITION_MOMENT),
+                    baseIdx: stateData.readUInt32BE(BASE_MOMENT_IDX_OFFSET),
+                    baseTransitionMoment: stateData.readUInt32BE(BASE_TRANSITION_MOMENT),
                 }
             }
         }
@@ -189,6 +193,17 @@ class StateHelpers {
                 }
             }
         }
+        else if (Buffer.from(HookStateKeys.MOMENT_TRANSITION_INFO, 'hex').compare(stateKey) === 0) {
+            return {
+                type: this.StateTypes.SIGLETON,
+                key: hexKey,
+                value: {
+                    transitionIndex: stateData.readBigInt64BE(TRANSITION_IDX_OFFSET),
+                    momentSize: stateData.readUInt32BE(TRANSITION_MOMENT_SIZE_OFFSET),
+                    momentDefinition: stateData.readUInt32BE(TRANSITION_MOMENT_DEF_TYPE)
+                }
+            }
+        }
         else if (Buffer.from(HookStateKeys.MAX_TOLERABLE_DOWNTIME, 'hex').compare(stateKey) === 0) {
             return {
                 type: this.StateTypes.CONFIGURATION,
@@ -218,7 +233,8 @@ class StateHelpers {
             Buffer.from(HookStateKeys.MOMENT_BASE_IDX, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.HOST_REG_FEE, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.MAX_REG, 'hex').compare(stateKey) === 0 ||
-            Buffer.from(HookStateKeys.REWARD_INFO, 'hex').compare(stateKey) === 0) {
+            Buffer.from(HookStateKeys.REWARD_INFO, 'hex').compare(stateKey) === 0 ||
+            Buffer.from(HookStateKeys.MOMENT_TRANSITION_INFO, 'hex').compare(stateKey) === 0) {
             return {
                 key: hexKey,
                 type: this.STATE_TYPES.SIGLETON
@@ -285,15 +301,6 @@ class StateHelpers {
         const digest = data.digest('hex');
         // Get the first 32 bytes of hash.
         return digest.substring(0, 64).toUpperCase();
-    }
-
-    static convertTime(time, timeline){
-        switch(timeline) {
-            case "SEC":
-                return Math.floor(time / 1000);
-            default:
-                return time;
-          }
     }
 }
 
