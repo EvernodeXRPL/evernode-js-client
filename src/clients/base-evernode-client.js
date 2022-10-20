@@ -145,10 +145,16 @@ class BaseEvernodeClient {
      * @returns The moment of the given XPR ledger index as 'number'. Returns current moment if XRP ledger index is not given.
      */
     async getMoment(ledgerIndex = null) {
-        const lv = ledgerIndex || this.xrplApi.ledgerIndex;
-        const m = Math.floor((lv - this.config.momentBaseIdx) / this.config.momentSize);
+        const transitionTimeStamp = this.config.momentBaseIdx.transitionTimeStamp
+        const currentTimeStamp = Date.now();
 
-        await Promise.resolve(); // Awaiter placeholder for future async requirements.
+        if(ledgerIndex == null && (transitionTimeStamp < currentTimeStamp)){
+            ledgerIndex = currentTimeStamp;
+        }
+
+        const lv = ledgerIndex || this.xrplApi.ledgerIndex;
+        const m = Math.floor((lv - this.config.momentBaseIdx.transitionTimeStamp) / this.config.momentSize);
+        await Promise.resolve();
         return m;
     }
 

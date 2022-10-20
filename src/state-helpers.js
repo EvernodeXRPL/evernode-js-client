@@ -45,6 +45,9 @@ const EVERNODE_PREFIX = 'EVR';
 const HOST_ADDR_KEY_ZERO_COUNT = 8;
 const HOOK_STATE_LEDGER_TYPE_PREFIX = 118; // Decimal value of ASCII 'v'
 
+const TRANS_TIME_STAMP = 0;
+const TRANSITION_MOMENT = 0;
+
 class StateHelpers {
     static StateTypes = {
         TOKEN_ID: 'tokenId',
@@ -112,7 +115,10 @@ class StateHelpers {
             return {
                 type: this.StateTypes.SIGLETON,
                 key: hexKey,
-                value: Number(stateData.readBigInt64BE())
+                value: {
+                    transtionTimeStamp: stateData.readUInt32BE(TRANS_TIME_STAMP),
+                    transitionMoment: stateData.readUInt32BE(TRANSITION_MOMENT),
+                }
             }
         }
         else if (Buffer.from(HookStateKeys.HOST_REG_FEE, 'hex').compare(stateKey) === 0 || Buffer.from(HookStateKeys.MAX_REG, 'hex').compare(stateKey) === 0) {
