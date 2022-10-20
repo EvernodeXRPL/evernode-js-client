@@ -152,7 +152,7 @@ class BaseEvernodeClient {
         const currentTimeStampinMilliseconds = Date.now();
 
         // Converting the time stamp to seconds
-        const currentTimeStamp = StateHelpers.convertTime(currentTimeStampinMilliseconds, "SEC");
+        const currentTimeStamp = StateHelpers.convertTime(currentTimeStampinMilliseconds, StateHelpers.timeLines.SEC);
         
         let lv = 0;
         if(ledgerIndex == null && (transitionTimeStamp < currentTimeStamp)){

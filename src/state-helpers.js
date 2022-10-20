@@ -56,6 +56,10 @@ class StateHelpers {
         CONFIGURATION: 'configuration'
     }
 
+    static timeLines = {
+        SEC: "SEC"
+    }
+
     static decodeHostAddressState(stateKeyBuf, stateDataBuf) {
         return {
             address: codec.encodeAccountID(stateKeyBuf.slice(12)),
