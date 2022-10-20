@@ -45,7 +45,7 @@ const EVERNODE_PREFIX = 'EVR';
 const HOST_ADDR_KEY_ZERO_COUNT = 8;
 const HOOK_STATE_LEDGER_TYPE_PREFIX = 118; // Decimal value of ASCII 'v'
 
-const TRANS_TIME_STAMP = 0;
+const TRANSITION_TIME_STAMP = 0;
 const TRANSITION_MOMENT = 0;
 
 class StateHelpers {
@@ -116,7 +116,7 @@ class StateHelpers {
                 type: this.StateTypes.SIGLETON,
                 key: hexKey,
                 value: {
-                    transtionTimeStamp: stateData.readUInt32BE(TRANS_TIME_STAMP),
+                    transtionTimeStamp: stateData.readUInt32BE(TRANSITION_TIME_STAMP),
                     transitionMoment: stateData.readUInt32BE(TRANSITION_MOMENT),
                 }
             }
@@ -281,6 +281,15 @@ class StateHelpers {
         const digest = data.digest('hex');
         // Get the first 32 bytes of hash.
         return digest.substring(0, 64).toUpperCase();
+    }
+
+    static convertTime(time, timeline){
+        switch(timeline) {
+            case "SEC":
+                return Math.floor(time / 1000);
+            default:
+                return time;
+          }
     }
 }
 

@@ -145,8 +145,15 @@ class BaseEvernodeClient {
      * @returns The moment of the given XPR ledger index as 'number'. Returns current moment if XRP ledger index is not given.
      */
     async getMoment(ledgerIndex = null) {
+        // Getting transition time stamp
         const transitionTimeStamp = this.config.momentBaseIdx.transitionTimeStamp
-        const currentTimeStamp = Date.now();
+
+        // Getting the current time stamp
+        const currentTimeStampinMilliseconds = Date.now();
+
+        // Converting the time stamp to seconds
+        const currentTimeStamp = StateHelpers.convertTime(currentTimeStampinMilliseconds, "SEC");
+        
         let lv = 0;
         if(ledgerIndex == null && (transitionTimeStamp < currentTimeStamp)){
             lv = currentTimeStamp;
