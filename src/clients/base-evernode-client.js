@@ -147,12 +147,14 @@ class BaseEvernodeClient {
     async getMoment(ledgerIndex = null) {
         const transitionTimeStamp = this.config.momentBaseIdx.transitionTimeStamp
         const currentTimeStamp = Date.now();
-
+        let lv = 0;
         if(ledgerIndex == null && (transitionTimeStamp < currentTimeStamp)){
-            ledgerIndex = currentTimeStamp;
+            lv = currentTimeStamp;
+        }
+        else{
+            lv = ledgerIndex || this.xrplApi.ledgerIndex;
         }
 
-        const lv = ledgerIndex || this.xrplApi.ledgerIndex;
         const m = Math.floor((lv - this.config.momentBaseIdx.transitionTimeStamp) / this.config.momentSize);
         await Promise.resolve();
         return m;
