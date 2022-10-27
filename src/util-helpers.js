@@ -41,6 +41,16 @@ class UtilHelpers {
             leaseAmount: parseFloat(XflHelpers.toString(uriBuf.readBigInt64BE(prefixLen + 2 + halfToSLen)))
         }
     }
+
+    static getCurrentUnixTime(format = "sec") {
+        const time = Date.now();
+        switch (format) {
+            case "sec":
+                return Math.floor(time / 1000);
+            default:
+                return time;
+        }
+    }
 }
 
 module.exports = {

@@ -140,29 +140,54 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get the moment from the given XRP ledger index. (1 Moment - 1190 XRP ledgers).
-     * @param {number} ledgerIndex [Optional] Ledger index to get the moment value.
-     * @returns The moment of the given XPR ledger index as 'number'. Returns current moment if XRP ledger index is not given.
+     * Get the moment from the given index (timestamp).
+     * @param {number} index [Optional] Index (timestamp) to get the moment value.
+     * @returns The moment of the given index (timestamp) as 'number'. Returns current moment if index (timestamp) is not given.
      */
-    async getMoment(ledgerIndex = null) {
-        const lv = ledgerIndex || this.xrplApi.ledgerIndex;
-        const m = Math.floor((lv - this.config.momentBaseIdx) / this.config.momentSize);
+    async getMoment(index = null) {
+        let momentSize = this.config.momentSize;
+        // This part needs to be modified after the first transition happened.
+        if (!index) {
+            if (this.xrplApi.ledgerIndex > this.config.momentTransitionInfo.transitionIndex) {
+                index = UtilHelpers.getCurrentUnixTime();
+                // Transition passed but the moment size is not updated
+                if (this.config.momentTransitionInfo.transitionIndex > 0)
+                    momentSize = this.config.momentTransitionInfo.momentSize;
+            }
+            else {
+                index = this.xrplApi.ledgerIndex;
+            }
+        }
 
-        await Promise.resolve(); // Awaiter placeholder for future async requirements.
+        const m = this.config.momentBaseIdx.baseTransitionMoment + Math.floor((index - this.config.momentBaseIdx.baseIdx) / momentSize);
+        await Promise.resolve();
         return m;
     }
 
     /**
-     * Get start XRP ledger index of the moment (of the given XRPL index).
-     * @param {number} ledgerIndex [Optional] Ledger index to get the moment value.
-     * @returns The XRP ledger index of the moment (of the given XRPL index) as a 'number'. Returns the current moment's start XRP ledger index if ledger index parameter is not given.
+     * Get start index (timestamp) of the moment.
+     * @param {number} index [Optional] Index (timestamp) to get the moment value.
+     * @returns The index (timestamp) of the moment as a 'number'. Returns the current moment's start index (timestamp) if ledger index parameter is not given.
      */
-    async getMomentStartIndex(ledgerIndex = null) {
-        const lv = ledgerIndex || this.xrplApi.ledgerIndex;
-        const m = Math.floor((lv - this.config.momentBaseIdx) / this.config.momentSize);
+    async getMomentStartIndex(index = null) {
+        let momentSize = this.config.momentSize;
+        // This part needs to be modified after the first transition happened.
+        if (!index) {
+            if (this.xrplApi.ledgerIndex > this.config.momentTransitionInfo.transitionIndex) {
+                index = UtilHelpers.getCurrentUnixTime();
+                // Transition passed but the moment size is not updated
+                if (this.config.momentTransitionInfo.transitionIndex > 0)
+                    momentSize = this.config.momentTransitionInfo.momentSize;
+            }
+            else {
+                index = this.xrplApi.ledgerIndex;
+            }
+        }
+
+        const m = Math.floor((index - this.config.momentBaseIdx.baseIdx) / momentSize);
 
         await Promise.resolve(); // Awaiter placeholder for future async requirements.
-        return this.config.momentBaseIdx + (m * this.config.momentSize);
+        return this.config.momentBaseIdx.baseIdx + (m * momentSize);
     }
 
     /**
@@ -182,7 +207,8 @@ class BaseEvernodeClient {
             leaseAcquireWindow: HookStateKeys.LEASE_ACQUIRE_WINDOW,
             rewardInfo: HookStateKeys.REWARD_INFO,
             rewardConfiguaration: HookStateKeys.REWARD_CONFIGURATION,
-            hostCount: HookStateKeys.HOST_COUNT
+            hostCount: HookStateKeys.HOST_COUNT,
+            momentTransitionInfo: HookStateKeys.MOMENT_TRANSITION_INFO
         }
         let config = {};
         for (const [key, value] of Object.entries(configStateKeys)) {
