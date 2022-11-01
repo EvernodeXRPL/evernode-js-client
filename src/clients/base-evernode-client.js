@@ -148,18 +148,18 @@ class BaseEvernodeClient {
         let momentSize = this.config.momentSize;
         // This part needs to be modified after the first transition happened.
         if (!index) {
-            if (this.xrplApi.ledgerIndex > this.config.momentTransitionInfo.transitionIndex) {
+            if (this.config.momentTransitInfo && this.xrplApi.ledgerIndex > this.config.momentTransitInfo.transitionIndex) {
                 index = UtilHelpers.getCurrentUnixTime();
                 // Transition passed but the moment size is not updated
-                if (this.config.momentTransitionInfo.transitionIndex > 0)
-                    momentSize = this.config.momentTransitionInfo.momentSize;
+                if (this.config.momentTransitInfo.transitionIndex > 0)
+                    momentSize = this.config.momentTransitInfo.momentSize;
             }
             else {
                 index = this.xrplApi.ledgerIndex;
             }
         }
 
-        const m = this.config.momentBaseIdx.baseTransitionMoment + Math.floor((index - this.config.momentBaseIdx.baseIdx) / momentSize);
+        const m = this.config.momentBaseInfo.baseTransitionMoment + Math.floor((index - this.config.momentBaseInfo.baseIdx) / momentSize);
         await Promise.resolve();
         return m;
     }
@@ -173,21 +173,21 @@ class BaseEvernodeClient {
         let momentSize = this.config.momentSize;
         // This part needs to be modified after the first transition happened.
         if (!index) {
-            if (this.xrplApi.ledgerIndex > this.config.momentTransitionInfo.transitionIndex) {
+            if (this.config.momentTransitInfo && this.xrplApi.ledgerIndex > this.config.momentTransitInfo.transitionIndex) {
                 index = UtilHelpers.getCurrentUnixTime();
                 // Transition passed but the moment size is not updated
-                if (this.config.momentTransitionInfo.transitionIndex > 0)
-                    momentSize = this.config.momentTransitionInfo.momentSize;
+                if (this.config.momentTransitInfo.transitionIndex > 0)
+                    momentSize = this.config.momentTransitInfo.momentSize;
             }
             else {
                 index = this.xrplApi.ledgerIndex;
             }
         }
 
-        const m = Math.floor((index - this.config.momentBaseIdx.baseIdx) / momentSize);
+        const m = Math.floor((index - this.config.momentBaseInfo.baseIdx) / momentSize);
 
         await Promise.resolve(); // Awaiter placeholder for future async requirements.
-        return this.config.momentBaseIdx.baseIdx + (m * momentSize);
+        return this.config.momentBaseInfo.baseIdx + (m * momentSize);
     }
 
     /**
@@ -202,20 +202,23 @@ class BaseEvernodeClient {
             hostRegFee: HookStateKeys.HOST_REG_FEE,
             momentSize: HookStateKeys.MOMENT_SIZE,
             hostHeartbeatFreq: HookStateKeys.HOST_HEARTBEAT_FREQ,
-            momentBaseIdx: HookStateKeys.MOMENT_BASE_IDX,
+            momentBaseInfo: HookStateKeys.MOMENT_BASE_INFO,
             purchaserTargetPrice: HookStateKeys.PURCHASER_TARGET_PRICE,
             leaseAcquireWindow: HookStateKeys.LEASE_ACQUIRE_WINDOW,
             rewardInfo: HookStateKeys.REWARD_INFO,
-            rewardConfiguaration: HookStateKeys.REWARD_CONFIGURATION,
+            rewardConfiguration: HookStateKeys.REWARD_CONFIGURATION,
             hostCount: HookStateKeys.HOST_COUNT,
-            momentTransitionInfo: HookStateKeys.MOMENT_TRANSITION_INFO
+            momentTransitInfo: HookStateKeys.MOMENT_TRANSIT_INFO
         }
         let config = {};
         for (const [key, value] of Object.entries(configStateKeys)) {
             const stateKey = Buffer.from(value, 'hex');
-            const stateData = Buffer.from(UtilHelpers.getStateData(states, value), 'hex');
-            const decoded = StateHelpers.decodeStateData(stateKey, stateData);
-            config[key] = decoded.value;
+            const stateDataBin = StateHelpers.getStateData(states, value);
+            if (stateDataBin) {
+                const stateData = Buffer.from(StateHelpers.getStateData(states, value), 'hex');
+                const decoded = StateHelpers.decodeStateData(stateKey, stateData);
+                config[key] = decoded.value;
+            }
         }
         return config;
     }
