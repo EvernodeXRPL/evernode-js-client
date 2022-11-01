@@ -457,9 +457,9 @@ class BaseEvernodeClient {
             if (addrStateData) {
                 const addrStateDecoded = StateHelpers.decodeHostAddressState(Buffer.from(addrStateKey, 'hex'), Buffer.from(addrStateData, 'hex'));
                 const curMomentStartIdx = await this.getMomentStartIndex();
-                addrStateDecoded.active = (addrStateDecoded.lastHeartbeatLedger > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
-                    (addrStateDecoded.lastHeartbeatLedger >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
-                    (addrStateDecoded.lastHeartbeatLedger > 0))
+                addrStateDecoded.active = (addrStateDecoded.lastHeartbeatIndex > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
+                    (addrStateDecoded.lastHeartbeatIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
+                    (addrStateDecoded.lastHeartbeatIndex > 0))
 
                 const nftIdStatekey = StateHelpers.generateTokenIdStateKey(addrStateDecoded.nfTokenId);
                 const nftIdStateIndex = StateHelpers.getHookStateIndex(this.registryAddress, nftIdStatekey);
@@ -493,9 +493,9 @@ class BaseEvernodeClient {
         const curMomentStartIdx = await this.getMomentStartIndex();
         // Populate the host active status.
         (hosts.nextPageToken ? hosts.data : hosts).forEach(h => {
-            h.active = (h.lastHeartbeatLedger > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
-                (h.lastHeartbeatLedger >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
-                (h.lastHeartbeatLedger > 0))
+            h.active = (h.lastHeartbeatIndex > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
+                (h.lastHeartbeatIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
+                (h.lastHeartbeatIndex > 0))
         });
         return hosts;
     }
