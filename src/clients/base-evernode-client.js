@@ -145,21 +145,8 @@ class BaseEvernodeClient {
      * @returns The moment of the given index (timestamp) as 'number'. Returns current moment if index (timestamp) is not given.
      */
     async getMoment(index = null) {
-        let momentSize = this.config.momentSize;
-        // This part needs to be modified after the first transition happened.
-        if (!index) {
-            if (this.config.momentTransitInfo && this.xrplApi.ledgerIndex > this.config.momentTransitInfo.transitionIndex) {
-                index = UtilHelpers.getCurrentUnixTime();
-                // Transition passed but the moment size is not updated
-                if (this.config.momentTransitInfo.transitionIndex > 0)
-                    momentSize = this.config.momentTransitInfo.momentSize;
-            }
-            else {
-                index = this.xrplApi.ledgerIndex;
-            }
-        }
-
-        const m = this.config.momentBaseInfo.baseTransitionMoment + Math.floor((index - this.config.momentBaseInfo.baseIdx) / momentSize);
+        const i = index || UtilHelpers.getCurrentUnixTime();
+        const m = this.config.momentBaseInfo.baseTransitionMoment + Math.floor((i - this.config.momentBaseInfo.baseIdx) / this.config.momentSize);
         await Promise.resolve();
         return m;
     }
@@ -170,24 +157,12 @@ class BaseEvernodeClient {
      * @returns The index (timestamp) of the moment as a 'number'. Returns the current moment's start index (timestamp) if ledger index parameter is not given.
      */
     async getMomentStartIndex(index = null) {
-        let momentSize = this.config.momentSize;
-        // This part needs to be modified after the first transition happened.
-        if (!index) {
-            if (this.config.momentTransitInfo && this.xrplApi.ledgerIndex > this.config.momentTransitInfo.transitionIndex) {
-                index = UtilHelpers.getCurrentUnixTime();
-                // Transition passed but the moment size is not updated
-                if (this.config.momentTransitInfo.transitionIndex > 0)
-                    momentSize = this.config.momentTransitInfo.momentSize;
-            }
-            else {
-                index = this.xrplApi.ledgerIndex;
-            }
-        }
+        const i = index || UtilHelpers.getCurrentUnixTime();
 
-        const m = Math.floor((index - this.config.momentBaseInfo.baseIdx) / momentSize);
+        const m = Math.floor((i - this.config.momentBaseInfo.baseIdx) / this.config.momentSize);
 
         await Promise.resolve(); // Awaiter placeholder for future async requirements.
-        return this.config.momentBaseInfo.baseIdx + (m * momentSize);
+        return this.config.momentBaseInfo.baseIdx + (m * this.config.momentSize);
     }
 
     /**
