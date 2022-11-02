@@ -5,14 +5,6 @@ const { EvernodeConstants, ErrorReasons } = require('./evernode-common');
 // Utility helper functions.
 class UtilHelpers {
 
-    static getStateData(states, key) {
-        const state = states.find(s => key === s.key);
-        if (!state)
-            throw { code: ErrorReasons.NO_STATE_KEY, error: `State key '${key}' not found.` };
-
-        return state.data;
-    }
-
     static readUInt(buf, base = 32, isBE = true) {
         buf = Buffer.from(buf);
         switch (base) {

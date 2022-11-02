@@ -145,21 +145,8 @@ class BaseEvernodeClient {
      * @returns The moment of the given index (timestamp) as 'number'. Returns current moment if index (timestamp) is not given.
      */
     async getMoment(index = null) {
-        let momentSize = this.config.momentSize;
-        // This part needs to be modified after the first transition happened.
-        if (!index) {
-            if (this.xrplApi.ledgerIndex > this.config.momentTransitionInfo.transitionIndex) {
-                index = UtilHelpers.getCurrentUnixTime();
-                // Transition passed but the moment size is not updated
-                if (this.config.momentTransitionInfo.transitionIndex > 0)
-                    momentSize = this.config.momentTransitionInfo.momentSize;
-            }
-            else {
-                index = this.xrplApi.ledgerIndex;
-            }
-        }
-
-        const m = this.config.momentBaseIdx.baseTransitionMoment + Math.floor((index - this.config.momentBaseIdx.baseIdx) / momentSize);
+        const i = index || UtilHelpers.getCurrentUnixTime();
+        const m = this.config.momentBaseInfo.baseTransitionMoment + Math.floor((i - this.config.momentBaseInfo.baseIdx) / this.config.momentSize);
         await Promise.resolve();
         return m;
     }
@@ -170,24 +157,12 @@ class BaseEvernodeClient {
      * @returns The index (timestamp) of the moment as a 'number'. Returns the current moment's start index (timestamp) if ledger index parameter is not given.
      */
     async getMomentStartIndex(index = null) {
-        let momentSize = this.config.momentSize;
-        // This part needs to be modified after the first transition happened.
-        if (!index) {
-            if (this.xrplApi.ledgerIndex > this.config.momentTransitionInfo.transitionIndex) {
-                index = UtilHelpers.getCurrentUnixTime();
-                // Transition passed but the moment size is not updated
-                if (this.config.momentTransitionInfo.transitionIndex > 0)
-                    momentSize = this.config.momentTransitionInfo.momentSize;
-            }
-            else {
-                index = this.xrplApi.ledgerIndex;
-            }
-        }
+        const i = index || UtilHelpers.getCurrentUnixTime();
 
-        const m = Math.floor((index - this.config.momentBaseIdx.baseIdx) / momentSize);
+        const m = Math.floor((i - this.config.momentBaseInfo.baseIdx) / this.config.momentSize);
 
         await Promise.resolve(); // Awaiter placeholder for future async requirements.
-        return this.config.momentBaseIdx.baseIdx + (m * momentSize);
+        return this.config.momentBaseInfo.baseIdx + (m * this.config.momentSize);
     }
 
     /**
@@ -202,20 +177,23 @@ class BaseEvernodeClient {
             hostRegFee: HookStateKeys.HOST_REG_FEE,
             momentSize: HookStateKeys.MOMENT_SIZE,
             hostHeartbeatFreq: HookStateKeys.HOST_HEARTBEAT_FREQ,
-            momentBaseIdx: HookStateKeys.MOMENT_BASE_IDX,
+            momentBaseInfo: HookStateKeys.MOMENT_BASE_INFO,
             purchaserTargetPrice: HookStateKeys.PURCHASER_TARGET_PRICE,
             leaseAcquireWindow: HookStateKeys.LEASE_ACQUIRE_WINDOW,
             rewardInfo: HookStateKeys.REWARD_INFO,
-            rewardConfiguaration: HookStateKeys.REWARD_CONFIGURATION,
+            rewardConfiguration: HookStateKeys.REWARD_CONFIGURATION,
             hostCount: HookStateKeys.HOST_COUNT,
-            momentTransitionInfo: HookStateKeys.MOMENT_TRANSITION_INFO
+            momentTransitInfo: HookStateKeys.MOMENT_TRANSIT_INFO
         }
         let config = {};
         for (const [key, value] of Object.entries(configStateKeys)) {
             const stateKey = Buffer.from(value, 'hex');
-            const stateData = Buffer.from(UtilHelpers.getStateData(states, value), 'hex');
-            const decoded = StateHelpers.decodeStateData(stateKey, stateData);
-            config[key] = decoded.value;
+            const stateDataBin = StateHelpers.getStateData(states, value);
+            if (stateDataBin) {
+                const stateData = Buffer.from(StateHelpers.getStateData(states, value), 'hex');
+                const decoded = StateHelpers.decodeStateData(stateKey, stateData);
+                config[key] = decoded.value;
+            }
         }
         return config;
     }
@@ -479,9 +457,9 @@ class BaseEvernodeClient {
             if (addrStateData) {
                 const addrStateDecoded = StateHelpers.decodeHostAddressState(Buffer.from(addrStateKey, 'hex'), Buffer.from(addrStateData, 'hex'));
                 const curMomentStartIdx = await this.getMomentStartIndex();
-                addrStateDecoded.active = (addrStateDecoded.lastHeartbeatLedger > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
-                    (addrStateDecoded.lastHeartbeatLedger >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
-                    (addrStateDecoded.lastHeartbeatLedger > 0))
+                addrStateDecoded.active = (addrStateDecoded.lastHeartbeatIndex > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
+                    (addrStateDecoded.lastHeartbeatIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
+                    (addrStateDecoded.lastHeartbeatIndex > 0))
 
                 const nftIdStatekey = StateHelpers.generateTokenIdStateKey(addrStateDecoded.nfTokenId);
                 const nftIdStateIndex = StateHelpers.getHookStateIndex(this.registryAddress, nftIdStatekey);
@@ -515,9 +493,9 @@ class BaseEvernodeClient {
         const curMomentStartIdx = await this.getMomentStartIndex();
         // Populate the host active status.
         (hosts.nextPageToken ? hosts.data : hosts).forEach(h => {
-            h.active = (h.lastHeartbeatLedger > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
-                (h.lastHeartbeatLedger >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
-                (h.lastHeartbeatLedger > 0))
+            h.active = (h.lastHeartbeatIndex > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
+                (h.lastHeartbeatIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
+                (h.lastHeartbeatIndex > 0))
         });
         return hosts;
     }
