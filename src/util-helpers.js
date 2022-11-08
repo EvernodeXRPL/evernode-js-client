@@ -5,14 +5,6 @@ const { EvernodeConstants, ErrorReasons } = require('./evernode-common');
 // Utility helper functions.
 class UtilHelpers {
 
-    static getStateData(states, key) {
-        const state = states.find(s => key === s.key);
-        if (!state)
-            throw { code: ErrorReasons.NO_STATE_KEY, error: `State key '${key}' not found.` };
-
-        return state.data;
-    }
-
     static readUInt(buf, base = 32, isBE = true) {
         buf = Buffer.from(buf);
         switch (base) {
@@ -39,6 +31,16 @@ class UtilHelpers {
             leaseIndex: uriBuf.readUint16BE(prefixLen),
             halfTos: uriBuf.slice(prefixLen + 2, halfToSLen),
             leaseAmount: parseFloat(XflHelpers.toString(uriBuf.readBigInt64BE(prefixLen + 2 + halfToSLen)))
+        }
+    }
+
+    static getCurrentUnixTime(format = "sec") {
+        const time = Date.now();
+        switch (format) {
+            case "sec":
+                return Math.floor(time / 1000);
+            default:
+                return time;
         }
     }
 }

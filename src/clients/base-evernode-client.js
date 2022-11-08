@@ -140,29 +140,29 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get the moment from the given XRP ledger index. (1 Moment - 1190 XRP ledgers).
-     * @param {number} ledgerIndex [Optional] Ledger index to get the moment value.
-     * @returns The moment of the given XPR ledger index as 'number'. Returns current moment if XRP ledger index is not given.
+     * Get the moment from the given index (timestamp).
+     * @param {number} index [Optional] Index (timestamp) to get the moment value.
+     * @returns The moment of the given index (timestamp) as 'number'. Returns current moment if index (timestamp) is not given.
      */
-    async getMoment(ledgerIndex = null) {
-        const lv = ledgerIndex || this.xrplApi.ledgerIndex;
-        const m = Math.floor((lv - this.config.momentBaseIdx) / this.config.momentSize);
-
-        await Promise.resolve(); // Awaiter placeholder for future async requirements.
+    async getMoment(index = null) {
+        const i = index || UtilHelpers.getCurrentUnixTime();
+        const m = this.config.momentBaseInfo.baseTransitionMoment + Math.floor((i - this.config.momentBaseInfo.baseIdx) / this.config.momentSize);
+        await Promise.resolve();
         return m;
     }
 
     /**
-     * Get start XRP ledger index of the moment (of the given XRPL index).
-     * @param {number} ledgerIndex [Optional] Ledger index to get the moment value.
-     * @returns The XRP ledger index of the moment (of the given XRPL index) as a 'number'. Returns the current moment's start XRP ledger index if ledger index parameter is not given.
+     * Get start index (timestamp) of the moment.
+     * @param {number} index [Optional] Index (timestamp) to get the moment value.
+     * @returns The index (timestamp) of the moment as a 'number'. Returns the current moment's start index (timestamp) if ledger index parameter is not given.
      */
-    async getMomentStartIndex(ledgerIndex = null) {
-        const lv = ledgerIndex || this.xrplApi.ledgerIndex;
-        const m = Math.floor((lv - this.config.momentBaseIdx) / this.config.momentSize);
+    async getMomentStartIndex(index = null) {
+        const i = index || UtilHelpers.getCurrentUnixTime();
+
+        const m = Math.floor((i - this.config.momentBaseInfo.baseIdx) / this.config.momentSize);
 
         await Promise.resolve(); // Awaiter placeholder for future async requirements.
-        return this.config.momentBaseIdx + (m * this.config.momentSize);
+        return this.config.momentBaseInfo.baseIdx + (m * this.config.momentSize);
     }
 
     /**
@@ -177,19 +177,23 @@ class BaseEvernodeClient {
             hostRegFee: HookStateKeys.HOST_REG_FEE,
             momentSize: HookStateKeys.MOMENT_SIZE,
             hostHeartbeatFreq: HookStateKeys.HOST_HEARTBEAT_FREQ,
-            momentBaseIdx: HookStateKeys.MOMENT_BASE_IDX,
+            momentBaseInfo: HookStateKeys.MOMENT_BASE_INFO,
             purchaserTargetPrice: HookStateKeys.PURCHASER_TARGET_PRICE,
             leaseAcquireWindow: HookStateKeys.LEASE_ACQUIRE_WINDOW,
             rewardInfo: HookStateKeys.REWARD_INFO,
-            rewardConfiguaration: HookStateKeys.REWARD_CONFIGURATION,
-            hostCount: HookStateKeys.HOST_COUNT
+            rewardConfiguration: HookStateKeys.REWARD_CONFIGURATION,
+            hostCount: HookStateKeys.HOST_COUNT,
+            momentTransitInfo: HookStateKeys.MOMENT_TRANSIT_INFO
         }
         let config = {};
         for (const [key, value] of Object.entries(configStateKeys)) {
             const stateKey = Buffer.from(value, 'hex');
-            const stateData = Buffer.from(UtilHelpers.getStateData(states, value), 'hex');
-            const decoded = StateHelpers.decodeStateData(stateKey, stateData);
-            config[key] = decoded.value;
+            const stateDataBin = StateHelpers.getStateData(states, value);
+            if (stateDataBin) {
+                const stateData = Buffer.from(StateHelpers.getStateData(states, value), 'hex');
+                const decoded = StateHelpers.decodeStateData(stateKey, stateData);
+                config[key] = decoded.value;
+            }
         }
         return config;
     }
@@ -453,9 +457,9 @@ class BaseEvernodeClient {
             if (addrStateData) {
                 const addrStateDecoded = StateHelpers.decodeHostAddressState(Buffer.from(addrStateKey, 'hex'), Buffer.from(addrStateData, 'hex'));
                 const curMomentStartIdx = await this.getMomentStartIndex();
-                addrStateDecoded.active = (addrStateDecoded.lastHeartbeatLedger > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
-                    (addrStateDecoded.lastHeartbeatLedger >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
-                    (addrStateDecoded.lastHeartbeatLedger > 0))
+                addrStateDecoded.active = (addrStateDecoded.lastHeartbeatIndex > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
+                    (addrStateDecoded.lastHeartbeatIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
+                    (addrStateDecoded.lastHeartbeatIndex > 0))
 
                 const nftIdStatekey = StateHelpers.generateTokenIdStateKey(addrStateDecoded.nfTokenId);
                 const nftIdStateIndex = StateHelpers.getHookStateIndex(this.registryAddress, nftIdStatekey);
@@ -489,9 +493,9 @@ class BaseEvernodeClient {
         const curMomentStartIdx = await this.getMomentStartIndex();
         // Populate the host active status.
         (hosts.nextPageToken ? hosts.data : hosts).forEach(h => {
-            h.active = (h.lastHeartbeatLedger > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
-                (h.lastHeartbeatLedger >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
-                (h.lastHeartbeatLedger > 0))
+            h.active = (h.lastHeartbeatIndex > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
+                (h.lastHeartbeatIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
+                (h.lastHeartbeatIndex > 0))
         });
         return hosts;
     }
