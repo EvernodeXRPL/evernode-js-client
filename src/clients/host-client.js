@@ -349,6 +349,71 @@ class HostClient extends BaseEvernodeClient {
         codec.decodeAccountID(this.xrplAcc.address).copy(buf, 4);
         return buf.toString('hex');
     }
+
+    async transfer(transfereeAddress, options = {}) {
+        if (!(await this.isRegistered()))
+            throw "Host is not registered.";
+
+        if (!transfereeAddress)
+            throw "No transferee address has been specified.";
+
+        if (transfereeAddress === 'CURRENT_HOST_ADDRESS')
+            transfereeAddress = this.xrplAcc.address;
+
+        const transfereeAcc = new XrplAccount(transfereeAddress, null, { xrplApi: this.xrplApi });
+
+        if (this.xrplAcc.address !== transfereeAddress) {
+            // Find the new transferee also owns an Evernode Host Registration NFT.
+            const nft = (await transfereeAcc.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.registryAddress);
+            if (nft) {
+                // Check whether the token was actually issued from Evernode registry contract.
+                const issuerHex = nft.NFTokenID.substr(8, 40);
+                const issuerAddr = codec.encodeAccountID(Buffer.from(issuerHex, 'hex'));
+                if (issuerAddr == this.registryAddress) {
+                    throw "The transferee is already registered in Evernode.";
+                }
+            }
+        }
+
+        const regNFT = (await this.xrplAcc.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.registryAddress);
+
+        let memoData = Buffer.allocUnsafe(20);
+        codec.decodeAccountID(transfereeAddress).copy(memoData);
+
+        await this.xrplAcc.makePayment(this.registryAddress,
+            XrplConstants.MIN_XRP_AMOUNT,
+            XrplConstants.XRP,
+            null,
+            [{ type: MemoTypes.HOST_INIT_TRANSFER, format: MemoFormats.HEX, data: memoData.toString('hex') }],
+            options.transactionOptions);
+
+        let offer = null;
+        let attempts = 0;
+        let offerLedgerIndex = 0;
+        while (attempts < OFFER_WAIT_TIMEOUT) {
+            offer = (await this.xrplAcc.getNftOffers()).find(o => (o.NFTokenID == regNFT.NFTokenID) && (o.Flags === 0));
+            offerLedgerIndex = this.xrplApi.ledgerIndex;
+            if (offer)
+                break;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            attempts++;
+        }
+        if (!offer)
+            throw 'No buy offer found within timeout.';
+
+        console.log('Accepting the buy offer..');
+
+        // Wait until the next ledger after the offer is created.
+        // Otherwise if the offer accepted in the same legder which it's been created,
+        // We cannot fetch the offer from registry contract event handler since it's getting deleted immediately.
+        await new Promise(async resolve => {
+            while (this.xrplApi.ledgerIndex <= offerLedgerIndex)
+                await new Promise(resolve2 => setTimeout(resolve2, 1000));
+            resolve();
+        });
+
+        await this.xrplAcc.sellNft(offer.index);
+    }
 }
 
 module.exports = {
