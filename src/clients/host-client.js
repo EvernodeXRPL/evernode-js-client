@@ -381,17 +381,19 @@ class HostClient extends BaseEvernodeClient {
         codec.decodeAccountID(transfereeAddress).copy(memoData);
 
         await this.xrplAcc.makePayment(this.registryAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
-            null,
+            EvernodeConstants.MIN_EVR_AMOUNT,
+            EvernodeConstants.EVR,
+            this.config.evrIssuerAddress,
             [{ type: MemoTypes.HOST_INIT_TRANSFER, format: MemoFormats.HEX, data: memoData.toString('hex') }],
             options.transactionOptions);
 
         let offer = null;
         let attempts = 0;
         let offerLedgerIndex = 0;
+        const regAcc = new XrplAccount(this.registryAddress, null, { xrplApi: this.xrplApi });
+
         while (attempts < OFFER_WAIT_TIMEOUT) {
-            offer = (await this.xrplAcc.getNftOffers()).find(o => (o.NFTokenID == regNFT.NFTokenID) && (o.Flags === 0));
+            offer = (await regAcc.getNftOffers()).find(o => (o.NFTokenID == regNFT.NFTokenID) && (o.Flags === 0));
             offerLedgerIndex = this.xrplApi.ledgerIndex;
             if (offer)
                 break;
