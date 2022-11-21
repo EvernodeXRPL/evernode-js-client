@@ -381,9 +381,9 @@ class HostClient extends BaseEvernodeClient {
         codec.decodeAccountID(transfereeAddress).copy(memoData);
 
         await this.xrplAcc.makePayment(this.registryAddress,
-            EvernodeConstants.MIN_EVR_AMOUNT,
-            EvernodeConstants.EVR,
-            this.config.evrIssuerAddress,
+            XrplConstants.MIN_XRP_AMOUNT,
+            XrplConstants.XRP,
+            null,
             [{ type: MemoTypes.HOST_INIT_TRANSFER, format: MemoFormats.HEX, data: memoData.toString('hex') }],
             options.transactionOptions);
 
