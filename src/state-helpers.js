@@ -17,6 +17,14 @@ const FIRST_EPOCH_REWARD_QUOTA_OFFSET = 1;
 const EPOCH_REWARD_AMOUNT_OFFSET = 5;
 const REWARD_START_MOMENT_OFFSET = 9;
 
+const TRANSIT_IDX_OFFSET = 0;
+const TRANSIT_MOMENT_SIZE_OFFSET = 8;
+const TRANSIT_MOMENT_TYPE_OFFSET = 10;
+
+const MOMENT_BASE_POINT_OFFSET = 0;
+const MOMENT_AT_TRANSITION_OFFSET = 8;
+const MOMENT_TYPE_OFFSET = 12;
+
 const HOST_TOKEN_ID_OFFSET = 0;
 const HOST_COUNTRY_CODE_OFFSET = 32;
 const HOST_RESERVED_OFFSET = 34;
@@ -27,6 +35,7 @@ const HOST_TOT_INS_COUNT_OFFSET = 84;
 const HOST_ACT_INS_COUNT_OFFSET = 88;
 const HOST_HEARTBEAT_LEDGER_IDX_OFFSET = 92;
 const HOST_VERSION_OFFSET = 100;
+const HOST_REG_TIMESTAMP_OFFSET = 103;
 
 const HOST_ADDRESS_OFFSET = 0;
 const HOST_CPU_MODEL_NAME_OFFSET = 20;
@@ -41,6 +50,11 @@ const STATE_KEY_TYPES = {
     HOST_ADDR: 3
 }
 
+const MOMENT_TYPES = {
+    LEDGER: 0,
+    TIMESTAMP: 1
+}
+
 const EVERNODE_PREFIX = 'EVR';
 const HOST_ADDR_KEY_ZERO_COUNT = 8;
 const HOOK_STATE_LEDGER_TYPE_PREFIX = 118; // Decimal value of ASCII 'v'
@@ -53,8 +67,20 @@ class StateHelpers {
         CONFIGURATION: 'configuration'
     }
 
+    static timeLines = {
+        SEC: "SEC"
+    }
+
+    static getStateData(states, key) {
+        const state = states.find(s => key === s.key);
+        if (!state)
+            return null;
+
+        return state.data;
+    }
+
     static decodeHostAddressState(stateKeyBuf, stateDataBuf) {
-        return {
+        let data = {
             address: codec.encodeAccountID(stateKeyBuf.slice(12)),
             nfTokenId: stateDataBuf.slice(HOST_TOKEN_ID_OFFSET, HOST_COUNTRY_CODE_OFFSET).toString('hex').toUpperCase(),
             countryCode: stateDataBuf.slice(HOST_COUNTRY_CODE_OFFSET, HOST_RESERVED_OFFSET).toString(),
@@ -63,9 +89,12 @@ class StateHelpers {
             registrationFee: Number(stateDataBuf.readBigUInt64BE(HOST_REG_FEE_OFFSET)),
             maxInstances: stateDataBuf.readUInt32BE(HOST_TOT_INS_COUNT_OFFSET),
             activeInstances: stateDataBuf.readUInt32BE(HOST_ACT_INS_COUNT_OFFSET),
-            lastHeartbeatLedger: Number(stateDataBuf.readBigUInt64BE(HOST_HEARTBEAT_LEDGER_IDX_OFFSET)),
-            version: `${stateDataBuf.readUInt8(HOST_VERSION_OFFSET)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 1)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 2)}`
+            lastHeartbeatIndex: Number(stateDataBuf.readBigUInt64BE(HOST_HEARTBEAT_LEDGER_IDX_OFFSET)),
+            version: `${stateDataBuf.readUInt8(HOST_VERSION_OFFSET)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 1)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 2)}`,
         }
+        if (stateDataBuf.length > HOST_REG_TIMESTAMP_OFFSET)
+            data.registrationTimestamp = Number(stateDataBuf.readBigUInt64BE(HOST_REG_TIMESTAMP_OFFSET));
+        return data;
     }
 
     static decodeTokenIdState(stateDataBuf) {
@@ -108,11 +137,15 @@ class StateHelpers {
                 value: stateData.readUInt32BE()
             }
         }
-        else if (Buffer.from(HookStateKeys.MOMENT_BASE_IDX, 'hex').compare(stateKey) === 0) {
+        else if (Buffer.from(HookStateKeys.MOMENT_BASE_INFO, 'hex').compare(stateKey) === 0) {
             return {
                 type: this.StateTypes.SIGLETON,
                 key: hexKey,
-                value: Number(stateData.readBigInt64BE())
+                value: {
+                    baseIdx: Number(stateData.readBigUInt64BE(MOMENT_BASE_POINT_OFFSET)),
+                    baseTransitionMoment: stateData.length > MOMENT_AT_TRANSITION_OFFSET ? stateData.readUInt32BE(MOMENT_AT_TRANSITION_OFFSET) : 0,
+                    momentType: (stateData.length <= MOMENT_TYPE_OFFSET || stateData.readUInt8(MOMENT_TYPE_OFFSET) === MOMENT_TYPES.LEDGER) ? 'ledger' : 'timestamp'
+                }
             }
         }
         else if (Buffer.from(HookStateKeys.HOST_REG_FEE, 'hex').compare(stateKey) === 0 || Buffer.from(HookStateKeys.MAX_REG, 'hex').compare(stateKey) === 0) {
@@ -186,6 +219,18 @@ class StateHelpers {
                 value: stateData.readUInt16BE()
             }
         }
+        else if (Buffer.from(HookStateKeys.MOMENT_TRANSIT_INFO, 'hex').compare(stateKey) === 0) {
+            Buffer.alloc(1).readUInt8()
+            return {
+                type: this.StateTypes.CONFIGURATION,
+                key: hexKey,
+                value: {
+                    transitionIndex: Number(stateData.readBigInt64BE(TRANSIT_IDX_OFFSET)),
+                    momentSize: stateData.readUInt16BE(TRANSIT_MOMENT_SIZE_OFFSET),
+                    momentType: stateData.readUInt8(TRANSIT_MOMENT_TYPE_OFFSET) === MOMENT_TYPES.LEDGER ? 'ledger' : 'timestamp'
+                }
+            }
+        }
         else
             throw { type: 'Validation Error', message: 'Invalid state key.' };
     }
@@ -205,7 +250,7 @@ class StateHelpers {
             };
         }
         else if (Buffer.from(HookStateKeys.HOST_COUNT, 'hex').compare(stateKey) === 0 ||
-            Buffer.from(HookStateKeys.MOMENT_BASE_IDX, 'hex').compare(stateKey) === 0 ||
+            Buffer.from(HookStateKeys.MOMENT_BASE_INFO, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.HOST_REG_FEE, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.MAX_REG, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.REWARD_INFO, 'hex').compare(stateKey) === 0) {
@@ -223,7 +268,8 @@ class StateHelpers {
             Buffer.from(HookStateKeys.FIXED_REG_FEE, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.LEASE_ACQUIRE_WINDOW, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.REWARD_CONFIGURATION, 'hex').compare(stateKey) === 0 ||
-            Buffer.from(HookStateKeys.MAX_TOLERABLE_DOWNTIME, 'hex').compare(stateKey) === 0) {
+            Buffer.from(HookStateKeys.MAX_TOLERABLE_DOWNTIME, 'hex').compare(stateKey) === 0 ||
+            Buffer.from(HookStateKeys.MOMENT_TRANSIT_INFO, 'hex').compare(stateKey) === 0) {
             return {
                 key: hexKey,
                 type: this.STATE_TYPES.CONFIGURATION
