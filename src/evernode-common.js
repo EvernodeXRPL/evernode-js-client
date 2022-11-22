@@ -22,7 +22,8 @@ const MemoTypes = {
     REGISTRY_INIT: 'evnInitialize',
     REFUND: 'evnRefund',
     REFUND_REF: 'evnRefundRef',
-    DEAD_HOST_PRUNE: 'evnDeadHostPrune'
+    DEAD_HOST_PRUNE: 'evnDeadHostPrune',
+    HOST_REBATE: 'evnHostRebate'
 }
 
 const MemoFormats = {
@@ -90,7 +91,8 @@ const EvernodeEvents = {
     HostRegUpdated: "HostRegUpdated",
     HostReRegistered: "HostReRegistered",
     RegistryInitialized: "RegistryInitialized",
-    DeadHostPrune: "DeadHostPrune"
+    DeadHostPrune: "DeadHostPrune",
+    HostRebate: "HostRebate"
 }
 
 module.exports = {

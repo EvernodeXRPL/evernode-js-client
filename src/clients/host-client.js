@@ -342,6 +342,15 @@ class HostClient extends BaseEvernodeClient {
             options.transactionOptions);
     }
 
+    async requestRebate(options = {}) {
+        return this.xrplAcc.makePayment(this.registryAddress,
+            XrplConstants.MIN_XRP_AMOUNT,
+            XrplConstants.XRP,
+            null,
+            [{ type: MemoTypes.HOST_REBATE, format: "", data: "" }],
+            options.transactionOptions);
+    }
+
     getLeaseNFTokenIdPrefix() {
         let buf = Buffer.allocUnsafe(24);
         buf.writeUInt16BE(1);
