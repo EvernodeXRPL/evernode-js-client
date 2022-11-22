@@ -381,7 +381,7 @@ class HostClient extends BaseEvernodeClient {
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            [{ type: MemoTypes.HOST_INIT_TRANSFER, format: MemoFormats.HEX, data: memoData.toString('hex') }],
+            [{ type: MemoTypes.HOST_TRANSFER, format: MemoFormats.HEX, data: memoData.toString('hex') }],
             options.transactionOptions);
 
         let offer = null;
