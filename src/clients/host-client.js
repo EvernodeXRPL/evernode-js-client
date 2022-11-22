@@ -359,12 +359,9 @@ class HostClient extends BaseEvernodeClient {
         return buf.toString('hex');
     }
 
-    async transfer(transfereeAddress = null, options = {}) {
+    async transfer(transfereeAddress = this.xrplAcc.address, options = {}) {
         if (!(await this.isRegistered()))
             throw "Host is not registered.";
-
-        if (!transfereeAddress)
-            transfereeAddress = this.xrplAcc.address;
 
         const transfereeAcc = new XrplAccount(transfereeAddress, null, { xrplApi: this.xrplApi });
 
