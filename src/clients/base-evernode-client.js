@@ -439,6 +439,17 @@ class BaseEvernodeClient {
                 }
             }
         }
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.HOST_REBATE) {
+
+            return {
+                name: EvernodeEvents.HostRebate,
+                data: {
+                    transaction: tx,
+                    host: tx.Account
+                }
+            }
+        }
 
         return null;
     }
