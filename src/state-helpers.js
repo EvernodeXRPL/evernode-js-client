@@ -66,7 +66,8 @@ class StateHelpers {
         TOKEN_ID: 'tokenId',
         HOST_ADDR: 'hostAddr',
         SIGLETON: 'singleton',
-        CONFIGURATION: 'configuration'
+        CONFIGURATION: 'configuration',
+        TRANSFEREE_ADDR: 'transfereeAddr'
     }
 
     static timeLines = {
@@ -131,6 +132,12 @@ class StateHelpers {
                 key: hexKey,
                 addressKey: addressKeyBuf.toString('hex').toUpperCase(),
                 ...this.decodeTokenIdState(stateData)
+            }
+        }
+        else if (Buffer.from(HookStateKeys.PREFIX_TRANSFEREE_ADDR, 'hex').compare(stateKey, 0, 4) === 0) {
+            return {
+                type: this.StateTypes.TRANSFEREE_ADDR,
+                key: hexKey
             }
         }
         else if (Buffer.from(HookStateKeys.HOST_COUNT, 'hex').compare(stateKey) === 0) {
