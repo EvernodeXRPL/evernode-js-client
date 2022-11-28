@@ -36,6 +36,7 @@ const HOST_ACT_INS_COUNT_OFFSET = 88;
 const HOST_HEARTBEAT_LEDGER_IDX_OFFSET = 92;
 const HOST_VERSION_OFFSET = 100;
 const HOST_REG_TIMESTAMP_OFFSET = 103;
+const HOST_TRANSFER_FLAG_OFFSET = 111;
 
 const HOST_ADDRESS_OFFSET = 0;
 const HOST_CPU_MODEL_NAME_OFFSET = 20;
@@ -58,13 +59,15 @@ const MOMENT_TYPES = {
 const EVERNODE_PREFIX = 'EVR';
 const HOST_ADDR_KEY_ZERO_COUNT = 8;
 const HOOK_STATE_LEDGER_TYPE_PREFIX = 118; // Decimal value of ASCII 'v'
+const PENDING_TRANSFER = 1;
 
 class StateHelpers {
     static StateTypes = {
         TOKEN_ID: 'tokenId',
         HOST_ADDR: 'hostAddr',
         SIGLETON: 'singleton',
-        CONFIGURATION: 'configuration'
+        CONFIGURATION: 'configuration',
+        TRANSFEREE_ADDR: 'transfereeAddr'
     }
 
     static timeLines = {
@@ -91,6 +94,7 @@ class StateHelpers {
             activeInstances: stateDataBuf.readUInt32BE(HOST_ACT_INS_COUNT_OFFSET),
             lastHeartbeatIndex: Number(stateDataBuf.readBigUInt64BE(HOST_HEARTBEAT_LEDGER_IDX_OFFSET)),
             version: `${stateDataBuf.readUInt8(HOST_VERSION_OFFSET)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 1)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 2)}`,
+            hasPendingTransfer: (stateDataBuf.readUInt8(HOST_TRANSFER_FLAG_OFFSET) === PENDING_TRANSFER) ? true : false
         }
         if (stateDataBuf.length > HOST_REG_TIMESTAMP_OFFSET)
             data.registrationTimestamp = Number(stateDataBuf.readBigUInt64BE(HOST_REG_TIMESTAMP_OFFSET));
@@ -128,6 +132,12 @@ class StateHelpers {
                 key: hexKey,
                 addressKey: addressKeyBuf.toString('hex').toUpperCase(),
                 ...this.decodeTokenIdState(stateData)
+            }
+        }
+        else if (Buffer.from(HookStateKeys.PREFIX_TRANSFEREE_ADDR, 'hex').compare(stateKey, 0, 4) === 0) {
+            return {
+                type: this.StateTypes.TRANSFEREE_ADDR,
+                key: hexKey
             }
         }
         else if (Buffer.from(HookStateKeys.HOST_COUNT, 'hex').compare(stateKey) === 0) {

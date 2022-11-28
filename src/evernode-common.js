@@ -15,6 +15,7 @@ const MemoTypes = {
     HOST_UPDATE_INFO: 'evnHostUpdateReg',
     HEARTBEAT: 'evnHeartbeat',
     HOST_POST_DEREG: 'evnHostPostDereg',
+    HOST_TRANSFER: 'evnTransfer',
     EXTEND_LEASE: 'evnExtendLease',
     EXTEND_SUCCESS: 'evnExtendSuccess',
     EXTEND_ERROR: 'evnExtendError',
@@ -75,12 +76,14 @@ const HookStateKeys = {
     // Prefixes
     PREFIX_HOST_TOKENID: "45565202",
     PREFIX_HOST_ADDR: "45565203",
+    PREFIX_TRANSFEREE_ADDR: "45565204",
 }
 
 const EvernodeEvents = {
     HostRegistered: "HostRegistered",
     HostDeregistered: "HostDeregistered",
     HostPostDeregistered: "HostPostDeregistered",
+    HostTransfer: "HostTransfer",
     AcquireLease: "AcquireLease",
     AcquireSuccess: "AcquireSuccess",
     AcquireError: "AcquireError",
