@@ -45,6 +45,7 @@ const HOST_CPU_SPEED_OFFSET = 62;
 const HOST_CPU_MICROSEC_OFFSET = 64;
 const HOST_RAM_MB_OFFSET = 68;
 const HOST_DISK_MB_OFFSET = 72;
+const EMAIL_ADDRESS_OFFSET = 112;
 
 const PREV_HOST_ADDRESS_OFFSET = 0;
 const TRANSFER_LEDGER_IDX_OFFSET = 20;
@@ -120,7 +121,8 @@ class StateHelpers {
             cpuMHz: stateDataBuf.readUInt16BE(HOST_CPU_SPEED_OFFSET),
             cpuMicrosec: stateDataBuf.readUInt32BE(HOST_CPU_MICROSEC_OFFSET),
             ramMb: stateDataBuf.readUInt32BE(HOST_RAM_MB_OFFSET),
-            diskMb: stateDataBuf.readUInt32BE(HOST_DISK_MB_OFFSET)
+            diskMb: stateDataBuf.readUInt32BE(HOST_DISK_MB_OFFSET),
+            email: (stateDataBuf.length > HOST_DISK_MB_OFFSET ? stateDataBuf.slice(HOST_DISK_MB_OFFSET, EMAIL_ADDRESS_OFFSET).toString() : "")
         }
     }
 
