@@ -450,6 +450,19 @@ class BaseEvernodeClient {
                 }
             }
         }
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.HOST_TRANSFER && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+
+            const addrsBuf = Buffer.from(tx.Memos[0].data, 'hex');
+
+            return {
+                name: EvernodeEvents.HostTransfer,
+                data: {
+                    transaction: tx,
+                    transferee: codec.encodeAccountID(addrsBuf)
+                }
+            }
+        }
 
         return null;
     }

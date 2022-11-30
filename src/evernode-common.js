@@ -2,7 +2,8 @@ const EvernodeConstants = {
     EVR: 'EVR',
     NFT_PREFIX_HEX: '657672686F7374', // evrhost
     LEASE_NFT_PREFIX_HEX: '6576726C65617365', // evrlease
-    HOOK_NAMESPACE: '01EAF09326B4911554384121FF56FA8FECC215FDDE2EC35D9E59F2C53EC665A0'
+    HOOK_NAMESPACE: '01EAF09326B4911554384121FF56FA8FECC215FDDE2EC35D9E59F2C53EC665A0',
+    NOW_IN_EVRS: "0.00000001"
 }
 
 const MemoTypes = {
@@ -15,6 +16,7 @@ const MemoTypes = {
     HOST_UPDATE_INFO: 'evnHostUpdateReg',
     HEARTBEAT: 'evnHeartbeat',
     HOST_POST_DEREG: 'evnHostPostDereg',
+    HOST_TRANSFER: 'evnTransfer',
     EXTEND_LEASE: 'evnExtendLease',
     EXTEND_SUCCESS: 'evnExtendSuccess',
     EXTEND_ERROR: 'evnExtendError',
@@ -75,12 +77,14 @@ const HookStateKeys = {
     // Prefixes
     PREFIX_HOST_TOKENID: "45565202",
     PREFIX_HOST_ADDR: "45565203",
+    PREFIX_TRANSFEREE_ADDR: "45565204",
 }
 
 const EvernodeEvents = {
     HostRegistered: "HostRegistered",
     HostDeregistered: "HostDeregistered",
     HostPostDeregistered: "HostPostDeregistered",
+    HostTransfer: "HostTransfer",
     AcquireLease: "AcquireLease",
     AcquireSuccess: "AcquireSuccess",
     AcquireError: "AcquireError",

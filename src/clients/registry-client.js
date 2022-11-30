@@ -10,6 +10,7 @@ const RegistryEvents = {
     Heartbeat: EvernodeEvents.Heartbeat,
     HostPostDeregistered: EvernodeEvents.HostPostDeregistered,
     DeadHostPrune: EvernodeEvents.DeadHostPrune,
+    HostTransfer: EvernodeEvents.HostTransfer,
     HostRebate: EvernodeEvents.HostRebate
 }
 

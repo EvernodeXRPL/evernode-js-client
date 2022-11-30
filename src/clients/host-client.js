@@ -7,6 +7,7 @@ const { Buffer } = require('buffer');
 const codec = require('ripple-address-codec');
 const { XflHelpers } = require('../xfl-helpers');
 const { EvernodeHelpers } = require('../evernode-helpers');
+const { StateHelpers } = require('../state-helpers');
 
 const OFFER_WAIT_TIMEOUT = 60;
 
@@ -155,9 +156,29 @@ class HostClient extends BaseEvernodeClient {
             }
         }
 
+        // Check the availability of an initiated transfer.
+        // Need to modify the amount accordingly.
+        const stateTransfereeAddrKey = StateHelpers.generateTransfereeAddrStateKey(this.xrplAcc.address);
+        const stateTransfereeAddrIndex = StateHelpers.getHookStateIndex(this.registryAddress, stateTransfereeAddrKey);
+        let transfereeAddrLedgerEntry = {};
+        let transfereeAddrStateData = {};
+        let transferredNFTokenId = null;
+
+        try {
+            const res = await this.xrplApi.getLedgerEntry(stateTransfereeAddrIndex);
+            transfereeAddrLedgerEntry = { ...transfereeAddrLedgerEntry, ...res };
+            transfereeAddrStateData = transfereeAddrLedgerEntry?.HookStateData;
+            const transfereeAddrStateDecoded = StateHelpers.decodeTransfereeAddrState(Buffer.from(stateTransfereeAddrKey, 'hex'), Buffer.from(transfereeAddrStateData, 'hex'));
+            transferredNFTokenId = transfereeAddrStateDecoded?.transferredNfTokenId;
+
+        }
+        catch (e) {
+            console.log("No initiated transfers were found.");
+        }
+
         const memoData = `${countryCode};${cpuMicroSec};${ramMb};${diskMb};${totalInstanceCount};${cpuModel};${cpuCount};${cpuSpeed};${description};${emailAddress}`
         const tx = await this.xrplAcc.makePayment(this.registryAddress,
-            this.config.hostRegFee.toString(),
+            (transferredNFTokenId) ? EvernodeConstants.NOW_IN_EVRS : this.config.hostRegFee.toString(),
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress,
             [{ type: MemoTypes.HOST_REG, format: MemoFormats.TEXT, data: memoData }],
@@ -169,7 +190,7 @@ class HostClient extends BaseEvernodeClient {
         let attempts = 0;
         let offerLedgerIndex = 0;
         while (attempts < OFFER_WAIT_TIMEOUT) {
-            const nft = (await regAcc.getNfts()).find(n => n.URI === `${EvernodeConstants.NFT_PREFIX_HEX}${tx.id}`);
+            const nft = (await regAcc.getNfts()).find(n => (n.URI === `${EvernodeConstants.NFT_PREFIX_HEX}${tx.id}`) || (n.NFTokenID === transferredNFTokenId));
             if (nft) {
                 offer = (await regAcc.getNftOffers()).find(o => o.Destination === this.xrplAcc.address && o.NFTokenID === nft.NFTokenID && o.Flags === 1);
                 offerLedgerIndex = this.xrplApi.ledgerIndex;
@@ -360,6 +381,67 @@ class HostClient extends BaseEvernodeClient {
         buf.writeUInt16BE(0, 2);
         codec.decodeAccountID(this.xrplAcc.address).copy(buf, 4);
         return buf.toString('hex');
+    }
+
+    async transfer(transfereeAddress = this.xrplAcc.address, options = {}) {
+        if (!(await this.isRegistered()))
+            throw "Host is not registered.";
+
+        const transfereeAcc = new XrplAccount(transfereeAddress, null, { xrplApi: this.xrplApi });
+
+        if (this.xrplAcc.address !== transfereeAddress) {
+            // Find the new transferee also owns an Evernode Host Registration NFT.
+            const nft = (await transfereeAcc.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.registryAddress);
+            if (nft) {
+                // Check whether the token was actually issued from Evernode registry contract.
+                const issuerHex = nft.NFTokenID.substr(8, 40);
+                const issuerAddr = codec.encodeAccountID(Buffer.from(issuerHex, 'hex'));
+                if (issuerAddr == this.registryAddress) {
+                    throw "The transferee is already registered in Evernode.";
+                }
+            }
+        }
+
+        const regNFT = (await this.xrplAcc.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.registryAddress);
+
+        let memoData = Buffer.allocUnsafe(20);
+        codec.decodeAccountID(transfereeAddress).copy(memoData);
+
+        await this.xrplAcc.makePayment(this.registryAddress,
+            XrplConstants.MIN_XRP_AMOUNT,
+            XrplConstants.XRP,
+            null,
+            [{ type: MemoTypes.HOST_TRANSFER, format: MemoFormats.HEX, data: memoData.toString('hex') }],
+            options.transactionOptions);
+
+        let offer = null;
+        let attempts = 0;
+        let offerLedgerIndex = 0;
+        const regAcc = new XrplAccount(this.registryAddress, null, { xrplApi: this.xrplApi });
+
+        while (attempts < OFFER_WAIT_TIMEOUT) {
+            offer = (await regAcc.getNftOffers()).find(o => (o.NFTokenID == regNFT.NFTokenID) && (o.Flags === 0));
+            offerLedgerIndex = this.xrplApi.ledgerIndex;
+            if (offer)
+                break;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            attempts++;
+        }
+        if (!offer)
+            throw 'No buy offer found within timeout.';
+
+        console.log('Accepting the buy offer..');
+
+        // Wait until the next ledger after the offer is created.
+        // Otherwise if the offer accepted in the same legder which it's been created,
+        // We cannot fetch the offer from registry contract event handler since it's getting deleted immediately.
+        await new Promise(async resolve => {
+            while (this.xrplApi.ledgerIndex <= offerLedgerIndex)
+                await new Promise(resolve2 => setTimeout(resolve2, 1000));
+            resolve();
+        });
+
+        await this.xrplAcc.sellNft(offer.index);
     }
 }
 

@@ -13,6 +13,7 @@ const tenantAddress = "rw7GPreCDX2nuJVHSwNdH38ZGsiEH8qiY";
 const tenantSecret = "shdQBGbF9d3Tgp3D28pXoBdhWoZ9N";
 const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
 const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
+const transfereeAddress = 'rNAW13zAUA4DjkM45peek3WhUs23GZ2fYD';
 
 const tosHash = "757A0237B44D8B2BBB04AE2BAD5813858E0AECD2F0B217075E27E0630BA74314";
 
@@ -77,6 +78,7 @@ async function app() {
             // () => deregisterHost(),
             // () => getAllConfigs(),
             // () => pruneDeadHost(),
+            // () => transferHost()
 
         ];
 
@@ -356,6 +358,39 @@ async function pruneDeadHost(address = hostAddress) {
     // Create a cleint to send the prune request (the client can be a tenant or another host).
     const tenantClient = await getTenantClient();
     await tenantClient.pruneDeadHost(address);
+}
+
+async function transferHost(address = transfereeAddress) {
+
+    const host = await getHostClient(hostAddress, hostSecret);
+
+    if (!await host.isRegistered()) {
+        console.log("Host is not registered.");
+        return true;
+    }
+
+    console.log(`-----------Transfer host`);
+
+    // Get EVRs from the foundation if needed.
+    const lines = await host.xrplAcc.getTrustLines(evernode.EvernodeConstants.EVR, evrIssuerAddress);
+    if (lines.length === 0 || parseInt(lines[0].balance) < 1) {
+        console.log("Transfer EVRs...");
+        const foundationAcc = new evernode.XrplAccount(foundationAddress, foundationSecret);
+        await foundationAcc.makePayment(hostAddress, "1", evernode.EvernodeConstants.EVR, evrIssuerAddress);
+    }
+
+    console.log("Initiating a transfer...");
+    await host.transfer(address);
+
+    // Burn NFTs.
+    const nfts = (await host.xrplAcc.getNfts()).filter(n => n.URI.startsWith(evernode.EvernodeConstants.LEASE_NFT_PREFIX_HEX))
+        .map(o => { return { nfTokenId: o.NFTokenID, ownerAddress: host.xrplAcc.address }; });
+    for (const nft of nfts) {
+        const sold = nft.ownerAddress !== host.xrplAcc.address;
+        await host.xrplAcc.burnNft(nft.nfTokenId, sold ? nft.ownerAddress : null);
+        console.log(`Burnt ${sold ? 'sold' : 'unsold'} hosting NFT (${nft.nfTokenId}) of ${nft.ownerAddress + (sold ? ' tenant' : '')} account`);
+    }
+
 }
 
 app();
