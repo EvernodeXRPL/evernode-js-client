@@ -46,9 +46,14 @@ const HOST_CPU_MICROSEC_OFFSET = 64;
 const HOST_RAM_MB_OFFSET = 68;
 const HOST_DISK_MB_OFFSET = 72;
 
+const PREV_HOST_ADDRESS_OFFSET = 0;
+const TRANSFER_LEDGER_IDX_OFFSET = 20;
+const TRANSFERRED_NFT_ID_OFFSET = 28;
+
 const STATE_KEY_TYPES = {
     TOKEN_ID: 2,
-    HOST_ADDR: 3
+    HOST_ADDR: 3,
+    TRANSFEREE_ADDR: 4
 }
 
 const MOMENT_TYPES = {
@@ -56,8 +61,14 @@ const MOMENT_TYPES = {
     TIMESTAMP: 1
 }
 
+const TRANSFER_STATES = {
+    NO_TRANSFER: 0,
+    HAS_A_TRANSFER: 1
+}
+
 const EVERNODE_PREFIX = 'EVR';
 const HOST_ADDR_KEY_ZERO_COUNT = 8;
+const TRANSFEREE_ADDR_KEY_ZERO_COUNT = 8;
 const HOOK_STATE_LEDGER_TYPE_PREFIX = 118; // Decimal value of ASCII 'v'
 const PENDING_TRANSFER = 1;
 
@@ -94,7 +105,7 @@ class StateHelpers {
             activeInstances: stateDataBuf.readUInt32BE(HOST_ACT_INS_COUNT_OFFSET),
             lastHeartbeatIndex: Number(stateDataBuf.readBigUInt64BE(HOST_HEARTBEAT_LEDGER_IDX_OFFSET)),
             version: `${stateDataBuf.readUInt8(HOST_VERSION_OFFSET)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 1)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 2)}`,
-            hasPendingTransfer: (stateDataBuf.length > HOST_TRANSFER_FLAG_OFFSET && (stateDataBuf.readUInt8(HOST_TRANSFER_FLAG_OFFSET) === PENDING_TRANSFER)) ? true : false
+            hasPendingTransfer: (stateDataBuf.length > HOST_TRANSFER_FLAG_OFFSET && (stateDataBuf.readUInt8(HOST_TRANSFER_FLAG_OFFSET) === PENDING_TRANSFER)) ? TRANSFER_STATES.HAS_A_TRANSFER : TRANSFER_STATES.NO_TRANSFER
         }
         if (stateDataBuf.length > HOST_REG_TIMESTAMP_OFFSET)
             data.registrationTimestamp = Number(stateDataBuf.readBigUInt64BE(HOST_REG_TIMESTAMP_OFFSET));
@@ -110,6 +121,18 @@ class StateHelpers {
             cpuMicrosec: stateDataBuf.readUInt32BE(HOST_CPU_MICROSEC_OFFSET),
             ramMb: stateDataBuf.readUInt32BE(HOST_RAM_MB_OFFSET),
             diskMb: stateDataBuf.readUInt32BE(HOST_DISK_MB_OFFSET)
+        }
+    }
+
+
+    static decodeTransfereeAddrState(stateKeyBuf, stateDataBuf) {
+        const prevHostClassicAddress = codec.encodeAccountID(stateDataBuf.slice(PREV_HOST_ADDRESS_OFFSET, TRANSFER_LEDGER_IDX_OFFSET));
+        return {
+            futureOwnerAddress: codec.encodeAccountID(stateKeyBuf.slice(12)),
+            prevHostAddressKey: this.generateHostAddrStateKey(prevHostClassicAddress),
+            prevHostAddress: prevHostClassicAddress,
+            transferLedgerIdx: Number(stateDataBuf.readBigUInt64BE(TRANSFER_LEDGER_IDX_OFFSET)),
+            transferredNfTokenId: stateDataBuf.slice(TRANSFERRED_NFT_ID_OFFSET, 60).toString('hex').toUpperCase()
         }
     }
 
@@ -137,7 +160,8 @@ class StateHelpers {
         else if (Buffer.from(HookStateKeys.PREFIX_TRANSFEREE_ADDR, 'hex').compare(stateKey, 0, 4) === 0) {
             return {
                 type: this.StateTypes.TRANSFEREE_ADDR,
-                key: hexKey
+                key: hexKey,
+                ...this.decodeTransfereeAddrState(stateKey, stateData)
             }
         }
         else if (Buffer.from(HookStateKeys.HOST_COUNT, 'hex').compare(stateKey) === 0) {
@@ -305,6 +329,20 @@ class StateHelpers {
         let buf = Buffer.allocUnsafe(9);
         buf.writeUInt8(STATE_KEY_TYPES.HOST_ADDR);
         for (let i = 0; i < HOST_ADDR_KEY_ZERO_COUNT; i++) {
+            buf.writeUInt8(0, i + 1);
+        }
+
+        const addrBuf = Buffer.from(codec.decodeAccountID(address), "hex");
+        const stateKeyBuf = Buffer.concat([Buffer.from(EVERNODE_PREFIX, "utf-8"), buf, addrBuf]);
+        return stateKeyBuf.toString('hex').toUpperCase();
+    }
+
+    static generateTransfereeAddrStateKey(address) {
+        // 1 byte - Key Type.
+        // 8 bytes - Zeros.
+        let buf = Buffer.allocUnsafe(9);
+        buf.writeUInt8(STATE_KEY_TYPES.TRANSFEREE_ADDR);
+        for (let i = 0; i < TRANSFEREE_ADDR_KEY_ZERO_COUNT; i++) {
             buf.writeUInt8(0, i + 1);
         }
 

@@ -7,6 +7,7 @@ const { Buffer } = require('buffer');
 const codec = require('ripple-address-codec');
 const { XflHelpers } = require('../xfl-helpers');
 const { EvernodeHelpers } = require('../evernode-helpers');
+const { StateHelpers } = require('../state-helpers');
 
 const OFFER_WAIT_TIMEOUT = 60;
 
@@ -152,9 +153,29 @@ class HostClient extends BaseEvernodeClient {
             }
         }
 
+        // Check the availability of an initiated transfer.
+        // Need to modify the amount accordingly.
+        const stateTransfereeAddrKey = StateHelpers.generateTransfereeAddrStateKey(this.xrplAcc.address);
+        const stateTransfereeAddrIndex = StateHelpers.getHookStateIndex(this.registryAddress, stateTransfereeAddrKey);
+        let transfereeAddrLedgerEntry = {};
+        let transfereeAddrStateData = {};
+        let transferredNFTokenId = null;
+
+        try {
+            const res = await this.xrplApi.getLedgerEntry(stateTransfereeAddrIndex);
+            transfereeAddrLedgerEntry = { ...transfereeAddrLedgerEntry, ...res };
+            transfereeAddrStateData = transfereeAddrLedgerEntry?.HookStateData;
+            const transfereeAddrStateDecoded = StateHelpers.decodeTransfereeAddrState(Buffer.from(stateTransfereeAddrKey, 'hex'), Buffer.from(transfereeAddrStateData, 'hex'));
+            transferredNFTokenId = transfereeAddrStateDecoded?.transferredNfTokenId;
+
+        }
+        catch (e) {
+            console.log("No initiated transfers were found.");
+        }
+
         const memoData = `${countryCode};${cpuMicroSec};${ramMb};${diskMb};${totalInstanceCount};${cpuModel};${cpuCount};${cpuSpeed};${description}`
         const tx = await this.xrplAcc.makePayment(this.registryAddress,
-            this.config.hostRegFee.toString(),
+            (transferredNFTokenId) ? EvernodeConstants.NOW_IN_EVRS : this.config.hostRegFee.toString(),
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress,
             [{ type: MemoTypes.HOST_REG, format: MemoFormats.TEXT, data: memoData }],
@@ -166,7 +187,7 @@ class HostClient extends BaseEvernodeClient {
         let attempts = 0;
         let offerLedgerIndex = 0;
         while (attempts < OFFER_WAIT_TIMEOUT) {
-            const nft = (await regAcc.getNfts()).find(n => n.URI === `${EvernodeConstants.NFT_PREFIX_HEX}${tx.id}`);
+            const nft = (await regAcc.getNfts()).find(n => (n.URI === `${EvernodeConstants.NFT_PREFIX_HEX}${tx.id}`) || (n.NFTokenID === transferredNFTokenId));
             if (nft) {
                 offer = (await regAcc.getNftOffers()).find(o => o.Destination === this.xrplAcc.address && o.NFTokenID === nft.NFTokenID && o.Flags === 1);
                 offerLedgerIndex = this.xrplApi.ledgerIndex;
