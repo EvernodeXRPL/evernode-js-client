@@ -137,7 +137,7 @@ class HostClient extends BaseEvernodeClient {
         else if (!emailAddress || !(/[a-z0-9]+@[a-z]+.[a-z]{2,3}/.test(emailAddress)) || (emailAddress.length > 41))
             throw "Email address should be valid and can not have more than 40 characters.";    
         
-            if (await this.isRegistered())
+        if (await this.isRegistered())
             throw "Host already registered.";
 
         // Check whether is there any missed NFT sell offer that needs to be accepted
