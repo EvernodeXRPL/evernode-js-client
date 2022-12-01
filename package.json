@@ -6,7 +6,7 @@
     ],
     "homepage": "https://github.com/HotPocketDev/evernode-js-client",
     "license": "MIT",
-    "version": "0.5.7",
+    "version": "0.5.8",
     "scripts": {
         "lint": "./node_modules/.bin/eslint src/**/*.js",
         "build": "npm run lint && ncc build src/index.js -e elliptic -e xrpl -e ripple-address-codec -e ripple-keypairs -o dist/",
@@ -15,6 +15,7 @@
     },
     "dependencies": {
         "elliptic": "6.5.4",
+        "libsodium-wrappers": "^0.7.10",
         "ripple-address-codec": "4.2.0",
         "ripple-keypairs": "1.1.0",
         "xrpl": "2.2.1",
