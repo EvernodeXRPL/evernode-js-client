@@ -78,7 +78,8 @@ async function app() {
             // () => deregisterHost(),
             // () => getAllConfigs(),
             // () => pruneDeadHost(),
-            // () => transferHost()
+            // () => transferHost(),
+            // () => requestRebate()
 
         ];
 
@@ -164,7 +165,7 @@ async function registerHost(address = hostAddress, secret = hostSecret) {
 
     console.log("Register...");
     const instanceCount = 3;
-    await host.register("AU", 10000, 512, 1024, instanceCount, 'Intel', 10, 10, "Test desctiption", "testemail@gmail.com",  2);
+    await host.register("AU", 10000, 512, 1024, instanceCount, 'Intel', 10, 10, "Test desctiption", "testemail@gmail.com", 2);
 
     console.log("Lease Offer...");
     for (let i = 0; i < instanceCount; i++)
@@ -391,6 +392,18 @@ async function transferHost(address = transfereeAddress) {
         console.log(`Burnt ${sold ? 'sold' : 'unsold'} hosting NFT (${nft.nfTokenId}) of ${nft.ownerAddress + (sold ? ' tenant' : '')} account`);
     }
 
+}
+
+async function requestRebate() {
+    const host = await getHostClient(hostAddress, hostSecret);
+
+    if (!await host.isRegistered()) {
+        console.log("Host is not registered.");
+        return true;
+    }
+
+    console.log(`-----------Request rebate`);
+    await host.requestRebate();
 }
 
 app();
