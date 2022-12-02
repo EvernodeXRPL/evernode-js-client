@@ -164,7 +164,7 @@ async function registerHost(address = hostAddress, secret = hostSecret) {
 
     console.log("Register...");
     const instanceCount = 3;
-    await host.register("AU", 10000, 512, 1024, instanceCount, 'Intel', 10, 10, "Test desctiption", 2);
+    await host.register("AU", 10000, 512, 1024, instanceCount, 'Intel', 10, 10, "Test desctiption", "testemail@gmail.com",  2);
 
     console.log("Lease Offer...");
     for (let i = 0; i < instanceCount; i++)
