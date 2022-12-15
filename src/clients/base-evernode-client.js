@@ -183,7 +183,8 @@ class BaseEvernodeClient {
             rewardInfo: HookStateKeys.REWARD_INFO,
             rewardConfiguration: HookStateKeys.REWARD_CONFIGURATION,
             hostCount: HookStateKeys.HOST_COUNT,
-            momentTransitInfo: HookStateKeys.MOMENT_TRANSIT_INFO
+            momentTransitInfo: HookStateKeys.MOMENT_TRANSIT_INFO,
+            registryMaxTrxEmitFee: HookStateKeys.MAX_TRX_EMISSION_FEE
         }
         let config = {};
         for (const [key, value] of Object.entries(configStateKeys)) {
