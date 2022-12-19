@@ -135,8 +135,8 @@ class HostClient extends BaseEvernodeClient {
             throw "description should consist of 0-26 ascii characters except ';'";
 
         else if (!emailAddress || !(/[a-z0-9]+@[a-z]+.[a-z]{2,3}/.test(emailAddress)) || (emailAddress.length > 40))
-            throw "Email address should be valid and can not have more than 40 characters.";    
-        
+            throw "Email address should be valid and can not have more than 40 characters.";
+
         if (await this.isRegistered())
             throw "Host already registered.";
 
@@ -278,12 +278,14 @@ class HostClient extends BaseEvernodeClient {
             options.transactionOptions);
     }
 
-    async heartbeat(options = {}) {
+    async heartbeat(nfTokenId, options = {}) {
+        const nftMemoData = await EvernodeHelpers.getNFTPageAndLocation(nfTokenId, this.xrplAcc, this.xrplApi);
         return this.xrplAcc.makePayment(this.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            [{ type: MemoTypes.HEARTBEAT, format: "", data: "" }],
+            [{ type: MemoTypes.HEARTBEAT, format: "", data: "" },
+            { type: MemoTypes.NFTPAGE_KEYLET_N_IDX, format: MemoFormats.HEX, data: nftMemoData.toString('hex')}],
             options.transactionOptions);
     }
 
