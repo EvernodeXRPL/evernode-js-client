@@ -261,11 +261,18 @@ class HostClient extends BaseEvernodeClient {
             throw "Host not registered."
 
         const regNFT = await this.getRegistrationNft();
+
+        // To obtain registration NFT Page Keylet and index.
+        const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, this.xrplAcc, this.xrplApi);
+
         await this.xrplAcc.makePayment(this.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            [{ type: MemoTypes.HOST_DEREG, format: MemoFormats.HEX, data: regNFT.NFTokenID }],
+            [
+                { type: MemoTypes.HOST_DEREG, format: MemoFormats.HEX, data: regNFT.NFTokenID },
+                { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+            ],
             options.transactionOptions);
 
         console.log('Waiting for the buy offer')
@@ -331,20 +338,35 @@ class HostClient extends BaseEvernodeClient {
             memoBuf.writeUInt8(components[2], HOST_UPDATE_VERSION_MEMO_OFFSET + 2);
         }
 
+        // To obtain registration NFT Page Keylet and index.
+        if (!tokenID)
+            tokenID = (await this.getRegistrationNft()).NFTokenID;
+        const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(tokenID, this.xrplAcc, this.xrplApi);
+
         return await this.xrplAcc.makePayment(this.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            [{ type: MemoTypes.HOST_UPDATE_INFO, format: MemoFormats.HEX, data: memoBuf.toString('hex') }],
+            [
+                { type: MemoTypes.HOST_UPDATE_INFO, format: MemoFormats.HEX, data: memoBuf.toString('hex') },
+                { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+            ],
             options.transactionOptions);
     }
 
     async heartbeat(options = {}) {
+        // To obtain registration NFT Page Keylet and index.
+        const regNFT = await this.getRegistrationNft();
+        const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, this.xrplAcc, this.xrplApi);
+
         return this.xrplAcc.makePayment(this.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            [{ type: MemoTypes.HEARTBEAT, format: "", data: "" }],
+            [
+                { type: MemoTypes.HEARTBEAT, format: "", data: "" },
+                { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+            ],
             options.transactionOptions);
     }
 
@@ -428,11 +450,19 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async requestRebate(options = {}) {
+
+        // To obtain registration NFT Page Keylet and index.
+        const regNFT = await this.getRegistrationNft();
+        const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, this.xrplAcc, this.xrplApi);
+
         return this.xrplAcc.makePayment(this.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            [{ type: MemoTypes.HOST_REBATE, format: "", data: "" }],
+            [
+                { type: MemoTypes.HOST_REBATE, format: "", data: "" },
+                { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+            ],
             options.transactionOptions);
     }
 
@@ -463,16 +493,21 @@ class HostClient extends BaseEvernodeClient {
             }
         }
 
-        const regNFT = (await this.xrplAcc.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.registryAddress);
-
         let memoData = Buffer.allocUnsafe(20);
         codec.decodeAccountID(transfereeAddress).copy(memoData);
+
+        // To obtain registration NFT Page Keylet and index.
+        const regNFT = await this.getRegistrationNft();
+        const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, this.xrplAcc, this.xrplApi);
 
         await this.xrplAcc.makePayment(this.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            [{ type: MemoTypes.HOST_TRANSFER, format: MemoFormats.HEX, data: memoData.toString('hex') }],
+            [
+                { type: MemoTypes.HOST_TRANSFER, format: MemoFormats.HEX, data: memoData.toString('hex') },
+                { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+            ],
             options.transactionOptions);
 
         let offer = null;

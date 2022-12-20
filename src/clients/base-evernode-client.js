@@ -10,6 +10,7 @@ const { EventEmitter } = require('../event-emitter');
 const { UtilHelpers } = require('../util-helpers');
 const { FirestoreHandler } = require('../firestore/firestore-handler');
 const { StateHelpers } = require('../state-helpers');
+const { EvernodeHelpers } = require('../evernode-helpers');
 
 class BaseEvernodeClient {
 
@@ -582,11 +583,29 @@ class BaseEvernodeClient {
         let memoData = Buffer.allocUnsafe(20);
         codec.decodeAccountID(hostAddress).copy(memoData);
 
-        await this.xrplAcc.makePayment(this.registryAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
-            null,
-            [{ type: MemoTypes.DEAD_HOST_PRUNE, format: MemoFormats.HEX, data: memoData.toString('hex') }]);
+        // To obtain registration NFT Page Keylet and index.
+        const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
+        const regNFT = (await hostAcc.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.registryAddress);
+        if (regNFT) {
+            // Check whether the token was actually issued from Evernode registry contract.
+            const issuerHex = regNFT.NFTokenID.substr(8, 40);
+            const issuerAddr = codec.encodeAccountID(Buffer.from(issuerHex, 'hex'));
+            if (issuerAddr == this.registryAddress) {
+                console.log(regNFT);
+                const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, hostAcc, this.xrplApi);
+
+                await this.xrplAcc.makePayment(this.registryAddress,
+                    XrplConstants.MIN_XRP_AMOUNT,
+                    XrplConstants.XRP,
+                    null,
+                    [
+                        { type: MemoTypes.DEAD_HOST_PRUNE, format: MemoFormats.HEX, data: memoData.toString('hex') },
+                        { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+                    ]);
+            } else
+                throw "Invalid Registration NFT."
+        } else
+            throw "No Registration NFT was found for the Host account."
 
     }
 }
