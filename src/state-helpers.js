@@ -267,6 +267,13 @@ class StateHelpers {
                 }
             }
         }
+        else if (Buffer.from(HookStateKeys.MAX_TRX_EMISSION_FEE, 'hex').compare(stateKey) === 0) {
+            return {
+                type: this.StateTypes.CONFIGURATION,
+                key: hexKey,
+                value: Number(stateData.readBigUInt64BE())
+            }
+        }
         else
             throw { type: 'Validation Error', message: 'Invalid state key.' };
     }
@@ -283,6 +290,12 @@ class StateHelpers {
             return {
                 key: hexKey,
                 type: this.StateTypes.TOKEN_ID
+            };
+        }
+        else if (Buffer.from(HookStateKeys.PREFIX_TRANSFEREE_ADDR, 'hex').compare(stateKey, 0, 4) === 0) {
+            return {
+                key: hexKey,
+                type: this.StateTypes.TRANSFEREE_ADDR
             };
         }
         else if (Buffer.from(HookStateKeys.HOST_COUNT, 'hex').compare(stateKey) === 0 ||
@@ -305,7 +318,8 @@ class StateHelpers {
             Buffer.from(HookStateKeys.LEASE_ACQUIRE_WINDOW, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.REWARD_CONFIGURATION, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.MAX_TOLERABLE_DOWNTIME, 'hex').compare(stateKey) === 0 ||
-            Buffer.from(HookStateKeys.MOMENT_TRANSIT_INFO, 'hex').compare(stateKey) === 0) {
+            Buffer.from(HookStateKeys.MOMENT_TRANSIT_INFO, 'hex').compare(stateKey) === 0 ||
+            Buffer.from(HookStateKeys.MAX_TRX_EMISSION_FEE, 'hex').compare(stateKey) === 0) {
             return {
                 key: hexKey,
                 type: this.STATE_TYPES.CONFIGURATION
