@@ -26,7 +26,7 @@ const MemoTypes = {
     REFUND_REF: 'evnRefundRef',
     DEAD_HOST_PRUNE: 'evnDeadHostPrune',
     HOST_REBATE: 'evnHostRebate',
-    NFTPAGE_KEYLET_N_IDX: 'NFTPageKeyltNIdx'
+    HOST_REGISTRY_REF: 'evnHostRegistryRef'
 }
 
 const MemoFormats = {

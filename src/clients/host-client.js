@@ -271,7 +271,7 @@ class HostClient extends BaseEvernodeClient {
             null,
             [
                 { type: MemoTypes.HOST_DEREG, format: MemoFormats.HEX, data: regNFT.NFTokenID },
-                { type: MemoTypes.NFTPAGE_KEYLET_N_IDX, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+                { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
             ],
             options.transactionOptions);
 
@@ -349,7 +349,7 @@ class HostClient extends BaseEvernodeClient {
             null,
             [
                 { type: MemoTypes.HOST_UPDATE_INFO, format: MemoFormats.HEX, data: memoBuf.toString('hex') },
-                { type: MemoTypes.NFTPAGE_KEYLET_N_IDX, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+                { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
             ],
             options.transactionOptions);
     }
@@ -365,7 +365,7 @@ class HostClient extends BaseEvernodeClient {
             null,
             [
                 { type: MemoTypes.HEARTBEAT, format: "", data: "" },
-                { type: MemoTypes.NFTPAGE_KEYLET_N_IDX, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+                { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
             ],
             options.transactionOptions);
     }
@@ -461,7 +461,7 @@ class HostClient extends BaseEvernodeClient {
             null,
             [
                 { type: MemoTypes.HOST_REBATE, format: "", data: "" },
-                { type: MemoTypes.NFTPAGE_KEYLET_N_IDX, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+                { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
             ],
             options.transactionOptions);
     }
@@ -506,7 +506,7 @@ class HostClient extends BaseEvernodeClient {
             null,
             [
                 { type: MemoTypes.HOST_TRANSFER, format: MemoFormats.HEX, data: memoData.toString('hex') },
-                { type: MemoTypes.NFTPAGE_KEYLET_N_IDX, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+                { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
             ],
             options.transactionOptions);
 

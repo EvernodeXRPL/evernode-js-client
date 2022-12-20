@@ -599,7 +599,7 @@ class BaseEvernodeClient {
                     null,
                     [
                         { type: MemoTypes.DEAD_HOST_PRUNE, format: MemoFormats.HEX, data: memoData.toString('hex') },
-                        { type: MemoTypes.NFTPAGE_KEYLET_N_IDX, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+                        { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
                     ]);
             } else
                 throw "Invalid Registration NFT."
