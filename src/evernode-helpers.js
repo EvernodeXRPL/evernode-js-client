@@ -11,8 +11,8 @@ class EvernodeHelpers {
 
     static async getNFTPageAndLocation(nfTokenId, xrplAcc, xrplApi, buffer = true) {
 
-        const nftPageApprxKeylet = await xrplAcc.generateKeylet('nftPage', { nfTokenId: nfTokenId });
-        const nftPageMaxKeylet = await xrplAcc.generateKeylet('nftPageMax');
+        const nftPageApprxKeylet = xrplAcc.generateKeylet('nftPage', { nfTokenId: nfTokenId });
+        const nftPageMaxKeylet = xrplAcc.generateKeylet('nftPageMax');
         // Index is the last 32 bytes of the Keylet (Last 64 HEX characters).
         let page = await xrplApi.getLedgerEntry(nftPageMaxKeylet.substring(4, 68));
         while (page?.PreviousPageMin) {
