@@ -201,16 +201,16 @@ class HostClient extends BaseEvernodeClient {
 
         // <country_code(2)><cpu_microsec(4)><ram_mb(4)><disk_mb(4)><no_of_total_instances(4)><cpu_model(40)><cpu_count(2)><cpu_speed(2)><description(26)><email_address(40)>
         const memoBuf = Buffer.alloc(HOST_REG_MEMO_SIZE, 0);
-        Buffer.from(countryCode, "utf-8").copy(memoBuf, HOST_COUNTRY_CODE_MEMO_OFFSET);
+        Buffer.from(countryCode.substr(0, 2), "utf-8").copy(memoBuf, HOST_COUNTRY_CODE_MEMO_OFFSET);
         memoBuf.writeUInt32BE(cpuMicroSec, HOST_CPU_MICROSEC_MEMO_OFFSET);
         memoBuf.writeUInt32BE(ramMb, HOST_RAM_MB_MEMO_OFFSET);
         memoBuf.writeUInt32BE(diskMb, HOST_DISK_MB_MEMO_OFFSET);
         memoBuf.writeUInt32BE(totalInstanceCount, HOST_TOT_INS_COUNT_MEMO_OFFSET);
-        Buffer.from(cpuModel, "utf-8").copy(memoBuf, HOST_CPU_MODEL_NAME_MEMO_OFFSET);
+        Buffer.from(cpuModel.substr(0, 40), "utf-8").copy(memoBuf, HOST_CPU_MODEL_NAME_MEMO_OFFSET);
         memoBuf.writeUInt16BE(cpuCount, HOST_CPU_COUNT_MEMO_OFFSET);
         memoBuf.writeUInt16BE(cpuSpeed, HOST_CPU_SPEED_MEMO_OFFSET);
-        Buffer.from(description, "utf-8").copy(memoBuf, HOST_DESCRIPTION_MEMO_OFFSET);
-        Buffer.from(emailAddress, "utf-8").copy(memoBuf, HOST_EMAIL_ADDRESS_MEMO_OFFSET);
+        Buffer.from(description.substr(0, 26), "utf-8").copy(memoBuf, HOST_DESCRIPTION_MEMO_OFFSET);
+        Buffer.from(emailAddress.substr(0, 40), "utf-8").copy(memoBuf, HOST_EMAIL_ADDRESS_MEMO_OFFSET);
 
         const tx = await this.xrplAcc.makePayment(this.registryAddress,
             (transferredNFTokenId) ? EvernodeConstants.NOW_IN_EVRS : this.config.hostRegFee.toString(),
@@ -314,9 +314,9 @@ class HostClient extends BaseEvernodeClient {
         // <token_id(32)><country_code(2)><cpu_microsec(4)><ram_mb(4)><disk_mb(4)><total_instance_count(4)><active_instances(4)><description(26)><version(3)>
         const memoBuf = Buffer.alloc(HOST_UPDATE_MEMO_SIZE, 0);
         if (tokenID)
-            Buffer.from(tokenID, "hex").copy(memoBuf, HOST_UPDATE_TOKEN_ID_MEMO_OFFSET);
+            Buffer.from(tokenID.substr(0, 32), "hex").copy(memoBuf, HOST_UPDATE_TOKEN_ID_MEMO_OFFSET);
         if (countryCode)
-            Buffer.from(countryCode, "utf-8").copy(memoBuf, HOST_UPDATE_COUNTRY_CODE_MEMO_OFFSET);
+            Buffer.from(countryCode.substr(0, 2), "utf-8").copy(memoBuf, HOST_UPDATE_COUNTRY_CODE_MEMO_OFFSET);
         if (cpuMicroSec)
             memoBuf.writeUInt32BE(cpuMicroSec, HOST_UPDATE_CPU_MICROSEC_MEMO_OFFSET);
         if (ramMb)
@@ -328,7 +328,7 @@ class HostClient extends BaseEvernodeClient {
         if (activeInstanceCount)
             memoBuf.writeUInt32BE(activeInstanceCount, HOST_UPDATE_ACT_INS_COUNT_MEMO_OFFSET);
         if (description)
-            Buffer.from(description, "utf-8").copy(memoBuf, HOST_UPDATE_DESCRIPTION_MEMO_OFFSET);
+            Buffer.from(description.substr(0, 26), "utf-8").copy(memoBuf, HOST_UPDATE_DESCRIPTION_MEMO_OFFSET);
         if (version) {
             const components = version.split('.').map(v => parseInt(v));
             if (components.length != 3)
