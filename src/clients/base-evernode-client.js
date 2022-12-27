@@ -591,7 +591,6 @@ class BaseEvernodeClient {
             const issuerHex = regNFT.NFTokenID.substr(8, 40);
             const issuerAddr = codec.encodeAccountID(Buffer.from(issuerHex, 'hex'));
             if (issuerAddr == this.registryAddress) {
-                console.log(regNFT);
                 const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, hostAcc, this.xrplApi);
 
                 await this.xrplAcc.makePayment(this.registryAddress,
