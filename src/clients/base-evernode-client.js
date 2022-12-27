@@ -516,12 +516,15 @@ class BaseEvernodeClient {
     async getHosts(filters = null, pageSize = null, nextPageToken = null) {
         const hosts = await this.#firestoreHandler.getHosts(filters, pageSize, nextPageToken);
         const curMomentStartIdx = await this.getMomentStartIndex();
-        // Populate the host active status.
-        (hosts.nextPageToken ? hosts.data : hosts).forEach(h => {
-            h.active = (h.lastHeartbeatIndex > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
-                (h.lastHeartbeatIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
-                (h.lastHeartbeatIndex > 0))
-        });
+        for(const host of (hosts.nextPageToken ? hosts.data : hosts)) {
+            const hostAcc = new XrplAccount(host.address);
+            host.domain = await hostAcc.getDomain();
+
+            // Populate the host active status.
+            host.active = (host.lastHeartbeatIndex > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
+            (host.lastHeartbeatIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
+            (host.lastHeartbeatIndex > 0));
+        }
         return hosts;
     }
 
