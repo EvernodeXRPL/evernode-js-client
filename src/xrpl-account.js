@@ -34,7 +34,7 @@ class XrplAccount {
             if (this.address == derivedPubKeyAddress)
                 this.wallet = xrpl.Wallet.fromSeed(this.secret);
             else
-                this.wallet = xrpl.Wallet.fromSeed(this.secret, { masterAddress: derivedPubKeyAddress });
+                this.wallet = xrpl.Wallet.fromSeed(this.secret, { masterAddress: this.address });
         }
 
         this.#txStreamHandler = (eventName, tx, error) => {
