@@ -202,6 +202,17 @@ class XrplApi {
             return derivedPubKeyAddress === address || (regularKey && derivedPubKeyAddress === regularKey);
     }
 
+    async isAccountExists(address) {
+        try {
+            await this.#client.request({ command: 'account_info', account: address });
+            return true;
+        }
+        catch (e) {
+            if (e.data.error === 'actNotFound') return false;
+            else throw e;
+        }
+    }
+
     async getAccountInfo(address) {
         const resp = (await this.#client.request({ command: 'account_info', account: address }));
         return resp?.result?.account_data;

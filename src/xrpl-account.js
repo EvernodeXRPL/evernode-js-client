@@ -52,6 +52,10 @@ class XrplAccount {
         return kp.deriveKeypair(this.secret);
     }
 
+    async exists() {
+        return await this.xrplApi.isAccountExists(this.address);
+    }
+
     async getInfo() {
         return await this.xrplApi.getAccountInfo(this.address);
     }
