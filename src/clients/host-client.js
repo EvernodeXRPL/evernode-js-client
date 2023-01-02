@@ -542,18 +542,13 @@ class HostClient extends BaseEvernodeClient {
 
     async hasPendingTransfer() {
 
-        try {
-            // Check the availability of TRANSFEREE state for this host address.
-            const stateTransfereeAddrKey = StateHelpers.generateTransfereeAddrStateKey(this.xrplAcc.address);
-            const stateTransfereeAddrIndex = StateHelpers.getHookStateIndex(this.registryAddress, stateTransfereeAddrKey);
-            const res = await this.xrplApi.getLedgerEntry(stateTransfereeAddrIndex);
+        // Check the availability of TRANSFEREE state for this host address.
+        const stateTransfereeAddrKey = StateHelpers.generateTransfereeAddrStateKey(this.xrplAcc.address);
+        const stateTransfereeAddrIndex = StateHelpers.getHookStateIndex(this.registryAddress, stateTransfereeAddrKey);
+        const res = await this.xrplApi.getLedgerEntry(stateTransfereeAddrIndex);
 
-            if (res && res?.HookStateData)
-                return true;
-        }
-        catch (e) {
-            // To handle the error for accounts that do not have transfers to continue.
-        }
+        if (res && res?.HookStateData)
+            return true;
 
         return false;
     }
