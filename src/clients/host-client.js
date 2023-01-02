@@ -539,6 +539,19 @@ class HostClient extends BaseEvernodeClient {
 
         await this.xrplAcc.sellNft(offer.index);
     }
+
+    async hasPendingTransfer() {
+
+        // Check the availability of TRANSFEREE state for this host address.
+        const stateTransfereeAddrKey = StateHelpers.generateTransfereeAddrStateKey(this.xrplAcc.address);
+        const stateTransfereeAddrIndex = StateHelpers.getHookStateIndex(this.registryAddress, stateTransfereeAddrKey);
+        const res = await this.xrplApi.getLedgerEntry(stateTransfereeAddrIndex);
+
+        if (res && res?.HookStateData)
+            return true;
+
+        return false;
+    }
 }
 
 module.exports = {

@@ -14,18 +14,27 @@ class XrplAccount {
     #subscribed = false;
     #txStreamHandler;
 
-    constructor(address, secret = null, options = {}) {
+    constructor(address = null, secret = null, options = {}) {
+        if (!address && !secret)
+            throw "Both address and secret cannot be empty";
+
+        this.address = address;
+        this.secret = secret;
         this.xrplApi = options.xrplApi || DefaultValues.xrplApi;
 
         if (!this.xrplApi)
             throw "XrplAccount: xrplApi not specified.";
 
-        this.address = address;
-
-        this.secret = secret;
-        if (this.secret) {
+        if (!this.address && this.secret) {
             this.wallet = xrpl.Wallet.fromSeed(this.secret);
             this.address = this.wallet.classicAddress;
+        } else if (this.secret) {
+            const keypair = kp.deriveKeypair(this.secret);
+            const derivedPubKeyAddress = kp.deriveAddress(keypair.publicKey);
+            if (this.address == derivedPubKeyAddress)
+                this.wallet = xrpl.Wallet.fromSeed(this.secret);
+            else
+                this.wallet = xrpl.Wallet.fromSeed(this.secret, { masterAddress: this.address });
         }
 
         this.#txStreamHandler = (eventName, tx, error) => {
@@ -127,6 +136,10 @@ class XrplAccount {
 
     async getAccountTrx(minLedgerIndex = -1, maxLedgerIndex = -1, isForward = true) {
         return await this.xrplApi.getAccountTrx(this.address, { ledger_index_min: minLedgerIndex, ledger_index_max: maxLedgerIndex, forward: isForward });
+    }
+
+    async hasValidKeyPair() {
+        return await this.xrplApi.isValidKeyForAddress(this.wallet.publicKey, this.address);
     }
 
     setAccountFields(fields, options = {}) {
