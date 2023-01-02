@@ -10,6 +10,7 @@ const { EventEmitter } = require('../event-emitter');
 const { UtilHelpers } = require('../util-helpers');
 const { FirestoreHandler } = require('../firestore/firestore-handler');
 const { StateHelpers } = require('../state-helpers');
+const { EvernodeHelpers } = require('../evernode-helpers');
 
 class BaseEvernodeClient {
 
@@ -319,17 +320,13 @@ class BaseEvernodeClient {
             }
         }
         else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.HOST_REG && tx.Memos[0].format === MemoFormats.TEXT && tx.Memos[0].data) {
+            tx.Memos[0].type === MemoTypes.HOST_REG && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
 
-            const parts = tx.Memos[0].data.split(';');
             return {
                 name: EvernodeEvents.HostRegistered,
                 data: {
                     transaction: tx,
-                    host: tx.Account,
-                    token: parts[0],
-                    instanceSize: parts[1],
-                    location: parts[2]
+                    host: tx.Account
                 }
             }
         }
@@ -417,17 +414,13 @@ class BaseEvernodeClient {
             }
         }
         else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.HOST_UPDATE_INFO && tx.Memos[0].format === MemoFormats.TEXT && tx.Memos[0].data) {
-
-            const specs = tx.Memos[0].data.split(';');
+            tx.Memos[0].type === MemoTypes.HOST_UPDATE_INFO && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
 
             return {
                 name: EvernodeEvents.HostRegUpdated,
                 data: {
                     transaction: tx,
-                    host: tx.Account,
-                    version: specs[specs.length - 1],
-                    specs: specs,
+                    host: tx.Account
                 }
             }
         }
@@ -520,13 +513,16 @@ class BaseEvernodeClient {
     async getHosts(filters = null, pageSize = null, nextPageToken = null) {
         const hosts = await this.#firestoreHandler.getHosts(filters, pageSize, nextPageToken);
         const curMomentStartIdx = await this.getMomentStartIndex();
-        // Populate the host active status.
-        (hosts.nextPageToken ? hosts.data : hosts).forEach(h => {
-            h.active = (h.lastHeartbeatIndex > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
-                (h.lastHeartbeatIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
-                (h.lastHeartbeatIndex > 0))
-        });
-        return hosts;
+        
+        return await Promise.all((hosts.nextPageToken ? hosts.data : hosts).map(async host => {
+            const hostAcc = new XrplAccount(host.address);
+            host.domain = await hostAcc.getDomain();
+
+            host.active = (host.lastHeartbeatIndex > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
+            (host.lastHeartbeatIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
+            (host.lastHeartbeatIndex > 0));
+            return host;
+        }));
     }
 
     /**
@@ -586,11 +582,28 @@ class BaseEvernodeClient {
         let memoData = Buffer.allocUnsafe(20);
         codec.decodeAccountID(hostAddress).copy(memoData);
 
-        await this.xrplAcc.makePayment(this.registryAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
-            null,
-            [{ type: MemoTypes.DEAD_HOST_PRUNE, format: MemoFormats.HEX, data: memoData.toString('hex') }]);
+        // To obtain registration NFT Page Keylet and index.
+        const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
+        const regNFT = (await hostAcc.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.registryAddress);
+        if (regNFT) {
+            // Check whether the token was actually issued from Evernode registry contract.
+            const issuerHex = regNFT.NFTokenID.substr(8, 40);
+            const issuerAddr = codec.encodeAccountID(Buffer.from(issuerHex, 'hex'));
+            if (issuerAddr == this.registryAddress) {
+                const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, hostAcc, this.xrplApi);
+
+                await this.xrplAcc.makePayment(this.registryAddress,
+                    XrplConstants.MIN_XRP_AMOUNT,
+                    XrplConstants.XRP,
+                    null,
+                    [
+                        { type: MemoTypes.DEAD_HOST_PRUNE, format: MemoFormats.HEX, data: memoData.toString('hex') },
+                        { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+                    ]);
+            } else
+                throw "Invalid Registration NFT."
+        } else
+            throw "No Registration NFT was found for the Host account."
 
     }
 }

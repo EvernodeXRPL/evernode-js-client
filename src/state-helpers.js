@@ -45,7 +45,7 @@ const HOST_CPU_SPEED_OFFSET = 62;
 const HOST_CPU_MICROSEC_OFFSET = 64;
 const HOST_RAM_MB_OFFSET = 68;
 const HOST_DISK_MB_OFFSET = 72;
-const EMAIL_ADDRESS_OFFSET = 112;
+const HOST_EMAIL_ADDRESS_OFFSET = 76;
 
 const PREV_HOST_ADDRESS_OFFSET = 0;
 const TRANSFER_LEDGER_IDX_OFFSET = 20;
@@ -72,6 +72,7 @@ const HOST_ADDR_KEY_ZERO_COUNT = 8;
 const TRANSFEREE_ADDR_KEY_ZERO_COUNT = 8;
 const HOOK_STATE_LEDGER_TYPE_PREFIX = 118; // Decimal value of ASCII 'v'
 const PENDING_TRANSFER = 1;
+const HOST_EMAIL_ADDRESS_LEN = 40;
 
 class StateHelpers {
     static StateTypes = {
@@ -122,7 +123,9 @@ class StateHelpers {
             cpuMicrosec: stateDataBuf.readUInt32BE(HOST_CPU_MICROSEC_OFFSET),
             ramMb: stateDataBuf.readUInt32BE(HOST_RAM_MB_OFFSET),
             diskMb: stateDataBuf.readUInt32BE(HOST_DISK_MB_OFFSET),
-            email: (stateDataBuf.length > HOST_DISK_MB_OFFSET ? stateDataBuf.slice(HOST_DISK_MB_OFFSET, EMAIL_ADDRESS_OFFSET).toString() : "")
+            email: (stateDataBuf.length > HOST_EMAIL_ADDRESS_OFFSET ?
+                stateDataBuf.slice(HOST_EMAIL_ADDRESS_OFFSET, HOST_EMAIL_ADDRESS_OFFSET + HOST_EMAIL_ADDRESS_LEN).toString().toString().replace(/\0/g, '') :
+                "")
         }
     }
 

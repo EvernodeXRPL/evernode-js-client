@@ -61,6 +61,10 @@ class XrplAccount {
         return kp.deriveKeypair(this.secret);
     }
 
+    async exists() {
+        return await this.xrplApi.isAccountExists(this.address);
+    }
+
     async getInfo() {
         return await this.xrplApi.getAccountInfo(this.address);
     }
@@ -355,6 +359,29 @@ class XrplAccount {
         };
 
         return this.#submitAndVerifyTransaction(owner ? { ...tx, Owner: owner } : tx, options);
+    }
+
+    generateKeylet(type, data = {}) {
+        switch (type) {
+            case 'nftPage': {
+                const accIdHex = (codec.decodeAccountID(this.address)).toString('hex').toUpperCase();
+                const tokenPortion = data?.nfTokenId.substr(40, 64);
+                return '0050' + accIdHex + tokenPortion;
+            }
+
+            case 'nftPageMax': {
+                const accIdHex = (codec.decodeAccountID(this.address)).toString('hex').toUpperCase();
+                return '0050' + accIdHex + 'F'.repeat(24);
+            }
+
+            case 'nftPageMin': {
+                const accIdHex = (codec.decodeAccountID(this.address)).toString('hex').toUpperCase();
+                return '0050' + accIdHex + '0'.repeat(24);
+            }
+
+            default:
+                return null;
+        }
     }
 
     async subscribe() {
