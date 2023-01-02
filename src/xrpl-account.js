@@ -138,6 +138,10 @@ class XrplAccount {
         return await this.xrplApi.getAccountTrx(this.address, { ledger_index_min: minLedgerIndex, ledger_index_max: maxLedgerIndex, forward: isForward });
     }
 
+    async hasValidKeyPair() {
+        return await this.xrplApi.isValidKeyForAddress(this.wallet.publicKey, this.address);
+    }
+
     setAccountFields(fields, options = {}) {
         /**
          * Example for fields

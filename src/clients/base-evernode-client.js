@@ -78,10 +78,6 @@ class BaseEvernodeClient {
 
         await this.xrplApi.connect();
 
-        const validKeyPairAssignment = await this.xrplApi.isValidKeyForAddress(this.accKeyPair.publicKey, this.xrplAcc.address);
-        if (!validKeyPairAssignment)
-            throw 'Invalid client';
-
         // Invoking the info command to check the account existence. This is important to 
         // identify a network reset from XRPL. 
         await this.xrplAcc.getInfo();
