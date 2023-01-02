@@ -16,6 +16,29 @@ const HostEvents = {
     ExtendLease: EvernodeEvents.ExtendLease
 }
 
+const HOST_COUNTRY_CODE_MEMO_OFFSET = 0;
+const HOST_CPU_MICROSEC_MEMO_OFFSET = 2;
+const HOST_RAM_MB_MEMO_OFFSET = 6;
+const HOST_DISK_MB_MEMO_OFFSET = 10;
+const HOST_TOT_INS_COUNT_MEMO_OFFSET = 14;
+const HOST_CPU_MODEL_NAME_MEMO_OFFSET = 18;
+const HOST_CPU_COUNT_MEMO_OFFSET = 58;
+const HOST_CPU_SPEED_MEMO_OFFSET = 60;
+const HOST_DESCRIPTION_MEMO_OFFSET = 62;
+const HOST_EMAIL_ADDRESS_MEMO_OFFSET = 88;
+const HOST_REG_MEMO_SIZE = 128;
+
+const HOST_UPDATE_TOKEN_ID_MEMO_OFFSET = 0;
+const HOST_UPDATE_COUNTRY_CODE_MEMO_OFFSET = 32;
+const HOST_UPDATE_CPU_MICROSEC_MEMO_OFFSET = 34;
+const HOST_UPDATE_RAM_MB_MEMO_OFFSET = 38;
+const HOST_UPDATE_DISK_MB_MEMO_OFFSET = 42;
+const HOST_UPDATE_TOT_INS_COUNT_MEMO_OFFSET = 46;
+const HOST_UPDATE_ACT_INS_COUNT_MEMO_OFFSET = 50;
+const HOST_UPDATE_DESCRIPTION_MEMO_OFFSET = 54;
+const HOST_UPDATE_VERSION_MEMO_OFFSET = 80;
+const HOST_UPDATE_MEMO_SIZE = 83;
+
 class HostClient extends BaseEvernodeClient {
 
     constructor(xrpAddress, xrpSecret, options = {}) {
@@ -135,8 +158,8 @@ class HostClient extends BaseEvernodeClient {
             throw "description should consist of 0-26 ascii characters except ';'";
 
         else if (!emailAddress || !(/[a-z0-9]+@[a-z]+.[a-z]{2,3}/.test(emailAddress)) || (emailAddress.length > 40))
-            throw "Email address should be valid and can not have more than 40 characters.";    
-        
+            throw "Email address should be valid and can not have more than 40 characters.";
+
         if (await this.isRegistered())
             throw "Host already registered.";
 
@@ -176,12 +199,24 @@ class HostClient extends BaseEvernodeClient {
             console.log("No initiated transfers were found.");
         }
 
-        const memoData = `${countryCode};${cpuMicroSec};${ramMb};${diskMb};${totalInstanceCount};${cpuModel};${cpuCount};${cpuSpeed};${description};${emailAddress}`
+        // <country_code(2)><cpu_microsec(4)><ram_mb(4)><disk_mb(4)><no_of_total_instances(4)><cpu_model(40)><cpu_count(2)><cpu_speed(2)><description(26)><email_address(40)>
+        const memoBuf = Buffer.alloc(HOST_REG_MEMO_SIZE, 0);
+        Buffer.from(countryCode.substr(0, 2), "utf-8").copy(memoBuf, HOST_COUNTRY_CODE_MEMO_OFFSET);
+        memoBuf.writeUInt32BE(cpuMicroSec, HOST_CPU_MICROSEC_MEMO_OFFSET);
+        memoBuf.writeUInt32BE(ramMb, HOST_RAM_MB_MEMO_OFFSET);
+        memoBuf.writeUInt32BE(diskMb, HOST_DISK_MB_MEMO_OFFSET);
+        memoBuf.writeUInt32BE(totalInstanceCount, HOST_TOT_INS_COUNT_MEMO_OFFSET);
+        Buffer.from(cpuModel.substr(0, 40), "utf-8").copy(memoBuf, HOST_CPU_MODEL_NAME_MEMO_OFFSET);
+        memoBuf.writeUInt16BE(cpuCount, HOST_CPU_COUNT_MEMO_OFFSET);
+        memoBuf.writeUInt16BE(cpuSpeed, HOST_CPU_SPEED_MEMO_OFFSET);
+        Buffer.from(description.substr(0, 26), "utf-8").copy(memoBuf, HOST_DESCRIPTION_MEMO_OFFSET);
+        Buffer.from(emailAddress.substr(0, 40), "utf-8").copy(memoBuf, HOST_EMAIL_ADDRESS_MEMO_OFFSET);
+
         const tx = await this.xrplAcc.makePayment(this.registryAddress,
             (transferredNFTokenId) ? EvernodeConstants.NOW_IN_EVRS : this.config.hostRegFee.toString(),
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress,
-            [{ type: MemoTypes.HOST_REG, format: MemoFormats.TEXT, data: memoData }],
+            [{ type: MemoTypes.HOST_REG, format: MemoFormats.HEX, data: memoBuf.toString('hex') }],
             options.transactionOptions);
 
         console.log('Waiting for the sell offer')
@@ -226,11 +261,18 @@ class HostClient extends BaseEvernodeClient {
             throw "Host not registered."
 
         const regNFT = await this.getRegistrationNft();
+
+        // To obtain registration NFT Page Keylet and index.
+        const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, this.xrplAcc, this.xrplApi);
+
         await this.xrplAcc.makePayment(this.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            [{ type: MemoTypes.HOST_DEREG, format: MemoFormats.HEX, data: regNFT.NFTokenID }],
+            [
+                { type: MemoTypes.HOST_DEREG, format: MemoFormats.HEX, data: regNFT.NFTokenID },
+                { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+            ],
             options.transactionOptions);
 
         console.log('Waiting for the buy offer')
@@ -269,21 +311,62 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async updateRegInfo(activeInstanceCount = null, version = null, totalInstanceCount = null, tokenID = null, countryCode = null, cpuMicroSec = null, ramMb = null, diskMb = null, description = null, options = {}) {
-        const dataStr = `${tokenID ? tokenID : ''};${countryCode ? countryCode : ''};${cpuMicroSec ? cpuMicroSec : ''};${ramMb ? ramMb : ''};${diskMb ? diskMb : ''};${totalInstanceCount ? totalInstanceCount : ''};${activeInstanceCount !== undefined ? activeInstanceCount : ''};${description ? description : ''};${version ? version : ''}`;
+        // <token_id(32)><country_code(2)><cpu_microsec(4)><ram_mb(4)><disk_mb(4)><total_instance_count(4)><active_instances(4)><description(26)><version(3)>
+        const memoBuf = Buffer.alloc(HOST_UPDATE_MEMO_SIZE, 0);
+        if (tokenID)
+            Buffer.from(tokenID.substr(0, 32), "hex").copy(memoBuf, HOST_UPDATE_TOKEN_ID_MEMO_OFFSET);
+        if (countryCode)
+            Buffer.from(countryCode.substr(0, 2), "utf-8").copy(memoBuf, HOST_UPDATE_COUNTRY_CODE_MEMO_OFFSET);
+        if (cpuMicroSec)
+            memoBuf.writeUInt32BE(cpuMicroSec, HOST_UPDATE_CPU_MICROSEC_MEMO_OFFSET);
+        if (ramMb)
+            memoBuf.writeUInt32BE(ramMb, HOST_UPDATE_RAM_MB_MEMO_OFFSET);
+        if (diskMb)
+            memoBuf.writeUInt32BE(diskMb, HOST_UPDATE_DISK_MB_MEMO_OFFSET);
+        if (totalInstanceCount)
+            memoBuf.writeUInt32BE(totalInstanceCount, HOST_UPDATE_TOT_INS_COUNT_MEMO_OFFSET);
+        if (activeInstanceCount)
+            memoBuf.writeUInt32BE(activeInstanceCount, HOST_UPDATE_ACT_INS_COUNT_MEMO_OFFSET);
+        if (description)
+            Buffer.from(description.substr(0, 26), "utf-8").copy(memoBuf, HOST_UPDATE_DESCRIPTION_MEMO_OFFSET);
+        if (version) {
+            const components = version.split('.').map(v => parseInt(v));
+            if (components.length != 3)
+                throw 'Invalid version format.';
+            memoBuf.writeUInt8(components[0], HOST_UPDATE_VERSION_MEMO_OFFSET);
+            memoBuf.writeUInt8(components[1], HOST_UPDATE_VERSION_MEMO_OFFSET + 1);
+            memoBuf.writeUInt8(components[2], HOST_UPDATE_VERSION_MEMO_OFFSET + 2);
+        }
+
+        // To obtain registration NFT Page Keylet and index.
+        if (!tokenID)
+            tokenID = (await this.getRegistrationNft()).NFTokenID;
+        const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(tokenID, this.xrplAcc, this.xrplApi);
+
         return await this.xrplAcc.makePayment(this.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            [{ type: MemoTypes.HOST_UPDATE_INFO, format: MemoFormats.TEXT, data: dataStr }],
+            [
+                { type: MemoTypes.HOST_UPDATE_INFO, format: MemoFormats.HEX, data: memoBuf.toString('hex') },
+                { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+            ],
             options.transactionOptions);
     }
 
     async heartbeat(options = {}) {
+        // To obtain registration NFT Page Keylet and index.
+        const regNFT = await this.getRegistrationNft();
+        const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, this.xrplAcc, this.xrplApi);
+
         return this.xrplAcc.makePayment(this.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            [{ type: MemoTypes.HEARTBEAT, format: "", data: "" }],
+            [
+                { type: MemoTypes.HEARTBEAT, format: "", data: "" },
+                { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+            ],
             options.transactionOptions);
     }
 
@@ -367,11 +450,19 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async requestRebate(options = {}) {
+
+        // To obtain registration NFT Page Keylet and index.
+        const regNFT = await this.getRegistrationNft();
+        const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, this.xrplAcc, this.xrplApi);
+
         return this.xrplAcc.makePayment(this.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            [{ type: MemoTypes.HOST_REBATE, format: "", data: "" }],
+            [
+                { type: MemoTypes.HOST_REBATE, format: "", data: "" },
+                { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+            ],
             options.transactionOptions);
     }
 
@@ -402,16 +493,21 @@ class HostClient extends BaseEvernodeClient {
             }
         }
 
-        const regNFT = (await this.xrplAcc.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.registryAddress);
-
         let memoData = Buffer.allocUnsafe(20);
         codec.decodeAccountID(transfereeAddress).copy(memoData);
+
+        // To obtain registration NFT Page Keylet and index.
+        const regNFT = await this.getRegistrationNft();
+        const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, this.xrplAcc, this.xrplApi);
 
         await this.xrplAcc.makePayment(this.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            [{ type: MemoTypes.HOST_TRANSFER, format: MemoFormats.HEX, data: memoData.toString('hex') }],
+            [
+                { type: MemoTypes.HOST_TRANSFER, format: MemoFormats.HEX, data: memoData.toString('hex') },
+                { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+            ],
             options.transactionOptions);
 
         let offer = null;
