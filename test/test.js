@@ -2,18 +2,20 @@
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 const codec = require('ripple-address-codec');
 
-const evrIssuerAddress = "rEm71QHHXJzGULG4mkR3yhLz6EZYgvuwwP";
-const registryAddress = "raaFre81618XegCrzTzVotAmarBcqNSAvK";
-const registrySecret = "snrUSoLVodmhVCDNL92K1UafzQDjH";
+const evrIssuerAddress = "rL6Kcw2yAhMFEAYs5xCDD9ULhkisSkQu6L";
+const registryAddress = "rf75F39b6T6KfwUMQ4k1hWaBUhQQW85UCf";
+const registrySecret = "sng7pEVURByRVnXCPuACKE7aT5BpC";
 const hostAddress = "rNJDQu9pUretQetmxeHRPkasM4o7chdML2";
 const hostSecret = "ss11mwRSG4UxXQ9LakyYTmAzisnN2";
-const foundationAddress = "rMRRzwe2mPhtVJYkBsPYbxkrHdExAduqWi";
-const foundationSecret = "sncQEvGmeMrVGAvkMiLkmE3hrtVH9";
+const foundationAddress = "rELNthdTf2kpqYRaFzooEmLqSp78Ht1XxF";
+const foundationSecret = "shpNCpCXoa1ACtWsE3yte5uWZUEpV";
 const tenantAddress = "rw7GPreCDX2nuJVHSwNdH38ZGsiEH8qiY";
 const tenantSecret = "shdQBGbF9d3Tgp3D28pXoBdhWoZ9N";
-const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
-const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
+const initializerAddress = 'rfEXMLwhBhULqreMkCSaeP3hXeUHUJWjSr';
+const initializerSecret = 'spzMws7r4NutPhVfv4LEP2aqou5zb';
 const transfereeAddress = 'rNAW13zAUA4DjkM45peek3WhUs23GZ2fYD';
+const governorAddress = 'rfahCFFLKHuNkeE9iRvn1tjmdH2FYyL8QS';
+const heartbeatHookAddress = 'rfahCFFLKHuNkeE9iRvn1tjmdH2FYyL8QS';
 
 const tosHash = "757A0237B44D8B2BBB04AE2BAD5813858E0AECD2F0B217075E27E0630BA74314";
 
@@ -61,7 +63,7 @@ async function app() {
         // console.log(nft2);
 
         const tests = [
-            // () => initializeConfigs(),
+             () => initializeConfigs(),
             // () => getHookStates(),
             // () => registerHost(),
             // () => getHostInfo(),
@@ -134,12 +136,14 @@ async function getActiveHosts() {
 
 async function initializeConfigs() {
     console.log(`-----------Initialize configs`);
-    let memoData = Buffer.allocUnsafe(40);
+    let memoData = Buffer.allocUnsafe(80);
     codec.decodeAccountID(evrIssuerAddress).copy(memoData);
     codec.decodeAccountID(foundationAddress).copy(memoData, 20);
+    codec.decodeAccountID(registryAddress).copy(memoData, 40);
+    codec.decodeAccountID(heartbeatHookAddress).copy(memoData, 60);
 
     const initAccount = new evernode.XrplAccount(initializerAddress, initializerSecret);
-    await initAccount.makePayment(registryAddress, '1', 'XRP', null,
+    await initAccount.makePayment(governorAddress, '1', 'XRP', null,
         [{ type: 'evnInitialize', format: 'hex', data: memoData.toString('hex') }]);
 }
 
