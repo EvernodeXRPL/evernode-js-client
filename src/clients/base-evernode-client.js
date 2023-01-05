@@ -509,8 +509,7 @@ class BaseEvernodeClient {
     async getHosts(filters = null, pageSize = null, nextPageToken = null) {
         const hosts = await this.#firestoreHandler.getHosts(filters, pageSize, nextPageToken);
         const curMomentStartIdx = await this.getMomentStartIndex();
-        
-        return await Promise.all((hosts.nextPageToken ? hosts.data : hosts).map(async host => {
+        const res = await Promise.all((hosts.nextPageToken ? hosts.data : hosts).map(async host => {
             const hostAcc = new XrplAccount(host.address);
             host.domain = await hostAcc.getDomain();
 
@@ -519,6 +518,8 @@ class BaseEvernodeClient {
             (host.lastHeartbeatIndex > 0));
             return host;
         }));
+
+        return (hosts.nextPageToken ? {...hosts, data: res} : res);
     }
 
     /**
