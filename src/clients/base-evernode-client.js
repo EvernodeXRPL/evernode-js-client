@@ -22,7 +22,7 @@ class BaseEvernodeClient {
     constructor(xrpAddress, xrpSecret, watchEvents, autoSubscribe = false, options = {}) {
 
         this.connected = false;
-        this.registryAddress = options.registryAddress || DefaultValues.registryAddress;
+        this.governorAddress = options.governorAddress || DefaultValues.governorAddress;
 
         this.xrplApi = options.xrplApi || DefaultValues.xrplApi || new XrplApi(options.rippledServer);
         if (!options.xrplApi && !DefaultValues.xrplApi)
@@ -102,21 +102,21 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Subscribes to the registry client events.
+     * Subscribes to the client events.
      */
     async subscribe() {
         await this.xrplAcc.subscribe();
     }
 
     /**
-     * Unsubscribes from the registry client events.
+     * Unsubscribes from the client events.
      */
     async unsubscribe() {
         await this.xrplAcc.unsubscribe();
     }
 
     /**
-     * Get the EVR balance in the registry account.
+     * Get the EVR balance in the account.
      * @returns The available EVR amount as a 'string'.
      */
     async getEVRBalance() {
@@ -132,7 +132,7 @@ class BaseEvernodeClient {
      * @returns The list of hook states including Evernode configuration and hosts.
      */
     async getHookStates() {
-        const regAcc = new XrplAccount(this.registryAddress, null, { xrplApi: this.xrplApi });
+        const regAcc = new XrplAccount(this.governorAddress, null, { xrplApi: this.xrplApi });
         const configs = await regAcc.getNamespaceEntries(EvernodeConstants.HOOK_NAMESPACE);
 
         if (configs)
@@ -173,7 +173,10 @@ class BaseEvernodeClient {
     async #getEvernodeConfig() {
         let states = await this.getHookStates();
         const configStateKeys = {
+            registryAddress: HookStateKeys.REGISTRY_ADDR,
+            heartbeatAddress: HookStateKeys.HEARTBEAT_ADDR,
             evrIssuerAddress: HookStateKeys.EVR_ISSUER_ADDR,
+            foundationAddress: HookStateKeys.FOUNDATION_ADDR,
             foundationAddress: HookStateKeys.FOUNDATION_ADDR,
             hostRegFee: HookStateKeys.HOST_REG_FEE,
             momentSize: HookStateKeys.MOMENT_SIZE,
@@ -469,7 +472,7 @@ class BaseEvernodeClient {
     async getHostInfo(hostAddress = this.xrplAcc.address) {
         try {
             const addrStateKey = StateHelpers.generateHostAddrStateKey(hostAddress);
-            const addrStateIndex = StateHelpers.getHookStateIndex(this.registryAddress, addrStateKey);
+            const addrStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, addrStateKey);
             const addrLedgerEntry = await this.xrplApi.getLedgerEntry(addrStateIndex);
             const addrStateData = addrLedgerEntry?.HookStateData;
             if (addrStateData) {
@@ -480,7 +483,7 @@ class BaseEvernodeClient {
                     (addrStateDecoded.lastHeartbeatIndex > 0))
 
                 const nftIdStatekey = StateHelpers.generateTokenIdStateKey(addrStateDecoded.nfTokenId);
-                const nftIdStateIndex = StateHelpers.getHookStateIndex(this.registryAddress, nftIdStatekey);
+                const nftIdStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, nftIdStatekey);
                 const nftIdLedgerEntry = await this.xrplApi.getLedgerEntry(nftIdStateIndex);
 
                 const nftIdStateData = nftIdLedgerEntry?.HookStateData;
@@ -573,7 +576,7 @@ class BaseEvernodeClient {
      * @param {string} hostAddress XRPL address of the host to be pruned.
      */
     async pruneDeadHost(hostAddress) {
-        if (this.xrplAcc.address === this.registryAddress)
+        if (this.xrplAcc.address === this.config.registryAddress)
             throw 'Invalid function call';
 
         let memoData = Buffer.allocUnsafe(20);
@@ -581,15 +584,15 @@ class BaseEvernodeClient {
 
         // To obtain registration NFT Page Keylet and index.
         const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
-        const regNFT = (await hostAcc.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.registryAddress);
+        const regNFT = (await hostAcc.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
         if (regNFT) {
             // Check whether the token was actually issued from Evernode registry contract.
             const issuerHex = regNFT.NFTokenID.substr(8, 40);
             const issuerAddr = codec.encodeAccountID(Buffer.from(issuerHex, 'hex'));
-            if (issuerAddr == this.registryAddress) {
+            if (issuerAddr == this.config.registryAddress) {
                 const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, hostAcc, this.xrplApi);
 
-                await this.xrplAcc.makePayment(this.registryAddress,
+                await this.xrplAcc.makePayment(this.config.registryAddress,
                     XrplConstants.MIN_XRP_AMOUNT,
                     XrplConstants.XRP,
                     null,

@@ -12,7 +12,7 @@ class FirestoreHandler {
 
     constructor(options = {}) {
         this.#projectId = options.stateIndexId || DefaultValues.stateIndexId;
-        this.#collectionPrefix = options.collectionPrefix || DefaultValues.registryAddress;
+        this.#collectionPrefix = options.collectionPrefix || DefaultValues.governorAddress;
     }
 
     /**
