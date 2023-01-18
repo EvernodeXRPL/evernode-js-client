@@ -183,6 +183,43 @@ class XrplAccount {
         return this.#submitAndVerifyTransaction(tx, options);
     }
 
+    /**
+     * 
+     * @param {*} signerList Ex:  [ {account:"ras24cvffvfbvfbbt5or4332", weight: 1}, {}, ...]
+     * @param {*} options  Ex:  {SignerQuorum: 1, sequence: 6543233}
+     * @returns a promise
+     */
+    setSignerList(signerList, options = {}) {
+        if (options.SignerQuorum < 1)
+            throw ("Everpocket: quorum must be greater than 0.");
+
+        let totalWeight = 0;
+        for (const signer of signerList) {
+            if (!(signerList.length > 0 && signer.account && signer.account.length > 0 && signer.weight && signer.weight > 0))
+                throw ("Everpocket: Signer list is invalid");
+            totalWeight += signerList.weight;
+        }
+        if (totalWeight < options.SignerQuorum)
+            throw ("Everpocket: Total weight is less than the quorum");
+
+        const signerListTx =
+        {
+            Flags: 0,
+            TransactionType: "SignerListSet",
+            Account: this.address,
+            SignerQuorum: options.SignerQuorum,
+            SignerEntries: [
+                ...signerList.map(signer => ({
+                    SignerEntry: {
+                        Account: signer.account,
+                        SignerWeight: signer.weight
+                    }
+                }))
+            ]
+        };
+        return this.#submitAndVerifyTransaction(signerListTx, options);
+    }
+
     makePayment(toAddr, amount, currency, issuer = null, memos = null, options = {}) {
 
         const amountObj = makeAmountObject(amount, currency, issuer);
