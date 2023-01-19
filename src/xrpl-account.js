@@ -535,7 +535,7 @@ class XrplAccount {
     }
 
     /**
-     * 
+     * Sign the given transaction and returns the signed blob and its hash.
      * @param {object} tx Transaction object.
      * @param {boolean} isMultiSign Whether the transaction is for multisigning. Defaults to false.
      * @returns {hash: string, tx_blob: string}
