@@ -294,6 +294,20 @@ class XrplApi {
     async #subscribeToStream(streamName) {
         await this.#client.request({ command: 'subscribe', streams: [streamName] });
     }
+
+    /**
+     * Join the given the array of signed transactions into one multi-signed transaction.
+     * For more details: https://js.xrpl.org/functions/multisign.html 
+     * 
+     * @param {(string | Transaction)[]} transactions An array of signed Transactions (in object or blob form) to combine into a single signed Transaction.
+     * @returns A single signed Transaction string which has all Signers from transactions within it.
+     */
+    multiSign(transactions) {
+        if(transactions.length > 0){
+            return xrpl.multisign(transactions);
+        } else
+            throw("Transaction list is empty for multi-signing.");
+    }
 }
 
 module.exports = {

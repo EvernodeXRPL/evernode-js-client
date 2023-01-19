@@ -183,6 +183,45 @@ class XrplAccount {
         return this.#submitAndVerifyTransaction(tx, options);
     }
 
+    /**
+     * Set the signer list to the account. Setting signerQuorum = 0 in options, will remove the signerlist from the account.
+     * @param {*} signerList (optional) An array of signers. Ex:  [ {account:"ras24cvffvfbvfbbt5or4332", weight: 1}, {}, ...]
+     * @param {*} options  Ex:  {signerQuorum: 1, sequence: 6543233}
+     * @returns a promise
+     */
+    setSignerList(signerList = [], options = {}) {
+        if (options.signerQuorum < 0)
+            throw ("Everpocket: quorum can't be less than zero.");
+
+        if (options.signerQuorum > 0 && signerList.length >= 0) {
+            let totalWeight = 0;
+            for (const signer of signerList) {
+                if (!(signer.account && signer.account.length > 0 && signer.weight && signer.weight > 0))
+                    throw ("Everpocket: Signer list is invalid");
+                totalWeight += signerList.weight;
+            }
+            if (totalWeight < options.signerQuorum)
+                throw ("Everpocket: Total weight is less than the quorum");
+        }
+
+        const signerListTx =
+        {
+            Flags: 0,
+            TransactionType: "SignerListSet",
+            Account: this.address,
+            SignerQuorum: options.signerQuorum,
+            SignerEntries: [
+                ...signerList.map(signer => ({
+                    SignerEntry: {
+                        Account: signer.account,
+                        SignerWeight: signer.weight
+                    }
+                }))
+            ]
+        };
+        return this.#submitAndVerifyTransaction(signerListTx, options);
+    }
+
     makePayment(toAddr, amount, currency, issuer = null, memos = null, options = {}) {
 
         const amountObj = makeAmountObject(amount, currency, issuer);
@@ -493,6 +532,16 @@ class XrplAccount {
             }
 
         });
+    }
+
+    /**
+     * Sign the given transaction and returns the signed blob and its hash.
+     * @param {object} tx Transaction object.
+     * @param {boolean} isMultiSign Whether the transaction is for multisigning. Defaults to false.
+     * @returns {hash: string, tx_blob: string}
+     */
+    sign(tx, isMultiSign = false) {
+        return this.wallet.sign(tx, isMultiSign);
     }
 }
 
