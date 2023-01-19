@@ -297,31 +297,6 @@ class XrplApi {
 
     /**
      * 
-     * @param {string} txBlob The blob string of the signed transaction.
-     * @returns The transaction object - {Account, TransactionType, hash, Fee, Flags, Sequence, SigningPubKey, ...}
-     * @throws Error object - {status: "error", request: {command, tx_blob}, error, error_exception}
-     */
-    async submitOnly(txBlob) {
-        const resp = await this.#client.request({ command: 'submit', tx_blob: txBlob});
-        if (resp.status == "error"){
-            throw(resp);
-        } else if (resp.status == "success") {
-            return resp.result.tx_json;
-        }
-    }
-
-    /**
-     * 
-     * @param {string} txHash The hash of a submitted transaction
-     * @returns tesSUCCESS or throws errors
-     */
-    async submissionStatus(txHash) {
-        const resp = await this.#client.request({ command: 'tx', transaction: txHash, binary: false});
-        return resp.result?.meta?.TransactionResult
-    }
-
-    /**
-     * 
      * @param {(string | Transaction)[]} transactions An array of signed Transactions (in object or blob form) to combine into a single signed Transaction.
      * @returns A single signed Transaction string which has all Signers from transactions within it.
      * 

@@ -442,7 +442,7 @@ async function setSignerList() {
     console.log("-----------Setting signer list");
     const masterAccount = new evernode.XrplAccount(multiSigninerAddress, multiSignerSecret);
 
-    const res = await masterAccount.setSignerList(signerList, { SignerQuorum: signerQuorum });
+    const res = await masterAccount.setSignerList(signerList, { signerQuorum: signerQuorum });
     console.log(res);
 }
 
