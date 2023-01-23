@@ -295,6 +295,10 @@ class XrplApi {
         await this.#client.request({ command: 'subscribe', streams: [streamName] });
     }
 
+    async submitMultisigned(tx) {
+        return await this.#client.request({command: 'submit_multisigned', tx_json: tx});
+    }
+
     /**
      * Join the given the array of signed transactions into one multi-signed transaction.
      * For more details: https://js.xrpl.org/functions/multisign.html 
