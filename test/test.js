@@ -2,17 +2,17 @@
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 const codec = require('ripple-address-codec');
 
-const evrIssuerAddress = "rL6Kcw2yAhMFEAYs5xCDD9ULhkisSkQu6L";
-const registryAddress = "rf75F39b6T6KfwUMQ4k1hWaBUhQQW85UCf";
-const registrySecret = "sng7pEVURByRVnXCPuACKE7aT5BpC";
+const evrIssuerAddress = "rEm71QHHXJzGULG4mkR3yhLz6EZYgvuwwP";
+const registryAddress = "raaFre81618XegCrzTzVotAmarBcqNSAvK";
+const registrySecret = "snrUSoLVodmhVCDNL92K1UafzQDjH";
 const hostAddress = "rNJDQu9pUretQetmxeHRPkasM4o7chdML2";
 const hostSecret = "ss11mwRSG4UxXQ9LakyYTmAzisnN2";
-const foundationAddress = "rELNthdTf2kpqYRaFzooEmLqSp78Ht1XxF";
-const foundationSecret = "shpNCpCXoa1ACtWsE3yte5uWZUEpV";
+const foundationAddress = "rMRRzwe2mPhtVJYkBsPYbxkrHdExAduqWi";
+const foundationSecret = "sncQEvGmeMrVGAvkMiLkmE3hrtVH9";
 const tenantAddress = "rw7GPreCDX2nuJVHSwNdH38ZGsiEH8qiY";
 const tenantSecret = "shdQBGbF9d3Tgp3D28pXoBdhWoZ9N";
-const initializerAddress = 'rfEXMLwhBhULqreMkCSaeP3hXeUHUJWjSr';
-const initializerSecret = 'spzMws7r4NutPhVfv4LEP2aqou5zb';
+const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
+const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
 const transfereeAddress = 'rNAW13zAUA4DjkM45peek3WhUs23GZ2fYD';
 const governorAddress = 'rfahCFFLKHuNkeE9iRvn1tjmdH2FYyL8QS';
 const heartbeatHookAddress = 'rfahCFFLKHuNkeE9iRvn1tjmdH2FYyL8QS';
@@ -63,7 +63,7 @@ async function app() {
         // console.log(nft2);
 
         const tests = [
-             () => initializeConfigs(),
+            //  () => initializeConfigs(),
             // () => getHookStates(),
             // () => registerHost(),
             // () => getHostInfo(),
