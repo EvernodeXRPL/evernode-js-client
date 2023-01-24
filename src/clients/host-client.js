@@ -540,7 +540,7 @@ class HostClient extends BaseEvernodeClient {
         await this.xrplAcc.sellNft(offer.index);
     }
 
-    async hasPendingTransfer() {
+    async isTransferee() {
 
         // Check the availability of TRANSFEREE state for this host address.
         const stateTransfereeAddrKey = StateHelpers.generateTransfereeAddrStateKey(this.xrplAcc.address);

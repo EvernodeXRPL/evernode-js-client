@@ -16,6 +16,22 @@ const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
 const transfereeAddress = 'rNAW13zAUA4DjkM45peek3WhUs23GZ2fYD';
 const governorAddress = 'rfahCFFLKHuNkeE9iRvn1tjmdH2FYyL8QS';
 const heartbeatHookAddress = 'rfahCFFLKHuNkeE9iRvn1tjmdH2FYyL8QS';
+const multiSigninerAddress = 'rsrpCr5j5phA58uQy9Ha3StMPBmSrXbVx6';
+const multiSignerSecret = 'shYrpNBRgnej2xmBhxze75MNLfTwq';
+
+const signerList = [
+    {
+        account: "rKqX6K3h43Wf1HT4hrpkpM92pf7DJAwFju",
+        weight: 1
+    },
+    {
+        account: "rGtN3sWmB84cVHqkPeEUngdwVZte9fH6Nn",
+        weight: 1
+    }
+];
+
+const signerQuorum = 1;
+
 
 const tosHash = "757A0237B44D8B2BBB04AE2BAD5813858E0AECD2F0B217075E27E0630BA74314";
 
@@ -81,7 +97,9 @@ async function app() {
             // () => getAllConfigs(),
             // () => pruneDeadHost(),
             // () => transferHost(),
-            // () => requestRebate()
+            // () => requestRebate(),
+            // () => getAccountObjects(),
+            // () => setSignerList()
 
         ];
 
@@ -408,6 +426,28 @@ async function requestRebate() {
 
     console.log(`-----------Request rebate`);
     await host.requestRebate();
+}
+
+async function getAccountObjects() {
+    console.log(`-----------Getting accounmt objects`);
+
+    const registryAccount = new evernode.XrplAccount(registryAddress, null);
+    let res = await registryAccount.getAccountObjects({});
+    console.log(res);
+}
+
+async function setSignerList() {
+    if(signerList.length < 1)
+        throw("Signer list is empty.")
+    
+    if(signerQuorum < 1)
+        throw("Signer quorum must be a positive integer.");
+    
+    console.log("-----------Setting signer list");
+    const masterAccount = new evernode.XrplAccount(multiSigninerAddress, multiSignerSecret);
+
+    const res = await masterAccount.setSignerList(signerList, { signerQuorum: signerQuorum });
+    console.log(res);
 }
 
 app();
