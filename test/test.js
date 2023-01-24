@@ -14,6 +14,8 @@ const tenantSecret = "shdQBGbF9d3Tgp3D28pXoBdhWoZ9N";
 const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
 const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
 const transfereeAddress = 'rNAW13zAUA4DjkM45peek3WhUs23GZ2fYD';
+const governorAddress = 'rfahCFFLKHuNkeE9iRvn1tjmdH2FYyL8QS';
+const heartbeatHookAddress = 'rfahCFFLKHuNkeE9iRvn1tjmdH2FYyL8QS';
 const multiSigninerAddress = 'rsrpCr5j5phA58uQy9Ha3StMPBmSrXbVx6';
 const multiSignerSecret = 'shYrpNBRgnej2xmBhxze75MNLfTwq';
 
@@ -152,12 +154,14 @@ async function getActiveHosts() {
 
 async function initializeConfigs() {
     console.log(`-----------Initialize configs`);
-    let memoData = Buffer.allocUnsafe(40);
+    let memoData = Buffer.allocUnsafe(80);
     codec.decodeAccountID(evrIssuerAddress).copy(memoData);
     codec.decodeAccountID(foundationAddress).copy(memoData, 20);
+    codec.decodeAccountID(registryAddress).copy(memoData, 40);
+    codec.decodeAccountID(heartbeatHookAddress).copy(memoData, 60);
 
     const initAccount = new evernode.XrplAccount(initializerAddress, initializerSecret);
-    await initAccount.makePayment(registryAddress, '1', 'XRP', null,
+    await initAccount.makePayment(governorAddress, '1', 'XRP', null,
         [{ type: 'evnInitialize', format: 'hex', data: memoData.toString('hex') }]);
 }
 

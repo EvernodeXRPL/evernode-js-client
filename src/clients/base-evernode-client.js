@@ -175,6 +175,8 @@ class BaseEvernodeClient {
         const configStateKeys = {
             evrIssuerAddress: HookStateKeys.EVR_ISSUER_ADDR,
             foundationAddress: HookStateKeys.FOUNDATION_ADDR,
+            registryAddress: HookStateKeys.REGISTRY_ADDR,
+            heartbeatHookAddress: HookStateKeys.HEARTBEAT_HOOK_ADDR,
             hostRegFee: HookStateKeys.HOST_REG_FEE,
             momentSize: HookStateKeys.MOMENT_SIZE,
             hostHeartbeatFreq: HookStateKeys.HOST_HEARTBEAT_FREQ,
