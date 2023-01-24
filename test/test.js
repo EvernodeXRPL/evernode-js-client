@@ -79,7 +79,7 @@ async function app() {
         // console.log(nft2);
 
         const tests = [
-            //  () => initializeConfigs(),
+            // () => initializeConfigs(),
             // () => getHookStates(),
             // () => registerHost(),
             // () => getHostInfo(),
