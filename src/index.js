@@ -2,6 +2,7 @@ const { Defaults, HookAccountTypes } = require('./defaults');
 const { RegistryClient, RegistryEvents } = require("./clients/hook-clients/registry-client");
 const { GovernorClient, GovernorEvents } = require("./clients/hook-clients/governor-client");
 const { HeartbeatClient, HeartbeatEvents } = require("./clients/hook-clients/heartbeat-client");
+const { HookClientFactory } = require("./clients/hook-clients/hook-client-factory");
 const { TenantClient, TenantEvents } = require("./clients/tenant-client");
 const { HostClient, HostEvents } = require("./clients/host-client");
 const { XrplApi } = require('./xrpl-api');
@@ -40,5 +41,6 @@ module.exports = {
     EncryptionHelper,
     HookStateKeys,
     MemoTypes,
-    HookAccountTypes
+    HookAccountTypes,
+    HookClientFactory
 }
