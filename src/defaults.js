@@ -5,6 +5,12 @@ const DefaultValues = {
     stateIndexId: 'evernodeindex'
 }
 
+const HookAccountTypes = {
+    governorHook: 'GOVERNOR_HOOK',
+    registryHook: 'REGISTRY_HOOK',
+    heartbeatHook: 'HEARTBEAT_HOOK'
+}
+
 class Defaults {
     static set(newDefaults) {
         Object.assign(DefaultValues, newDefaults)
@@ -17,5 +23,6 @@ class Defaults {
 
 module.exports = {
     DefaultValues,
-    Defaults
+    Defaults,
+    HookAccountTypes
 }
