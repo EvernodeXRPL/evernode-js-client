@@ -1,4 +1,5 @@
 const { BaseEvernodeClient } = require("../base-evernode-client");
+const { EvernodeEvents } = require('../../evernode-common');
 
 const RegistryEvents = {
     HostRegistered: EvernodeEvents.HostRegistered,

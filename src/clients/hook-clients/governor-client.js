@@ -1,5 +1,6 @@
 const { BaseEvernodeClient } = require("../../../dist");
 const { DefaultValues } = require("../../defaults");
+const { EvernodeEvents } = require('../../evernode-common');
 
 const GovernorEvents = {
     RegistryInitialized: EvernodeEvents.RegistryInitialized
