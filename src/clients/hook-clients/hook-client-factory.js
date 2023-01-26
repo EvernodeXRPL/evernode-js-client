@@ -7,20 +7,24 @@ class HookClientFactory {
     static async create(hookAccountType) {
         let hookAccount;
         switch (hookAccountType) {
-            case HookAccountTypes.governorHook:
+            case HookAccountTypes.governorHook: {
                 hookAccount = new GovernorClient();
                 break;
-            case HookAccountTypes.registryHook:
+            }
+            case HookAccountTypes.registryHook: {
                 const registryAddress = await HookClientFactory.#getAccountAddress(hookAccountType);
                 hookAccount = new RegistryClient({registryAAddress: registryAddress});
                 break;
-            case HookAccountTypes.heartbeatHook:
+            }
+            case HookAccountTypes.heartbeatHook: {
                 const heartbeatAddress = await HookClientFactory.#getAccountAddress(hookAccountType);
                 hookAccount = new HeartbeatClient({heartbeatAddress: heartbeatAddress});
                 break;
-            default:
+            }
+            default: {
                 hookAccount = null;
                 break;
+            }
         }
 
         return hookAccount;
