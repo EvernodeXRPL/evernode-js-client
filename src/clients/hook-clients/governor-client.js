@@ -1,4 +1,4 @@
-const { BaseEvernodeClient } = require("../../../dist");
+const { BaseEvernodeClient } = require("../base-evernode-client");
 const { DefaultValues } = require("../../defaults");
 const { EvernodeEvents } = require('../../evernode-common');
 

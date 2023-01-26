@@ -1,5 +1,5 @@
 const { HookAccountTypes } = require("../../defaults");
-const { RegistryClient } = require("../registry-client");
+const { RegistryClient } = require("./registry-client");
 const { GovernorClient } = require("./governor-client");
 const { HeartbeatClient } = require("./heartbeat-client");
 
