@@ -516,12 +516,12 @@ class BaseEvernodeClient {
             host.domain = await hostAcc.getDomain();
 
             host.active = (host.lastHeartbeatIndex > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
-            (host.lastHeartbeatIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
-            (host.lastHeartbeatIndex > 0));
+                (host.lastHeartbeatIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
+                (host.lastHeartbeatIndex > 0));
             return host;
         }));
 
-        return (hosts.nextPageToken ? {...hosts, data: res} : res);
+        return (hosts.nextPageToken ? { ...hosts, data: res } : res);
     }
 
     /**

@@ -13,7 +13,7 @@ class HookClientFactory {
             }
             case HookAccountTypes.registryHook: {
                 const registryAddress = await HookClientFactory.#getAccountAddress(hookAccountType);
-                hookAccount = new RegistryClient({registryAAddress: registryAddress});
+                hookAccount = new RegistryClient({registryAddress: registryAddress});
                 break;
             }
             case HookAccountTypes.heartbeatHook: {
