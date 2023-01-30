@@ -1,4 +1,4 @@
-const { Defaults, HookAccountTypes } = require('./defaults');
+const { Defaults, HookTypes } = require('./defaults');
 const { RegistryClient, RegistryEvents } = require("./clients/hook-clients/registry-client");
 const { GovernorClient, GovernorEvents } = require("./clients/hook-clients/governor-client");
 const { HeartbeatClient, HeartbeatEvents } = require("./clients/hook-clients/heartbeat-client");
@@ -41,6 +41,6 @@ module.exports = {
     EncryptionHelper,
     HookStateKeys,
     MemoTypes,
-    HookAccountTypes,
+    HookTypes,
     HookClientFactory
 }

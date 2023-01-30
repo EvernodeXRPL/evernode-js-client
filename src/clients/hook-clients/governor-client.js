@@ -10,10 +10,6 @@ class GovernorClient extends BaseEvernodeClient {
     constructor(options = {}) {
         super((options.governorAddress || DefaultValues.governorAddress), null, Object.values(GovernorEvents), false, options);
     }
-
-    on(event, handler) {
-        this.events.on(event, handler)
-    }
 }
 
 module.exports = {

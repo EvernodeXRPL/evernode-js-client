@@ -1,37 +1,37 @@
-const { HookAccountTypes } = require("../../defaults");
+const { HookTypes } = require("../../defaults");
 const { RegistryClient } = require("./registry-client");
 const { GovernorClient } = require("./governor-client");
 const { HeartbeatClient } = require("./heartbeat-client");
 
 class HookClientFactory {
-    static async create(hookAccountType) {
-        let hookAccount;
-        switch (hookAccountType) {
-            case HookAccountTypes.governorHook: {
-                hookAccount = new GovernorClient();
+    static async create(hookType) {
+        let hookClient;
+        switch (hookType) {
+            case HookTypes.governor: {
+                hookClient = new GovernorClient();
                 break;
             }
-            case HookAccountTypes.registryHook: {
-                const registryAddress = await HookClientFactory.#getAccountAddress(hookAccountType);
-                hookAccount = new RegistryClient({registryAddress: registryAddress});
+            case HookTypes.registry: {
+                const registryAddress = await HookClientFactory.#getAccountAddress(hookType);
+                hookClient = new RegistryClient({registryAddress: registryAddress});
                 break;
             }
-            case HookAccountTypes.heartbeatHook: {
-                const heartbeatAddress = await HookClientFactory.#getAccountAddress(hookAccountType);
-                hookAccount = new HeartbeatClient({heartbeatAddress: heartbeatAddress});
+            case HookTypes.heartbeat: {
+                const heartbeatAddress = await HookClientFactory.#getAccountAddress(hookType);
+                hookClient = new HeartbeatClient({heartbeatAddress: heartbeatAddress});
                 break;
             }
             default: {
-                hookAccount = null;
+                hookClient = null;
                 break;
             }
         }
 
-        return hookAccount;
+        return hookClient;
     }
 
-    static async #getAccountAddress(hookAccountType) {
-        const governorHook = await HookClientFactory.create(HookAccountTypes.governorHook);
+    static async #getAccountAddress(hookType) {
+        const governorHook = await HookClientFactory.create(HookTypes.governor);
 
         let configs;
         try {
@@ -43,9 +43,9 @@ class HookClientFactory {
             await governorHook.disconnect();
         }
 
-        if(hookAccountType == HookAccountTypes.registryHook)
+        if(hookType == HookTypes.registry)
             return configs.registryAddress;
-        else if (hookAccountType == HookAccountTypes.heartbeatHook)
+        else if (hookType == HookTypes.heartbeat)
             return configs.heartbeatAddress;
 
     }
