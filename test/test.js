@@ -4,7 +4,8 @@ const codec = require('ripple-address-codec');
 
 const evrIssuerAddress = "rEm71QHHXJzGULG4mkR3yhLz6EZYgvuwwP";
 const registryAddress = "raaFre81618XegCrzTzVotAmarBcqNSAvK";
-const registrySecret = "snrUSoLVodmhVCDNL92K1UafzQDjH";
+const governorAddress = 'rDxkQ7Jaq1igBmNNavXqsZ5vyEoYRKgT8B';
+const heartbeatHookAddress = 'rfahCFFLKHuNkeE9iRvn1tjmdH2FYyL8QS';
 const hostAddress = "rNJDQu9pUretQetmxeHRPkasM4o7chdML2";
 const hostSecret = "ss11mwRSG4UxXQ9LakyYTmAzisnN2";
 const foundationAddress = "rMRRzwe2mPhtVJYkBsPYbxkrHdExAduqWi";
@@ -14,10 +15,9 @@ const tenantSecret = "shdQBGbF9d3Tgp3D28pXoBdhWoZ9N";
 const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
 const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
 const transfereeAddress = 'rNAW13zAUA4DjkM45peek3WhUs23GZ2fYD';
-const governorAddress = 'rfahCFFLKHuNkeE9iRvn1tjmdH2FYyL8QS';
-const heartbeatHookAddress = 'rfahCFFLKHuNkeE9iRvn1tjmdH2FYyL8QS';
 const multiSigninerAddress = 'rsrpCr5j5phA58uQy9Ha3StMPBmSrXbVx6';
 const multiSignerSecret = 'shYrpNBRgnej2xmBhxze75MNLfTwq';
+
 
 const signerList = [
     {
@@ -42,7 +42,7 @@ async function app() {
     // Use a singleton xrplApi for all tests.
     const xrplApi = new evernode.XrplApi('wss://hooks-testnet-v2.xrpl-labs.com');
     evernode.Defaults.set({
-        registryAddress: registryAddress,
+        governorAddress: governorAddress,
         xrplApi: xrplApi
     })
 
@@ -112,7 +112,7 @@ async function app() {
         // Accepting the sell offer created by registry.
 
         // const tokenID = '0008000083CD166E1806EF2076C55077AEFD418E771A516CB30E8CAE00000013';
-        // const reg = new evernode.XrplAccount(registryAddress, registrySecret);
+        // const reg = new evernode.XrplAccount(registryAddress);
         // const sellOffer = (await reg.getNftOffers()).find(o => o.NFTokenID == tokenID);
         // console.log(sellOffer);
         // const host = new evernode.XrplAccount(hostAddress, hostSecret);
@@ -329,7 +329,7 @@ async function getHostClient(address = hostAddress, secret = hostSecret) {
 }
 
 async function getRegistryClient() {
-    const client = new evernode.RegistryClient(registryAddress, registrySecret);
+    const client = await evernode.HookClientFactory.create(evernode.HookAccountTypes.registryHook);
     await client.connect();
     clients.push(client);
     return client;
@@ -345,15 +345,15 @@ async function fundTenant(tenant) {
 }
 
 async function getHookStates() {
-    const registryClient = new evernode.RegistryClient(registryAddress, registrySecret);
-    await registryClient.connect();
-    const states = await registryClient.getHookStates();
+    const governorClient = await evernode.HookClientFactory.create(evernode.HookAccountTypes.governorHook);
+    await governorClient.connect();
+    const states = await governorClient.getHookStates();
     console.log(states.length, states);
 }
 
 async function getAllHosts() {
     console.log(`-----------Getting all hosts (including inactive)`);
-    const registryClient = new evernode.RegistryClient(registryAddress, registrySecret);
+    const registryClient = await evernode.HookClientFactory.create(evernode.HookAccountTypes.registryHook);
     await registryClient.connect();
     const hosts = await registryClient.getAllHosts();
     console.log(hosts.length, hosts);
@@ -362,9 +362,9 @@ async function getAllHosts() {
 
 async function getAllConfigs() {
     console.log(`-----------Getting all configs`);
-    const registryClient = new evernode.RegistryClient(registryAddress, registrySecret);
-    await registryClient.connect();
-    const configs = await registryClient.getAllConfigs();
+    const governorClient = await evernode.HookClientFactory.create(evernode.HookAccountTypes.governorHook);
+    await governorClient.connect();
+    const configs = await governorClient.getAllConfigs();
     console.log(configs.length, configs);
 }
 
@@ -429,20 +429,20 @@ async function requestRebate() {
 }
 
 async function getAccountObjects() {
-    console.log(`-----------Getting accounmt objects`);
+    console.log(`-----------Getting account objects`);
 
-    const registryAccount = new evernode.XrplAccount(registryAddress, null);
+    const registryAccount = new evernode.XrplAccount(governorAddress, null);
     let res = await registryAccount.getAccountObjects({});
     console.log(res);
 }
 
 async function setSignerList() {
-    if(signerList.length < 1)
-        throw("Signer list is empty.")
-    
-    if(signerQuorum < 1)
-        throw("Signer quorum must be a positive integer.");
-    
+    if (signerList.length < 1)
+        throw ("Signer list is empty.")
+
+    if (signerQuorum < 1)
+        throw ("Signer quorum must be a positive integer.");
+
     console.log("-----------Setting signer list");
     const masterAccount = new evernode.XrplAccount(multiSigninerAddress, multiSignerSecret);
 

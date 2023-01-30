@@ -194,11 +194,10 @@ class StateHelpers {
                 value: Number(stateData.readBigUInt64BE())
             }
         }
-        else if (
+        else if (Buffer.from(HookStateKeys.REGISTRY_ADDR, 'hex').compare(stateKey) === 0 ||
+            Buffer.from(HookStateKeys.HEARTBEAT_ADDR, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.EVR_ISSUER_ADDR, 'hex').compare(stateKey) === 0 ||
-            Buffer.from(HookStateKeys.FOUNDATION_ADDR, 'hex').compare(stateKey) === 0 ||
-            Buffer.from(HookStateKeys.REGISTRY_ADDR, 'hex').compare(stateKey) === 0 ||
-            Buffer.from(HookStateKeys.HEARTBEAT_HOOK_ADDR, 'hex').compare(stateKey) === 0) {
+            Buffer.from(HookStateKeys.FOUNDATION_ADDR, 'hex').compare(stateKey) === 0) {
             return {
                 type: this.StateTypes.CONFIGURATION,
                 key: hexKey,
@@ -328,7 +327,7 @@ class StateHelpers {
             Buffer.from(HookStateKeys.MOMENT_TRANSIT_INFO, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.MAX_TRX_EMISSION_FEE, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.REGISTRY_ADDR, 'hex').compare(stateKey) === 0 ||
-            Buffer.from(HookStateKeys.HEARTBEAT_HOOK_ADDR, 'hex').compare(stateKey) === 0) {
+            Buffer.from(HookStateKeys.HEARTBEAT_ADDR, 'hex').compare(stateKey) === 0) {
             return {
                 key: hexKey,
                 type: this.STATE_TYPES.CONFIGURATION

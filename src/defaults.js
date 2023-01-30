@@ -1,8 +1,14 @@
 const DefaultValues = {
-    registryAddress: 'raaFre81618XegCrzTzVotAmarBcqNSAvK',
+    governorAddress: 'rDxkQ7Jaq1igBmNNavXqsZ5vyEoYRKgT8B',
     rippledServer: 'wss://hooks-testnet-v2.xrpl-labs.com',
     xrplApi: null,
     stateIndexId: 'evernodeindex'
+}
+
+const HookTypes = {
+    governor: 'GOVERNOR',
+    registry: 'REGISTRY',
+    heartbeat: 'HEARTBEAT'
 }
 
 class Defaults {
@@ -17,5 +23,6 @@ class Defaults {
 
 module.exports = {
     DefaultValues,
-    Defaults
+    Defaults,
+    HookTypes
 }

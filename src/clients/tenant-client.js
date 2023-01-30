@@ -23,7 +23,7 @@ class TenantClient extends BaseEvernodeClient {
      * Constructs a tenant client instance.
      * @param {string} xrpAddress XRPL address of the tenant.
      * @param {string} XRPL secret of the tenant.
-     * @param {object} options [Optional] An object with 'rippledServer' URL and 'registryAddress'.
+     * @param {object} options [Optional] An object with 'rippledServer' URL and 'governorAddress'.
      */
     constructor(xrpAddress, xrpSecret, options = {}) {
         super(xrpAddress, xrpSecret, Object.values(TenantEvents), false, options);
@@ -49,7 +49,7 @@ class TenantClient extends BaseEvernodeClient {
         // Check whether the token was actually issued from Evernode registry contract.
         const issuerHex = nft.NFTokenID.substr(8, 40);
         const issuerAddr = codec.encodeAccountID(Buffer.from(issuerHex, 'hex'));
-        if (issuerAddr != this.registryAddress)
+        if (issuerAddr != this.config.registryAddress)
             throw { reason: ErrorReasons.HOST_INVALID, error: "Host is not registered." };
 
         // Check whether active.

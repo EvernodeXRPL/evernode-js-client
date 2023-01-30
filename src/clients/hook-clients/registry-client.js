@@ -1,13 +1,10 @@
-const { EvernodeEvents } = require('../evernode-common');
-const { BaseEvernodeClient } = require('./base-evernode-client');
-const { DefaultValues } = require('../defaults');
+const { BaseEvernodeClient } = require("../base-evernode-client");
+const { EvernodeEvents } = require('../../evernode-common');
 
 const RegistryEvents = {
     HostRegistered: EvernodeEvents.HostRegistered,
     HostDeregistered: EvernodeEvents.HostDeregistered,
     HostRegUpdated: EvernodeEvents.HostRegUpdated,
-    RegistryInitialized: EvernodeEvents.RegistryInitialized,
-    Heartbeat: EvernodeEvents.Heartbeat,
     HostPostDeregistered: EvernodeEvents.HostPostDeregistered,
     DeadHostPrune: EvernodeEvents.DeadHostPrune,
     HostTransfer: EvernodeEvents.HostTransfer,
@@ -16,12 +13,8 @@ const RegistryEvents = {
 
 class RegistryClient extends BaseEvernodeClient {
 
-    /**
-     * Constructs a registry client instance.
-     * @param {object} options [Optional] An object with 'rippledServer' URL and 'registryAddress'.
-     */
     constructor(options = {}) {
-        super((options.registryAddress || DefaultValues.registryAddress), null, Object.values(RegistryEvents), false, options);
+        super(options.registryAddress, null, Object.values(RegistryEvents), false, options);
     }
 
     /**
@@ -49,6 +42,6 @@ class RegistryClient extends BaseEvernodeClient {
 }
 
 module.exports = {
-    RegistryEvents,
-    RegistryClient
+    RegistryClient,
+    RegistryEvents
 }
