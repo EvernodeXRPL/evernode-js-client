@@ -1,6 +1,6 @@
 const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { EvernodeEvents, EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes } = require('../evernode-common');
+const { EvernodeEvents, EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes, ErrorReasons } = require('../evernode-common');
 const { XrplAccount } = require('../xrpl-account');
 const { EncryptionHelper } = require('../encryption-helper');
 const { Buffer } = require('buffer');
@@ -8,12 +8,18 @@ const codec = require('ripple-address-codec');
 const { XflHelpers } = require('../xfl-helpers');
 const { EvernodeHelpers } = require('../evernode-helpers');
 const { StateHelpers } = require('../state-helpers');
+const { sha512Half } = require('xrpl-binary-codec/dist/hashes');
+const { HookHelpers } = require('../hook-helpers');
+const { TransactionHelper } = require('../transaction-helper');
 
 const OFFER_WAIT_TIMEOUT = 60;
+const PROPOSAL_WAIT_TIMEOUT = 60;
 
 const HostEvents = {
     AcquireLease: EvernodeEvents.AcquireLease,
-    ExtendLease: EvernodeEvents.ExtendLease
+    ExtendLease: EvernodeEvents.ExtendLease,
+    ProposeSuccess: EvernodeEvents.ProposeSuccess,
+    ProposeError: EvernodeEvents.ProposeError
 }
 
 const HOST_COUNTRY_CODE_MEMO_OFFSET = 0;
@@ -38,6 +44,10 @@ const HOST_UPDATE_ACT_INS_COUNT_MEMO_OFFSET = 50;
 const HOST_UPDATE_DESCRIPTION_MEMO_OFFSET = 54;
 const HOST_UPDATE_VERSION_MEMO_OFFSET = 80;
 const HOST_UPDATE_MEMO_SIZE = 83;
+
+const PROPOSE_HOOK_UNIQUE_ID_MEMO_OFFSET = 0;
+const PROPOSE_HOOK_SHORT_NAME_MEMO_OFFSET = 32;
+const PROPOSE_HOOK_MEMO_SIZE = 52;
 
 class HostClient extends BaseEvernodeClient {
 
@@ -463,6 +473,91 @@ class HostClient extends BaseEvernodeClient {
                 { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
             ],
             options.transactionOptions);
+    }
+
+    async watchProposeResponse(tx, options = {}) {
+        console.log(`Waiting for propose response... (txHash: ${tx.id})`);
+
+        return new Promise(async (resolve, reject) => {
+            let rejected = false;
+            const failTimeout = setTimeout(() => {
+                rejected = true;
+                reject({ error: ErrorCodes.PROPOSE_ERR, reason: ErrorReasons.TIMEOUT });
+            }, options.timeout || PROPOSAL_WAIT_TIMEOUT);
+
+            let relevantTx = null;
+            while (!rejected && !relevantTx) {
+                const txList = await this.xrplAcc.getAccountTrx(tx.details.ledger_index);
+                for (let t of txList) {
+                    t.tx.Memos = TransactionHelper.deserializeMemos(t.tx?.Memos);
+                    const res = await this.extractEvernodeEvent(t.tx);
+                    if ((res?.name === EvernodeEvents.ProposeSuccess || res?.name === EvernodeEvents.ProposeError) && res?.data?.proposeRefId === tx.id) {
+                        clearTimeout(failTimeout);
+                        relevantTx = res;
+                        break;
+                    }
+                }
+                await new Promise(resolveSleep => setTimeout(resolveSleep, 2000));
+            }
+
+            if (!rejected) {
+                if (relevantTx?.name === HostEvents.ProposeSuccess) {
+                    resolve({
+                        transaction: relevantTx?.data.transaction,
+                        instance: relevantTx?.data.payload.content,
+                        proposeRefId: relevantTx?.data.proposeRefId
+                    });
+                } else if (relevantTx?.name === HostEvents.ProposeError) {
+                    reject({
+                        error: ErrorCodes.PROPOSE_ERR,
+                        transaction: relevantTx?.data.transaction,
+                        reason: relevantTx?.data.reason,
+                        proposeRefId: relevantTx?.data.proposeRefId
+                    });
+                }
+            }
+        });
+    }
+
+    async proposeHookCandidate(hashes, shortName, options = {}) {
+        const hashesBuf = Buffer.from(hashes, 'hex');
+        if (!hashesBuf || hashesBuf.length != 96)
+            throw 'Invalid hashes: Hashes should contain all three Governor, Registry, Heartbeat hook hashes.';
+
+        // Check whether hook hashes exist in the definition.
+        for (const [i, hook] of EvernodeConstants.HOOKS.entries()) {
+            const index = HookHelpers.getHookDefinitionIndex(hashes.substr(i * 64, 64));
+            const ledgerEntry = await this.xrplApi.getLedgerEntry(index);
+            if (!ledgerEntry)
+                throw `No hook exists with the specified ${hook} hook hash.`;
+        }
+
+        const uniqueId = sha512Half(hashesBuf);
+        const memoBuf = Buffer.alloc(PROPOSE_HOOK_MEMO_SIZE);
+        Buffer.from(uniqueId.slice(0, 32)).copy(memoBuf, PROPOSE_HOOK_UNIQUE_ID_MEMO_OFFSET);
+        Buffer.from(shortName.substr(0, 20), "utf-8").copy(memoBuf, PROPOSE_HOOK_SHORT_NAME_MEMO_OFFSET);
+
+        return new Promise(async (resolve, reject) => {
+            const tx = await this.xrplAcc.makePayment(this.governorAddress,
+                XrplConstants.MIN_XRP_AMOUNT,
+                XrplConstants.XRP,
+                null,
+                [
+                    { type: MemoTypes.PROPOSE, format: MemoFormats.HEX, data: hashesBuf.toString('hex').toUpperCase() },
+                    { type: MemoTypes.PROPOSE_REF, format: MemoFormats.HEX, data: memoBuf.toString('hex').toUpperCase() }
+                ],
+                options.transactionOptions).catch(error => {
+                    reject(error);
+                });
+            if (tx) {
+                try {
+                    const response = await this.watchProposeResponse(tx, options);
+                    resolve(response);
+                } catch (error) {
+                    reject(error);
+                }
+            }
+        });
     }
 
     getLeaseNFTokenIdPrefix() {
