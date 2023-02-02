@@ -35,6 +35,8 @@ const signerQuorum = 1;
 
 const tosHash = "757A0237B44D8B2BBB04AE2BAD5813858E0AECD2F0B217075E27E0630BA74314";
 
+const hookCandidates = "9465B3DEEA4BF51BB39920CBCD26607CD4DCF0DDAED4FA331FF4B186184C46FF9465B3DEEA4BF51BB39920CBCD26607CD4DCF0DDAED4FA331FF4B186184C46FF9465B3DEEA4BF51BB39920CBCD26607CD4DCF0DDAED4FA331FF4B186184C46FF";
+
 const clients = [];
 
 async function app() {
@@ -99,8 +101,8 @@ async function app() {
             // () => transferHost(),
             // () => requestRebate(),
             // () => getAccountObjects(),
-            // () => setSignerList()
-
+            // () => setSignerList(),
+            // () => propose(),
         ];
 
         for (const test of tests) {
@@ -448,6 +450,18 @@ async function setSignerList() {
 
     const res = await masterAccount.setSignerList(signerList, { signerQuorum: signerQuorum });
     console.log(res);
+}
+
+async function propose() {
+    const host = await getHostClient(hostAddress, hostSecret);
+
+    if (!await host.isRegistered()) {
+        console.log("Host is not registered.");
+        return true;
+    }
+
+    console.log(`-----------Proposing hook candidate`);
+    await host.proposeHookCandidate(hookCandidates, 'testProposal');
 }
 
 app();
