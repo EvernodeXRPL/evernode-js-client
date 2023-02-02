@@ -38,6 +38,11 @@ class EvernodeHelpers {
 
         return nftPageInfo;
     }
+
+    static getEpochRewardQuota(epoch, firstEpochRewardQuota) {
+        const div = (epoch > 1) ? Math.pow(2, epoch - 1) : 1;
+        return firstEpochRewardQuota / div;
+    }
 }
 
 module.exports = {

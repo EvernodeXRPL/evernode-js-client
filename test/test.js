@@ -461,7 +461,7 @@ async function propose() {
     }
 
     console.log(`-----------Proposing hook candidate`);
-    await host.proposeHookCandidate(hookCandidates, 'testProposal');
+    await host.propose(hookCandidates, 'testProposal');
 }
 
 app();

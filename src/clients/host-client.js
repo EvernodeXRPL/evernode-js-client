@@ -520,7 +520,7 @@ class HostClient extends BaseEvernodeClient {
         });
     }
 
-    async proposeHookCandidate(hashes, shortName, options = {}) {
+    async propose(hashes, shortName, options = {}) {
         const hashesBuf = Buffer.from(hashes, 'hex');
         if (!hashesBuf || hashesBuf.length != 96)
             throw 'Invalid hashes: Hashes should contain all three Governor, Registry, Heartbeat hook hashes.';
@@ -542,11 +542,14 @@ class HostClient extends BaseEvernodeClient {
         Buffer.from(shortName.substr(0, 20), "utf-8").copy(memoBuf, PROPOSE_SHORT_NAME_MEMO_OFFSET);
         Buffer.from(keylets.join(''), 'hex').copy(memoBuf, PROPOSE_KEYLETS_MEMO_OFFSET);
 
+        // Get the proposal fee. Proposal fee is current epochs moment worth of rewards.
+        const proposalFee = EvernodeHelpers.getEpochRewardQuota(this.config.rewardInfo.epoch, this.config.rewardConfiguration.firstEpochRewardQuota)
+
         return new Promise(async (resolve, reject) => {
             const tx = await this.xrplAcc.makePayment(this.governorAddress,
-                XrplConstants.MIN_XRP_AMOUNT,
-                XrplConstants.XRP,
-                null,
+                proposalFee.toString(),
+                EvernodeConstants.EVR,
+                this.config.evrIssuerAddress,
                 [
                     { type: MemoTypes.PROPOSE, format: MemoFormats.HEX, data: hashesBuf.toString('hex').toUpperCase() },
                     { type: MemoTypes.PROPOSE_REF, format: MemoFormats.HEX, data: memoBuf.toString('hex').toUpperCase() }
