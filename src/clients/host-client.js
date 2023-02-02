@@ -45,9 +45,10 @@ const HOST_UPDATE_DESCRIPTION_MEMO_OFFSET = 54;
 const HOST_UPDATE_VERSION_MEMO_OFFSET = 80;
 const HOST_UPDATE_MEMO_SIZE = 83;
 
-const PROPOSE_HOOK_UNIQUE_ID_MEMO_OFFSET = 0;
-const PROPOSE_HOOK_SHORT_NAME_MEMO_OFFSET = 32;
-const PROPOSE_HOOK_MEMO_SIZE = 52;
+const PROPOSE_UNIQUE_ID_MEMO_OFFSET = 0;
+const PROPOSE_SHORT_NAME_MEMO_OFFSET = 32;
+const PROPOSE_KEYLETS_MEMO_OFFSET = 52;
+const PROPOSE_MEMO_SIZE = 154;
 
 class HostClient extends BaseEvernodeClient {
 
@@ -525,17 +526,21 @@ class HostClient extends BaseEvernodeClient {
             throw 'Invalid hashes: Hashes should contain all three Governor, Registry, Heartbeat hook hashes.';
 
         // Check whether hook hashes exist in the definition.
+        let keylets = [];
         for (const [i, hook] of EvernodeConstants.HOOKS.entries()) {
             const index = HookHelpers.getHookDefinitionIndex(hashes.substr(i * 64, 64));
             const ledgerEntry = await this.xrplApi.getLedgerEntry(index);
             if (!ledgerEntry)
                 throw `No hook exists with the specified ${hook} hook hash.`;
+            else
+                keylets.push(HookHelpers.getHookDefinitionKeylet(index));
         }
 
         const uniqueId = sha512Half(hashesBuf);
-        const memoBuf = Buffer.alloc(PROPOSE_HOOK_MEMO_SIZE);
-        Buffer.from(uniqueId.slice(0, 32)).copy(memoBuf, PROPOSE_HOOK_UNIQUE_ID_MEMO_OFFSET);
-        Buffer.from(shortName.substr(0, 20), "utf-8").copy(memoBuf, PROPOSE_HOOK_SHORT_NAME_MEMO_OFFSET);
+        const memoBuf = Buffer.alloc(PROPOSE_MEMO_SIZE);
+        Buffer.from(uniqueId.slice(0, 32)).copy(memoBuf, PROPOSE_UNIQUE_ID_MEMO_OFFSET);
+        Buffer.from(shortName.substr(0, 20), "utf-8").copy(memoBuf, PROPOSE_SHORT_NAME_MEMO_OFFSET);
+        Buffer.from(keylets.join(''), 'hex').copy(memoBuf, PROPOSE_KEYLETS_MEMO_OFFSET);
 
         return new Promise(async (resolve, reject) => {
             const tx = await this.xrplAcc.makePayment(this.governorAddress,

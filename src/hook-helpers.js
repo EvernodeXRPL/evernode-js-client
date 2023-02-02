@@ -18,6 +18,14 @@ class HookHelpers {
         // Get the first 32 bytes of hash.
         return digest.substring(0, 64).toUpperCase();
     }
+
+    static getHookDefinitionKeylet(index) {
+        const keyletBuf = Buffer.allocUnsafe(34);
+        keyletBuf.writeInt16BE(HOOK_DEFINITION_LEDGER_TYPE_PREFIX);
+        Buffer.from(index, 'hex').copy(keyletBuf, 2);
+
+        return keyletBuf.toString('hex');
+    }
 }
 
 module.exports = {
