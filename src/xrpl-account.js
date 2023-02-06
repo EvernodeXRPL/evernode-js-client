@@ -465,7 +465,8 @@ class XrplAccount {
                 LastLedgerSequence: options.maxLedgerIndex || (this.xrplApi.ledgerIndex + XrplConstants.MAX_LEDGER_OFFSET),
                 Sequence: options.sequence || await this.getSequence(),
                 SigningPubKey: '', // This field is required for fee calculation.
-                Fee: '0' // This field is required for fee calculation.
+                Fee: '0', // This field is required for fee calculation.
+                NetworkID: DefaultValues.networkID
             }
             Object.assign(tx, txOptions);
             const txnBlob = xrplCodec.encode(tx);
@@ -542,6 +543,58 @@ class XrplAccount {
      */
     sign(tx, isMultiSign = false) {
         return this.wallet.sign(tx, isMultiSign);
+    }
+
+    // URIToken related methods
+
+    mintURIToken(uri, digest = null, flags = {}, options = {}) {
+        const tx = {
+            Account: this.address,
+            TransactionType: "URIToken",
+            URI: flags.isHexUri ? uri : TransactionHelper.asciiToHex(uri).toUpperCase(),
+            Flags: flags.isBurnable ? 1 : 0
+        }
+
+        if (digest)
+            tx.Digest = digest;
+
+        return this.#submitAndVerifyTransaction(tx, options);
+    }
+
+    burnURIToken(uriTokenID, options = {}) {
+        return this.#submitAndVerifyTransaction({
+            Account: this.address,
+            TransactionType: "URIToken",
+            Flags: 2,
+            URITokenID: uriTokenID
+        }, options);
+    }
+
+    sellURIToken(uriTokenID, amount, currency, issuer = null, toAddr = null, options = {}) {
+        const amountObj = makeAmountObject(amount, currency, issuer);
+
+        const tx = {
+            Account: this.address,
+            TransactionType: "URIToken",
+            Flags: 524288, // 0x00080000 tfSell
+            Amount: amountObj,
+            URITokenID: uriTokenID
+        };
+
+        if (toAddr)
+            tx.Destination = toAddr;
+        
+        return this.#submitAndVerifyTransaction(tx, options);
+    }
+
+    buyURIToken(uriTokenID, amount, currency, issuer = null, options = {}) {
+        const amountObj = makeAmountObject(amount, currency, issuer);
+        return this.#submitAndVerifyTransaction({
+            Account: this.address,
+            TransactionType: "URIToken",
+            Amount: amountObj,
+            URITokenID: uriTokenID
+        }, options);
     }
 }
 

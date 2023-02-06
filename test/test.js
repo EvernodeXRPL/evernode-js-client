@@ -40,10 +40,11 @@ const clients = [];
 async function app() {
 
     // Use a singleton xrplApi for all tests.
-    const xrplApi = new evernode.XrplApi('wss://hooks-testnet-v2.xrpl-labs.com');
+    const xrplApi = new evernode.XrplApi('wss://hooks-testnet-v3.xrpl-labs.com');
     evernode.Defaults.set({
         governorAddress: governorAddress,
-        xrplApi: xrplApi
+        xrplApi: xrplApi,
+        networkID: 21338
     })
 
     try {
