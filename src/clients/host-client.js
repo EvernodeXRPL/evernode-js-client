@@ -13,7 +13,8 @@ const { HookHelpers } = require('../hook-helpers');
 const { TransactionHelper } = require('../transaction-helper');
 
 const OFFER_WAIT_TIMEOUT = 60;
-const PROPOSAL_WAIT_TIMEOUT = 60;
+
+const DEFAULT_WAIT_TIMEOUT = 60000;
 
 const HostEvents = {
     AcquireLease: EvernodeEvents.AcquireLease,
@@ -484,7 +485,7 @@ class HostClient extends BaseEvernodeClient {
             const failTimeout = setTimeout(() => {
                 rejected = true;
                 reject({ error: ErrorCodes.PROPOSE_ERR, reason: ErrorReasons.TIMEOUT });
-            }, options.timeout || PROPOSAL_WAIT_TIMEOUT);
+            }, options.timeout || DEFAULT_WAIT_TIMEOUT);
 
             let relevantTx = null;
             while (!rejected && !relevantTx) {
