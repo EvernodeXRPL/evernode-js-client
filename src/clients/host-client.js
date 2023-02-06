@@ -116,20 +116,20 @@ class HostClient extends BaseEvernodeClient {
         uriBuf.writeBigInt64BE(XflHelpers.getXfl(leaseAmount.toString()), prefixLen + 2 + halfToSLen);
         const uri = uriBuf.toString('hex').toUpperCase();
 
-        await this.xrplAcc.mintNft(uri, 0, 0, { isBurnable: true, isHexUri: true });
+        await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: true });
 
-        const nft = await this.xrplAcc.getNftByUri(uri, true);
-        if (!nft)
+        const uriToken = await this.xrplAcc.getURITokenByUri(uri, true);
+        if (!uriToken)
             throw "Offer lease NFT creation error.";
 
-        await this.xrplAcc.offerSellNft(nft.NFTokenID,
+        await this.xrplAcc.sellURIToken(uriToken.index,
             leaseAmount.toString(),
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress);
     }
 
-    async expireLease(nfTokenId, tenantAddress = null) {
-        await this.xrplAcc.burnNft(nfTokenId, tenantAddress);
+    async expireLease(nfTokenId) {
+        await this.xrplAcc.burnURIToken(nfTokenId);
     }
 
     async register(countryCode, cpuMicroSec, ramMb, diskMb, totalInstanceCount, cpuModel, cpuCount, cpuSpeed, description, emailAddress, options = {}) {

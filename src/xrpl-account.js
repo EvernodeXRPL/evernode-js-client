@@ -457,7 +457,7 @@ class XrplAccount {
         //     details: submission and transaction details, (if signing success)
         //     error: Any error that prevents submission.
         // }
-
+        
         return new Promise(async (resolve, reject) => {
 
             // Attach tx options to the transaction.
@@ -550,7 +550,7 @@ class XrplAccount {
     mintURIToken(uri, digest = null, flags = {}, options = {}) {
         const tx = {
             Account: this.address,
-            TransactionType: "URIToken",
+            TransactionType: "UriToken",
             URI: flags.isHexUri ? uri : TransactionHelper.asciiToHex(uri).toUpperCase(),
             Flags: flags.isBurnable ? 1 : 0
         }
@@ -564,7 +564,7 @@ class XrplAccount {
     burnURIToken(uriTokenID, options = {}) {
         return this.#submitAndVerifyTransaction({
             Account: this.address,
-            TransactionType: "URIToken",
+            TransactionType: "UriToken",
             Flags: 2,
             URITokenID: uriTokenID
         }, options);
@@ -575,7 +575,7 @@ class XrplAccount {
 
         const tx = {
             Account: this.address,
-            TransactionType: "URIToken",
+            TransactionType: "UriToken",
             Flags: 524288, // 0x00080000 tfSell
             Amount: amountObj,
             URITokenID: uriTokenID
@@ -591,10 +591,29 @@ class XrplAccount {
         const amountObj = makeAmountObject(amount, currency, issuer);
         return this.#submitAndVerifyTransaction({
             Account: this.address,
-            TransactionType: "URIToken",
+            TransactionType: "UriToken",
             Amount: amountObj,
             URITokenID: uriTokenID
         }, options);
+    }
+
+    async clearURITokenOffer(uriTokenID, options = {}) {
+        return this.#submitAndVerifyTransaction({
+            Account: this.address,
+            TransactionType: "UriToken",
+            URITokenID: uriTokenID
+        }, options);
+    }
+
+    async getURITokens() {
+        const obj = await this.getAccountObjects(this.address);
+        return obj.filter(t => t.LedgerEntryType == 'URIToken');
+    }
+
+    async getURITokenByUri(uri, isHexUri = false) {
+        const tokens = await this.getURITokens();
+        const hexUri = isHexUri ? uri : TransactionHelper.asciiToHex(uri).toUpperCase();
+        return tokens.find(t => t.URI == hexUri);
     }
 }
 
