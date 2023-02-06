@@ -460,42 +460,6 @@ class BaseEvernodeClient {
                 }
             }
         }
-        else if (tx.Memos.length >= 2 &&
-            tx.Memos[0].type === MemoTypes.PROPOSE_SUCCESS && tx.Memos[0].data &&
-            tx.Memos[1].type === MemoTypes.PROPOSE_REF && tx.Memos[1].data) {
-
-            let payload = tx.Memos[0].data;
-            const proposeRefId = tx.Memos[1].data;
-
-            return {
-                name: EvernodeEvents.ProposeSuccess,
-                data: {
-                    transaction: tx,
-                    proposeRefId: proposeRefId,
-                    payload: payload
-                }
-            }
-
-        }
-        else if (tx.Memos.length >= 2 &&
-            tx.Memos[0].type === MemoTypes.PROPOSE_ERROR && tx.Memos[0].data &&
-            tx.Memos[1].type === MemoTypes.PROPOSE_REF && tx.Memos[1].data) {
-
-            let error = tx.Memos[0].data;
-            const proposeRefId = tx.Memos[1].data;
-
-            if (tx.Memos[0].format === MemoFormats.JSON)
-                error = JSON.parse(error).reason;
-
-            return {
-                name: EvernodeEvents.ProposeError,
-                data: {
-                    transaction: tx,
-                    proposeRefId: proposeRefId,
-                    reason: error
-                }
-            }
-        }
 
         return null;
     }

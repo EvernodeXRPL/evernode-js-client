@@ -33,9 +33,7 @@ const MemoTypes = {
     HOST_REBATE: 'evnHostRebate',
     HOST_REGISTRY_REF: 'evnHostRegistryRef',
     PROPOSE: 'evnPropose',
-    PROPOSE_REF: 'evnProposeRef',
-    PROPOSE_SUCCESS: 'evnProposeSuccess',
-    PROPOSE_ERROR: 'evnProposeError'
+    PROPOSE_REF: 'evnProposeRef'
 }
 
 const MemoFormats = {
@@ -111,9 +109,7 @@ const EvernodeEvents = {
     HostReRegistered: "HostReRegistered",
     RegistryInitialized: "RegistryInitialized",
     DeadHostPrune: "DeadHostPrune",
-    HostRebate: "HostRebate",
-    ProposeSuccess: "ProposeSuccess",
-    ProposeError: "ProposeError",
+    HostRebate: "HostRebate"
 }
 
 module.exports = {

@@ -1,6 +1,6 @@
 const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { EvernodeEvents, EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes, ErrorReasons } = require('../evernode-common');
+const { EvernodeEvents, EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes } = require('../evernode-common');
 const { XrplAccount } = require('../xrpl-account');
 const { EncryptionHelper } = require('../encryption-helper');
 const { Buffer } = require('buffer');
@@ -10,17 +10,12 @@ const { EvernodeHelpers } = require('../evernode-helpers');
 const { StateHelpers } = require('../state-helpers');
 const { sha512Half } = require('xrpl-binary-codec/dist/hashes');
 const { HookHelpers } = require('../hook-helpers');
-const { TransactionHelper } = require('../transaction-helper');
 
 const OFFER_WAIT_TIMEOUT = 60;
 
-const DEFAULT_WAIT_TIMEOUT = 60000;
-
 const HostEvents = {
     AcquireLease: EvernodeEvents.AcquireLease,
-    ExtendLease: EvernodeEvents.ExtendLease,
-    ProposeSuccess: EvernodeEvents.ProposeSuccess,
-    ProposeError: EvernodeEvents.ProposeError
+    ExtendLease: EvernodeEvents.ExtendLease
 }
 
 const HOST_COUNTRY_CODE_MEMO_OFFSET = 0;
@@ -477,50 +472,6 @@ class HostClient extends BaseEvernodeClient {
             options.transactionOptions);
     }
 
-    async watchProposeResponse(tx, options = {}) {
-        console.log(`Waiting for propose response... (txHash: ${tx.id})`);
-
-        return new Promise(async (resolve, reject) => {
-            let rejected = false;
-            const failTimeout = setTimeout(() => {
-                rejected = true;
-                reject({ error: ErrorCodes.PROPOSE_ERR, reason: ErrorReasons.TIMEOUT });
-            }, options.timeout || DEFAULT_WAIT_TIMEOUT);
-
-            let relevantTx = null;
-            while (!rejected && !relevantTx) {
-                const txList = await this.xrplAcc.getAccountTrx(tx.details.ledger_index);
-                for (let t of txList) {
-                    t.tx.Memos = TransactionHelper.deserializeMemos(t.tx?.Memos);
-                    const res = await this.extractEvernodeEvent(t.tx);
-                    if ((res?.name === EvernodeEvents.ProposeSuccess || res?.name === EvernodeEvents.ProposeError) && res?.data?.proposeRefId === tx.id) {
-                        clearTimeout(failTimeout);
-                        relevantTx = res;
-                        break;
-                    }
-                }
-                await new Promise(resolveSleep => setTimeout(resolveSleep, 2000));
-            }
-
-            if (!rejected) {
-                if (relevantTx?.name === HostEvents.ProposeSuccess) {
-                    resolve({
-                        transaction: relevantTx?.data.transaction,
-                        instance: relevantTx?.data.payload.content,
-                        proposeRefId: relevantTx?.data.proposeRefId
-                    });
-                } else if (relevantTx?.name === HostEvents.ProposeError) {
-                    reject({
-                        error: ErrorCodes.PROPOSE_ERR,
-                        transaction: relevantTx?.data.transaction,
-                        reason: relevantTx?.data.reason,
-                        proposeRefId: relevantTx?.data.proposeRefId
-                    });
-                }
-            }
-        });
-    }
-
     async propose(hashes, shortName, options = {}) {
         const hashesBuf = Buffer.from(hashes, 'hex');
         if (!hashesBuf || hashesBuf.length != 96)
@@ -546,27 +497,15 @@ class HostClient extends BaseEvernodeClient {
         // Get the proposal fee. Proposal fee is current epochs moment worth of rewards.
         const proposalFee = EvernodeHelpers.getEpochRewardQuota(this.config.rewardInfo.epoch, this.config.rewardConfiguration.firstEpochRewardQuota)
 
-        return new Promise(async (resolve, reject) => {
-            const tx = await this.xrplAcc.makePayment(this.governorAddress,
-                proposalFee.toString(),
-                EvernodeConstants.EVR,
-                this.config.evrIssuerAddress,
-                [
-                    { type: MemoTypes.PROPOSE, format: MemoFormats.HEX, data: hashesBuf.toString('hex').toUpperCase() },
-                    { type: MemoTypes.PROPOSE_REF, format: MemoFormats.HEX, data: memoBuf.toString('hex').toUpperCase() }
-                ],
-                options.transactionOptions).catch(error => {
-                    reject(error);
-                });
-            if (tx) {
-                try {
-                    const response = await this.watchProposeResponse(tx, options);
-                    resolve(response);
-                } catch (error) {
-                    reject(error);
-                }
-            }
-        });
+        return await this.xrplAcc.makePayment(this.governorAddress,
+            proposalFee.toString(),
+            EvernodeConstants.EVR,
+            this.config.evrIssuerAddress,
+            [
+                { type: MemoTypes.PROPOSE, format: MemoFormats.HEX, data: hashesBuf.toString('hex').toUpperCase() },
+                { type: MemoTypes.PROPOSE_REF, format: MemoFormats.HEX, data: memoBuf.toString('hex').toUpperCase() }
+            ],
+            options.transactionOptions);
     }
 
     getLeaseNFTokenIdPrefix() {
