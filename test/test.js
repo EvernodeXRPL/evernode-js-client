@@ -103,6 +103,8 @@ async function app() {
             // () => getAccountObjects(),
             // () => setSignerList(),
             // () => propose(),
+            // () => makePayment()
+
         ];
 
         for (const test of tests) {
@@ -331,7 +333,7 @@ async function getHostClient(address = hostAddress, secret = hostSecret) {
 }
 
 async function getRegistryClient() {
-    const client = await evernode.HookClientFactory.create(evernode.HookAccountTypes.registryHook);
+    const client = await evernode.HookClientFactory.create(evernode.HookTypes.registry);
     await client.connect();
     clients.push(client);
     return client;
@@ -347,7 +349,7 @@ async function fundTenant(tenant) {
 }
 
 async function getHookStates() {
-    const governorClient = await evernode.HookClientFactory.create(evernode.HookAccountTypes.governorHook);
+    const governorClient = await evernode.HookClientFactory.create(evernode.HookTypes.governor);
     await governorClient.connect();
     const states = await governorClient.getHookStates();
     console.log(states.length, states);
@@ -355,7 +357,7 @@ async function getHookStates() {
 
 async function getAllHosts() {
     console.log(`-----------Getting all hosts (including inactive)`);
-    const registryClient = await evernode.HookClientFactory.create(evernode.HookAccountTypes.registryHook);
+    const registryClient = await evernode.HookClientFactory.create(evernode.HookTypes.registry);
     await registryClient.connect();
     const hosts = await registryClient.getAllHosts();
     console.log(hosts.length, hosts);
@@ -364,7 +366,7 @@ async function getAllHosts() {
 
 async function getAllConfigs() {
     console.log(`-----------Getting all configs`);
-    const governorClient = await evernode.HookClientFactory.create(evernode.HookAccountTypes.governorHook);
+    const governorClient = await evernode.HookClientFactory.create(evernode.HookTypes.governor);
     await governorClient.connect();
     const configs = await governorClient.getAllConfigs();
     console.log(configs.length, configs);
@@ -462,6 +464,14 @@ async function propose() {
 
     console.log(`-----------Proposing hook candidate`);
     await host.propose(hookCandidates, 'testProposal');
+}
+
+async function makePayment() {
+    const tenant = new evernode.XrplAccount(tenantAddress, tenantSecret);
+    console.log("-----------Simple payment");
+    const res = await tenant.makePayment(governorAddress, "1", "EVR", evrIssuerAddress,
+        [{ type: 'evnTest', format: evernode.MemoFormats.TEXT, data: 'Test Data' }]);
+    console.log(res);
 }
 
 app();
