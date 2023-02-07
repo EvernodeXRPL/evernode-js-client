@@ -62,7 +62,7 @@ class XrplApi {
                 if (data.transaction.TransactionType === 'NFTokenAcceptOffer') {
                     // We take all the offers created by subscribed accounts in previous ledger until we get the respective offer.
                     for (const subscription of this.#addressSubscriptions) {
-                        const offer = (await this.getNftOffers(subscription.address, { ledger_index: data.ledger_index - 1 }))?.find(o => o.index === (data.transaction.NFTokenSellOffer || data.transaction.NFTokenBuyOffer));
+                        const offer = (await this.getURITokens(subscription.address, { ledger_index: data.ledger_index - 1 }))?.find(o => o.index === (data.transaction.NFTokenSellOffer || data.transaction.NFTokenBuyOffer));
                         // When we find the respective offer. We populate the destination and offer info and then we break the loop.
                         if (offer) {
                             // We populate some sell offer properties to the transaction to be sent with the event.

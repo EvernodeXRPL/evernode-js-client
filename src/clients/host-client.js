@@ -170,9 +170,9 @@ class HostClient extends BaseEvernodeClient {
         if (!regNft) {
             const regInfo = await this.getHostInfo(this.xrplAcc.address);
             if (regInfo) {
-                const sellOffer = (await registryAcc.getNftOffers()).find(o => o.NFTokenID == regInfo.nfTokenId);
+                const sellOffer = (await registryAcc.getURITokens()).find(o => o.index == regInfo.nfTokenId);
                 if (sellOffer) {
-                    await this.xrplAcc.buyNft(sellOffer.index);
+                    await this.xrplAcc.burnURIToken(sellOffer.index);
                     console.log("Registration was successfully completed after acquiring the NFT.");
                     return await this.isRegistered();
                 }
@@ -226,7 +226,7 @@ class HostClient extends BaseEvernodeClient {
         while (attempts < OFFER_WAIT_TIMEOUT) {
             const nft = (await registryAcc.getNfts()).find(n => (n.URI === `${EvernodeConstants.NFT_PREFIX_HEX}${tx.id}`) || (n.NFTokenID === transferredNFTokenId));
             if (nft) {
-                offer = (await registryAcc.getNftOffers()).find(o => o.Destination === this.xrplAcc.address && o.NFTokenID === nft.NFTokenID && o.Flags === 1);
+                offer = (await registryAcc.getURITokens()).find(o => o.Destination === this.xrplAcc.address && o.NFTokenID === nft.NFTokenID && o.Flags === 1);
                 offerLedgerIndex = this.xrplApi.ledgerIndex;
                 if (offer)
                     break;
@@ -249,7 +249,7 @@ class HostClient extends BaseEvernodeClient {
             resolve();
         });
 
-        await this.xrplAcc.buyNft(offer.index);
+        await this.xrplAcc.burnURIToken(offer.index);
 
         return await this.isRegistered();
     }
@@ -280,7 +280,7 @@ class HostClient extends BaseEvernodeClient {
         let attempts = 0;
         let offerLedgerIndex = 0;
         while (attempts < OFFER_WAIT_TIMEOUT) {
-            offer = (await regAcc.getNftOffers()).find(o => (o.NFTokenID == regNFT.NFTokenID) && (o.Flags === 0));
+            offer = (await regAcc.getURITokens()).find(o => (o.index == regNFT.NFTokenID) && (o.Flags === 0));
             offerLedgerIndex = this.xrplApi.ledgerIndex;
             if (offer)
                 break;
@@ -301,8 +301,14 @@ class HostClient extends BaseEvernodeClient {
             resolve();
         });
 
-        await this.xrplAcc.sellNft(
-            offer.index,
+        // await this.xrplAcc.sellNft(
+        //     offer.index,
+        //     [{ type: MemoTypes.HOST_POST_DEREG, format: MemoFormats.HEX, data: regNFT.NFTokenID }]
+        // );
+        await this.xrplAcc.sellURIToken(
+            offer.index, 
+            EvernodeConstants.MINIMUM_OFFER_AMOUNT,
+            EvernodeConstants.EVR, 
             [{ type: MemoTypes.HOST_POST_DEREG, format: MemoFormats.HEX, data: regNFT.NFTokenID }]
         );
 
@@ -515,7 +521,7 @@ class HostClient extends BaseEvernodeClient {
         const regAcc = new XrplAccount(this.config.registryAddress, null, { xrplApi: this.xrplApi });
 
         while (attempts < OFFER_WAIT_TIMEOUT) {
-            offer = (await regAcc.getNftOffers()).find(o => (o.NFTokenID == regNFT.NFTokenID) && (o.Flags === 0));
+            offer = (await regAcc.getURITokens()).find(o => (o.index == regNFT.NFTokenID) && (o.Flags === 0));
             offerLedgerIndex = this.xrplApi.ledgerIndex;
             if (offer)
                 break;
@@ -536,7 +542,14 @@ class HostClient extends BaseEvernodeClient {
             resolve();
         });
 
-        await this.xrplAcc.sellNft(offer.index);
+        //await this.xrplAcc.sellNft(offer.index);
+
+        await this.xrplAcc.sellURIToken(
+            offer.index, 
+            EvernodeConstants.MINIMUM_OFFER_AMOUNT,
+            EvernodeConstants.EVR,
+            this.config.evrIssuerAddress
+        );
     }
 
     async isTransferee() {
