@@ -4,6 +4,7 @@ const { EventEmitter } = require('./event-emitter');
 const { DefaultValues } = require('./defaults');
 const { TransactionHelper } = require('./transaction-helper');
 const { XrplApiEvents } = require('./xrpl-common');
+const { XrplAccount } = require('./xrpl-account');
 
 const MAX_PAGE_LIMIT = 400;
 const API_REQ_TYPE = {
@@ -59,10 +60,12 @@ class XrplApi {
         this.#client.on("transaction", async (data) => {
             if (data.validated) {
                 // NFTokenAcceptOffer transactions does not contain a Destination. So we check whether the accepted offer is created by which subscribed account
-                if (data.transaction.TransactionType === 'NFTokenAcceptOffer') {
+                if (data.transaction.TransactionType === 'UriToken' && data.transaction.Amount && !data.transaction.Flags) {
                     // We take all the offers created by subscribed accounts in previous ledger until we get the respective offer.
                     for (const subscription of this.#addressSubscriptions) {
-                        const offer = (await this.getURITokens(subscription.address, { ledger_index: data.ledger_index - 1 }))?.find(o => o.index === (data.transaction.NFTokenSellOffer || data.transaction.NFTokenBuyOffer));
+                        const acc = new XrplAccount(subscription.address, null);
+                        //const offer = (await this.getURITokens(subscription.address, { ledger_index: data.ledger_index - 1 }))?.find(o => o.index === (data.transaction.NFTokenSellOffer || data.transaction.NFTokenBuyOffer));
+                        const offer = await acc.getURITokens();
                         // When we find the respective offer. We populate the destination and offer info and then we break the loop.
                         if (offer) {
                             // We populate some sell offer properties to the transaction to be sent with the event.

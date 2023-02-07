@@ -605,8 +605,8 @@ class XrplAccount {
         }, options);
     }
 
-    async getURITokens(address = this.address, options = {}) {
-        const obj = await this.getAccountObjects(address);
+    async getURITokens() {
+        const obj = await this.getAccountObjects(this.address);
         return obj.filter(t => t.LedgerEntryType == 'URIToken');
     }
 
