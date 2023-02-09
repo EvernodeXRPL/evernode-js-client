@@ -41,10 +41,10 @@ const HOST_UPDATE_DESCRIPTION_MEMO_OFFSET = 54;
 const HOST_UPDATE_VERSION_MEMO_OFFSET = 80;
 const HOST_UPDATE_MEMO_SIZE = 83;
 
-const PROPOSE_UNIQUE_ID_MEMO_OFFSET = 0;
-const PROPOSE_SHORT_NAME_MEMO_OFFSET = 32;
-const PROPOSE_KEYLETS_MEMO_OFFSET = 52;
-const PROPOSE_MEMO_SIZE = 154;
+const CANDIDATE_PROPOSE_UNIQUE_ID_MEMO_OFFSET = 0;
+const CANDIDATE_PROPOSE_SHORT_NAME_MEMO_OFFSET = 32;
+const CANDIDATE_PROPOSE_KEYLETS_MEMO_OFFSET = 52;
+const CANDIDATE_PROPOSE_MEMO_SIZE = 154;
 
 class HostClient extends BaseEvernodeClient {
 
@@ -489,10 +489,10 @@ class HostClient extends BaseEvernodeClient {
         }
 
         const uniqueId = sha512Half(hashesBuf);
-        const memoBuf = Buffer.alloc(PROPOSE_MEMO_SIZE);
-        Buffer.from(uniqueId.slice(0, 32)).copy(memoBuf, PROPOSE_UNIQUE_ID_MEMO_OFFSET);
-        Buffer.from(shortName.substr(0, 20), "utf-8").copy(memoBuf, PROPOSE_SHORT_NAME_MEMO_OFFSET);
-        Buffer.from(keylets.join(''), 'hex').copy(memoBuf, PROPOSE_KEYLETS_MEMO_OFFSET);
+        const memoBuf = Buffer.alloc(CANDIDATE_PROPOSE_MEMO_SIZE);
+        Buffer.from(uniqueId.slice(0, 32)).copy(memoBuf, CANDIDATE_PROPOSE_UNIQUE_ID_MEMO_OFFSET);
+        Buffer.from(shortName.substr(0, 20), "utf-8").copy(memoBuf, CANDIDATE_PROPOSE_SHORT_NAME_MEMO_OFFSET);
+        Buffer.from(keylets.join(''), 'hex').copy(memoBuf, CANDIDATE_PROPOSE_KEYLETS_MEMO_OFFSET);
 
         // Get the proposal fee. Proposal fee is current epochs moment worth of rewards.
         const proposalFee = EvernodeHelpers.getEpochRewardQuota(this.config.rewardInfo.epoch, this.config.rewardConfiguration.firstEpochRewardQuota)
@@ -502,8 +502,8 @@ class HostClient extends BaseEvernodeClient {
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress,
             [
-                { type: MemoTypes.PROPOSE, format: MemoFormats.HEX, data: hashesBuf.toString('hex').toUpperCase() },
-                { type: MemoTypes.PROPOSE_REF, format: MemoFormats.HEX, data: memoBuf.toString('hex').toUpperCase() }
+                { type: MemoTypes.CANDIDATE_PROPOSE, format: MemoFormats.HEX, data: hashesBuf.toString('hex').toUpperCase() },
+                { type: MemoTypes.CANDIDATE_PROPOSE_REF, format: MemoFormats.HEX, data: memoBuf.toString('hex').toUpperCase() }
             ],
             options.transactionOptions);
     }
