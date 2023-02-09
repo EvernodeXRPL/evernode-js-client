@@ -35,6 +35,8 @@ const signerQuorum = 1;
 
 const tosHash = "757A0237B44D8B2BBB04AE2BAD5813858E0AECD2F0B217075E27E0630BA74314";
 
+const hookCandidates = "9465B3DEEA4BF51BB39920CBCD26607CD4DCF0DDAED4FA331FF4B186184C46FF9465B3DEEA4BF51BB39920CBCD26607CD4DCF0DDAED4FA331FF4B186184C46FF9465B3DEEA4BF51BB39920CBCD26607CD4DCF0DDAED4FA331FF4B186184C46FF";
+
 const clients = [];
 
 async function app() {
@@ -100,6 +102,7 @@ async function app() {
             // () => requestRebate(),
             // () => getAccountObjects(),
             // () => setSignerList(),
+            // () => propose(),
             // () => makePayment()
 
         ];
@@ -451,11 +454,23 @@ async function setSignerList() {
     console.log(res);
 }
 
+async function propose() {
+    const host = await getHostClient(hostAddress, hostSecret);
+
+    if (!await host.isRegistered()) {
+        console.log("Host is not registered.");
+        return true;
+    }
+
+    console.log(`-----------Proposing hook candidate`);
+    await host.propose(hookCandidates, 'testProposal');
+}
+
 async function makePayment() {
     const tenant = new evernode.XrplAccount(tenantAddress, tenantSecret);
     console.log("-----------Simple payment");
     const res = await tenant.makePayment(governorAddress, "1", "EVR", evrIssuerAddress,
-    [{type: 'evnTest', format: evernode.MemoFormats.TEXT, data: 'Test Data'}]);
+        [{ type: 'evnTest', format: evernode.MemoFormats.TEXT, data: 'Test Data' }]);
     console.log(res);
 }
 

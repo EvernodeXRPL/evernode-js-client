@@ -3,7 +3,12 @@ const EvernodeConstants = {
     NFT_PREFIX_HEX: '657672686F7374', // evrhost
     LEASE_NFT_PREFIX_HEX: '6576726C65617365', // evrlease
     HOOK_NAMESPACE: '01EAF09326B4911554384121FF56FA8FECC215FDDE2EC35D9E59F2C53EC665A0',
-    NOW_IN_EVRS: "0.00000001"
+    NOW_IN_EVRS: "0.00000001",
+    HOOKS: [
+        "Governor",
+        "Registry",
+        "Heartbeat"
+    ]
 }
 
 const MemoTypes = {
@@ -26,7 +31,9 @@ const MemoTypes = {
     REFUND_REF: 'evnRefundRef',
     DEAD_HOST_PRUNE: 'evnDeadHostPrune',
     HOST_REBATE: 'evnHostRebate',
-    HOST_REGISTRY_REF: 'evnHostRegistryRef'
+    HOST_REGISTRY_REF: 'evnHostRegistryRef',
+    PROPOSE: 'evnPropose',
+    PROPOSE_REF: 'evnProposeRef'
 }
 
 const MemoFormats = {
@@ -38,7 +45,8 @@ const MemoFormats = {
 
 const ErrorCodes = {
     ACQUIRE_ERR: 'ACQUIRE_ERR',
-    EXTEND_ERR: 'EXTEND_ERR'
+    EXTEND_ERR: 'EXTEND_ERR',
+    PROPOSE_ERR: 'PROPOSE_ERR',
 }
 
 const ErrorReasons = {

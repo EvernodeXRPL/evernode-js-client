@@ -8,6 +8,8 @@ const codec = require('ripple-address-codec');
 const { XflHelpers } = require('../xfl-helpers');
 const { EvernodeHelpers } = require('../evernode-helpers');
 const { StateHelpers } = require('../state-helpers');
+const { sha512Half } = require('xrpl-binary-codec/dist/hashes');
+const { HookHelpers } = require('../hook-helpers');
 
 const OFFER_WAIT_TIMEOUT = 60;
 
@@ -38,6 +40,11 @@ const HOST_UPDATE_ACT_INS_COUNT_MEMO_OFFSET = 50;
 const HOST_UPDATE_DESCRIPTION_MEMO_OFFSET = 54;
 const HOST_UPDATE_VERSION_MEMO_OFFSET = 80;
 const HOST_UPDATE_MEMO_SIZE = 83;
+
+const PROPOSE_UNIQUE_ID_MEMO_OFFSET = 0;
+const PROPOSE_SHORT_NAME_MEMO_OFFSET = 32;
+const PROPOSE_KEYLETS_MEMO_OFFSET = 52;
+const PROPOSE_MEMO_SIZE = 154;
 
 class HostClient extends BaseEvernodeClient {
 
@@ -461,6 +468,42 @@ class HostClient extends BaseEvernodeClient {
             [
                 { type: MemoTypes.HOST_REBATE, format: "", data: "" },
                 { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+            ],
+            options.transactionOptions);
+    }
+
+    async propose(hashes, shortName, options = {}) {
+        const hashesBuf = Buffer.from(hashes, 'hex');
+        if (!hashesBuf || hashesBuf.length != 96)
+            throw 'Invalid hashes: Hashes should contain all three Governor, Registry, Heartbeat hook hashes.';
+
+        // Check whether hook hashes exist in the definition.
+        let keylets = [];
+        for (const [i, hook] of EvernodeConstants.HOOKS.entries()) {
+            const index = HookHelpers.getHookDefinitionIndex(hashes.substr(i * 64, 64));
+            const ledgerEntry = await this.xrplApi.getLedgerEntry(index);
+            if (!ledgerEntry)
+                throw `No hook exists with the specified ${hook} hook hash.`;
+            else
+                keylets.push(HookHelpers.getHookDefinitionKeylet(index));
+        }
+
+        const uniqueId = sha512Half(hashesBuf);
+        const memoBuf = Buffer.alloc(PROPOSE_MEMO_SIZE);
+        Buffer.from(uniqueId.slice(0, 32)).copy(memoBuf, PROPOSE_UNIQUE_ID_MEMO_OFFSET);
+        Buffer.from(shortName.substr(0, 20), "utf-8").copy(memoBuf, PROPOSE_SHORT_NAME_MEMO_OFFSET);
+        Buffer.from(keylets.join(''), 'hex').copy(memoBuf, PROPOSE_KEYLETS_MEMO_OFFSET);
+
+        // Get the proposal fee. Proposal fee is current epochs moment worth of rewards.
+        const proposalFee = EvernodeHelpers.getEpochRewardQuota(this.config.rewardInfo.epoch, this.config.rewardConfiguration.firstEpochRewardQuota)
+
+        return await this.xrplAcc.makePayment(this.governorAddress,
+            proposalFee.toString(),
+            EvernodeConstants.EVR,
+            this.config.evrIssuerAddress,
+            [
+                { type: MemoTypes.PROPOSE, format: MemoFormats.HEX, data: hashesBuf.toString('hex').toUpperCase() },
+                { type: MemoTypes.PROPOSE_REF, format: MemoFormats.HEX, data: memoBuf.toString('hex').toUpperCase() }
             ],
             options.transactionOptions);
     }
