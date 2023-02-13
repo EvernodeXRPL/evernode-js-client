@@ -576,7 +576,6 @@ class XrplAccount {
         const tx = {
             Account: this.address,
             TransactionType: "URITokenCreateSellOffer",
-            Flags: 524288, // 0x00080000 tfSell
             Amount: amountObj,
             URITokenID: uriTokenID
         };
