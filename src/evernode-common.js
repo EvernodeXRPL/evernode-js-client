@@ -32,8 +32,8 @@ const MemoTypes = {
     DEAD_HOST_PRUNE: 'evnDeadHostPrune',
     HOST_REBATE: 'evnHostRebate',
     HOST_REGISTRY_REF: 'evnHostRegistryRef',
-    PROPOSE: 'evnPropose',
-    PROPOSE_REF: 'evnProposeRef'
+    CANDIDATE_PROPOSE: 'evnCandidatePropose',
+    CANDIDATE_PROPOSE_REF: 'evnCandidateProposeRef'
 }
 
 const MemoFormats = {
