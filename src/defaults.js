@@ -1,9 +1,9 @@
 const DefaultValues = {
-    governorAddress: 'rDxkQ7Jaq1igBmNNavXqsZ5vyEoYRKgT8B',
-    rippledServer: 'wss://hooks-testnet-v2.xrpl-labs.com',
+    governorAddress: 'r9keGGSTDRg58RuiWYAQYuAAA8nqMG7EP5',
+    rippledServer: 'wss://hooks-testnet-v3.xrpl-labs.com',
     xrplApi: null,
     stateIndexId: 'evernodeindex',
-    networkID: 255
+    networkID: 21338
 }
 
 const HookTypes = {

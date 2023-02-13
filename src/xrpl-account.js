@@ -550,7 +550,7 @@ class XrplAccount {
     mintURIToken(uri, digest = null, flags = {}, options = {}) {
         const tx = {
             Account: this.address,
-            TransactionType: "UriToken",
+            TransactionType: "URITokenMint",
             URI: flags.isHexUri ? uri : TransactionHelper.asciiToHex(uri).toUpperCase(),
             Flags: flags.isBurnable ? 1 : 0
         }
@@ -564,8 +564,7 @@ class XrplAccount {
     burnURIToken(uriTokenID, options = {}) {
         return this.#submitAndVerifyTransaction({
             Account: this.address,
-            TransactionType: "UriToken",
-            Flags: 2,
+            TransactionType: "URITokenBurn",
             URITokenID: uriTokenID
         }, options);
     }
@@ -575,7 +574,7 @@ class XrplAccount {
 
         const tx = {
             Account: this.address,
-            TransactionType: "UriToken",
+            TransactionType: "URITokenCreateSellOffer",
             Flags: 524288, // 0x00080000 tfSell
             Amount: amountObj,
             URITokenID: uriTokenID
@@ -591,7 +590,7 @@ class XrplAccount {
         const amountObj = makeAmountObject(amount, currency, issuer);
         return this.#submitAndVerifyTransaction({
             Account: this.address,
-            TransactionType: "UriToken",
+            TransactionType: "URITokenBuy",
             Amount: amountObj,
             URITokenID: uriTokenID
         }, options);
@@ -600,7 +599,7 @@ class XrplAccount {
     async clearURITokenOffer(uriTokenID, options = {}) {
         return this.#submitAndVerifyTransaction({
             Account: this.address,
-            TransactionType: "UriToken",
+            TransactionType: "URITokenCancelSellOffer",
             URITokenID: uriTokenID
         }, options);
     }
