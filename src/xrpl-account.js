@@ -550,7 +550,7 @@ class XrplAccount {
     mintURIToken(uri, digest = null, flags = {}, options = {}) {
         const tx = {
             Account: this.address,
-            TransactionType: "URIToken",
+            TransactionType: "URITokenMint",
             URI: flags.isHexUri ? uri : TransactionHelper.asciiToHex(uri).toUpperCase(),
             Flags: flags.isBurnable ? 1 : 0
         }
@@ -562,12 +562,12 @@ class XrplAccount {
     }
 
     burnURIToken(uriTokenID, options = {}) {
-        return this.#submitAndVerifyTransaction({
+        const tx = {
             Account: this.address,
-            TransactionType: "URIToken",
-            Flags: 2,
+            TransactionType: "URITokenBurn",
             URITokenID: uriTokenID
-        }, options);
+        }
+        return this.#submitAndVerifyTransaction(tx, options);
     }
 
     sellURIToken(uriTokenID, amount, currency, issuer = null, toAddr = null, options = {}) {
@@ -575,7 +575,7 @@ class XrplAccount {
 
         const tx = {
             Account: this.address,
-            TransactionType: "URIToken",
+            TransactionType: "URITokenCreateSellOffer",
             Flags: 524288, // 0x00080000 tfSell
             Amount: amountObj,
             URITokenID: uriTokenID
@@ -591,8 +591,27 @@ class XrplAccount {
         const amountObj = makeAmountObject(amount, currency, issuer);
         return this.#submitAndVerifyTransaction({
             Account: this.address,
-            TransactionType: "URIToken",
+            TransactionType: "URITokenBuy",
             Amount: amountObj,
+            URITokenID: uriTokenID
+        }, options);
+    }
+
+    async getURITokens() {
+        const obj = await this.getAccountObjects(this.address);
+        return obj.filter(t => t.LedgerEntryType == 'URIToken');
+    }
+
+    async getURITokenByUri(uri, isHexUri = false) {
+        const tokens = await this.getURITokens();
+        const hexUri = isHexUri ? uri : TransactionHelper.asciiToHex(uri).toUpperCase();
+        return tokens.find(t => t.URI == hexUri);
+    }
+
+    async clearURITokenOffer(uriTokenID, options = {}) {
+        return this.#submitAndVerifyTransaction({
+            Account: this.address,
+            TransactionType: "URITokenCancelSellOffer",
             URITokenID: uriTokenID
         }, options);
     }
