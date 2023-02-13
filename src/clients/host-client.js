@@ -488,6 +488,10 @@ class HostClient extends BaseEvernodeClient {
                 keylets.push(HookHelpers.getHookDefinitionKeylet(index));
         }
 
+        // To obtain registration NFT Page Keylet and index.
+        const regNFT = await this.getRegistrationNft();
+        const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, this.xrplAcc, this.xrplApi);
+
         const uniqueId = sha512Half(hashesBuf);
         const memoBuf = Buffer.alloc(CANDIDATE_PROPOSE_MEMO_SIZE);
         Buffer.from(uniqueId.slice(0, 32)).copy(memoBuf, CANDIDATE_PROPOSE_UNIQUE_ID_MEMO_OFFSET);
@@ -503,6 +507,7 @@ class HostClient extends BaseEvernodeClient {
             this.config.evrIssuerAddress,
             [
                 { type: MemoTypes.CANDIDATE_PROPOSE, format: MemoFormats.HEX, data: hashesBuf.toString('hex').toUpperCase() },
+                { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') },
                 { type: MemoTypes.CANDIDATE_PROPOSE_REF, format: MemoFormats.HEX, data: memoBuf.toString('hex').toUpperCase() }
             ],
             options.transactionOptions);
