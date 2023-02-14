@@ -181,7 +181,6 @@ class BaseEvernodeClient {
             momentSize: HookStateKeys.MOMENT_SIZE,
             hostHeartbeatFreq: HookStateKeys.HOST_HEARTBEAT_FREQ,
             momentBaseInfo: HookStateKeys.MOMENT_BASE_INFO,
-            purchaserTargetPrice: HookStateKeys.PURCHASER_TARGET_PRICE,
             leaseAcquireWindow: HookStateKeys.LEASE_ACQUIRE_WINDOW,
             rewardInfo: HookStateKeys.REWARD_INFO,
             rewardConfiguration: HookStateKeys.REWARD_CONFIGURATION,
