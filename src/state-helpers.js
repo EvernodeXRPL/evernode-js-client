@@ -3,6 +3,7 @@ const { Buffer } = require('buffer');
 const { HookStateKeys, EvernodeConstants } = require('./evernode-common');
 const { XflHelpers } = require('./xfl-helpers');
 const crypto = require("crypto");
+const { UtilHelpers } = require('./util-helpers');
 
 const NFTOKEN_PREFIX = '00000000';
 
@@ -44,7 +45,7 @@ const HOST_REG_LEDGER_OFFSET = 68;
 const HOST_REG_FEE_OFFSET = 76;
 const HOST_TOT_INS_COUNT_OFFSET = 84;
 const HOST_ACT_INS_COUNT_OFFSET = 88;
-const HOST_HEARTBEAT_LEDGER_IDX_OFFSET = 92;
+const HOST_HEARTBEAT_TIMESTAMP_OFFSET = 92;
 const HOST_VERSION_OFFSET = 100;
 const HOST_REG_TIMESTAMP_OFFSET = 103;
 const HOST_TRANSFER_FLAG_OFFSET = 111;
@@ -81,7 +82,9 @@ const CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET = 85;
 const STATE_KEY_TYPES = {
     TOKEN_ID: 2,
     HOST_ADDR: 3,
-    TRANSFEREE_ADDR: 4
+    TRANSFEREE_ADDR: 4,
+    CANDIDATE_OWNER: 5,
+    CANDIDATE_ID: 6
 }
 
 const MOMENT_TYPES = {
@@ -109,6 +112,7 @@ const CANDIDATE_STATUSES = {
 const EVERNODE_PREFIX = 'EVR';
 const HOST_ADDR_KEY_ZERO_COUNT = 8;
 const TRANSFEREE_ADDR_KEY_ZERO_COUNT = 8;
+const CANDIDATE_OWNER_KEY_ZERO_COUNT = 8;
 const HOOK_STATE_LEDGER_TYPE_PREFIX = 118; // Decimal value of ASCII 'v'
 const PENDING_TRANSFER = 1;
 const HOST_EMAIL_ADDRESS_LEN = 40;
@@ -120,8 +124,8 @@ class StateHelpers {
         SIGLETON: 'singleton',
         CONFIGURATION: 'configuration',
         TRANSFEREE_ADDR: 'transfereeAddr',
-        CANDIDATE_ID: 'candidateId',
-        CANDIDATE_OWNER: 'candidateOwner'
+        CANDIDATE_OWNER: 'candidateOwner',
+        CANDIDATE_ID: 'candidateId'
     }
 
     static timeLines = {
@@ -146,7 +150,7 @@ class StateHelpers {
             registrationFee: Number(stateDataBuf.readBigUInt64BE(HOST_REG_FEE_OFFSET)),
             maxInstances: stateDataBuf.readUInt32BE(HOST_TOT_INS_COUNT_OFFSET),
             activeInstances: stateDataBuf.readUInt32BE(HOST_ACT_INS_COUNT_OFFSET),
-            lastHeartbeatIndex: Number(stateDataBuf.readBigUInt64BE(HOST_HEARTBEAT_LEDGER_IDX_OFFSET)),
+            lastHeartbeatIndex: Number(stateDataBuf.readBigUInt64BE(HOST_HEARTBEAT_TIMESTAMP_OFFSET)),
             version: `${stateDataBuf.readUInt8(HOST_VERSION_OFFSET)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 1)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 2)}`,
             isATransferer: (stateDataBuf.length > HOST_TRANSFER_FLAG_OFFSET && (stateDataBuf.readUInt8(HOST_TRANSFER_FLAG_OFFSET) === PENDING_TRANSFER)) ? TRANSFER_STATES.HAS_A_TRANSFER : TRANSFER_STATES.NO_TRANSFER
         }
@@ -184,7 +188,7 @@ class StateHelpers {
     static decodeCandidateOwnerState(stateKeyBuf, stateDataBuf) {
         let data = {
             ownerAddress: codec.encodeAccountID(stateKeyBuf.slice(12)),
-            uniqueId: sha512Half(stateDataBuf).toUpperCase(),
+            uniqueId: UtilHelpers.getCandidateUniqueId(stateDataBuf),
             governorHookHash: stateDataBuf.slice(CANDIDATE_GOVERNOR_HOOK_HASH_OFFSET, CANDIDATE_REGISTRY_HOOK_HASH_OFFSET).toString('hex').toUpperCase(),
             registryHookHash: stateDataBuf.slice(CANDIDATE_REGISTRY_HOOK_HASH_OFFSET, CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET).toString('hex').toUpperCase(),
             heartbeatHookHash: stateDataBuf.slice(CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET, CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET + 32).toString('hex').toUpperCase(),
@@ -531,6 +535,30 @@ class StateHelpers {
         }
 
         const addrBuf = Buffer.from(codec.decodeAccountID(address), "hex");
+        const stateKeyBuf = Buffer.concat([Buffer.from(EVERNODE_PREFIX, "utf-8"), buf, addrBuf]);
+        return stateKeyBuf.toString('hex').toUpperCase();
+    }
+
+    static generateCandidateIdStateKey(uniqueId) {
+        // 1 byte - Key Type.
+        let buf = Buffer.allocUnsafe(1);
+        buf.writeUInt8(STATE_KEY_TYPES.CANDIDATE_ID);
+
+        const idBuf = Buffer.from(uniqueId, "hex");
+        const stateKeyBuf = (Buffer.concat([Buffer.from(EVERNODE_PREFIX, "utf-8"), buf, idBuf.slice(4, 32)]));
+        return stateKeyBuf.toString('hex').toUpperCase();
+    }
+
+    static generateCandidateOwnerStateKey(owner) {
+        // 1 byte - Key Type.
+        // 8 bytes - Zeros.
+        let buf = Buffer.allocUnsafe(9);
+        buf.writeUInt8(STATE_KEY_TYPES.CANDIDATE_OWNER);
+        for (let i = 0; i < CANDIDATE_OWNER_KEY_ZERO_COUNT; i++) {
+            buf.writeUInt8(0, i + 1);
+        }
+
+        const addrBuf = Buffer.from(codec.decodeAccountID(owner), "hex");
         const stateKeyBuf = Buffer.concat([Buffer.from(EVERNODE_PREFIX, "utf-8"), buf, addrBuf]);
         return stateKeyBuf.toString('hex').toUpperCase();
     }

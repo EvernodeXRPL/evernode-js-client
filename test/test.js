@@ -2,20 +2,20 @@
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 const codec = require('ripple-address-codec');
 
-const evrIssuerAddress = "rEm71QHHXJzGULG4mkR3yhLz6EZYgvuwwP";
-const registryAddress = "raaFre81618XegCrzTzVotAmarBcqNSAvK";
-const governorAddress = 'rDxkQ7Jaq1igBmNNavXqsZ5vyEoYRKgT8B';
-const heartbeatHookAddress = 'rfahCFFLKHuNkeE9iRvn1tjmdH2FYyL8QS';
-const hostAddress = "rNJDQu9pUretQetmxeHRPkasM4o7chdML2";
-const hostSecret = "ss11mwRSG4UxXQ9LakyYTmAzisnN2";
-const foundationAddress = "rMRRzwe2mPhtVJYkBsPYbxkrHdExAduqWi";
-const foundationSecret = "sncQEvGmeMrVGAvkMiLkmE3hrtVH9";
+const evrIssuerAddress = "r3W3jxzCvSkjxwv28s9Djc8HUEaVWmzCKG";
+const registryAddress = "rG7Trro2Q54cZjcZXL5YnLuMBSsz8bbSJB";
+const governorAddress = 'rDQp3V5pMgpqUybrJm43KuJyL47iSkmRUr';
+const heartbeatAddress = 'rnvpnGvc6exniqCgjoHC1czvw7T3HG7num';
+const hostAddress = "rELnSvT3vwKnUCGCuvSxQiVwR8A57hPkzn";
+const hostSecret = "shon7GXDEuqtTuBENahrrux79rTsr";
+const foundationAddress = "rMxkBWSy7KW9ip7NavRBFUY1tnAwYG2YWh";
+const foundationSecret = "snUcVdDKWcvVp2mFZe51nkMeT14mi";
 const tenantAddress = "rw7GPreCDX2nuJVHSwNdH38ZGsiEH8qiY";
 const tenantSecret = "shdQBGbF9d3Tgp3D28pXoBdhWoZ9N";
 const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
 const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
 const transfereeAddress = 'rNAW13zAUA4DjkM45peek3WhUs23GZ2fYD';
-const multiSigninerAddress = 'rsrpCr5j5phA58uQy9Ha3StMPBmSrXbVx6';
+const multiSignerAddress = 'rsrpCr5j5phA58uQy9Ha3StMPBmSrXbVx6';
 const multiSignerSecret = 'shYrpNBRgnej2xmBhxze75MNLfTwq';
 
 
@@ -35,7 +35,7 @@ const signerQuorum = 1;
 
 const tosHash = "757A0237B44D8B2BBB04AE2BAD5813858E0AECD2F0B217075E27E0630BA74314";
 
-const hookCandidates = "9465B3DEEA4BF51BB39920CBCD26607CD4DCF0DDAED4FA331FF4B186184C46FF9465B3DEEA4BF51BB39920CBCD26607CD4DCF0DDAED4FA331FF4B186184C46FF9465B3DEEA4BF51BB39920CBCD26607CD4DCF0DDAED4FA331FF4B186184C46FF";
+const hookCandidates = "348F37450D5BECD15D774EF8C8B371E4F5F425D8E56CC31CAF83BD9F73BB6E267318AD11E8D1E37859BE46DD87CE8DFE92279FDD1BEF1A181B191B17BF0BB8FACF57466EA9975960B65AC02F520A81D258FD67ACB3FBAD88C2CA368492265389";
 
 const clients = [];
 
@@ -103,6 +103,9 @@ async function app() {
             // () => getAccountObjects(),
             // () => setSignerList(),
             // () => propose(),
+            // () => getCandidateInfo(),
+            // () => vote(),
+            // () => foundationVote(),
             // () => makePayment()
 
         ];
@@ -162,7 +165,7 @@ async function initializeConfigs() {
     codec.decodeAccountID(evrIssuerAddress).copy(memoData);
     codec.decodeAccountID(foundationAddress).copy(memoData, 20);
     codec.decodeAccountID(registryAddress).copy(memoData, 40);
-    codec.decodeAccountID(heartbeatHookAddress).copy(memoData, 60);
+    codec.decodeAccountID(heartbeatAddress).copy(memoData, 60);
 
     const initAccount = new evernode.XrplAccount(initializerAddress, initializerSecret);
     await initAccount.makePayment(governorAddress, '1', 'XRP', null,
@@ -339,6 +342,13 @@ async function getRegistryClient() {
     return client;
 }
 
+async function getBaseClient(address, secret) {
+    const client = new evernode.BaseClient(address, secret);
+    await client.connect();
+    clients.push(client);
+    return client;
+}
+
 async function fundTenant(tenant) {
     // Send hosting tokens to tenant if needed.
     const lines = await tenant.xrplAcc.getTrustLines('EVR', evrIssuerAddress);
@@ -448,7 +458,7 @@ async function setSignerList() {
         throw ("Signer quorum must be a positive integer.");
 
     console.log("-----------Setting signer list");
-    const masterAccount = new evernode.XrplAccount(multiSigninerAddress, multiSignerSecret);
+    const masterAccount = new evernode.XrplAccount(multiSignerAddress, multiSignerSecret);
 
     const res = await masterAccount.setSignerList(signerList, { signerQuorum: signerQuorum });
     console.log(res);
@@ -464,6 +474,34 @@ async function propose() {
 
     console.log(`-----------Proposing hook candidate`);
     await host.propose(hookCandidates, 'testProposal');
+}
+
+async function getCandidateInfo() {
+    const host = await getHostClient();
+    const candidateInfo = await host.getCandidateInfo();
+    console.log(candidateInfo);
+    return candidateInfo;
+}
+
+async function vote() {
+    const host = await getHostClient();
+    const uniqueId = evernode.UtilHelpers.getCandidateUniqueId(Buffer.from(hookCandidates, 'hex'));
+
+    if (!await host.isRegistered()) {
+        console.log("Host is not registered.");
+        return true;
+    }
+
+    console.log(`-----------Vote for hook candidate`);
+    await host.vote(uniqueId, evernode.EvernodeConstants.CandidateVote.Support);
+}
+
+async function foundationVote() {
+    const client = await getBaseClient(foundationAddress, foundationSecret);
+    const uniqueId = evernode.UtilHelpers.getCandidateUniqueId(Buffer.from(hookCandidates, 'hex'));
+
+    console.log(`-----------Foundation vote for hook candidate`);
+    await client.vote(uniqueId, evernode.EvernodeConstants.CandidateVote.Support);
 }
 
 async function makePayment() {

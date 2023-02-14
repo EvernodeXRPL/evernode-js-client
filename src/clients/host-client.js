@@ -8,8 +8,8 @@ const codec = require('ripple-address-codec');
 const { XflHelpers } = require('../xfl-helpers');
 const { EvernodeHelpers } = require('../evernode-helpers');
 const { StateHelpers } = require('../state-helpers');
-const { sha512Half } = require('xrpl-binary-codec/dist/hashes');
 const { HookHelpers } = require('../hook-helpers');
+const { UtilHelpers } = require('../util-helpers');
 
 const OFFER_WAIT_TIMEOUT = 60;
 
@@ -492,9 +492,9 @@ class HostClient extends BaseEvernodeClient {
         const regNFT = await this.getRegistrationNft();
         const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, this.xrplAcc, this.xrplApi);
 
-        const uniqueId = sha512Half(hashesBuf);
+        const uniqueId = UtilHelpers.getCandidateUniqueId(hashesBuf);
         const memoBuf = Buffer.alloc(CANDIDATE_PROPOSE_MEMO_SIZE);
-        Buffer.from(uniqueId.slice(0, 32)).copy(memoBuf, CANDIDATE_PROPOSE_UNIQUE_ID_MEMO_OFFSET);
+        Buffer.from(uniqueId, 'hex').copy(memoBuf, CANDIDATE_PROPOSE_UNIQUE_ID_MEMO_OFFSET);
         Buffer.from(shortName.substr(0, 20), "utf-8").copy(memoBuf, CANDIDATE_PROPOSE_SHORT_NAME_MEMO_OFFSET);
         Buffer.from(keylets.join(''), 'hex').copy(memoBuf, CANDIDATE_PROPOSE_KEYLETS_MEMO_OFFSET);
 
@@ -507,7 +507,7 @@ class HostClient extends BaseEvernodeClient {
             this.config.evrIssuerAddress,
             [
                 { type: MemoTypes.CANDIDATE_PROPOSE, format: MemoFormats.HEX, data: hashesBuf.toString('hex').toUpperCase() },
-                { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') },
+                { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex').toUpperCase() },
                 { type: MemoTypes.CANDIDATE_PROPOSE_REF, format: MemoFormats.HEX, data: memoBuf.toString('hex').toUpperCase() }
             ],
             options.transactionOptions);

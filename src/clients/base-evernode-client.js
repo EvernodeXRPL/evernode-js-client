@@ -12,6 +12,10 @@ const { FirestoreHandler } = require('../firestore/firestore-handler');
 const { StateHelpers } = require('../state-helpers');
 const { EvernodeHelpers } = require('../evernode-helpers');
 
+const CANDIDATE_VOTE_UNIQUE_ID_MEMO_OFFSET = 0;
+const CANDIDATE_VOTE_VALUE_MEMO_OFFSET = 32;
+const CANDIDATE_VOTE_MEMO_SIZE = 33;
+
 class BaseEvernodeClient {
 
     #watchEvents;
@@ -503,6 +507,40 @@ class BaseEvernodeClient {
     }
 
     /**
+     * Get proposed candidate info.
+     * @param {string} ownerAddress [Optional] Address of the owner.
+     * @returns The registered host information object. Returns null is not registered.
+     */
+    async getCandidateInfo(ownerAddress = this.xrplAcc.address) {
+        try {
+            const ownerStateKey = StateHelpers.generateCandidateOwnerStateKey(ownerAddress);
+            const ownerStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, ownerStateKey);
+            const ownerLedgerEntry = await this.xrplApi.getLedgerEntry(ownerStateIndex);
+            const ownerStateData = ownerLedgerEntry?.HookStateData;
+            if (ownerStateData) {
+                const ownerStateDecoded = StateHelpers.decodeCandidateOwnerState(Buffer.from(ownerStateKey, 'hex'), Buffer.from(ownerStateData, 'hex'));
+
+                const idStateKey = StateHelpers.generateCandidateIdStateKey(ownerStateDecoded.uniqueId);
+                const idStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, idStateKey);
+                const idLedgerEntry = await this.xrplApi.getLedgerEntry(idStateIndex);
+
+                const idStateData = idLedgerEntry?.HookStateData;
+                if (idStateData) {
+                    const idStateDecoded = StateHelpers.decodeCandidateIdState(Buffer.from(idStateData, 'hex'));
+                    return { ...ownerStateDecoded, ...idStateDecoded };
+                }
+            }
+        }
+        catch (e) {
+            // If the exception is entryNotFound from Rippled there's no entry for the host, So return null.
+            if (e?.data?.error !== 'entryNotFound')
+                throw e;
+        }
+
+        return null;
+    }
+
+    /**
      * Get all the hosts registered in Evernode. The result's are paginated. Default page size is 20. Note: Specifying both filter and pagination does not supported.
      * @param {object} filters [Optional] Filter criteria to filter the hosts. The filter key can be a either property of the host.
      * @param {number} pageSize [Optional] Page size for the results.
@@ -605,6 +643,35 @@ class BaseEvernodeClient {
         } else
             throw "No Registration NFT was found for the Host account."
 
+    }
+
+    /**
+     * Vote for a hook candidate.
+     * @param {string} uniqueId Hex unique id of the candidate.
+     * @param {int} vote Vote value CandidateVote (0,1,2).
+     */
+    async vote(uniqueId, vote, options = {}) {
+        // If this is from foundation address, skip the registration check.
+        let nftPageDataBuf = null;
+        if (this.config.foundationAddress !== this.xrplAcc.address) {
+            // To obtain registration NFT Page Keylet and index.
+            const regNFT = await this.getRegistrationNft();
+            nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, this.xrplAcc, this.xrplApi);
+        }
+
+        const voteBuf = Buffer.alloc(CANDIDATE_VOTE_MEMO_SIZE);
+        Buffer.from(uniqueId, 'hex').copy(voteBuf, CANDIDATE_VOTE_UNIQUE_ID_MEMO_OFFSET);
+        voteBuf.writeUInt8(vote, CANDIDATE_VOTE_VALUE_MEMO_OFFSET)
+
+        return await this.xrplAcc.makePayment(this.governorAddress,
+            XrplConstants.MIN_XRP_AMOUNT,
+            XrplConstants.XRP,
+            null,
+            [
+                { type: MemoTypes.CANDIDATE_VOTE, format: MemoFormats.HEX, data: voteBuf.toString('hex').toUpperCase() },
+                ...(nftPageDataBuf ? [{ type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex').toUpperCase() }] : [])
+            ],
+            options.transactionOptions);
     }
 }
 

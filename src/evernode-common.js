@@ -8,7 +8,12 @@ const EvernodeConstants = {
         "Governor",
         "Registry",
         "Heartbeat"
-    ]
+    ],
+    CandidateVote: {
+        Abstain: 0,
+        Support: 1,
+        Reject: 2
+    }
 }
 
 const MemoTypes = {
@@ -33,7 +38,8 @@ const MemoTypes = {
     HOST_REBATE: 'evnHostRebate',
     HOST_REGISTRY_REF: 'evnHostRegistryRef',
     CANDIDATE_PROPOSE: 'evnCandidatePropose',
-    CANDIDATE_PROPOSE_REF: 'evnCandidateProposeRef'
+    CANDIDATE_PROPOSE_REF: 'evnCandidateProposeRef',
+    CANDIDATE_VOTE: 'evnCandidateVote'
 }
 
 const MemoFormats = {
