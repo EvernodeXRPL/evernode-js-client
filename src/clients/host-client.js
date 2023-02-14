@@ -47,7 +47,7 @@ class HostClient extends BaseEvernodeClient {
 
     async getRegistrationURIs() {
         // Find an owned NFT with matching Evernode host NFT prefix.
-        const nft = (await this.xrplAcc.getURITokens()).find(n => n.Issuer === this.config.registryAddress);
+        const nft = (await this.xrplAcc.getURITokens()).find(n => n.index.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
         if (nft) {
             // Check whether the token was actually issued from Evernode registry contract.
             const issuerHex = nft.index.substr(8, 40);
@@ -488,7 +488,7 @@ class HostClient extends BaseEvernodeClient {
 
         if (this.xrplAcc.address !== transfereeAddress) {
             // Find the new transferee also owns an Evernode Host Registration NFT.
-            const nft = (await transfereeAcc.getURITokens()).find(n => n.Issuer === this.config.registryAddress);
+            const nft = (await transfereeAcc.getURITokens()).find(n => n.index.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
             if (nft) {
                 // Check whether the token was actually issued from Evernode registry contract.
                 const issuerHex = nft.index.substr(8, 40);
