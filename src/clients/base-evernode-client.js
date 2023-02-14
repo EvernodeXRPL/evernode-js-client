@@ -187,7 +187,8 @@ class BaseEvernodeClient {
             hostCount: HookStateKeys.HOST_COUNT,
             momentTransitInfo: HookStateKeys.MOMENT_TRANSIT_INFO,
             registryMaxTrxEmitFee: HookStateKeys.MAX_TRX_EMISSION_FEE,
-            governanceEligibilityPeriod: HookStateKeys.GOVERNANCE_ELIGIBILITY_PERIOD
+            governanceConfiguration: HookStateKeys.GOVERNANCE_CONFIGURATION,
+            governanceInfo: HookStateKeys.GOVERNANCE_INFO
         }
         let config = {};
         for (const [key, value] of Object.entries(configStateKeys)) {

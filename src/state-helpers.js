@@ -25,6 +25,17 @@ const MOMENT_BASE_POINT_OFFSET = 0;
 const MOMENT_AT_TRANSITION_OFFSET = 8;
 const MOMENT_TYPE_OFFSET = 12;
 
+const ELIGIBILITY_PERIOD_OFFSET = 0;
+const CANDIDATE_LIFE_PERIOD_OFFSET = 4;
+const CANDIDATE_ELECTION_PERIOD_OFFSET = 8;
+const CANDIDATE_SUPPORT_AVERAGE_OFFSET = 12;
+const CANDIDATE_REJECT_AVERAGE_OFFSET = 14;
+
+const GOVERNANCE_MODE_OFFSET = 0;
+const ELECTED_PROPOSAL_UNIQUE_ID_OFFSET = 1;
+const PROPOSAL_ELECTED_TIMESTAMP_OFFSET = 33;
+const UPDATED_HOOK_COUNT_OFFSET = 41;
+
 const HOST_TOKEN_ID_OFFSET = 0;
 const HOST_COUNTRY_CODE_OFFSET = 32;
 const HOST_RESERVED_OFFSET = 34;
@@ -51,6 +62,22 @@ const PREV_HOST_ADDRESS_OFFSET = 0;
 const TRANSFER_LEDGER_IDX_OFFSET = 20;
 const TRANSFERRED_NFT_ID_OFFSET = 28;
 
+const CANDIDATE_GOVERNOR_HOOK_HASH_OFFSET = 0;
+const CANDIDATE_REGISTRY_HOOK_HASH_OFFSET = 32;
+const CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET = 64;
+
+const CANDIDATE_OWNER_ADDRESS_OFFSET = 0;
+const CANDIDATE_SHORT_NAME_OFFSET = 20;
+const CANDIDATE_CREATED_TIMESTAMP_OFFSET = 40;
+const CANDIDATE_PROPOSAL_FEE_OFFSET = 48;
+const CANDIDATE_POSITIVE_VOTE_COUNT_OFFSET = 56;
+const CANDIDATE_NEGATIVE_VOTE_COUNT_OFFSET = 60;
+const CANDIDATE_NEUTRAL_VOTE_COUNT_OFFSET = 64;
+const CANDIDATE_LAST_VOTE_TIMESTAMP_OFFSET = 68;
+const CANDIDATE_STATUS_OFFSET = 76;
+const CANDIDATE_STATUS_CHANGE_TIMESTAMP_OFFSET = 77;
+const CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET = 85;
+
 const STATE_KEY_TYPES = {
     TOKEN_ID: 2,
     HOST_ADDR: 3,
@@ -67,6 +94,18 @@ const TRANSFER_STATES = {
     HAS_A_TRANSFER: 1
 }
 
+const GOVERNANCE_MODES = {
+    PILOTED: 1,
+    CO_PILOTED: 2,
+    AUTO_PILOTED: 3
+}
+
+const CANDIDATE_STATUSES = {
+    CANDIDATE_ABSTAINED: 0,
+    CANDIDATE_SUPPORTED: 1,
+    CANDIDATE_REJECTED: 2
+}
+
 const EVERNODE_PREFIX = 'EVR';
 const HOST_ADDR_KEY_ZERO_COUNT = 8;
 const TRANSFEREE_ADDR_KEY_ZERO_COUNT = 8;
@@ -80,7 +119,9 @@ class StateHelpers {
         HOST_ADDR: 'hostAddr',
         SIGLETON: 'singleton',
         CONFIGURATION: 'configuration',
-        TRANSFEREE_ADDR: 'transfereeAddr'
+        TRANSFEREE_ADDR: 'transfereeAddr',
+        CANDIDATE_ID: 'candidateId',
+        CANDIDATE_OWNER: 'candidateOwner'
     }
 
     static timeLines = {
@@ -129,7 +170,6 @@ class StateHelpers {
         }
     }
 
-
     static decodeTransfereeAddrState(stateKeyBuf, stateDataBuf) {
         const prevHostClassicAddress = codec.encodeAccountID(stateDataBuf.slice(PREV_HOST_ADDRESS_OFFSET, TRANSFER_LEDGER_IDX_OFFSET));
         return {
@@ -138,6 +178,63 @@ class StateHelpers {
             prevHostAddress: prevHostClassicAddress,
             transferLedgerIdx: Number(stateDataBuf.readBigUInt64BE(TRANSFER_LEDGER_IDX_OFFSET)),
             transferredNfTokenId: stateDataBuf.slice(TRANSFERRED_NFT_ID_OFFSET, 60).toString('hex').toUpperCase()
+        }
+    }
+
+    static decodeCandidateOwnerState(stateKeyBuf, stateDataBuf) {
+        let data = {
+            ownerAddress: codec.encodeAccountID(stateKeyBuf.slice(12)),
+            uniqueId: sha512Half(stateDataBuf).toUpperCase(),
+            governorHookHash: stateDataBuf.slice(CANDIDATE_GOVERNOR_HOOK_HASH_OFFSET, CANDIDATE_REGISTRY_HOOK_HASH_OFFSET).toString('hex').toUpperCase(),
+            registryHookHash: stateDataBuf.slice(CANDIDATE_REGISTRY_HOOK_HASH_OFFSET, CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET).toString('hex').toUpperCase(),
+            heartbeatHookHash: stateDataBuf.slice(CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET, CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET + 32).toString('hex').toUpperCase(),
+        }
+        return data;
+    }
+
+    static decodeCandidateIdState(stateDataBuf) {
+        let status = '';
+        switch (stateDataBuf.readUInt8(CANDIDATE_STATUS_OFFSET)) {
+            case CANDIDATE_STATUSES.CANDIDATE_ABSTAINED:
+                status = 'abstained';
+                break;
+            case CANDIDATE_STATUSES.CANDIDATE_SUPPORTED:
+                status = 'supported';
+                break;
+            case CANDIDATE_STATUSES.CANDIDATE_REJECTED:
+                status = 'rejected';
+                break;
+            default:
+                status = 'undefined';
+                break;
+        }
+        let foundationStatus = '';
+        switch (stateDataBuf.readUInt8(CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET)) {
+            case CANDIDATE_STATUSES.CANDIDATE_ABSTAINED:
+                foundationStatus = 'abstained';
+                break;
+            case CANDIDATE_STATUSES.CANDIDATE_SUPPORTED:
+                foundationStatus = 'supported';
+                break;
+            case CANDIDATE_STATUSES.CANDIDATE_REJECTED:
+                foundationStatus = 'rejected';
+                break;
+            default:
+                foundationStatus = 'undefined';
+                break;
+        }
+        return {
+            ownerAddress: codec.encodeAccountID(stateDataBuf.slice(CANDIDATE_OWNER_ADDRESS_OFFSET, CANDIDATE_SHORT_NAME_OFFSET)),
+            shortName: stateDataBuf.slice(CANDIDATE_SHORT_NAME_OFFSET, CANDIDATE_CREATED_TIMESTAMP_OFFSET).toString().replace(/\x00+$/, ''), // Remove trailing \x00 characters.
+            createdTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_CREATED_TIMESTAMP_OFFSET)),
+            proposalFee: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_PROPOSAL_FEE_OFFSET)),
+            positiveVoteCount: stateDataBuf.readUInt32BE(CANDIDATE_POSITIVE_VOTE_COUNT_OFFSET),
+            negativeVoteCount: stateDataBuf.readUInt32BE(CANDIDATE_NEGATIVE_VOTE_COUNT_OFFSET),
+            neutralVoteCount: stateDataBuf.readUInt32BE(CANDIDATE_NEUTRAL_VOTE_COUNT_OFFSET),
+            lastVoteTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_LAST_VOTE_TIMESTAMP_OFFSET)),
+            status: status,
+            statusChangeTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_STATUS_CHANGE_TIMESTAMP_OFFSET)),
+            foundationVoteStatus: foundationStatus
         }
     }
 
@@ -167,6 +264,25 @@ class StateHelpers {
                 type: this.StateTypes.TRANSFEREE_ADDR,
                 key: hexKey,
                 ...this.decodeTransfereeAddrState(stateKey, stateData)
+            }
+        }
+        else if (Buffer.from(HookStateKeys.PREFIX_CANDIDATE_OWNER, 'hex').compare(stateKey, 0, 4) === 0) {
+            return {
+                type: this.StateTypes.CANDIDATE_OWNER,
+                key: hexKey,
+                ...this.decodeCandidateOwnerState(stateKey, stateData)
+            }
+        }
+        else if (Buffer.from(HookStateKeys.PREFIX_CANDIDATE_ID, 'hex').compare(stateKey, 0, 4) === 0) {
+            // Generate the owner state key.
+            const ownerKeyBuf = Buffer.alloc(32, 0);
+            Buffer.from(HookStateKeys.PREFIX_CANDIDATE_OWNER, 'hex').copy(ownerKeyBuf);
+            stateData.copy(ownerKeyBuf, 12, CANDIDATE_OWNER_ADDRESS_OFFSET, CANDIDATE_SHORT_NAME_OFFSET)
+            return {
+                type: this.StateTypes.CANDIDATE_ID,
+                key: hexKey,
+                ownerKey: ownerKeyBuf.toString('hex').toUpperCase(),
+                ...this.decodeCandidateIdState(stateData)
             }
         }
         else if (Buffer.from(HookStateKeys.HOST_COUNT, 'hex').compare(stateKey) === 0) {
@@ -271,11 +387,44 @@ class StateHelpers {
                 value: Number(stateData.readBigUInt64BE())
             }
         }
-        else if (Buffer.from(HookStateKeys.GOVERNANCE_ELIGIBILITY_PERIOD, 'hex').compare(stateKey) === 0) {
+        else if (Buffer.from(HookStateKeys.GOVERNANCE_CONFIGURATION, 'hex').compare(stateKey) === 0) {
             return {
                 type: this.StateTypes.CONFIGURATION,
                 key: hexKey,
-                value: Number(stateData.readBigUInt64BE())
+                value: {
+                    eligibilityPeriod: stateData.readUInt32BE(ELIGIBILITY_PERIOD_OFFSET),
+                    candidateLifePeriod: stateData.readUInt32BE(CANDIDATE_LIFE_PERIOD_OFFSET),
+                    candidateElectionPeriod: stateData.readUInt32BE(CANDIDATE_ELECTION_PERIOD_OFFSET),
+                    candidateSupportAverage: stateData.readUInt16BE(CANDIDATE_SUPPORT_AVERAGE_OFFSET),
+                    candidateRejectAverage: stateData.readUInt16BE(CANDIDATE_REJECT_AVERAGE_OFFSET)
+                }
+            }
+        }
+        else if (Buffer.from(HookStateKeys.GOVERNANCE_INFO, 'hex').compare(stateKey) === 0) {
+            let mode = '';
+            switch (stateData.readUInt8(GOVERNANCE_MODE_OFFSET)) {
+                case GOVERNANCE_MODES.PILOTED:
+                    mode = 'piloted';
+                    break;
+                case GOVERNANCE_MODES.CO_PILOTED:
+                    mode = 'co-piloted';
+                    break;
+                case GOVERNANCE_MODES.AUTO_PILOTED:
+                    mode = 'auto-piloted';
+                    break;
+                default:
+                    mode = 'undefined';
+                    break;
+            }
+            return {
+                type: this.StateTypes.CONFIGURATION,
+                key: hexKey,
+                value: {
+                    governanceMode: mode,
+                    electedProposalUniqueId: stateData.readUInt32BE(ELECTED_PROPOSAL_UNIQUE_ID_OFFSET),
+                    proposalElectedTimestamp: Number(stateData.readBigUInt64BE(PROPOSAL_ELECTED_TIMESTAMP_OFFSET)),
+                    updatedHookCount: stateData.readUInt8(UPDATED_HOOK_COUNT_OFFSET)
+                }
             }
         }
         else
@@ -302,6 +451,18 @@ class StateHelpers {
                 type: this.StateTypes.TRANSFEREE_ADDR
             };
         }
+        else if (Buffer.from(HookStateKeys.PREFIX_CANDIDATE_ID, 'hex').compare(stateKey, 0, 4) === 0) {
+            return {
+                key: hexKey,
+                type: this.StateTypes.CANDIDATE_ID
+            };
+        }
+        else if (Buffer.from(HookStateKeys.PREFIX_CANDIDATE_OWNER, 'hex').compare(stateKey, 0, 4) === 0) {
+            return {
+                key: hexKey,
+                type: this.StateTypes.CANDIDATE_OWNER
+            };
+        }
         else if (Buffer.from(HookStateKeys.HOST_COUNT, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.MOMENT_BASE_INFO, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.HOST_REG_FEE, 'hex').compare(stateKey) === 0 ||
@@ -325,7 +486,8 @@ class StateHelpers {
             Buffer.from(HookStateKeys.MAX_TRX_EMISSION_FEE, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.REGISTRY_ADDR, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.HEARTBEAT_ADDR, 'hex').compare(stateKey) === 0 ||
-            Buffer.from(HookStateKeys.GOVERNANCE_ELIGIBILITY_PERIOD, 'hex').compare(stateKey) === 0) {
+            Buffer.from(HookStateKeys.GOVERNANCE_CONFIGURATION, 'hex').compare(stateKey) === 0 ||
+            Buffer.from(HookStateKeys.GOVERNANCE_INFO, 'hex').compare(stateKey) === 0) {
             return {
                 key: hexKey,
                 type: this.STATE_TYPES.CONFIGURATION
