@@ -562,11 +562,12 @@ class XrplAccount {
     }
 
     burnURIToken(uriTokenID, options = {}) {
-        return this.#submitAndVerifyTransaction({
+        const tx = {
             Account: this.address,
             TransactionType: "URITokenBurn",
             URITokenID: uriTokenID
-        }, options);
+        }
+        return this.#submitAndVerifyTransaction(tx, options);
     }
 
     sellURIToken(uriTokenID, amount, currency, issuer = null, toAddr = null, options = {}) {
@@ -594,7 +595,7 @@ class XrplAccount {
             URITokenID: uriTokenID
         }, options);
     }
-
+    
     async clearURITokenOffer(uriTokenID, options = {}) {
         return this.#submitAndVerifyTransaction({
             Account: this.address,
@@ -602,7 +603,6 @@ class XrplAccount {
             URITokenID: uriTokenID
         }, options);
     }
-
     async getURITokens() {
         const obj = await this.getAccountObjects(this.address);
         return obj.filter(t => t.LedgerEntryType == 'URIToken');
