@@ -466,7 +466,7 @@ class BaseEvernodeClient {
     /**
      * Get the registered host information.
      * @param {string} hostAddress [Optional] Address of the host.
-     * @returns The registered host information object. Returns null is not registered.
+     * @returns The registered host information object. Returns null if not registered.
      */
     async getHostInfo(hostAddress = this.xrplAcc.address) {
         try {
