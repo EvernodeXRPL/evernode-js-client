@@ -2,14 +2,14 @@
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 const codec = require('ripple-address-codec');
 
-const evrIssuerAddress = "r3W3jxzCvSkjxwv28s9Djc8HUEaVWmzCKG";
-const registryAddress = "rG7Trro2Q54cZjcZXL5YnLuMBSsz8bbSJB";
-const governorAddress = 'rDQp3V5pMgpqUybrJm43KuJyL47iSkmRUr';
-const heartbeatAddress = 'rnvpnGvc6exniqCgjoHC1czvw7T3HG7num';
-const hostAddress = "rELnSvT3vwKnUCGCuvSxQiVwR8A57hPkzn";
-const hostSecret = "shon7GXDEuqtTuBENahrrux79rTsr";
-const foundationAddress = "rMxkBWSy7KW9ip7NavRBFUY1tnAwYG2YWh";
-const foundationSecret = "snUcVdDKWcvVp2mFZe51nkMeT14mi";
+const evrIssuerAddress = "rEHqJPERprVpexPS5wXm2bcS6RoFDQc3B8";
+const registryAddress = "ran1NuAQWCVvdN4afQMcXcUudzkEdhnaDZ";
+const governorAddress = 'rniNfp5v2xhooV5EZecckR5FuYPkqpetnh';
+const heartbeatAddress = 'rpcSXrjy4Vp8AGdYiEhksfUUyoqVcWVeNd';
+const hostAddress = "rsdcbZYXDKTaaUa9LREdT17cTbpg2bTnce";
+const hostSecret = "sh6dpg9KndtWqeVzjH4k1vFxLNtp6";
+const foundationAddress = "rht86PJAgeHUuixr4kZSWMcAMrZQEowbsH";
+const foundationSecret = "shFJu5ygPoP6Y8ZWXicKoyEb4qPZx";
 const tenantAddress = "rw7GPreCDX2nuJVHSwNdH38ZGsiEH8qiY";
 const tenantSecret = "shdQBGbF9d3Tgp3D28pXoBdhWoZ9N";
 const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
@@ -35,7 +35,7 @@ const signerQuorum = 1;
 
 const tosHash = "757A0237B44D8B2BBB04AE2BAD5813858E0AECD2F0B217075E27E0630BA74314";
 
-const hookCandidates = "348F37450D5BECD15D774EF8C8B371E4F5F425D8E56CC31CAF83BD9F73BB6E267318AD11E8D1E37859BE46DD87CE8DFE92279FDD1BEF1A181B191B17BF0BB8FACF57466EA9975960B65AC02F520A81D258FD67ACB3FBAD88C2CA368492265389";
+const hookCandidates = "449C5F9A0ACE18192C1367DE33C230BD4D1B4136405703E2ECFFCB9E71A4A6F0125D4C97596C6695AD8571FB92B4B31C781F3C7D0BEFB36E3760F0FB8711C52447A6E3AB50EF78DA6CC433F21C3B1232EDB391E93AAFFA3632E9DDBA38141E49";
 
 const clients = [];
 
@@ -105,7 +105,7 @@ async function app() {
             // () => propose(),
             // () => getCandidateInfo(),
             // () => vote(),
-            // () => foundationVote(),
+            () => foundationVote(),
             // () => makePayment()
 
         ];
@@ -321,8 +321,8 @@ async function extendLease(scenario) {
 }
 //////////////////////////////////////////////////////////////////////////////////////
 
-async function getTenantClient() {
-    const client = new evernode.TenantClient(tenantAddress, tenantSecret);
+async function getTenantClient(address = tenantAddress, secret = tenantSecret) {
+    const client = new evernode.TenantClient(address, secret);
     await client.connect();
     clients.push(client);
     return client;
@@ -497,7 +497,7 @@ async function vote() {
 }
 
 async function foundationVote() {
-    const client = await getBaseClient(foundationAddress, foundationSecret);
+    const client = await getTenantClient(foundationAddress, foundationSecret);
     const uniqueId = evernode.UtilHelpers.getCandidateUniqueId(Buffer.from(hookCandidates, 'hex'));
 
     console.log(`-----------Foundation vote for hook candidate`);

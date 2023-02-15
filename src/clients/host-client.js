@@ -599,6 +599,14 @@ class HostClient extends BaseEvernodeClient {
 
         return false;
     }
+
+    async vote(uniqueId, vote, options = {}) {
+        // To obtain registration NFT Page Keylet and index.
+        const regNFT = await this.getRegistrationNft();
+        const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, this.xrplAcc, this.xrplApi);
+
+        await super.vote(uniqueId, vote, { ...options, nftPageDataBuf: nftPageDataBuf });
+    }
 }
 
 module.exports = {

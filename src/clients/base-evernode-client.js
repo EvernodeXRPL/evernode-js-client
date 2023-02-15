@@ -651,14 +651,6 @@ class BaseEvernodeClient {
      * @param {int} vote Vote value CandidateVote (0,1,2).
      */
     async vote(uniqueId, vote, options = {}) {
-        // If this is from foundation address, skip the registration check.
-        let nftPageDataBuf = null;
-        if (this.config.foundationAddress !== this.xrplAcc.address) {
-            // To obtain registration NFT Page Keylet and index.
-            const regNFT = await this.getRegistrationNft();
-            nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, this.xrplAcc, this.xrplApi);
-        }
-
         const voteBuf = Buffer.alloc(CANDIDATE_VOTE_MEMO_SIZE);
         Buffer.from(uniqueId, 'hex').copy(voteBuf, CANDIDATE_VOTE_UNIQUE_ID_MEMO_OFFSET);
         voteBuf.writeUInt8(vote, CANDIDATE_VOTE_VALUE_MEMO_OFFSET)
@@ -669,7 +661,7 @@ class BaseEvernodeClient {
             null,
             [
                 { type: MemoTypes.CANDIDATE_VOTE, format: MemoFormats.HEX, data: voteBuf.toString('hex').toUpperCase() },
-                ...(nftPageDataBuf ? [{ type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex').toUpperCase() }] : [])
+                ...(options.nftPageDataBuf ? [{ type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: options.nftPageDataBuf.toString('hex').toUpperCase() }] : [])
             ],
             options.transactionOptions);
     }
