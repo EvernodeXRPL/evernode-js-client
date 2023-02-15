@@ -108,19 +108,18 @@ class HostClient extends BaseEvernodeClient {
         const uri = uriBuf.toString('hex').toUpperCase();
 
         await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: true });
-
-        const uriToken = await this.xrplAcc.getURITokenByUri(uri, true);
+        const uriToken  = await this.xrplAcc.getURITokenByUri(uri, true);
         if (!uriToken)
             throw "Offer lease NFT creation error.";
 
-        await this.xrplAcc.sellURIToken(uriToken.index,
+        await this.xrplAcc.offerSellNft(uriToken.index,
             leaseAmount.toString(),
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress);
     }
 
-    async expireLease(nfTokenId) {
-        await this.xrplAcc.burnURIToken(nfTokenId);
+    async expireLease(uriTokenId) {
+        await this.xrplAcc.burnURIToken(uriTokenId);
     }
 
     async register(countryCode, cpuMicroSec, ramMb, diskMb, totalInstanceCount, cpuModel, cpuCount, cpuSpeed, description, emailAddress, options = {}) {
