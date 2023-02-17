@@ -10,7 +10,6 @@ const { EventEmitter } = require('../event-emitter');
 const { UtilHelpers } = require('../util-helpers');
 const { FirestoreHandler } = require('../firestore/firestore-handler');
 const { StateHelpers } = require('../state-helpers');
-const { EvernodeHelpers } = require('../evernode-helpers');
 
 class BaseEvernodeClient {
 
