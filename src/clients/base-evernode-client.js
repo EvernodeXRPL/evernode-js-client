@@ -590,16 +590,12 @@ class BaseEvernodeClient {
             const issuerAddr = codec.encodeAccountID(Buffer.from(issuerHex, 'hex'));
             if (issuerAddr == this.config.registryAddress) {
 
-                //TODO: Need to replace with URI token keylet.
-                const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, hostAcc, this.xrplApi);
-
                 await this.xrplAcc.makePayment(this.config.registryAddress,
                     XrplConstants.MIN_XRP_AMOUNT,
                     XrplConstants.XRP,
                     null,
                     [
-                        { type: MemoTypes.DEAD_HOST_PRUNE, format: MemoFormats.HEX, data: memoData.toString('hex') },
-                        { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+                        { type: MemoTypes.DEAD_HOST_PRUNE, format: MemoFormats.HEX, data: memoData.toString('hex') }
                     ]);
             } else
                 throw "Invalid Registration NFT."
