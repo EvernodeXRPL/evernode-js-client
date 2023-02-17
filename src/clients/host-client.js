@@ -164,7 +164,7 @@ class HostClient extends BaseEvernodeClient {
                 const sellOffer = (await registryAcc.getURITokens()).find(o => o.index == regInfo.nfTokenId && o.Amount);
                 console.log('sell offer')
                 if (sellOffer) {
-                    await this.xrplAcc.buyURIToken(sellOffer.index, XrplConstants.MIN_XRP_AMOUNT, XrplConstants.XRP);
+                    await this.xrplAcc.buyURIToken(sellOffer);
                     console.log("Registration was successfully completed after acquiring the NFT.");
                     return await this.isRegistered();
                 }
@@ -212,19 +212,19 @@ class HostClient extends BaseEvernodeClient {
             options.transactionOptions);
 
         console.log('Waiting for the sell offer', tx)
-        let offer = null;
+        let sellOffer = null;
         let attempts = 0;
         let offerLedgerIndex = 0;
         while (attempts < OFFER_WAIT_TIMEOUT) {
-            offer = (await registryAcc.getURITokens()).find(n => (n.Amount && n.Destination === this.xrplAcc.address && n.URI === `${EvernodeConstants.NFT_PREFIX_HEX}${tx.id}`) || (n.index === transferredNFTokenId));
+            sellOffer = (await registryAcc.getURITokens()).find(n => (n.Amount && n.Destination === this.xrplAcc.address && n.URI === `${EvernodeConstants.NFT_PREFIX_HEX}${tx.id}`) || (n.index === transferredNFTokenId));
 
             offerLedgerIndex = this.xrplApi.ledgerIndex;
-            if (offer)
+            if (sellOffer)
                 break;
             await new Promise(resolve => setTimeout(resolve, 1000));
             attempts++;
         }
-        if (!offer)
+        if (!sellOffer)
             throw 'No sell offer found within timeout.';
 
         console.log('Accepting the sell offer..');
@@ -238,7 +238,7 @@ class HostClient extends BaseEvernodeClient {
             resolve();
         });
 
-        await this.xrplAcc.buyURIToken(offer.index, XrplConstants.MIN_XRP_AMOUNT, XrplConstants.XRP);
+        await this.xrplAcc.buyURIToken(sellOffer);
         return await this.isRegistered();
     }
 
