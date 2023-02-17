@@ -457,7 +457,6 @@ class XrplAccount {
         //     details: submission and transaction details, (if signing success)
         //     error: Any error that prevents submission.
         // }
-        
         return new Promise(async (resolve, reject) => {
 
             // Attach tx options to the transaction.
@@ -582,7 +581,7 @@ class XrplAccount {
 
         if (toAddr)
             tx.Destination = toAddr;
-        
+
         return this.#submitAndVerifyTransaction(tx, options);
     }
 
@@ -595,7 +594,7 @@ class XrplAccount {
             URITokenID: uriTokenID
         }, options);
     }
-    
+
     async clearURITokenOffer(uriTokenID, options = {}) {
         return this.#submitAndVerifyTransaction({
             Account: this.address,
@@ -603,6 +602,7 @@ class XrplAccount {
             URITokenID: uriTokenID
         }, options);
     }
+
     async getURITokens() {
         const obj = await this.getAccountObjects(this.address);
         return obj.filter(t => t.LedgerEntryType == 'URIToken');

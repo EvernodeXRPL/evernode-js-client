@@ -589,6 +589,8 @@ class BaseEvernodeClient {
             const issuerHex = regNFT.NFTokenID.substr(8, 40);
             const issuerAddr = codec.encodeAccountID(Buffer.from(issuerHex, 'hex'));
             if (issuerAddr == this.config.registryAddress) {
+
+                //TODO: Need to replace with URI token keylet.
                 const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, hostAcc, this.xrplApi);
 
                 await this.xrplAcc.makePayment(this.config.registryAddress,

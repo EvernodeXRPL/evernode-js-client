@@ -45,15 +45,15 @@ class HostClient extends BaseEvernodeClient {
         super(xrpAddress, xrpSecret, Object.values(HostEvents), true, options);
     }
 
-    async getRegistrationUriTokens() {
+    async getRegistrationUriToken() {
         // Find an owned NFT with matching Evernode host NFT prefix.
-        const nft = (await this.xrplAcc.getURITokens()).find(n => n.index.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.config.registryAddress);        
+        const nft = (await this.xrplAcc.getURITokens()).find(n => n.index.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
         return nft ?? null;
     }
 
     async getRegistration() {
         // Check whether we own an evernode host token.
-        const nft = await this.getRegistrationUriTokens();
+        const nft = await this.getRegistrationUriToken();
         if (nft) {
             const host = await this.getHostInfo();
             return (host?.nfTokenId == nft.NFTokenID) ? host : null;
@@ -157,12 +157,12 @@ class HostClient extends BaseEvernodeClient {
         // Check whether is there any missed NFT sell offer that needs to be accepted
         // from the client-side in order to complete the registration.
         const registryAcc = new XrplAccount(this.config.registryAddress, null, { xrplApi: this.xrplApi });
-        const regUriTokens = await this.getRegistrationUriTokens();
-        
-        if (!regUriTokens) {
+        const regUriToken = await this.getRegistrationUriToken();
+
+        if (!regUriToken) {
             const regInfo = await this.getHostInfo(this.xrplAcc.address);
             if (regInfo) {
-                const sellOffer = (await registryAcc.getURITokens()).find(o => o.index == regInfo.nfTokenId);
+                const sellOffer = (await registryAcc.getURITokens()).find(o => o.index == regInfo.nfTokenId && o.Amount);
                 console.log('sell offer')
                 if (sellOffer) {
                     await this.xrplAcc.buyURIToken(sellOffer.index, XrplConstants.MIN_XRP_AMOUNT, XrplConstants.XRP);
@@ -191,7 +191,7 @@ class HostClient extends BaseEvernodeClient {
         catch (e) {
             console.log("No initiated transfers were found.");
         }
-        
+
         // <country_code(2)><cpu_microsec(4)><ram_mb(4)><disk_mb(4)><no_of_total_instances(4)><cpu_model(40)><cpu_count(2)><cpu_speed(2)><description(26)><email_address(40)>
         const memoBuf = Buffer.alloc(HOST_REG_MEMO_SIZE, 0);
         Buffer.from(countryCode.substr(0, 2), "utf-8").copy(memoBuf, HOST_COUNTRY_CODE_MEMO_OFFSET);
@@ -245,7 +245,6 @@ class HostClient extends BaseEvernodeClient {
         });
 
         await this.xrplAcc.buyURIToken(offer.index, XrplConstants.MIN_XRP_AMOUNT, XrplConstants.XRP);
-        
         return await this.isRegistered();
     }
 
@@ -254,9 +253,11 @@ class HostClient extends BaseEvernodeClient {
         if (!(await this.isRegistered()))
             throw "Host not registered."
 
-        const regNFT = await this.getRegistrationUriTokens();
+        const regNFT = await this.getRegistrationUriToken();
 
         // To obtain registration NFT Page Keylet and index.
+
+        // TODO: Need to replace with URI token keylet.
         const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, this.xrplAcc, this.xrplApi);
 
         await this.xrplAcc.makePayment(this.config.registryAddress,
@@ -295,15 +296,10 @@ class HostClient extends BaseEvernodeClient {
                 await new Promise(resolve2 => setTimeout(resolve2, 1000));
             resolve();
         });
-
-        // await this.xrplAcc.sellNft(
-        //     offer.index,
-        //     [{ type: MemoTypes.HOST_POST_DEREG, format: MemoFormats.HEX, data: regNFT.NFTokenID }]
-        // );
         await this.xrplAcc.sellURIToken(
-            offer.index, 
+            offer.index,
             EvernodeConstants.MINIMUM_OFFER_AMOUNT,
-            EvernodeConstants.EVR, 
+            EvernodeConstants.EVR,
             [{ type: MemoTypes.HOST_POST_DEREG, format: MemoFormats.HEX, data: regNFT.NFTokenID }]
         );
 
@@ -340,7 +336,9 @@ class HostClient extends BaseEvernodeClient {
 
         // To obtain registration NFT Page Keylet and index.
         if (!tokenID)
-            tokenID = (await this.getRegistrationUriTokens()).NFTokenID;
+            tokenID = (await this.getRegistrationUriToken()).NFTokenID;
+
+        // TODO: Need to replace with URI token keylet.
         const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(tokenID, this.xrplAcc, this.xrplApi);
 
         return await this.xrplAcc.makePayment(this.config.registryAddress,
@@ -356,7 +354,9 @@ class HostClient extends BaseEvernodeClient {
 
     async heartbeat(options = {}) {
         // To obtain registration NFT Page Keylet and index.
-        const regNFT = await this.getRegistrationUriTokens();
+        const regNFT = await this.getRegistrationUriToken();
+
+        // TODO: Need to replace with URI token keylet.
         const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, this.xrplAcc, this.xrplApi);
 
         return this.xrplAcc.makePayment(this.config.heartbeatAddress,
@@ -452,7 +452,9 @@ class HostClient extends BaseEvernodeClient {
     async requestRebate(options = {}) {
 
         // To obtain registration NFT Page Keylet and index.
-        const regNFT = await this.getRegistrationUriTokens();
+        const regNFT = await this.getRegistrationUriToken();
+
+        // TODO: Need to replace with URI token keylet.
         const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, this.xrplAcc, this.xrplApi);
 
         return this.xrplAcc.makePayment(this.config.registryAddress,
@@ -497,7 +499,9 @@ class HostClient extends BaseEvernodeClient {
         codec.decodeAccountID(transfereeAddress).copy(memoData);
 
         // To obtain registration NFT Page Keylet and index.
-        const regNFT = await this.getRegistrationUriTokens();
+        const regNFT = await this.getRegistrationUriToken();
+
+        // TODO: Need to replace with URI token keylet.
         const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, this.xrplAcc, this.xrplApi);
 
         await this.xrplAcc.makePayment(this.config.registryAddress,
@@ -540,7 +544,7 @@ class HostClient extends BaseEvernodeClient {
         //await this.xrplAcc.sellNft(offer.index);
 
         await this.xrplAcc.sellURIToken(
-            offer.index, 
+            offer.index,
             EvernodeConstants.MINIMUM_OFFER_AMOUNT,
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress
