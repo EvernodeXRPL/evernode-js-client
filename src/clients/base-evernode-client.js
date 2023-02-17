@@ -11,10 +11,16 @@ const { UtilHelpers } = require('../util-helpers');
 const { FirestoreHandler } = require('../firestore/firestore-handler');
 const { StateHelpers } = require('../state-helpers');
 const { EvernodeHelpers } = require('../evernode-helpers');
+const { HookHelpers } = require('../hook-helpers');
 
 const CANDIDATE_VOTE_UNIQUE_ID_MEMO_OFFSET = 0;
 const CANDIDATE_VOTE_VALUE_MEMO_OFFSET = 32;
 const CANDIDATE_VOTE_MEMO_SIZE = 33;
+
+const CANDIDATE_PROPOSE_UNIQUE_ID_MEMO_OFFSET = 0;
+const CANDIDATE_PROPOSE_SHORT_NAME_MEMO_OFFSET = 32;
+const CANDIDATE_PROPOSE_KEYLETS_MEMO_OFFSET = 52;
+const CANDIDATE_PROPOSE_MEMO_SIZE = 154;
 
 class BaseEvernodeClient {
 
@@ -507,40 +513,6 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get proposed candidate info.
-     * @param {string} ownerAddress [Optional] Address of the owner.
-     * @returns The registered host information object. Returns null is not registered.
-     */
-    async getCandidateInfo(ownerAddress = this.xrplAcc.address) {
-        try {
-            const ownerStateKey = StateHelpers.generateCandidateOwnerStateKey(ownerAddress);
-            const ownerStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, ownerStateKey);
-            const ownerLedgerEntry = await this.xrplApi.getLedgerEntry(ownerStateIndex);
-            const ownerStateData = ownerLedgerEntry?.HookStateData;
-            if (ownerStateData) {
-                const ownerStateDecoded = StateHelpers.decodeCandidateOwnerState(Buffer.from(ownerStateKey, 'hex'), Buffer.from(ownerStateData, 'hex'));
-
-                const idStateKey = StateHelpers.generateCandidateIdStateKey(ownerStateDecoded.uniqueId);
-                const idStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, idStateKey);
-                const idLedgerEntry = await this.xrplApi.getLedgerEntry(idStateIndex);
-
-                const idStateData = idLedgerEntry?.HookStateData;
-                if (idStateData) {
-                    const idStateDecoded = StateHelpers.decodeCandidateIdState(Buffer.from(idStateData, 'hex'));
-                    return { ...ownerStateDecoded, ...idStateDecoded };
-                }
-            }
-        }
-        catch (e) {
-            // If the exception is entryNotFound from Rippled there's no entry for the host, So return null.
-            if (e?.data?.error !== 'entryNotFound')
-                throw e;
-        }
-
-        return null;
-    }
-
-    /**
      * Get all the hosts registered in Evernode. The result's are paginated. Default page size is 20. Note: Specifying both filter and pagination does not supported.
      * @param {object} filters [Optional] Filter criteria to filter the hosts. The filter key can be a either property of the host.
      * @param {number} pageSize [Optional] Page size for the results.
@@ -646,13 +618,76 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Vote for a hook candidate.
-     * @param {string} uniqueId Hex unique id of the candidate.
-     * @param {int} vote Vote value CandidateVote (0,1,2).
+     * Withdraw a hook candidate.
+     * @param {*} hashes Hook candidate hashes in hex format, <GOVERNOR_HASH(32)><REGISTRY_HASH(32)><HEARTBEAT_HASH(32)>.
+     * @param {*} shortName Short name for the proposal candidate.
+     * @param {*} options [Optional] transaction options.
+     * @returns Options for the transaction.
      */
-    async vote(uniqueId, vote, options = {}) {
+    async propose(hashes, shortName, options = {}) {
+        const hashesBuf = Buffer.from(hashes, 'hex');
+        if (!hashesBuf || hashesBuf.length != 96)
+            throw 'Invalid hashes: Hashes should contain all three Governor, Registry, Heartbeat hook hashes.';
+
+        // Check whether hook hashes exist in the definition.
+        let keylets = [];
+        for (const [i, hook] of EvernodeConstants.HOOKS.entries()) {
+            const index = HookHelpers.getHookDefinitionIndex(hashes.substr(i * 64, 64));
+            const ledgerEntry = await this.xrplApi.getLedgerEntry(index);
+            if (!ledgerEntry)
+                throw `No hook exists with the specified ${hook} hook hash.`;
+            else
+                keylets.push(HookHelpers.getHookDefinitionKeylet(index));
+        }
+
+        const uniqueId = UtilHelpers.getCandidateUniqueId(hashesBuf);
+        const memoBuf = Buffer.alloc(CANDIDATE_PROPOSE_MEMO_SIZE);
+        Buffer.from(uniqueId, 'hex').copy(memoBuf, CANDIDATE_PROPOSE_UNIQUE_ID_MEMO_OFFSET);
+        Buffer.from(shortName.substr(0, 20), "utf-8").copy(memoBuf, CANDIDATE_PROPOSE_SHORT_NAME_MEMO_OFFSET);
+        Buffer.from(keylets.join(''), 'hex').copy(memoBuf, CANDIDATE_PROPOSE_KEYLETS_MEMO_OFFSET);
+
+        // Get the proposal fee. Proposal fee is current epochs moment worth of rewards.
+        const proposalFee = EvernodeHelpers.getEpochRewardQuota(this.config.rewardInfo.epoch, this.config.rewardConfiguration.firstEpochRewardQuota)
+
+        return await this.xrplAcc.makePayment(this.governorAddress,
+            proposalFee.toString(),
+            EvernodeConstants.EVR,
+            this.config.evrIssuerAddress,
+            [
+                { type: MemoTypes.CANDIDATE_PROPOSE, format: MemoFormats.HEX, data: hashesBuf.toString('hex').toUpperCase() },
+                { type: MemoTypes.CANDIDATE_PROPOSE_REF, format: MemoFormats.HEX, data: memoBuf.toString('hex').toUpperCase() }
+            ],
+            options.transactionOptions);
+    }
+
+    /**
+     * Withdraw a hook candidate.
+     * @param {string} candidateId Id of the candidate in hex format.
+     * @param {*} options [Optional] transaction options.
+     * @returns Options for the transaction.
+     */
+    async withdraw(candidateId, options = {}) {
+        const candidateIdBuf = Buffer.from(candidateId, 'hex');
+        return await this.xrplAcc.makePayment(this.governorAddress,
+            XrplConstants.MIN_XRP_AMOUNT,
+            XrplConstants.XRP,
+            null,
+            [
+                { type: MemoTypes.CANDIDATE_WITHDRAW, format: MemoFormats.HEX, data: candidateIdBuf.toString('hex').toUpperCase() }
+            ],
+            options.transactionOptions);
+    }
+
+    /**
+     * Vote for a hook candidate.
+     * @param {string} candidateId Id of the candidate in hex format.
+     * @param {int} vote Vote value CandidateVote (0 - Abstain, 1 - Support , 2 - Reject).
+     * @param {*} options [Optional] transaction options.
+     * @returns Options for the transaction.
+     */
+    async vote(candidateId, vote, options = {}) {
         const voteBuf = Buffer.alloc(CANDIDATE_VOTE_MEMO_SIZE);
-        Buffer.from(uniqueId, 'hex').copy(voteBuf, CANDIDATE_VOTE_UNIQUE_ID_MEMO_OFFSET);
+        Buffer.from(candidateId, 'hex').copy(voteBuf, CANDIDATE_VOTE_UNIQUE_ID_MEMO_OFFSET);
         voteBuf.writeUInt8(vote, CANDIDATE_VOTE_VALUE_MEMO_OFFSET)
 
         return await this.xrplAcc.makePayment(this.governorAddress,
@@ -660,10 +695,43 @@ class BaseEvernodeClient {
             XrplConstants.XRP,
             null,
             [
-                { type: MemoTypes.CANDIDATE_VOTE, format: MemoFormats.HEX, data: voteBuf.toString('hex').toUpperCase() },
-                ...(options.nftPageDataBuf ? [{ type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: options.nftPageDataBuf.toString('hex').toUpperCase() }] : [])
+                { type: MemoTypes.CANDIDATE_VOTE, format: MemoFormats.HEX, data: voteBuf.toString('hex').toUpperCase() }
             ],
             options.transactionOptions);
+    }
+
+    /**
+     * Get proposed candidate info.
+     * @param {string} ownerAddress [Optional] Address of the owner.
+     * @returns The registered host information object. Returns null is not registered.
+     */
+    async getCandidateInfo(ownerAddress = this.xrplAcc.address) {
+        try {
+            const ownerStateKey = StateHelpers.generateCandidateOwnerStateKey(ownerAddress);
+            const ownerStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, ownerStateKey);
+            const ownerLedgerEntry = await this.xrplApi.getLedgerEntry(ownerStateIndex);
+            const ownerStateData = ownerLedgerEntry?.HookStateData;
+            if (ownerStateData) {
+                const ownerStateDecoded = StateHelpers.decodeCandidateOwnerState(Buffer.from(ownerStateKey, 'hex'), Buffer.from(ownerStateData, 'hex'));
+
+                const idStateKey = StateHelpers.generateCandidateIdStateKey(ownerStateDecoded.uniqueId);
+                const idStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, idStateKey);
+                const idLedgerEntry = await this.xrplApi.getLedgerEntry(idStateIndex);
+
+                const idStateData = idLedgerEntry?.HookStateData;
+                if (idStateData) {
+                    const idStateDecoded = StateHelpers.decodeCandidateIdState(Buffer.from(idStateData, 'hex'));
+                    return { ...ownerStateDecoded, ...idStateDecoded };
+                }
+            }
+        }
+        catch (e) {
+            // If the exception is entryNotFound from Rippled there's no entry for the host, So return null.
+            if (e?.data?.error !== 'entryNotFound')
+                throw e;
+        }
+
+        return null;
     }
 }
 

@@ -6,8 +6,8 @@ const evrIssuerAddress = "rEHqJPERprVpexPS5wXm2bcS6RoFDQc3B8";
 const registryAddress = "ran1NuAQWCVvdN4afQMcXcUudzkEdhnaDZ";
 const governorAddress = 'rniNfp5v2xhooV5EZecckR5FuYPkqpetnh';
 const heartbeatAddress = 'rpcSXrjy4Vp8AGdYiEhksfUUyoqVcWVeNd';
-const hostAddress = "rsdcbZYXDKTaaUa9LREdT17cTbpg2bTnce";
-const hostSecret = "sh6dpg9KndtWqeVzjH4k1vFxLNtp6";
+const hostAddress = "rMk17K8cLAXXs9CSngPUVPvPpTBzbdvhp";
+const hostSecret = "ssEK4eziu4D4VjPskZWuFaxnAe22Q";
 const foundationAddress = "rht86PJAgeHUuixr4kZSWMcAMrZQEowbsH";
 const foundationSecret = "shFJu5ygPoP6Y8ZWXicKoyEb4qPZx";
 const tenantAddress = "rw7GPreCDX2nuJVHSwNdH38ZGsiEH8qiY";
@@ -35,7 +35,7 @@ const signerQuorum = 1;
 
 const tosHash = "757A0237B44D8B2BBB04AE2BAD5813858E0AECD2F0B217075E27E0630BA74314";
 
-const hookCandidates = "449C5F9A0ACE18192C1367DE33C230BD4D1B4136405703E2ECFFCB9E71A4A6F0125D4C97596C6695AD8571FB92B4B31C781F3C7D0BEFB36E3760F0FB8711C52447A6E3AB50EF78DA6CC433F21C3B1232EDB391E93AAFFA3632E9DDBA38141E49";
+const hookCandidates = "60745F3B4104E33609B584DCBE9B87E327E178659A3C29BBE9CFA5006A05ABACF5E85626B59ED4E552C1F3E80F55B964D84CA880286B01D40F88B9C4A8CD44BA230A1E31279E765F8E1D5FA9B5E6089FC9769C6143C55D20601DFC3CDAC5B132";
 
 const clients = [];
 
@@ -103,9 +103,12 @@ async function app() {
             // () => getAccountObjects(),
             // () => setSignerList(),
             // () => propose(),
-            // () => getCandidateInfo(),
+            // () => foundationPropose(),
+            // () => withdraw(),
+            // () => foundationWithdraw(),
+            () => getCandidateInfo(),
             // () => vote(),
-            () => foundationVote(),
+            // () => foundationVote(),
             // () => makePayment()
 
         ];
@@ -476,11 +479,39 @@ async function propose() {
     await host.propose(hookCandidates, 'testProposal');
 }
 
+async function foundationPropose() {
+    const client = await getTenantClient(foundationAddress, foundationSecret);
+
+    console.log(`-----------Foundation proposing hook candidate`);
+    await client.propose(hookCandidates, 'testProposal');
+}
+
 async function getCandidateInfo() {
     const host = await getHostClient();
     const candidateInfo = await host.getCandidateInfo();
     console.log(candidateInfo);
     return candidateInfo;
+}
+
+async function withdraw() {
+    const host = await getHostClient(hostAddress, hostSecret);
+    const uniqueId = evernode.UtilHelpers.getCandidateUniqueId(Buffer.from(hookCandidates, 'hex'));
+
+    if (!await host.isRegistered()) {
+        console.log("Host is not registered.");
+        return true;
+    }
+
+    console.log(`-----------Withdrawing hook candidate`);
+    await host.withdraw(uniqueId);
+}
+
+async function foundationWithdraw() {
+    const client = await getTenantClient(foundationAddress, foundationSecret);
+    const uniqueId = evernode.UtilHelpers.getCandidateUniqueId(Buffer.from(hookCandidates, 'hex'));
+
+    console.log(`-----------Foundation Withdrawing hook candidate`);
+    await client.withdraw(uniqueId);
 }
 
 async function vote() {

@@ -39,6 +39,7 @@ const MemoTypes = {
     HOST_REGISTRY_REF: 'evnHostRegistryRef',
     CANDIDATE_PROPOSE: 'evnCandidatePropose',
     CANDIDATE_PROPOSE_REF: 'evnCandidateProposeRef',
+    CANDIDATE_WITHDRAW: "evnCandidateWithdraw",
     CANDIDATE_VOTE: 'evnCandidateVote'
 }
 

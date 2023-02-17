@@ -33,9 +33,13 @@ const CANDIDATE_SUPPORT_AVERAGE_OFFSET = 12;
 const CANDIDATE_REJECT_AVERAGE_OFFSET = 14;
 
 const GOVERNANCE_MODE_OFFSET = 0;
-const ELECTED_PROPOSAL_UNIQUE_ID_OFFSET = 1;
-const PROPOSAL_ELECTED_TIMESTAMP_OFFSET = 33;
-const UPDATED_HOOK_COUNT_OFFSET = 41;
+const LAST_CANDIDATE_IDX_OFFSET = 1;
+const VOTER_BASE_COUNT_OFFSET = 3;
+const VOTER_BASE_COUNT_CHANGED_TIMESTAMP_OFFSET = 7;
+const FOUNDATION_LAST_VOTED_CANDIDATE_IDX = 15;
+const ELECTED_PROPOSAL_UNIQUE_ID_OFFSET = 17;
+const PROPOSAL_ELECTED_TIMESTAMP_OFFSET = 49;
+const UPDATED_HOOK_COUNT_OFFSET = 57;
 
 const HOST_TOKEN_ID_OFFSET = 0;
 const HOST_COUNTRY_CODE_OFFSET = 32;
@@ -49,6 +53,7 @@ const HOST_HEARTBEAT_TIMESTAMP_OFFSET = 92;
 const HOST_VERSION_OFFSET = 100;
 const HOST_REG_TIMESTAMP_OFFSET = 103;
 const HOST_TRANSFER_FLAG_OFFSET = 111;
+const HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET = 112;
 
 const HOST_ADDRESS_OFFSET = 0;
 const HOST_CPU_MODEL_NAME_OFFSET = 20;
@@ -68,16 +73,16 @@ const CANDIDATE_REGISTRY_HOOK_HASH_OFFSET = 32;
 const CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET = 64;
 
 const CANDIDATE_OWNER_ADDRESS_OFFSET = 0;
-const CANDIDATE_SHORT_NAME_OFFSET = 20;
-const CANDIDATE_CREATED_TIMESTAMP_OFFSET = 40;
-const CANDIDATE_PROPOSAL_FEE_OFFSET = 48;
-const CANDIDATE_POSITIVE_VOTE_COUNT_OFFSET = 56;
-const CANDIDATE_NEGATIVE_VOTE_COUNT_OFFSET = 60;
-const CANDIDATE_NEUTRAL_VOTE_COUNT_OFFSET = 64;
-const CANDIDATE_LAST_VOTE_TIMESTAMP_OFFSET = 68;
-const CANDIDATE_STATUS_OFFSET = 76;
-const CANDIDATE_STATUS_CHANGE_TIMESTAMP_OFFSET = 77;
-const CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET = 85;
+const CANDIDATE_IDX_OFFSET = 20;
+const CANDIDATE_SHORT_NAME_OFFSET = 22;
+const CANDIDATE_CREATED_TIMESTAMP_OFFSET = 42;
+const CANDIDATE_PROPOSAL_FEE_OFFSET = 50;
+const CANDIDATE_POSITIVE_VOTE_COUNT_OFFSET = 58;
+const CANDIDATE_NEGATIVE_VOTE_COUNT_OFFSET = 62;
+const CANDIDATE_LAST_VOTE_TIMESTAMP_OFFSET = 66;
+const CANDIDATE_STATUS_OFFSET = 74;
+const CANDIDATE_STATUS_CHANGE_TIMESTAMP_OFFSET = 75;
+const CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET = 83;
 
 const STATE_KEY_TYPES = {
     TOKEN_ID: 2,
@@ -152,7 +157,8 @@ class StateHelpers {
             activeInstances: stateDataBuf.readUInt32BE(HOST_ACT_INS_COUNT_OFFSET),
             lastHeartbeatIndex: Number(stateDataBuf.readBigUInt64BE(HOST_HEARTBEAT_TIMESTAMP_OFFSET)),
             version: `${stateDataBuf.readUInt8(HOST_VERSION_OFFSET)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 1)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 2)}`,
-            isATransferer: (stateDataBuf.length > HOST_TRANSFER_FLAG_OFFSET && (stateDataBuf.readUInt8(HOST_TRANSFER_FLAG_OFFSET) === PENDING_TRANSFER)) ? TRANSFER_STATES.HAS_A_TRANSFER : TRANSFER_STATES.NO_TRANSFER
+            isATransferer: (stateDataBuf.length > HOST_TRANSFER_FLAG_OFFSET && (stateDataBuf.readUInt8(HOST_TRANSFER_FLAG_OFFSET) === PENDING_TRANSFER)) ? TRANSFER_STATES.HAS_A_TRANSFER : TRANSFER_STATES.NO_TRANSFER,
+            lastVoteCandidateIdx: stateDataBuf.length > HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET ? stateDataBuf.readUInt16BE(HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET) : 0,
         }
         if (stateDataBuf.length > HOST_REG_TIMESTAMP_OFFSET)
             data.registrationTimestamp = Number(stateDataBuf.readBigUInt64BE(HOST_REG_TIMESTAMP_OFFSET));
@@ -229,12 +235,12 @@ class StateHelpers {
         }
         return {
             ownerAddress: codec.encodeAccountID(stateDataBuf.slice(CANDIDATE_OWNER_ADDRESS_OFFSET, CANDIDATE_SHORT_NAME_OFFSET)),
+            index: stateDataBuf.readUInt16BE(CANDIDATE_IDX_OFFSET),
             shortName: stateDataBuf.slice(CANDIDATE_SHORT_NAME_OFFSET, CANDIDATE_CREATED_TIMESTAMP_OFFSET).toString().replace(/\x00+$/, ''), // Remove trailing \x00 characters.
             createdTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_CREATED_TIMESTAMP_OFFSET)),
             proposalFee: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_PROPOSAL_FEE_OFFSET)),
             positiveVoteCount: stateDataBuf.readUInt32BE(CANDIDATE_POSITIVE_VOTE_COUNT_OFFSET),
             negativeVoteCount: stateDataBuf.readUInt32BE(CANDIDATE_NEGATIVE_VOTE_COUNT_OFFSET),
-            neutralVoteCount: stateDataBuf.readUInt32BE(CANDIDATE_NEUTRAL_VOTE_COUNT_OFFSET),
             lastVoteTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_LAST_VOTE_TIMESTAMP_OFFSET)),
             status: status,
             statusChangeTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_STATUS_CHANGE_TIMESTAMP_OFFSET)),
@@ -425,6 +431,10 @@ class StateHelpers {
                 key: hexKey,
                 value: {
                     governanceMode: mode,
+                    lastCandidateIds: stateData.readUInt16BE(LAST_CANDIDATE_IDX_OFFSET),
+                    voteBaseCount: stateData.readUInt32BE(VOTER_BASE_COUNT_OFFSET),
+                    voteBaseCountChangedTimestamp: Number(stateData.readBigUInt64BE(VOTER_BASE_COUNT_CHANGED_TIMESTAMP_OFFSET)),
+                    foundationLastVotedCandidateIds: stateData.readUInt16BE(FOUNDATION_LAST_VOTED_CANDIDATE_IDX),
                     electedProposalUniqueId: stateData.readUInt32BE(ELECTED_PROPOSAL_UNIQUE_ID_OFFSET),
                     proposalElectedTimestamp: Number(stateData.readBigUInt64BE(PROPOSAL_ELECTED_TIMESTAMP_OFFSET)),
                     updatedHookCount: stateData.readUInt8(UPDATED_HOOK_COUNT_OFFSET)
