@@ -585,13 +585,18 @@ class XrplAccount {
         return this.#submitAndVerifyTransaction(tx, options);
     }
 
-    buyURIToken(uriToken, options = {}) {
-        return this.#submitAndVerifyTransaction({
+    buyURIToken(uriToken, memos = null, options = {}) {
+        const tx = {
             Account: this.address,
             TransactionType: "URITokenBuy",
             Amount: uriToken.Amount,
             URITokenID: uriToken.index
-        }, options);
+        }
+
+        if(memos)
+            tx.Memos = TransactionHelper.formatMemos(memos);
+
+        return this.#submitAndVerifyTransaction(tx, options);
     }
 
     async clearURITokenOffer(uriTokenID, options = {}) {
