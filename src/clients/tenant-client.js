@@ -93,7 +93,7 @@ class TenantClient extends BaseEvernodeClient {
             ephemPrivateKey: options.ephemPrivateKey // Must be null or 32 bytes.
         });
 
-        return this.xrplAcc.burnURIToken(selectedOfferIndex, [{ type: MemoTypes.ACQUIRE_LEASE, format: MemoFormats.BASE64, data: ecrypted }], options.transactionOptions);
+        return this.xrplAcc.buyURIToken(selectedOfferIndex, [{ type: MemoTypes.ACQUIRE_LEASE, format: MemoFormats.BASE64, data: ecrypted }], null, options.transactionOptions);
     }
 
     /**

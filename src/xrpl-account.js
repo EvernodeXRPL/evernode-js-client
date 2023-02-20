@@ -586,13 +586,14 @@ class XrplAccount {
         return this.#submitAndVerifyTransaction(tx, options);
     }
 
-    buyURIToken(uriToken, issuer = null, options = {}) {
+    buyURIToken(uriToken, memos = null, issuer = null, options = {}) {
         const amountObj = makeAmountObject(uriToken.Amount, EvernodeConstants.EVR, issuer);
         return this.#submitAndVerifyTransaction({
             Account: this.address,
             TransactionType: "URITokenBuy",
             Amount: amountObj,
-            URITokenID: uriToken.index
+            URITokenID: uriToken.index,
+            Memos: TransactionHelper.formatMemos(memos)
         }, options);
     }
 

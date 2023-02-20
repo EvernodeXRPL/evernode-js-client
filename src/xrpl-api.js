@@ -60,7 +60,7 @@ class XrplApi {
         this.#client.on("transaction", async (data) => {
             if (data.validated) {
                 // NFTokenAcceptOffer transactions does not contain a Destination. So we check whether the accepted offer is created by which subscribed account
-                if (data.transaction.TransactionType === 'UriToken' && data.transaction.Amount && !data.transaction.Flags) {
+                if (data.transaction.TransactionType === 'URITokenCreateSellOffer' || data.transaction.TransactionType === 'URITokenBuy') {
                     // We take all the offers created by subscribed accounts in previous ledger until we get the respective offer.
                     for (const subscription of this.#addressSubscriptions) {
                         const acc = new XrplAccount(subscription.address, null);
@@ -222,7 +222,7 @@ class XrplApi {
     }
 
     async getServerDefinition() {
-        const resp = (await this.#client.request({ command: 'server_definitions'}));
+        const resp = (await this.#client.request({ command: 'server_definitions' }));
         return resp?.result;
     }
 
@@ -304,7 +304,7 @@ class XrplApi {
     }
 
     async submitMultisigned(tx) {
-        return await this.#client.request({command: 'submit_multisigned', tx_json: tx});
+        return await this.#client.request({ command: 'submit_multisigned', tx_json: tx });
     }
 
     /**
@@ -315,10 +315,10 @@ class XrplApi {
      * @returns A single signed Transaction string which has all Signers from transactions within it.
      */
     multiSign(transactions) {
-        if(transactions.length > 0){
+        if (transactions.length > 0) {
             return xrpl.multisign(transactions);
         } else
-            throw("Transaction list is empty for multi-signing.");
+            throw ("Transaction list is empty for multi-signing.");
     }
 }
 
