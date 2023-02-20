@@ -7,7 +7,6 @@ const { TransactionHelper } = require('./transaction-helper');
 const { EventEmitter } = require('./event-emitter');
 const { DefaultValues } = require('./defaults');
 const xrplCodec = require('xrpl-binary-codec');
-const { EvernodeConstants } = require('./evernode-common');
 
 class XrplAccount {
 
@@ -586,12 +585,11 @@ class XrplAccount {
         return this.#submitAndVerifyTransaction(tx, options);
     }
 
-    buyURIToken(uriToken, issuer = null, options = {}) {
-        const amountObj = makeAmountObject(uriToken.Amount, EvernodeConstants.EVR, issuer);
+    buyURIToken(uriToken, options = {}) {
         return this.#submitAndVerifyTransaction({
             Account: this.address,
             TransactionType: "URITokenBuy",
-            Amount: amountObj,
+            Amount: uriToken.Amount,
             URITokenID: uriToken.index
         }, options);
     }

@@ -112,7 +112,7 @@ class HostClient extends BaseEvernodeClient {
         if (!uriToken)
             throw "Offer lease NFT creation error.";
 
-        await this.xrplAcc.offerSellNft(uriToken.index,
+        await this.xrplAcc.sellURIToken(uriToken.index,
             leaseAmount.toString(),
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress);
@@ -254,7 +254,7 @@ class HostClient extends BaseEvernodeClient {
             XrplConstants.XRP,
             null,
             [
-                { type: MemoTypes.HOST_DEREG, format: MemoFormats.HEX, data: regUriToken.NFTokenID }
+                { type: MemoTypes.HOST_DEREG, format: MemoFormats.HEX, data: regUriToken.index }
             ],
             options.transactionOptions);
 
