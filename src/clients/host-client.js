@@ -363,7 +363,7 @@ class HostClient extends BaseEvernodeClient {
             XrplConstants.XRP,
             null,
             [
-                { type: MemoTypes.HEARTBEAT, format: voteInfo ? MemoFormats.HEX : "" , data: voteInfo },
+                { type: MemoTypes.HEARTBEAT, format: MemoFormats.HEX, data: voteInfo },
                 { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
             ],
             options.transactionOptions);

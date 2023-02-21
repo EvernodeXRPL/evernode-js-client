@@ -280,7 +280,7 @@ async function acquire(scenario) {
         }
     })
 
-    await fundTenant(tenant);
+    await fundAccount(tenant.xrplAcc, "1000");
 
     try {
         const timeout = (scenario === "timeout" ? 10000 : 30000);
@@ -320,7 +320,7 @@ async function extendLease(scenario) {
         }
     })
 
-    await fundTenant(tenant);
+    await fundAccount(tenant.xrplAcc, "1000");
 
     try {
         const timeout = (scenario === "timeout" ? 10000 : 30000);
@@ -360,15 +360,6 @@ async function getBaseClient(address, secret) {
     await client.connect();
     clients.push(client);
     return client;
-}
-
-async function fundTenant(tenant) {
-    // Send hosting tokens to tenant if needed.
-    const lines = await tenant.xrplAcc.getTrustLines('EVR', evrIssuerAddress);
-    if (lines.length === 0 || parseInt(lines[0].balance) < 1) {
-        await tenant.xrplAcc.setTrustLine('EVR', evrIssuerAddress, "99999999");
-        await new evernode.XrplAccount(foundationAddress, foundationSecret).makePayment(tenantAddress, "1000", 'EVR', evrIssuerAddress);
-    }
 }
 
 async function fundAccount(account, amount) {
