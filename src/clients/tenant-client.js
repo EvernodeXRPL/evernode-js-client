@@ -3,8 +3,6 @@ const { EvernodeEvents, MemoFormats, MemoTypes, ErrorCodes, ErrorReasons, Everno
 const { EncryptionHelper } = require('../encryption-helper');
 const { XrplAccount } = require('../xrpl-account');
 const { UtilHelpers } = require('../util-helpers');
-const { Buffer } = require('buffer');
-const codec = require('ripple-address-codec');
 const { EvernodeHelpers } = require('../evernode-helpers');
 const { TransactionHelper } = require('../transaction-helper');
 
@@ -243,7 +241,7 @@ class TenantClient extends BaseEvernodeClient {
             const tokenID = instanceName;
             const urit = (await this.xrplAcc.getURITokens())?.find(n => n.index == tokenID);
 
-            if (!nft) {
+            if (!urit) {
                 reject({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.NO_NFT, content: 'Could not find the uri token for lease extend request.' });
                 return;
             }
