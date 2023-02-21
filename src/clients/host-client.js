@@ -353,7 +353,7 @@ class HostClient extends BaseEvernodeClient {
             options.transactionOptions);
     }
 
-    async heartbeat(options = {}) {
+    async heartbeat(voteInfo = "", options = {}) {
         // To obtain registration NFT Page Keylet and index.
         const regNFT = await this.getRegistrationNft();
         const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, this.xrplAcc, this.xrplApi);
@@ -363,7 +363,7 @@ class HostClient extends BaseEvernodeClient {
             XrplConstants.XRP,
             null,
             [
-                { type: MemoTypes.HEARTBEAT, format: "", data: "" },
+                { type: MemoTypes.HEARTBEAT, format: voteInfo ? MemoFormats.HEX : "" , data: voteInfo },
                 { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
             ],
             options.transactionOptions);

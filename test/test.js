@@ -88,7 +88,10 @@ async function app() {
             // () => updateInfo(),
             // () => getAllHosts(),
             // () => getActiveHosts(),
-            // () => heartbeatHost(),
+            // () => heartbeatHost(), // If not opted in for voting
+            // () => heartbeatHost(0),
+            // () => heartbeatHost(1),
+            // () => heartbeatHost(2),
             // () => acquire("success"),
             // () => acquire("error"),
             // () => acquire("timeout"),
@@ -106,8 +109,7 @@ async function app() {
             // () => foundationPropose(),
             // () => withdraw(),
             // () => foundationWithdraw(),
-            () => getCandidateInfo(),
-            // () => vote(),
+            // () => getCandidateInfo(),
             // () => foundationVote(),
             // () => makePayment()
 
@@ -230,7 +232,15 @@ async function deregisterHost(address = hostAddress, secret = hostSecret) {
     return !await host.isRegistered();
 }
 
-async function heartbeatHost(address = hostAddress, secret = hostSecret) {
+async function heartbeatHost(vote = null, address = hostAddress, secret = hostSecret) {
+    let voteBuf;
+    if (vote) {
+        const uniqueId = evernode.UtilHelpers.getCandidateUniqueId(Buffer.from(hookCandidates, 'hex'));
+        voteBuf = Buffer.alloc(33);
+        Buffer.from(uniqueId, 'hex').copy(voteBuf, 0);
+        voteBuf.writeUInt8(vote, 32)
+    }
+
     const host = await getHostClient(address, secret);
 
     if (!await host.isRegistered())
@@ -238,7 +248,7 @@ async function heartbeatHost(address = hostAddress, secret = hostSecret) {
 
     console.log(`-----------Heartbeat host`);
 
-    await host.heartbeat();
+    await host.heartbeat(vote ? voteBuf.toString('hex').toUpperCase() : "");
 }
 
 async function acquire(scenario) {
@@ -361,6 +371,14 @@ async function fundTenant(tenant) {
     }
 }
 
+async function fundAccount(account, amount) {
+    const lines = await account.getTrustLines('EVR', evrIssuerAddress);
+    if (lines.length === 0 || parseInt(lines[0].balance) < Number(amount)) {
+        await account.setTrustLine('EVR', evrIssuerAddress, "99999999");
+        await new evernode.XrplAccount(foundationAddress, foundationSecret).makePayment(account.address, amount, 'EVR', evrIssuerAddress);
+    }
+}
+
 async function getHookStates() {
     const governorClient = await evernode.HookClientFactory.create(evernode.HookTypes.governor);
     await governorClient.connect();
@@ -469,6 +487,8 @@ async function setSignerList() {
 
 async function propose() {
     const host = await getHostClient(hostAddress, hostSecret);
+    // First epoch reward quota is considered.
+    await fundAccount(host.xrplAcc, "5120");
 
     if (!await host.isRegistered()) {
         console.log("Host is not registered.");
