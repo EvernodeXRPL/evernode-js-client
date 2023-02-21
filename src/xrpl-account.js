@@ -457,7 +457,6 @@ class XrplAccount {
         //     details: submission and transaction details, (if signing success)
         //     error: Any error that prevents submission.
         // }
-
         return new Promise(async (resolve, reject) => {
 
             // Attach tx options to the transaction.
@@ -582,16 +581,28 @@ class XrplAccount {
 
         if (toAddr)
             tx.Destination = toAddr;
-        
+
         return this.#submitAndVerifyTransaction(tx, options);
     }
 
-    buyURIToken(uriTokenID, amount, currency, issuer = null, options = {}) {
-        const amountObj = makeAmountObject(amount, currency, issuer);
-        return this.#submitAndVerifyTransaction({
+    buyURIToken(uriToken, memos = null, options = {}) {
+        const tx = {
             Account: this.address,
             TransactionType: "URITokenBuy",
-            Amount: amountObj,
+            Amount: uriToken.Amount,
+            URITokenID: uriToken.index
+        }
+
+        if (memos)
+            tx.Memos = TransactionHelper.formatMemos(memos);
+
+        return this.#submitAndVerifyTransaction(tx, options);
+    }
+
+    async clearURITokenOffer(uriTokenID, options = {}) {
+        return this.#submitAndVerifyTransaction({
+            Account: this.address,
+            TransactionType: "URITokenCancelSellOffer",
             URITokenID: uriTokenID
         }, options);
     }
@@ -605,14 +616,6 @@ class XrplAccount {
         const tokens = await this.getURITokens();
         const hexUri = isHexUri ? uri : TransactionHelper.asciiToHex(uri).toUpperCase();
         return tokens.find(t => t.URI == hexUri);
-    }
-
-    async clearURITokenOffer(uriTokenID, options = {}) {
-        return this.#submitAndVerifyTransaction({
-            Account: this.address,
-            TransactionType: "URITokenCancelSellOffer",
-            URITokenID: uriTokenID
-        }, options);
     }
 }
 

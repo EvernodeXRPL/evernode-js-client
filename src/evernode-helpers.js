@@ -3,10 +3,8 @@ const NFT_PAGE_LEDGER_ENTRY_TYPE_HEX = '0050';
 
 class EvernodeHelpers {
     static async getLeaseOffers(xrplAcc) {
-        const hostNfts = (await xrplAcc.getNfts()).filter(nft => nft.URI.startsWith(EvernodeConstants.LEASE_NFT_PREFIX_HEX));
-        const hostTokenIDs = hostNfts.map(nft => nft.NFTokenID);
-        const nftOffers = (await xrplAcc.getNftOffers())?.filter(offer => (offer.Flags == 1 && hostTokenIDs.includes(offer.NFTokenID))); // Filter only sell offers
-        return nftOffers;
+        const hostURITOffers = (await xrplAcc.getURITokens()).filter(urit => urit.URI.startsWith(EvernodeConstants.LEASE_NFT_PREFIX_HEX) && urit.Flags == 1 && urit.Amount);
+        return hostURITOffers;
     }
 
     static async getNFTPageAndLocation(nfTokenId, xrplAcc, xrplApi, buffer = true) {

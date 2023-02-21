@@ -10,7 +10,6 @@ const { EventEmitter } = require('../event-emitter');
 const { UtilHelpers } = require('../util-helpers');
 const { FirestoreHandler } = require('../firestore/firestore-handler');
 const { StateHelpers } = require('../state-helpers');
-const { EvernodeHelpers } = require('../evernode-helpers');
 
 class BaseEvernodeClient {
 
@@ -466,7 +465,7 @@ class BaseEvernodeClient {
     /**
      * Get the registered host information.
      * @param {string} hostAddress [Optional] Address of the host.
-     * @returns The registered host information object. Returns null is not registered.
+     * @returns The registered host information object. Returns null if not registered.
      */
     async getHostInfo(hostAddress = this.xrplAcc.address) {
         try {
@@ -583,26 +582,17 @@ class BaseEvernodeClient {
 
         // To obtain registration NFT Page Keylet and index.
         const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
-        const regNFT = (await hostAcc.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
-        if (regNFT) {
-            // Check whether the token was actually issued from Evernode registry contract.
-            const issuerHex = regNFT.NFTokenID.substr(8, 40);
-            const issuerAddr = codec.encodeAccountID(Buffer.from(issuerHex, 'hex'));
-            if (issuerAddr == this.config.registryAddress) {
-                const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, hostAcc, this.xrplApi);
-
-                await this.xrplAcc.makePayment(this.config.registryAddress,
-                    XrplConstants.MIN_XRP_AMOUNT,
-                    XrplConstants.XRP,
-                    null,
-                    [
-                        { type: MemoTypes.DEAD_HOST_PRUNE, format: MemoFormats.HEX, data: memoData.toString('hex') },
-                        { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
-                    ]);
-            } else
-                throw "Invalid Registration NFT."
+        const regUriToken = (await hostAcc.getURITokens()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
+        if (regUriToken) {
+            await this.xrplAcc.makePayment(this.config.registryAddress,
+                XrplConstants.MIN_XRP_AMOUNT,
+                XrplConstants.XRP,
+                null,
+                [
+                    { type: MemoTypes.DEAD_HOST_PRUNE, format: MemoFormats.HEX, data: memoData.toString('hex') }
+                ]);
         } else
-            throw "No Registration NFT was found for the Host account."
+            throw "No Registration URI token was found for the Host account."
 
     }
 }

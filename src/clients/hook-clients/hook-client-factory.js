@@ -13,12 +13,12 @@ class HookClientFactory {
             }
             case HookTypes.registry: {
                 const registryAddress = await HookClientFactory.#getAccountAddress(hookType);
-                hookClient = new RegistryClient({registryAddress: registryAddress});
+                hookClient = new RegistryClient({ registryAddress: registryAddress });
                 break;
             }
             case HookTypes.heartbeat: {
                 const heartbeatAddress = await HookClientFactory.#getAccountAddress(hookType);
-                hookClient = new HeartbeatClient({heartbeatAddress: heartbeatAddress});
+                hookClient = new HeartbeatClient({ heartbeatAddress: heartbeatAddress });
                 break;
             }
             default: {
@@ -36,14 +36,14 @@ class HookClientFactory {
         let configs;
         try {
             await governorHook.connect();
-            configs = governorHook.config;     
+            configs = governorHook.config;
         } catch (error) {
-            throw(error)  
+            throw (error)
         } finally {
             await governorHook.disconnect();
         }
 
-        if(hookType == HookTypes.registry)
+        if (hookType == HookTypes.registry)
             return configs.registryAddress;
         else if (hookType == HookTypes.heartbeat)
             return configs.heartbeatAddress;
