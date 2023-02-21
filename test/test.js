@@ -233,22 +233,14 @@ async function deregisterHost(address = hostAddress, secret = hostSecret) {
 }
 
 async function heartbeatHost(vote = null, address = hostAddress, secret = hostSecret) {
-    let voteBuf;
-    if (vote) {
-        const uniqueId = evernode.UtilHelpers.getCandidateUniqueId(Buffer.from(hookCandidates, 'hex'));
-        voteBuf = Buffer.alloc(33);
-        Buffer.from(uniqueId, 'hex').copy(voteBuf, 0);
-        voteBuf.writeUInt8(vote, 32)
-    }
-
     const host = await getHostClient(address, secret);
 
     if (!await host.isRegistered())
         return true;
 
     console.log(`-----------Heartbeat host`);
-
-    await host.heartbeat(vote ? voteBuf.toString('hex').toUpperCase() : "");
+    (vote !== null) ? await host.heartbeat({ vote: vote, candidate: evernode.UtilHelpers.getCandidateUniqueId(Buffer.from(hookCandidates, 'hex')) })
+        : await host.heartbeat();
 }
 
 async function acquire(scenario) {
