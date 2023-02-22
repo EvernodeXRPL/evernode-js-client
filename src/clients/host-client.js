@@ -39,6 +39,8 @@ const HOST_UPDATE_DESCRIPTION_MEMO_OFFSET = 54;
 const HOST_UPDATE_VERSION_MEMO_OFFSET = 80;
 const HOST_UPDATE_MEMO_SIZE = 83;
 
+const VOTE_VALIDATION_ERR = "VOTE_VALIDATION_ERR";
+
 class HostClient extends BaseEvernodeClient {
 
     constructor(xrpAddress, xrpSecret, options = {}) {
@@ -366,15 +368,26 @@ class HostClient extends BaseEvernodeClient {
         const regNFT = await this.getRegistrationNft();
         const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, this.xrplAcc, this.xrplApi);
 
-        return this.xrplAcc.makePayment(this.config.heartbeatAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
-            null,
-            [
-                { type: MemoTypes.HEARTBEAT, format: MemoFormats.HEX, data: data },
-                { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
-            ],
-            options.transactionOptions);
+        try {
+            const res = await this.xrplAcc.makePayment(this.config.heartbeatAddress,
+                XrplConstants.MIN_XRP_AMOUNT,
+                XrplConstants.XRP,
+                null,
+                [
+                    { type: MemoTypes.HEARTBEAT, format: MemoFormats.HEX, data: data },
+                    { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
+                ],
+                options.transactionOptions);
+            return res;
+        }
+        catch (e) {
+            // If this is a vote validation error, Try heartbeat again without votes.
+            if (e?.hookExecutionResult?.find(r => r.message.includes(VOTE_VALIDATION_ERR))) {
+                console.log('Vote validation error occurred, Retrying without votes..')
+                return await this.heartbeat({}, options);
+            }
+            throw e;
+        }
     }
 
     async acquireSuccess(txHash, tenantAddress, instanceInfo, options = {}) {
