@@ -483,10 +483,17 @@ class XrplAccount {
                 };
 
                 console.log("Transaction result: " + txResult.code);
+                const hookExecRes = txResult.details?.meta?.HookExecutions?.map(o => {
+                    return {
+                        result: o.HookExecution?.HookResult,
+                        returnCode: o.HookExecution?.HookReturnCode,
+                        message: TransactionHelper.hexToASCII(o.HookExecution?.HookReturnString).replace(/\x00+$/, '')
+                    }
+                });
                 if (txResult.code === "tesSUCCESS")
-                    resolve(txResult);
+                    resolve({ ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) });
                 else
-                    reject(txResult);
+                    reject({ ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) });
             }
             catch (err) {
                 console.log("Error submitting transaction:", err);
@@ -521,10 +528,17 @@ class XrplAccount {
                 };
 
                 console.log("Transaction result: " + txResult.code);
+                const hookExecRes = txResult.details?.meta?.HookExecutions?.map(o => {
+                    return {
+                        result: o.HookExecution?.HookResult,
+                        returnCode: o.HookExecution?.HookReturnCode,
+                        message: TransactionHelper.hexToASCII(o.HookExecution?.HookReturnString).replace(/\x00+$/, '')
+                    }
+                });
                 if (txResult.code === "tesSUCCESS")
-                    resolve(txResult);
+                    resolve({ ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) });
                 else
-                    reject(txResult);
+                    reject({ ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) });
             }
             catch (err) {
                 console.log("Error submitting transaction:", err);
