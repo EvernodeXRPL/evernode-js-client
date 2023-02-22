@@ -47,7 +47,7 @@ class HostClient extends BaseEvernodeClient {
 
     async getRegistrationUriToken() {
         // Find an owned NFT with matching Evernode host NFT prefix.
-        const uriToken = (await this.xrplAcc.getURITokens()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
+        const uriToken = (await this.xrplAcc.getURITokens()).find(n => n.URI.startsWith(EvernodeConstants.TOKEN_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
         return uriToken ?? null;
     }
 
@@ -98,13 +98,14 @@ class HostClient extends BaseEvernodeClient {
 
     async offerLease(leaseIndex, leaseAmount, tosHash) {
         // <prefix><lease index 16)><half of tos hash><lease amount (uint32)>
-        const prefixLen = EvernodeConstants.LEASE_NFT_PREFIX_HEX.length / 2;
+        const prefixLen = EvernodeConstants.LEASE_TOKEN_PREFIX_HEX.length / 2;
         const halfToSLen = tosHash.length / 4;
-        const uriBuf = Buffer.allocUnsafe(prefixLen + halfToSLen + 10);
-        Buffer.from(EvernodeConstants.LEASE_NFT_PREFIX_HEX, 'hex').copy(uriBuf);
+        const uriBuf = Buffer.allocUnsafe(prefixLen + halfToSLen + 20);
+        Buffer.from(EvernodeConstants.LEASE_TOKEN_PREFIX_HEX, 'hex').copy(uriBuf);
         uriBuf.writeUInt16BE(leaseIndex, prefixLen);
         Buffer.from(tosHash, 'hex').copy(uriBuf, prefixLen + 2, 0, halfToSLen);
         uriBuf.writeBigInt64BE(XflHelpers.getXfl(leaseAmount.toString()), prefixLen + 2 + halfToSLen);
+        codec.decodeAccountID(this.xrplAcc.address).copy(uriBuf, prefixLen + 10 + halfToSLen)
         const uri = uriBuf.toString('hex').toUpperCase();
 
         await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: true });
@@ -211,12 +212,17 @@ class HostClient extends BaseEvernodeClient {
             [{ type: MemoTypes.HOST_REG, format: MemoFormats.HEX, data: memoBuf.toString('hex') }],
             options.transactionOptions);
 
-        console.log('Waiting for the sell offer', tx)
+        console.log('Waiting for the sell offer', tx.id)
         let sellOffer = null;
         let attempts = 0;
         let offerLedgerIndex = 0;
         while (attempts < OFFER_WAIT_TIMEOUT) {
-            sellOffer = (await registryAcc.getURITokens()).find(n => (n.Amount && n.Destination === this.xrplAcc.address && n.URI === `${EvernodeConstants.NFT_PREFIX_HEX}${tx.id}`) || (n.index === transferredNFTokenId));
+            sellOffer = (await registryAcc.getURITokens()).find(n => (
+                n.Amount &&
+                n.Destination === this.xrplAcc.address &&
+                (!transferredNFTokenId ?
+                    (n.URI === `${EvernodeConstants.TOKEN_PREFIX_HEX}${tx.id}`) :
+                    (n.index === transferredNFTokenId))));
 
             offerLedgerIndex = this.xrplApi.ledgerIndex;
             if (sellOffer)
@@ -416,68 +422,40 @@ class HostClient extends BaseEvernodeClient {
         const transfereeAcc = new XrplAccount(transfereeAddress, null, { xrplApi: this.xrplApi });
 
         if (this.xrplAcc.address !== transfereeAddress) {
-            // Find the new transferee also owns an Evernode Host Registration NFT.
-            const nft = (await transfereeAcc.getURITokens()).find(n => n.index.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
-            if (nft) {
-                // Check whether the token was actually issued from Evernode registry contract.
-                const issuerHex = nft.index.substr(8, 40);
-                const issuerAddr = codec.encodeAccountID(Buffer.from(issuerHex, 'hex'));
-                if (issuerAddr == this.config.registryAddress) {
-                    throw "The transferee is already registered in Evernode.";
-                }
-            }
+            // Find the new transferee also owns an Evernode Host Registration token.
+            const token = (await transfereeAcc.getURITokens()).find(n => n.URI.startsWith(EvernodeConstants.TOKEN_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
+            if (token)
+                throw "The transferee is already registered in Evernode.";
         }
 
         let memoData = Buffer.allocUnsafe(20);
         codec.decodeAccountID(transfereeAddress).copy(memoData);
 
-        await this.xrplAcc.makePayment(this.config.registryAddress,
+        const regUriToken = await this.getRegistrationUriToken();
+
+        await this.xrplAcc.sellURIToken(regUriToken.index,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
+            this.config.registryAddress,
             [
                 { type: MemoTypes.HOST_TRANSFER, format: MemoFormats.HEX, data: memoData.toString('hex') }
             ],
             options.transactionOptions);
 
-        let offer = null;
+        let token = null;
         let attempts = 0;
-        let offerLedgerIndex = 0;
         const regAcc = new XrplAccount(this.config.registryAddress, null, { xrplApi: this.xrplApi });
 
-        // To obtain index.
-        const regUriToken = await this.getRegistrationUriToken();
-
         while (attempts < OFFER_WAIT_TIMEOUT) {
-            offer = (await regAcc.getURITokens()).find(o => (o.index == regUriToken.index) && (o.Flags === 0));
-            offerLedgerIndex = this.xrplApi.ledgerIndex;
-            if (offer)
+            token = (await regAcc.getURITokens()).find(o => o.index == regUriToken.index);
+            if (token)
                 break;
             await new Promise(resolve => setTimeout(resolve, 1000));
             attempts++;
         }
-        if (!offer)
-            throw 'No buy offer found within timeout.';
-
-        console.log('Accepting the buy offer..');
-
-        // Wait until the next ledger after the offer is created.
-        // Otherwise if the offer accepted in the same legder which it's been created,
-        // We cannot fetch the offer from registry contract event handler since it's getting deleted immediately.
-        await new Promise(async resolve => {
-            while (this.xrplApi.ledgerIndex <= offerLedgerIndex)
-                await new Promise(resolve2 => setTimeout(resolve2, 1000));
-            resolve();
-        });
-
-        //await this.xrplAcc.sellNft(offer.index);
-
-        await this.xrplAcc.sellURIToken(
-            offer.index,
-            EvernodeConstants.MINIMUM_OFFER_AMOUNT,
-            EvernodeConstants.EVR,
-            this.config.evrIssuerAddress
-        );
+        if (!token)
+            throw 'Token hasn\'t transferred within timeout.';
     }
 
     async isTransferee() {

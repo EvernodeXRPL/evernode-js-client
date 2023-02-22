@@ -2,19 +2,20 @@
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 const codec = require('ripple-address-codec');
 
-const evrIssuerAddress = "rEm71QHHXJzGULG4mkR3yhLz6EZYgvuwwP";
-const registryAddress = "raaFre81618XegCrzTzVotAmarBcqNSAvK";
-const governorAddress = 'rDxkQ7Jaq1igBmNNavXqsZ5vyEoYRKgT8B';
-const heartbeatHookAddress = 'rfahCFFLKHuNkeE9iRvn1tjmdH2FYyL8QS';
-const hostAddress = "rNJDQu9pUretQetmxeHRPkasM4o7chdML2";
-const hostSecret = "ss11mwRSG4UxXQ9LakyYTmAzisnN2";
-const foundationAddress = "rMRRzwe2mPhtVJYkBsPYbxkrHdExAduqWi";
-const foundationSecret = "sncQEvGmeMrVGAvkMiLkmE3hrtVH9";
-const tenantAddress = "rw7GPreCDX2nuJVHSwNdH38ZGsiEH8qiY";
-const tenantSecret = "shdQBGbF9d3Tgp3D28pXoBdhWoZ9N";
+const evrIssuerAddress = "rszpt6nQmGZsXD4MoYVCbfCwYFPgbcq2Md";
+const registryAddress = "rBjgZ7uxUVtopfLE7ou1jPdPTxU3gRCeYp";
+const governorAddress = 'r3DzWozd3CCvkBjCFzsvRNBLcYD11hoJzG';
+const heartbeatAddress = 'rnaJfKxnjcNk88fKZ4SM59qqz3xpUn2Jwp';
+const hostAddress = "rESDJA9HFfd6SUEwtQjhStD5ZhPGPt4nMJ";
+const hostSecret = "shmTU3sMshnrCSTm7BGkKutD4p2AC";
+const foundationAddress = "r4L7Z8TnwLyQcAqAXP9GzyL9dsHA8tGWSo";
+const foundationSecret = "snjCbzpwRojsMwiD2SJxjG3bTy7QM";
+const tenantAddress = "r41xYGU6FHJ4vKiXPBm1BGrijL6zjcdp5D";
+const tenantSecret = "shXiekLBdkxpv5hFBDEmUFqDUjaKU";
 const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
 const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
-const transfereeAddress = 'rNAW13zAUA4DjkM45peek3WhUs23GZ2fYD';
+const transfereeAddress = 'rMukZHU1BGWbEkdbXZtF3Tf6Epf2Pj1DRA';
+const transfereeSecret = 'ss9ZB8ncuMh6KLtFdZBp9gMv9rRPN';
 const multiSigninerAddress = 'rsrpCr5j5phA58uQy9Ha3StMPBmSrXbVx6';
 const multiSignerSecret = 'shYrpNBRgnej2xmBhxze75MNLfTwq';
 
@@ -78,6 +79,24 @@ async function app() {
         // // Get information about the purchased nft.
         // const nft2 = await acc2.getNftByUri(uri);
         // console.log(nft2);
+
+        // Process of minting and selling a URI token.
+
+        // // Account1: selling party.
+        // const acc1 = new evernode.XrplAccount(hostAddress, hostSecret);
+        // // Mint a token with some data included in uri. uri should be unique.
+        // const uri = "myuritoken custom data 3";
+        // await acc1.mintURIToken(uri);
+        // // Get the minted uri token information and sell it on the dex.
+        // let token = await acc1.getURITokenByUri(uri);
+        // console.log(token);
+        // // Make a sell offer min drops while restricting it to be only purchased by the specified party.
+        // await acc1.sellURIToken(token.index, '1', 'XRP', null, tenantAddress);
+
+        // // Account2: Buying party.
+        // token = await acc1.getURITokenByUri(uri);
+        // const acc2 = new evernode.XrplAccount(tenantAddress, tenantSecret);
+        // await acc2.buyURIToken(token);
 
         const tests = [
             // () => initializeConfigs(),
@@ -159,7 +178,7 @@ async function initializeConfigs() {
     codec.decodeAccountID(evrIssuerAddress).copy(memoData);
     codec.decodeAccountID(foundationAddress).copy(memoData, 20);
     codec.decodeAccountID(registryAddress).copy(memoData, 40);
-    codec.decodeAccountID(heartbeatHookAddress).copy(memoData, 60);
+    codec.decodeAccountID(heartbeatAddress).copy(memoData, 60);
 
     const initAccount = new evernode.XrplAccount(initializerAddress, initializerSecret);
     await initAccount.makePayment(governorAddress, '1', 'XRP', null,
@@ -187,7 +206,7 @@ async function registerHost(address = hostAddress, secret = hostSecret) {
     }
 
     console.log("Register...");
-    const instanceCount = 3;
+    const instanceCount = 2;
     await host.register("AU", 10000, 512, 1024, instanceCount, 'Intel', 10, 10, "Test desctiption", "testemail@gmail.com", 2);
 
     console.log("Lease Offer...");
@@ -208,13 +227,14 @@ async function deregisterHost(address = hostAddress, secret = hostSecret) {
 
     await host.deregister();
 
-    // Burn NFTs.
-    const nfts = (await host.xrplAcc.getNfts()).filter(n => n.URI.startsWith(evernode.EvernodeConstants.LEASE_NFT_PREFIX_HEX))
-        .map(o => { return { nfTokenId: o.NFTokenID, ownerAddress: host.xrplAcc.address }; });
-    for (const nft of nfts) {
-        const sold = nft.ownerAddress !== host.xrplAcc.address;
-        await host.xrplAcc.burnNft(nft.nfTokenId, sold ? nft.ownerAddress : null);
-        console.log(`Burnt ${sold ? 'sold' : 'unsold'} hosting NFT (${nft.nfTokenId}) of ${nft.ownerAddress + (sold ? ' tenant' : '')} account`);
+    // Burn tokens.
+    const tokens = (await host.xrplAcc.getURITokens()).filter(n => n.URI.startsWith(evernode.EvernodeConstants.LEASE_TOKEN_PREFIX_HEX) && n.Issuer === host.xrplAcc.address)
+        .map(o => { return { uriTokenId: o.index, ownerAddress: o.Owner }; });
+    for (const token of tokens) {
+        const sold = token.ownerAddress !== host.xrplAcc.address;
+        // TODO: Check whether we need to pass the owner for sold tokens.
+        await host.xrplAcc.burnURIToken(token.uriTokenId);
+        console.log(`Burnt ${sold ? 'sold' : 'unsold'} hosting token (${token.uriTokenId}) of ${token.ownerAddress + (sold ? ' tenant' : '')} account`);
     }
 
     // Verify the deregistration.
@@ -252,7 +272,7 @@ async function acquire(scenario) {
                 await host.acquireSuccess(r.acquireRefId, r.tenant, { content: "dummy success" });
             else if (scenario === "error") {
                 const nft = (await (new evernode.XrplAccount(r.tenant)).getNfts())?.find(n => n.NFTokenID == r.nfTokenId);
-                const leaseIndex = Buffer.from(nft.URI, 'hex').readUint16BE(evernode.EvernodeConstants.LEASE_NFT_PREFIX_HEX.length);
+                const leaseIndex = Buffer.from(nft.URI, 'hex').readUint16BE(evernode.EvernodeConstants.LEASE_TOKEN_PREFIX_HEX.length);
 
                 await host.expireLease(r.nfTokenId, r.tenant);
                 await host.offerLease(leaseIndex, r.leaseAmount, tosHash);
@@ -394,25 +414,16 @@ async function transferHost(address = transfereeAddress) {
     }
 
     console.log(`-----------Transfer host`);
-
-    // Get EVRs from the foundation if needed.
-    const lines = await host.xrplAcc.getTrustLines(evernode.EvernodeConstants.EVR, evrIssuerAddress);
-    if (lines.length === 0 || parseInt(lines[0].balance) < 1) {
-        console.log("Transfer EVRs...");
-        const foundationAcc = new evernode.XrplAccount(foundationAddress, foundationSecret);
-        await foundationAcc.makePayment(hostAddress, "1", evernode.EvernodeConstants.EVR, evrIssuerAddress);
-    }
-
-    console.log("Initiating a transfer...");
     await host.transfer(address);
 
-    // Burn NFTs.
-    const nfts = (await host.xrplAcc.getNfts()).filter(n => n.URI.startsWith(evernode.EvernodeConstants.LEASE_NFT_PREFIX_HEX))
-        .map(o => { return { nfTokenId: o.NFTokenID, ownerAddress: host.xrplAcc.address }; });
-    for (const nft of nfts) {
-        const sold = nft.ownerAddress !== host.xrplAcc.address;
-        await host.xrplAcc.burnNft(nft.nfTokenId, sold ? nft.ownerAddress : null);
-        console.log(`Burnt ${sold ? 'sold' : 'unsold'} hosting NFT (${nft.nfTokenId}) of ${nft.ownerAddress + (sold ? ' tenant' : '')} account`);
+    // Burn tokens.
+    const tokens = (await host.xrplAcc.getURITokens()).filter(n => n.URI.startsWith(evernode.EvernodeConstants.LEASE_TOKEN_PREFIX_HEX) && n.Issuer === host.xrplAcc.address)
+        .map(o => { return { uriTokenId: o.index, ownerAddress: o.Owner }; });
+    for (const token of tokens) {
+        const sold = token.ownerAddress !== host.xrplAcc.address;
+        // TODO: Check whether we need to pass the owner for sold tokens.
+        await host.xrplAcc.burnURIToken(token.uriTokenId);
+        console.log(`Burnt ${sold ? 'sold' : 'unsold'} hosting NFT (${token.uriTokenId}) of ${token.ownerAddress + (sold ? ' tenant' : '')} account`);
     }
 
 }
