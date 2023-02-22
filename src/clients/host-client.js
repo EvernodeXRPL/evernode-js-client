@@ -353,7 +353,15 @@ class HostClient extends BaseEvernodeClient {
             options.transactionOptions);
     }
 
-    async heartbeat(options = {}) {
+    async heartbeat(voteInfo = {}, options = {}) {
+        let data = "";
+        // Prepare voteInfo
+        if (Object.keys(voteInfo).length > 1) {
+            let voteBuf = Buffer.alloc(33);
+            Buffer.from(voteInfo.candidate, 'hex').copy(voteBuf, 0);
+            voteBuf.writeUInt8(voteInfo.vote, 32);
+            data = voteBuf.toString('hex').toUpperCase();
+        }
         // To obtain registration NFT Page Keylet and index.
         const regNFT = await this.getRegistrationNft();
         const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, this.xrplAcc, this.xrplApi);
@@ -363,7 +371,7 @@ class HostClient extends BaseEvernodeClient {
             XrplConstants.XRP,
             null,
             [
-                { type: MemoTypes.HEARTBEAT, format: "", data: "" },
+                { type: MemoTypes.HEARTBEAT, format: MemoFormats.HEX, data: data },
                 { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
             ],
             options.transactionOptions);
