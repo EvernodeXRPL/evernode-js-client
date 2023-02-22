@@ -2,14 +2,14 @@
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 const codec = require('ripple-address-codec');
 
-const evrIssuerAddress = "rEHqJPERprVpexPS5wXm2bcS6RoFDQc3B8";
-const registryAddress = "ran1NuAQWCVvdN4afQMcXcUudzkEdhnaDZ";
-const governorAddress = 'rniNfp5v2xhooV5EZecckR5FuYPkqpetnh';
-const heartbeatAddress = 'rpcSXrjy4Vp8AGdYiEhksfUUyoqVcWVeNd';
-const hostAddress = "rMk17K8cLAXXs9CSngPUVPvPpTBzbdvhp";
-const hostSecret = "ssEK4eziu4D4VjPskZWuFaxnAe22Q";
-const foundationAddress = "rht86PJAgeHUuixr4kZSWMcAMrZQEowbsH";
-const foundationSecret = "shFJu5ygPoP6Y8ZWXicKoyEb4qPZx";
+const evrIssuerAddress = "rDVFatp11HCrH4CjTbUs1CPZmPkUfmUYvC";
+const registryAddress = "rhHdqek8JRvVSTfQ1vqRJsEU2qaG13vsGs";
+const governorAddress = 'r9MxatdSbzRrrKJsnc39T7TbCrTSUPMbzW';
+const heartbeatAddress = 'r4esPajrQFHpeDadFzQ8w7gFqXcvAkwNpN';
+const hostAddress = "rDTgb4cJ5PvdeoXwZR1wLqiraFw65L4ePa";
+const hostSecret = "ss4jvoC2ZfCJENJuTswGAxz41cBgN";
+const foundationAddress = "rn5weEGQ9vzEh8rzNomosXeh88FWe1QLtj";
+const foundationSecret = "shjp18HzrAksQbsUeZC7EJF2eFYPo";
 const tenantAddress = "rw7GPreCDX2nuJVHSwNdH38ZGsiEH8qiY";
 const tenantSecret = "shdQBGbF9d3Tgp3D28pXoBdhWoZ9N";
 const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
@@ -35,7 +35,7 @@ const signerQuorum = 1;
 
 const tosHash = "757A0237B44D8B2BBB04AE2BAD5813858E0AECD2F0B217075E27E0630BA74314";
 
-const hookCandidates = "60745F3B4104E33609B584DCBE9B87E327E178659A3C29BBE9CFA5006A05ABACF5E85626B59ED4E552C1F3E80F55B964D84CA880286B01D40F88B9C4A8CD44BA230A1E31279E765F8E1D5FA9B5E6089FC9769C6143C55D20601DFC3CDAC5B132";
+const hookCandidates = "B1727C4AB49BBE9DAFD568DA8ED8BE357EA5E3FFF87470D8167CD6BB5B9B1266FCC9D192CD7A6608A79F6193CC6741B2F03E3EF5DD54A7280E26AC116BD2195260921BF9632FBBA9F0E7329AAA6EF8B1C3E7C83F93DF265977B9391F86773113";
 
 const clients = [];
 
@@ -89,9 +89,9 @@ async function app() {
             // () => getAllHosts(),
             // () => getActiveHosts(),
             // () => heartbeatHost(), // If not opted in for voting
-            // () => heartbeatHost(0),
-            // () => heartbeatHost(1),
-            // () => heartbeatHost(2),
+            // () => heartbeatHost(evernode.EvernodeConstants.CandidateVote.Abstain),
+            // () => heartbeatHost(evernode.EvernodeConstants.CandidateVote.Support),
+            // () => heartbeatHost(evernode.EvernodeConstants.CandidateVote.Reject),
             // () => acquire("success"),
             // () => acquire("error"),
             // () => acquire("timeout"),
@@ -110,6 +110,7 @@ async function app() {
             // () => withdraw(),
             // () => foundationWithdraw(),
             // () => getCandidateInfo(),
+            // () => getFoundationCandidateInfo(),
             // () => foundationVote(),
             // () => makePayment()
 
@@ -489,6 +490,13 @@ async function foundationPropose() {
     await client.propose(hookCandidates, 'testProposal');
 }
 
+async function getFoundationCandidateInfo() {
+    const client = await getTenantClient(foundationAddress, foundationSecret);
+    const candidateInfo = await client.getCandidateInfo();
+    console.log(candidateInfo);
+    return candidateInfo;
+}
+
 async function getCandidateInfo() {
     const host = await getHostClient();
     const candidateInfo = await host.getCandidateInfo();
@@ -515,19 +523,6 @@ async function foundationWithdraw() {
 
     console.log(`-----------Foundation Withdrawing hook candidate`);
     await client.withdraw(uniqueId);
-}
-
-async function vote() {
-    const host = await getHostClient();
-    const uniqueId = evernode.UtilHelpers.getCandidateUniqueId(Buffer.from(hookCandidates, 'hex'));
-
-    if (!await host.isRegistered()) {
-        console.log("Host is not registered.");
-        return true;
-    }
-
-    console.log(`-----------Vote for hook candidate`);
-    await host.vote(uniqueId, evernode.EvernodeConstants.CandidateVote.Support);
 }
 
 async function foundationVote() {
