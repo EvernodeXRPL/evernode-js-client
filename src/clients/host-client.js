@@ -100,12 +100,11 @@ class HostClient extends BaseEvernodeClient {
         // <prefix><lease index 16)><half of tos hash><lease amount (uint32)>
         const prefixLen = EvernodeConstants.LEASE_TOKEN_PREFIX_HEX.length / 2;
         const halfToSLen = tosHash.length / 4;
-        const uriBuf = Buffer.allocUnsafe(prefixLen + halfToSLen + 20);
+        const uriBuf = Buffer.allocUnsafe(prefixLen + halfToSLen + 10);
         Buffer.from(EvernodeConstants.LEASE_TOKEN_PREFIX_HEX, 'hex').copy(uriBuf);
         uriBuf.writeUInt16BE(leaseIndex, prefixLen);
         Buffer.from(tosHash, 'hex').copy(uriBuf, prefixLen + 2, 0, halfToSLen);
         uriBuf.writeBigInt64BE(XflHelpers.getXfl(leaseAmount.toString()), prefixLen + 2 + halfToSLen);
-        codec.decodeAccountID(this.xrplAcc.address).copy(uriBuf, prefixLen + 10 + halfToSLen)
         const uri = uriBuf.toString('hex').toUpperCase();
 
         await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: true });

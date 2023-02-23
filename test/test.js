@@ -82,11 +82,11 @@ async function app() {
 
         // Process of minting and selling a URI token.
 
-        // // Account1: selling party.
+        // Account1: selling party.
         // const acc1 = new evernode.XrplAccount(hostAddress, hostSecret);
         // // Mint a token with some data included in uri. uri should be unique.
-        // const uri = "myuritoken custom data 3";
-        // await acc1.mintURIToken(uri);
+        // const uri = "myuritoken custom data 14";
+        // await acc1.mintURIToken(uri, null, { isBurnable: true });
         // // Get the minted uri token information and sell it on the dex.
         // let token = await acc1.getURITokenByUri(uri);
         // console.log(token);
@@ -97,6 +97,9 @@ async function app() {
         // token = await acc1.getURITokenByUri(uri);
         // const acc2 = new evernode.XrplAccount(tenantAddress, tenantSecret);
         // await acc2.buyURIToken(token);
+
+        // // Account1: burning uri token.
+        // await acc1.burnURIToken(token.index);
 
         const tests = [
             // () => initializeConfigs(),
