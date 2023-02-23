@@ -589,7 +589,7 @@ class XrplAccount {
         const tx = {
             Account: this.address,
             TransactionType: "URITokenBuy",
-            Amount: uriOffer.Amount.value,
+            Amount: uriOffer.Amount,
             URITokenID: uriOffer.index
         }
 

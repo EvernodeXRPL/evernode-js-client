@@ -231,7 +231,7 @@ class BaseEvernodeClient {
      * @returns The event object in the format {name: '', data: {}}. Returns null if not handled. Note: You need to deserialize memos before passing the transaction to this function.
      */
     async extractEvernodeEvent(tx) {
-        if (tx.TransactionType === 'NFTokenAcceptOffer' && tx.NFTokenSellOffer && tx.Memos.length >= 1 &&
+        if (tx.TransactionType === 'URITokenBuy' && tx.Memos.length >= 1 &&
             tx.Memos[0].type === MemoTypes.ACQUIRE_LEASE && tx.Memos[0].format === MemoFormats.BASE64 && tx.Memos[0].data) {
 
             // If our account is the destination host account, then decrypt the payload.
@@ -254,19 +254,6 @@ class BaseEvernodeClient {
                     acquireRefId: tx.hash,
                     tenant: tx.Account,
                     payload: payload
-                }
-            }
-        }
-
-        else if (tx.TransactionType === 'NFTokenAcceptOffer' && tx.NFTokenBuyOffer && tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.HOST_POST_DEREG && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
-            return {
-                name: EvernodeEvents.HostPostDeregistered,
-                data: {
-                    transaction: tx,
-                    nfTokenId: tx.NFTokenBuyOffer.NFTokenID,
-                    flags: tx.Flags,
-                    hash: tx.hash
                 }
             }
         }
