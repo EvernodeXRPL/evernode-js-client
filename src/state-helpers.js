@@ -30,7 +30,6 @@ const ELIGIBILITY_PERIOD_OFFSET = 0;
 const CANDIDATE_LIFE_PERIOD_OFFSET = 4;
 const CANDIDATE_ELECTION_PERIOD_OFFSET = 8;
 const CANDIDATE_SUPPORT_AVERAGE_OFFSET = 12;
-const CANDIDATE_REJECT_AVERAGE_OFFSET = 14;
 
 const GOVERNANCE_MODE_OFFSET = 0;
 const LAST_CANDIDATE_IDX_OFFSET = 1;
@@ -78,11 +77,10 @@ const CANDIDATE_SHORT_NAME_OFFSET = 22;
 const CANDIDATE_CREATED_TIMESTAMP_OFFSET = 42;
 const CANDIDATE_PROPOSAL_FEE_OFFSET = 50;
 const CANDIDATE_POSITIVE_VOTE_COUNT_OFFSET = 58;
-const CANDIDATE_NEGATIVE_VOTE_COUNT_OFFSET = 62;
-const CANDIDATE_LAST_VOTE_TIMESTAMP_OFFSET = 66;
-const CANDIDATE_STATUS_OFFSET = 74;
-const CANDIDATE_STATUS_CHANGE_TIMESTAMP_OFFSET = 75;
-const CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET = 83;
+const CANDIDATE_LAST_VOTE_TIMESTAMP_OFFSET = 62;
+const CANDIDATE_STATUS_OFFSET = 70;
+const CANDIDATE_STATUS_CHANGE_TIMESTAMP_OFFSET = 71;
+const CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET = 79;
 
 const STATE_KEY_TYPES = {
     TOKEN_ID: 2,
@@ -109,9 +107,8 @@ const GOVERNANCE_MODES = {
 }
 
 const CANDIDATE_STATUSES = {
-    CANDIDATE_ABSTAINED: 0,
-    CANDIDATE_SUPPORTED: 1,
-    CANDIDATE_REJECTED: 2
+    CANDIDATE_REJECTED: 0,
+    CANDIDATE_SUPPORTED: 1
 }
 
 const EVERNODE_PREFIX = 'EVR';
@@ -194,7 +191,7 @@ class StateHelpers {
     static decodeCandidateOwnerState(stateKeyBuf, stateDataBuf) {
         let data = {
             ownerAddress: codec.encodeAccountID(stateKeyBuf.slice(12)),
-            uniqueId: UtilHelpers.getCandidateUniqueId(stateDataBuf),
+            uniqueId: UtilHelpers.getNewHookCandidateId(stateDataBuf),
             governorHookHash: stateDataBuf.slice(CANDIDATE_GOVERNOR_HOOK_HASH_OFFSET, CANDIDATE_REGISTRY_HOOK_HASH_OFFSET).toString('hex').toUpperCase(),
             registryHookHash: stateDataBuf.slice(CANDIDATE_REGISTRY_HOOK_HASH_OFFSET, CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET).toString('hex').toUpperCase(),
             heartbeatHookHash: stateDataBuf.slice(CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET, CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET + 32).toString('hex').toUpperCase(),
@@ -203,36 +200,6 @@ class StateHelpers {
     }
 
     static decodeCandidateIdState(stateDataBuf) {
-        let status = '';
-        switch (stateDataBuf.readUInt8(CANDIDATE_STATUS_OFFSET)) {
-            case CANDIDATE_STATUSES.CANDIDATE_ABSTAINED:
-                status = 'abstained';
-                break;
-            case CANDIDATE_STATUSES.CANDIDATE_SUPPORTED:
-                status = 'supported';
-                break;
-            case CANDIDATE_STATUSES.CANDIDATE_REJECTED:
-                status = 'rejected';
-                break;
-            default:
-                status = 'undefined';
-                break;
-        }
-        let foundationStatus = '';
-        switch (stateDataBuf.readUInt8(CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET)) {
-            case CANDIDATE_STATUSES.CANDIDATE_ABSTAINED:
-                foundationStatus = 'abstained';
-                break;
-            case CANDIDATE_STATUSES.CANDIDATE_SUPPORTED:
-                foundationStatus = 'supported';
-                break;
-            case CANDIDATE_STATUSES.CANDIDATE_REJECTED:
-                foundationStatus = 'rejected';
-                break;
-            default:
-                foundationStatus = 'undefined';
-                break;
-        }
         return {
             ownerAddress: codec.encodeAccountID(stateDataBuf.slice(CANDIDATE_OWNER_ADDRESS_OFFSET, CANDIDATE_IDX_OFFSET)),
             index: stateDataBuf.readUInt16BE(CANDIDATE_IDX_OFFSET),
@@ -240,11 +207,10 @@ class StateHelpers {
             createdTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_CREATED_TIMESTAMP_OFFSET)),
             proposalFee: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_PROPOSAL_FEE_OFFSET)),
             positiveVoteCount: stateDataBuf.readUInt32BE(CANDIDATE_POSITIVE_VOTE_COUNT_OFFSET),
-            negativeVoteCount: stateDataBuf.readUInt32BE(CANDIDATE_NEGATIVE_VOTE_COUNT_OFFSET),
             lastVoteTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_LAST_VOTE_TIMESTAMP_OFFSET)),
-            status: status,
+            status: stateDataBuf.readUInt8(CANDIDATE_STATUS_OFFSET) === CANDIDATE_STATUSES.CANDIDATE_SUPPORTED ? 'supported' : 'rejected',
             statusChangeTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_STATUS_CHANGE_TIMESTAMP_OFFSET)),
-            foundationVoteStatus: foundationStatus
+            foundationVoteStatus: stateDataBuf.readUInt8(CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET) === CANDIDATE_STATUSES.CANDIDATE_SUPPORTED ? 'supported' : 'rejected'
         }
     }
 
@@ -405,8 +371,7 @@ class StateHelpers {
                     eligibilityPeriod: stateData.readUInt32BE(ELIGIBILITY_PERIOD_OFFSET),
                     candidateLifePeriod: stateData.readUInt32BE(CANDIDATE_LIFE_PERIOD_OFFSET),
                     candidateElectionPeriod: stateData.readUInt32BE(CANDIDATE_ELECTION_PERIOD_OFFSET),
-                    candidateSupportAverage: stateData.readUInt16BE(CANDIDATE_SUPPORT_AVERAGE_OFFSET),
-                    candidateRejectAverage: stateData.readUInt16BE(CANDIDATE_REJECT_AVERAGE_OFFSET)
+                    candidateSupportAverage: stateData.readUInt16BE(CANDIDATE_SUPPORT_AVERAGE_OFFSET)
                 }
             }
         }

@@ -622,7 +622,7 @@ class BaseEvernodeClient {
      * @param {*} hashes Hook candidate hashes in hex format, <GOVERNOR_HASH(32)><REGISTRY_HASH(32)><HEARTBEAT_HASH(32)>.
      * @param {*} shortName Short name for the proposal candidate.
      * @param {*} options [Optional] transaction options.
-     * @returns Options for the transaction.
+     * @returns Transaction result.
      */
     async propose(hashes, shortName, options = {}) {
         const hashesBuf = Buffer.from(hashes, 'hex');
@@ -640,7 +640,7 @@ class BaseEvernodeClient {
                 keylets.push(HookHelpers.getHookDefinitionKeylet(index));
         }
 
-        const uniqueId = UtilHelpers.getCandidateUniqueId(hashesBuf);
+        const uniqueId = UtilHelpers.getNewHookCandidateId(hashesBuf);
         const memoBuf = Buffer.alloc(CANDIDATE_PROPOSE_MEMO_SIZE);
         Buffer.from(uniqueId, 'hex').copy(memoBuf, CANDIDATE_PROPOSE_UNIQUE_ID_MEMO_OFFSET);
         Buffer.from(shortName.substr(0, 20), "utf-8").copy(memoBuf, CANDIDATE_PROPOSE_SHORT_NAME_MEMO_OFFSET);
@@ -664,7 +664,7 @@ class BaseEvernodeClient {
      * Withdraw a hook candidate.
      * @param {string} candidateId Id of the candidate in hex format.
      * @param {*} options [Optional] transaction options.
-     * @returns Options for the transaction.
+     * @returns Transaction result.
      */
     async withdraw(candidateId, options = {}) {
         const candidateIdBuf = Buffer.from(candidateId, 'hex');
@@ -681,9 +681,9 @@ class BaseEvernodeClient {
     /**
      * Vote for a hook candidate.
      * @param {string} candidateId Id of the candidate in hex format.
-     * @param {int} vote Vote value CandidateVote (0 - Abstain, 1 - Support , 2 - Reject).
+     * @param {int} vote Vote value CandidateVote (0 - Reject, 1 - Support).
      * @param {*} options [Optional] transaction options.
-     * @returns Options for the transaction.
+     * @returns Transaction result.
      */
     async vote(candidateId, vote, options = {}) {
         const voteBuf = Buffer.alloc(CANDIDATE_VOTE_MEMO_SIZE);
@@ -732,6 +732,48 @@ class BaseEvernodeClient {
         }
 
         return null;
+    }
+
+    /**
+     * Report dud host for removal.
+     * @param {*} hostAddress Address of the dud host.
+     * @param {*} options [Optional] transaction options.
+     * @returns Transaction result.
+     */
+    async reportDudHost(hostAddress, options = {}) {
+        const candidateId = UtilHelpers.getDudHostCandidateId(hostAddress);
+
+        return await this.xrplAcc.makePayment(this.governorAddress,
+            XrplConstants.MIN_XRP_AMOUNT,
+            EvernodeConstants.XRP,
+            null,
+            [
+                { type: MemoTypes.DUD_HOST_REPORT, format: MemoFormats.HEX, data: candidateId }
+            ],
+            options.transactionOptions);
+    }
+
+    /**
+     * Vote for a dud host.
+     * @param {string} hostAddress Address of the dud host.
+     * @param {int} vote Vote value CandidateVote (0 - Reject, 1 - Support).
+     * @param {*} options [Optional] transaction options.
+     * @returns Transaction result.
+     */
+    async voteDudHost(hostAddress, vote, options = {}) {
+        const candidateId = UtilHelpers.getDudHostCandidateId(hostAddress);
+        return await this.vote(candidateId, vote, options);
+    }
+
+    /**
+     * Vote for a piloted mode.
+     * @param {int} vote Vote value CandidateVote (0 - Reject, 1 - Support).
+     * @param {*} options [Optional] transaction options.
+     * @returns Transaction result.
+     */
+    async votePilotedMode(vote, options = {}) {
+        const candidateId = UtilHelpers.getPilotedModeCandidateId();
+        return await this.vote(candidateId, vote, options);
     }
 }
 

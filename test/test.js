@@ -17,6 +17,8 @@ const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
 const transfereeAddress = 'rNAW13zAUA4DjkM45peek3WhUs23GZ2fYD';
 const multiSignerAddress = 'rsrpCr5j5phA58uQy9Ha3StMPBmSrXbVx6';
 const multiSignerSecret = 'shYrpNBRgnej2xmBhxze75MNLfTwq';
+const dudHostAddress = "rDTgb4cJ5PvdeoXwZR1wLqiraFw65L4ePa";
+const dudHostSecret = "ss4jvoC2ZfCJENJuTswGAxz41cBgN";
 
 
 const signerList = [
@@ -89,7 +91,6 @@ async function app() {
             // () => getAllHosts(),
             // () => getActiveHosts(),
             // () => heartbeatHost(), // If not opted in for voting
-            // () => heartbeatHost(evernode.EvernodeConstants.CandidateVote.Abstain),
             // () => heartbeatHost(evernode.EvernodeConstants.CandidateVote.Support),
             // () => heartbeatHost(evernode.EvernodeConstants.CandidateVote.Reject),
             // () => acquire("success"),
@@ -112,6 +113,9 @@ async function app() {
             // () => getCandidateInfo(),
             // () => getFoundationCandidateInfo(),
             // () => foundationVote(),
+            // () => reportDudHost(),
+            // () => voteDudHost(),
+            // () => votePilotedMode(),
             // () => makePayment()
 
         ];
@@ -199,7 +203,7 @@ async function registerHost(address = hostAddress, secret = hostSecret) {
     }
 
     console.log("Register...");
-    const instanceCount = 3;
+    const instanceCount = 2;
     await host.register("AU", 10000, 512, 1024, instanceCount, 'Intel', 10, 10, "Test desctiption", "testemail@gmail.com", 2);
 
     console.log("Lease Offer...");
@@ -240,7 +244,7 @@ async function heartbeatHost(vote = null, address = hostAddress, secret = hostSe
         return true;
 
     console.log(`-----------Heartbeat host`);
-    (vote !== null) ? await host.heartbeat({ vote: vote, candidate: evernode.UtilHelpers.getCandidateUniqueId(Buffer.from(hookCandidates, 'hex')) })
+    (vote !== null) ? await host.heartbeat({ vote: vote, candidate: evernode.UtilHelpers.getNewHookCandidateId(Buffer.from(hookCandidates, 'hex')) })
         : await host.heartbeat();
 }
 
@@ -506,7 +510,7 @@ async function getCandidateInfo() {
 
 async function withdraw() {
     const host = await getHostClient(hostAddress, hostSecret);
-    const uniqueId = evernode.UtilHelpers.getCandidateUniqueId(Buffer.from(hookCandidates, 'hex'));
+    const uniqueId = evernode.UtilHelpers.getNewHookCandidateId(Buffer.from(hookCandidates, 'hex'));
 
     if (!await host.isRegistered()) {
         console.log("Host is not registered.");
@@ -519,7 +523,7 @@ async function withdraw() {
 
 async function foundationWithdraw() {
     const client = await getTenantClient(foundationAddress, foundationSecret);
-    const uniqueId = evernode.UtilHelpers.getCandidateUniqueId(Buffer.from(hookCandidates, 'hex'));
+    const uniqueId = evernode.UtilHelpers.getNewHookCandidateId(Buffer.from(hookCandidates, 'hex'));
 
     console.log(`-----------Foundation Withdrawing hook candidate`);
     await client.withdraw(uniqueId);
@@ -527,10 +531,35 @@ async function foundationWithdraw() {
 
 async function foundationVote() {
     const client = await getTenantClient(foundationAddress, foundationSecret);
-    const uniqueId = evernode.UtilHelpers.getCandidateUniqueId(Buffer.from(hookCandidates, 'hex'));
+    const uniqueId = evernode.UtilHelpers.getNewHookCandidateId(Buffer.from(hookCandidates, 'hex'));
 
     console.log(`-----------Foundation vote for hook candidate`);
     await client.vote(uniqueId, evernode.EvernodeConstants.CandidateVote.Support);
+}
+
+async function reportDudHost() {
+    // Register the dud host.
+    console.log("Registering the dud host...");
+    await registerHost(dudHostAddress, dudHostSecret);
+
+    const client = await getHostClient();
+
+    console.log(`-----------Reporting dud host`);
+    await client.reportDudHost(dudHostAddress);
+}
+
+async function voteDudHost() {
+    const client = await getHostClient();
+
+    console.log(`-----------Voting for dud host`);
+    await client.voteDudHost(dudHostAddress, evernode.EvernodeConstants.CandidateVote.Support);
+}
+
+async function votePilotedMode() {
+    const client = await getHostClient();
+
+    console.log(`-----------Voting for piloted mode`);
+    await client.votePilotedMode(evernode.EvernodeConstants.CandidateVote.Support);
 }
 
 async function makePayment() {

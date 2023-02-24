@@ -10,9 +10,13 @@ const EvernodeConstants = {
         "Heartbeat"
     ],
     CandidateVote: {
-        Abstain: 0,
-        Support: 1,
-        Reject: 2
+        Reject: 0,
+        Support: 1
+    },
+    CandidateTypes: {
+        NewHook: 'CandNewHook',
+        PilotedMode: 'CandPilotedMode',
+        DudHost: 'CandDudHost'
     }
 }
 
@@ -40,7 +44,8 @@ const MemoTypes = {
     CANDIDATE_PROPOSE: 'evnCandidatePropose',
     CANDIDATE_PROPOSE_REF: 'evnCandidateProposeRef',
     CANDIDATE_WITHDRAW: "evnCandidateWithdraw",
-    CANDIDATE_VOTE: 'evnCandidateVote'
+    CANDIDATE_VOTE: 'evnCandidateVote',
+    DUD_HOST_REPORT: 'evnDudHostReport'
 }
 
 const MemoFormats = {
