@@ -585,12 +585,12 @@ class XrplAccount {
         return this.#submitAndVerifyTransaction(tx, options);
     }
 
-    buyURIToken(uriOffer, memos = null, options = {}) {
+    buyURIToken(uriToken, memos = null, options = {}) {
         const tx = {
             Account: this.address,
             TransactionType: "URITokenBuy",
-            Amount: uriOffer.Amount,
-            URITokenID: uriOffer.index
+            Amount: uriToken.Amount,
+            URITokenID: uriToken.index
         }
 
         if (memos)
