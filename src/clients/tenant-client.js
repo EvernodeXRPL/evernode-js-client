@@ -70,14 +70,20 @@ class TenantClient extends BaseEvernodeClient {
         const hostAcc = await this.getLeaseHost(hostAddress);
         let selectedOfferIndex = options.leaseOfferIndex;
 
-        // Attempt to get first available offer, if offer is not specified in options.
-        if (!selectedOfferIndex) {
-            const uritOffers = await EvernodeHelpers.getLeaseOffers(hostAcc);
-            selectedOfferIndex = uritOffers && uritOffers[0] && uritOffers[0].index;
+        let buyUriOffer = null;
+        const uritOffers = await EvernodeHelpers.getLeaseOffers(hostAcc);
 
-            if (!selectedOfferIndex)
-                throw { reason: ErrorReasons.NO_OFFER, error: "No offers available." };
+        if (!selectedOfferIndex) {
+            // Attempt to get first available offer, if offer is not specified in options.
+            buyUriOffer = uritOffers && uritOffers[0];
         }
+        else {
+            // Attempt to get relevant available offer using selectedOfferIndex.
+            buyUriOffer = uritOffers && uritOffers.find(uriOffer =>  uriOffer.index === selectedOfferIndex );
+        }
+
+        if (!buyUriOffer)
+            throw { reason: ErrorReasons.NO_OFFER, error: "No offers available." };
 
         // Encrypt the requirements with the host's encryption key (Specified in MessageKey field of the host account).
         const encKey = await hostAcc.getMessageKey();
@@ -89,7 +95,7 @@ class TenantClient extends BaseEvernodeClient {
             ephemPrivateKey: options.ephemPrivateKey // Must be null or 32 bytes.
         });
 
-        return this.xrplAcc.buyURIToken(selectedOfferIndex, [{ type: MemoTypes.ACQUIRE_LEASE, format: MemoFormats.BASE64, data: ecrypted }], options.transactionOptions);
+        return this.xrplAcc.buyURIToken(buyUriOffer, [{ type: MemoTypes.ACQUIRE_LEASE, format: MemoFormats.BASE64, data: ecrypted }], options.transactionOptions);
     }
 
     /**
