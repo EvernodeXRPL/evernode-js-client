@@ -3,7 +3,16 @@ const { DefaultValues } = require("../../defaults");
 const { EvernodeEvents } = require('../../evernode-common');
 
 const GovernorEvents = {
-    RegistryInitialized: EvernodeEvents.RegistryInitialized
+    Initialized: EvernodeEvents.Initialized,
+    CandidateProposed: EvernodeEvents.CandidateProposed,
+    CandidateWithdrew: EvernodeEvents.CandidateWithdrew,
+    ChildHookUpdated: EvernodeEvents.ChildHookUpdated,
+    GovernanceModeChanged: EvernodeEvents.GovernanceModeChanged,
+    FoundationVoted: EvernodeEvents.FoundationVoted,
+    DudHostReported: EvernodeEvents.DudHostReported,
+    DudHostRemoved: EvernodeEvents.DudHostRemoved,
+    FallbackToPiloted: EvernodeEvents.FallbackToPiloted,
+    CandidateElected: EvernodeEvents.CandidateElected
 }
 
 class GovernorClient extends BaseEvernodeClient {

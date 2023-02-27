@@ -100,12 +100,6 @@ const TRANSFER_STATES = {
     HAS_A_TRANSFER: 1
 }
 
-const GOVERNANCE_MODES = {
-    PILOTED: 1,
-    CO_PILOTED: 2,
-    AUTO_PILOTED: 3
-}
-
 const CANDIDATE_STATUSES = {
     CANDIDATE_REJECTED: 0,
     CANDIDATE_SUPPORTED: 1
@@ -243,21 +237,25 @@ class StateHelpers {
             }
         }
         else if (Buffer.from(HookStateKeys.PREFIX_CANDIDATE_OWNER, 'hex').compare(stateKey, 0, 4) === 0) {
+            const decoded = this.decodeCandidateOwnerState(stateKey, stateData);
+
+            // Generate the address state key.
+            const idBuf = Buffer.alloc(32, 0);
+            Buffer.from(HookStateKeys.PREFIX_CANDIDATE_ID, 'hex').copy(idBuf);
+            Buffer.from(decoded.uniqueId, 'hex').copy(idBuf, 4, 4, 32)
+
             return {
                 type: this.StateTypes.CANDIDATE_OWNER,
                 key: hexKey,
-                ...this.decodeCandidateOwnerState(stateKey, stateData)
+                idKey: idBuf.toString('hex').toUpperCase(),
+                ...decoded
             }
         }
         else if (Buffer.from(HookStateKeys.PREFIX_CANDIDATE_ID, 'hex').compare(stateKey, 0, 4) === 0) {
             // Generate the owner state key.
-            const ownerKeyBuf = Buffer.alloc(32, 0);
-            Buffer.from(HookStateKeys.PREFIX_CANDIDATE_OWNER, 'hex').copy(ownerKeyBuf);
-            stateData.copy(ownerKeyBuf, 12, CANDIDATE_OWNER_ADDRESS_OFFSET, CANDIDATE_SHORT_NAME_OFFSET)
             return {
                 type: this.StateTypes.CANDIDATE_ID,
                 key: hexKey,
-                ownerKey: ownerKeyBuf.toString('hex').toUpperCase(),
                 ...this.decodeCandidateIdState(stateData)
             }
         }
@@ -378,13 +376,13 @@ class StateHelpers {
         else if (Buffer.from(HookStateKeys.GOVERNANCE_INFO, 'hex').compare(stateKey) === 0) {
             let mode = '';
             switch (stateData.readUInt8(GOVERNANCE_MODE_OFFSET)) {
-                case GOVERNANCE_MODES.PILOTED:
+                case EvernodeConstants.GovernanceModes.Piloted:
                     mode = 'piloted';
                     break;
-                case GOVERNANCE_MODES.CO_PILOTED:
+                case EvernodeConstants.GovernanceModes.CoPiloted:
                     mode = 'co-piloted';
                     break;
-                case GOVERNANCE_MODES.AUTO_PILOTED:
+                case EvernodeConstants.GovernanceModes.AutoPiloted:
                     mode = 'auto-piloted';
                     break;
                 default:
@@ -556,6 +554,31 @@ class StateHelpers {
         const digest = data.digest('hex');
         // Get the first 32 bytes of hash.
         return digest.substring(0, 64).toUpperCase();
+    }
+
+    static getNewHookCandidateId(hashesBuf) {
+        const idBuf = Buffer.alloc(32, 0);
+        idBuf.writeUInt8(CandidateTypes.NewHook, 4);
+        sha512Half(hashesBuf).copy(idBuf, 5, 5);
+        return idBuf.toString('hex').toUpperCase();
+    }
+
+    static getPilotedModeCandidateId() {
+        const idBuf = Buffer.alloc(32, 0);
+        idBuf.writeUInt8(CandidateTypes.PilotedMode, 4);
+        Buffer.from(EvernodeConstants.HOOK_NAMESPACE, 'hex').copy(idBuf, 5, 5);
+        return idBuf.toString('hex').toUpperCase();
+    }
+
+    static getDudHostCandidateId(hostAddress) {
+        const idBuf = Buffer.alloc(32, 0);
+        idBuf.writeUInt8(CandidateTypes.DudHost, 4);
+        codec.decodeAccountID(hostAddress).copy(idBuf, 12);
+        return idBuf.toString('hex').toUpperCase();
+    }
+
+    static getCandidateType(candidateId) {
+        return Buffer.from(candidateId, 'hex').readUInt8(4);
     }
 }
 

@@ -14,9 +14,14 @@ const EvernodeConstants = {
         Support: 1
     },
     CandidateTypes: {
-        NewHook: 'CandNewHook',
-        PilotedMode: 'CandPilotedMode',
-        DudHost: 'CandDudHost'
+        NewHook: 1,
+        PilotedMode: 2,
+        DudHost: 3
+    },
+    GovernanceModes: {
+        Piloted: 1,
+        CoPiloted: 2,
+        AutoPiloted: 3
     }
 }
 
@@ -35,7 +40,7 @@ const MemoTypes = {
     EXTEND_SUCCESS: 'evnExtendSuccess',
     EXTEND_ERROR: 'evnExtendError',
     EXTEND_REF: 'evnExtendRef',
-    REGISTRY_INIT: 'evnInitialize',
+    INIT: 'evnInitialize',
     REFUND: 'evnRefund',
     REFUND_REF: 'evnRefundRef',
     DEAD_HOST_PRUNE: 'evnDeadHostPrune',
@@ -45,7 +50,10 @@ const MemoTypes = {
     CANDIDATE_PROPOSE_REF: 'evnCandidateProposeRef',
     CANDIDATE_WITHDRAW: "evnCandidateWithdraw",
     CANDIDATE_VOTE: 'evnCandidateVote',
-    DUD_HOST_REPORT: 'evnDudHostReport'
+    CANDIDATE_STATUS_CHANGE: 'evnCandidateStatusChange',
+    DUD_HOST_REPORT: 'evnDudHostReport',
+    HOOK_UPDATE_RES: 'evnHookUpdateRes',
+    GOVERNANCE_MODE_CHANGE: 'evnGovernanceModeChange'
 }
 
 const MemoFormats = {
@@ -121,9 +129,19 @@ const EvernodeEvents = {
     ExtendError: "ExtendError",
     HostRegUpdated: "HostRegUpdated",
     HostReRegistered: "HostReRegistered",
-    RegistryInitialized: "RegistryInitialized",
+    Initialized: "Initialized",
     DeadHostPrune: "DeadHostPrune",
-    HostRebate: "HostRebate"
+    HostRebate: "HostRebate",
+    CandidateProposed: "CandidateProposed",
+    CandidateWithdrew: "CandidateWithdrew",
+    ChildHookUpdated: "ChildHookUpdated",
+    GovernanceModeChanged: "GovernanceModeChanged",
+    FoundationVoted: "FoundationVoted",
+    DudHostReported: "DudHostReported",
+    DudHostRemoved: "DudHostRemoved",
+    FallbackToPiloted: "FallbackToPiloted",
+    CandidateElected: "CandidateElected"
+
 }
 
 module.exports = {

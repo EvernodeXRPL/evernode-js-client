@@ -45,29 +45,6 @@ class UtilHelpers {
                 return time;
         }
     }
-
-    static getNewHookCandidateId(hashesBuf) {
-        const idBuf = Buffer.alloc(32, 0);
-        const prefixLen = EvernodeConstants.CandidateTypes.NewHook;
-        Buffer.from(EvernodeConstants.CandidateTypes.NewHook).copy(idBuf);
-        sha512Half(hashesBuf).copy(idBuf, prefixLen, prefixLen);
-        return idBuf.toString('hex').toUpperCase();
-    }
-
-    static getPilotedModeCandidateId() {
-        const idBuf = Buffer.alloc(32, 0);
-        const prefixLen = EvernodeConstants.CandidateTypes.PilotedMode;
-        Buffer.from(EvernodeConstants.CandidateTypes.PilotedMode).copy(idBuf);
-        Buffer.from(EvernodeConstants.HOOK_NAMESPACE, 'hex').copy(idBuf, prefixLen, prefixLen);
-        return idBuf.toString('hex').toUpperCase();
-    }
-
-    static getDudHostCandidateId(hostAddress) {
-        const idBuf = Buffer.alloc(32, 0);
-        Buffer.from(EvernodeConstants.CandidateTypes.DudHost).copy(idBuf);
-        codec.decodeAccountID(hostAddress).copy(idBuf, 12);
-        return idBuf.toString('hex').toUpperCase();
-    }
 }
 
 module.exports = {

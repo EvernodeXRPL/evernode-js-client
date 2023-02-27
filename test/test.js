@@ -244,7 +244,7 @@ async function heartbeatHost(vote = null, address = hostAddress, secret = hostSe
         return true;
 
     console.log(`-----------Heartbeat host`);
-    (vote !== null) ? await host.heartbeat({ vote: vote, candidate: evernode.UtilHelpers.getNewHookCandidateId(Buffer.from(hookCandidates, 'hex')) })
+    (vote !== null) ? await host.heartbeat({ vote: vote, candidate: evernode.StateHelpers.getNewHookCandidateId(Buffer.from(hookCandidates, 'hex')) })
         : await host.heartbeat();
 }
 
@@ -510,7 +510,7 @@ async function getCandidateInfo() {
 
 async function withdraw() {
     const host = await getHostClient(hostAddress, hostSecret);
-    const uniqueId = evernode.UtilHelpers.getNewHookCandidateId(Buffer.from(hookCandidates, 'hex'));
+    const uniqueId = evernode.StateHelpers.getNewHookCandidateId(Buffer.from(hookCandidates, 'hex'));
 
     if (!await host.isRegistered()) {
         console.log("Host is not registered.");
@@ -523,7 +523,7 @@ async function withdraw() {
 
 async function foundationWithdraw() {
     const client = await getTenantClient(foundationAddress, foundationSecret);
-    const uniqueId = evernode.UtilHelpers.getNewHookCandidateId(Buffer.from(hookCandidates, 'hex'));
+    const uniqueId = evernode.StateHelpers.getNewHookCandidateId(Buffer.from(hookCandidates, 'hex'));
 
     console.log(`-----------Foundation Withdrawing hook candidate`);
     await client.withdraw(uniqueId);
@@ -531,7 +531,7 @@ async function foundationWithdraw() {
 
 async function foundationVote() {
     const client = await getTenantClient(foundationAddress, foundationSecret);
-    const uniqueId = evernode.UtilHelpers.getNewHookCandidateId(Buffer.from(hookCandidates, 'hex'));
+    const uniqueId = evernode.StateHelpers.getNewHookCandidateId(Buffer.from(hookCandidates, 'hex'));
 
     console.log(`-----------Foundation vote for hook candidate`);
     await client.vote(uniqueId, evernode.EvernodeConstants.CandidateVote.Support);

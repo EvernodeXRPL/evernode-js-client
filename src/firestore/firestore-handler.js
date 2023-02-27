@@ -294,6 +294,10 @@ class FirestoreHandler {
         return item;
     }
 
+    async getCandidates(filters = null, pageSize = null, nextPageToken = null) {
+        return await this.#getDocuments(this.getCollectionId('candidates'), filters, pageSize, nextPageToken);
+    }
+
     async getHosts(filters = null, pageSize = null, nextPageToken = null) {
         return await this.#getDocuments(this.getCollectionId('hosts'), filters, pageSize, nextPageToken);
     }
