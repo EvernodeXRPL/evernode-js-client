@@ -79,7 +79,7 @@ class TenantClient extends BaseEvernodeClient {
         }
         else {
             // Attempt to get relevant available offer using selectedOfferIndex.
-            buyUriOffer = uritOffers && uritOffers.find(uriOffer => { uriOffer.index === selectedOfferIndex });
+            buyUriOffer = uritOffers && uritOffers.find(uriOffer =>  uriOffer.index === selectedOfferIndex );
         }
 
         if (!buyUriOffer)
