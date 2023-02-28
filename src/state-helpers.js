@@ -4,6 +4,7 @@ const { HookStateKeys, EvernodeConstants } = require('./evernode-common');
 const { XflHelpers } = require('./xfl-helpers');
 const crypto = require("crypto");
 const { UtilHelpers } = require('./util-helpers');
+const { sha512Half } = require('xrpl-binary-codec/dist/hashes');
 
 const NFTOKEN_PREFIX = '00000000';
 
@@ -73,14 +74,14 @@ const CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET = 64;
 
 const CANDIDATE_OWNER_ADDRESS_OFFSET = 0;
 const CANDIDATE_IDX_OFFSET = 20;
-const CANDIDATE_SHORT_NAME_OFFSET = 22;
-const CANDIDATE_CREATED_TIMESTAMP_OFFSET = 42;
-const CANDIDATE_PROPOSAL_FEE_OFFSET = 50;
-const CANDIDATE_POSITIVE_VOTE_COUNT_OFFSET = 58;
-const CANDIDATE_LAST_VOTE_TIMESTAMP_OFFSET = 62;
-const CANDIDATE_STATUS_OFFSET = 70;
-const CANDIDATE_STATUS_CHANGE_TIMESTAMP_OFFSET = 71;
-const CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET = 79;
+const CANDIDATE_SHORT_NAME_OFFSET = 24;
+const CANDIDATE_CREATED_TIMESTAMP_OFFSET = 44;
+const CANDIDATE_PROPOSAL_FEE_OFFSET = 52;
+const CANDIDATE_POSITIVE_VOTE_COUNT_OFFSET = 60;
+const CANDIDATE_LAST_VOTE_TIMESTAMP_OFFSET = 64;
+const CANDIDATE_STATUS_OFFSET = 72;
+const CANDIDATE_STATUS_CHANGE_TIMESTAMP_OFFSET = 73;
+const CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET = 81;
 
 const STATE_KEY_TYPES = {
     TOKEN_ID: 2,
@@ -185,7 +186,7 @@ class StateHelpers {
     static decodeCandidateOwnerState(stateKeyBuf, stateDataBuf) {
         let data = {
             ownerAddress: codec.encodeAccountID(stateKeyBuf.slice(12)),
-            uniqueId: UtilHelpers.getNewHookCandidateId(stateDataBuf),
+            uniqueId: this.getNewHookCandidateId(stateDataBuf),
             governorHookHash: stateDataBuf.slice(CANDIDATE_GOVERNOR_HOOK_HASH_OFFSET, CANDIDATE_REGISTRY_HOOK_HASH_OFFSET).toString('hex').toUpperCase(),
             registryHookHash: stateDataBuf.slice(CANDIDATE_REGISTRY_HOOK_HASH_OFFSET, CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET).toString('hex').toUpperCase(),
             heartbeatHookHash: stateDataBuf.slice(CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET, CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET + 32).toString('hex').toUpperCase(),
@@ -196,7 +197,7 @@ class StateHelpers {
     static decodeCandidateIdState(stateDataBuf) {
         return {
             ownerAddress: codec.encodeAccountID(stateDataBuf.slice(CANDIDATE_OWNER_ADDRESS_OFFSET, CANDIDATE_IDX_OFFSET)),
-            index: stateDataBuf.readUInt16BE(CANDIDATE_IDX_OFFSET),
+            index: stateDataBuf.readUInt32BE(CANDIDATE_IDX_OFFSET),
             shortName: stateDataBuf.slice(CANDIDATE_SHORT_NAME_OFFSET, CANDIDATE_CREATED_TIMESTAMP_OFFSET).toString().replace(/\x00+$/, ''), // Remove trailing \x00 characters.
             createdTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_CREATED_TIMESTAMP_OFFSET)),
             proposalFee: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_PROPOSAL_FEE_OFFSET)),
@@ -558,21 +559,21 @@ class StateHelpers {
 
     static getNewHookCandidateId(hashesBuf) {
         const idBuf = Buffer.alloc(32, 0);
-        idBuf.writeUInt8(CandidateTypes.NewHook, 4);
-        sha512Half(hashesBuf).copy(idBuf, 5, 5);
+        idBuf.writeUInt8(EvernodeConstants.CandidateTypes.NewHook, 4);
+        Buffer.from(sha512Half(hashesBuf)).copy(idBuf, 5, 5);
         return idBuf.toString('hex').toUpperCase();
     }
 
     static getPilotedModeCandidateId() {
         const idBuf = Buffer.alloc(32, 0);
-        idBuf.writeUInt8(CandidateTypes.PilotedMode, 4);
+        idBuf.writeUInt8(EvernodeConstants.CandidateTypes.PilotedMode, 4);
         Buffer.from(EvernodeConstants.HOOK_NAMESPACE, 'hex').copy(idBuf, 5, 5);
         return idBuf.toString('hex').toUpperCase();
     }
 
     static getDudHostCandidateId(hostAddress) {
         const idBuf = Buffer.alloc(32, 0);
-        idBuf.writeUInt8(CandidateTypes.DudHost, 4);
+        idBuf.writeUInt8(EvernodeConstants.CandidateTypes.DudHost, 4);
         codec.decodeAccountID(hostAddress).copy(idBuf, 12);
         return idBuf.toString('hex').toUpperCase();
     }

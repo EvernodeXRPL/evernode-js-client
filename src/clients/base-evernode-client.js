@@ -354,7 +354,7 @@ class BaseEvernodeClient {
             const voteInfo = (tx.Memos[0].data && tx.Memos[0].data.length) ?
                 {
                     voteInfo: {
-                        candidateId: tx.Memos[1].data.substr(0, 64),
+                        candidateId: tx.Memos[0].data.substr(0, 64),
                         vote: Buffer.from(tx.Memos[0].data, 'hex').slice(32, 33).readUInt8()
                     }
                 } : {};
@@ -518,7 +518,7 @@ class BaseEvernodeClient {
                             host: codec.decodeAccountID(Buffer.from(candidateId, 'hex').slice(12, 32))
                         }
                     }
-                case (EvernodeConstants.CandidateTypes.GovernanceModeChanged):
+                case (EvernodeConstants.CandidateTypes.PilotedMode):
                     return {
                         name: EvernodeEvents.FallbackToPiloted,
                         data: {
@@ -526,9 +526,9 @@ class BaseEvernodeClient {
                             candidateId: candidateId,
                         }
                     }
-                case (EvernodeConstants.CandidateTypes.CandidateProposed):
+                case (EvernodeConstants.CandidateTypes.NewHook):
                     return {
-                        name: EvernodeEvents.CandidateElected,
+                        name: EvernodeEvents.NewHookStatusChanged,
                         data: {
                             transaction: tx,
                             candidateId: candidateId,

@@ -140,8 +140,7 @@ const EvernodeEvents = {
     DudHostReported: "DudHostReported",
     DudHostRemoved: "DudHostRemoved",
     FallbackToPiloted: "FallbackToPiloted",
-    CandidateElected: "CandidateElected"
-
+    NewHookStatusChanged: "NewHookStatusChanged"
 }
 
 module.exports = {

@@ -1,8 +1,6 @@
 const { Buffer } = require('buffer');
 const { XflHelpers } = require('./xfl-helpers');
 const { EvernodeConstants } = require('./evernode-common');
-const { sha512Half } = require('xrpl-binary-codec/dist/hashes');
-const { codec } = require('ripple-address-codec');
 
 // Utility helper functions.
 class UtilHelpers {
