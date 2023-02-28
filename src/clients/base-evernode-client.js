@@ -897,7 +897,7 @@ class BaseEvernodeClient {
 
         return await this.xrplAcc.makePayment(this.governorAddress,
             XrplConstants.MIN_XRP_AMOUNT,
-            EvernodeConstants.XRP,
+            XrplConstants.XRP,
             null,
             [
                 { type: MemoTypes.DUD_HOST_REPORT, format: MemoFormats.HEX, data: candidateId }
@@ -926,6 +926,26 @@ class BaseEvernodeClient {
     async votePilotedMode(vote, options = {}) {
         const candidateId = StateHelpers.getPilotedModeCandidateId();
         return await this.vote(candidateId, vote, options);
+    }
+
+    /**
+     * Change the governance mode.
+     * @param {int} mode Mode  (1 - Piloted, 2 - CoPiloted, 3 - AutoPiloted).
+     * @param {*} options [Optional] transaction options.
+     * @returns Transaction result.
+     */
+    async changeGovernanceMode(mode, options = {}) {
+        const modeBuf = Buffer.alloc(1);
+        modeBuf.writeUInt8(mode);
+
+        return await this.xrplAcc.makePayment(this.governorAddress,
+            XrplConstants.MIN_XRP_AMOUNT,
+            XrplConstants.XRP,
+            null,
+            [
+                { type: MemoTypes.GOVERNANCE_MODE_CHANGE, format: MemoFormats.HEX, data: modeBuf.toString('hex').toUpperCase() }
+            ],
+            options.transactionOptions);
     }
 }
 
