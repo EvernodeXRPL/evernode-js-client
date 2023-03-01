@@ -34,12 +34,13 @@ const CANDIDATE_SUPPORT_AVERAGE_OFFSET = 12;
 
 const GOVERNANCE_MODE_OFFSET = 0;
 const LAST_CANDIDATE_IDX_OFFSET = 1;
-const VOTER_BASE_COUNT_OFFSET = 3;
-const VOTER_BASE_COUNT_CHANGED_TIMESTAMP_OFFSET = 7;
-const FOUNDATION_LAST_VOTED_CANDIDATE_IDX = 15;
-const ELECTED_PROPOSAL_UNIQUE_ID_OFFSET = 17;
-const PROPOSAL_ELECTED_TIMESTAMP_OFFSET = 49;
-const UPDATED_HOOK_COUNT_OFFSET = 57;
+const VOTER_BASE_COUNT_OFFSET = 5;
+const VOTER_BASE_COUNT_CHANGED_TIMESTAMP_OFFSET = 9;
+const FOUNDATION_LAST_VOTED_CANDIDATE_IDX = 17;
+const FOUNDATION_LAST_VOTED_TIMESTAMP_OFFSET = 21;
+const ELECTED_PROPOSAL_UNIQUE_ID_OFFSET = 29;
+const PROPOSAL_ELECTED_TIMESTAMP_OFFSET = 61;
+const UPDATED_HOOK_COUNT_OFFSET = 69;
 
 const HOST_TOKEN_ID_OFFSET = 0;
 const HOST_COUNTRY_CODE_OFFSET = 32;
@@ -54,6 +55,7 @@ const HOST_VERSION_OFFSET = 100;
 const HOST_REG_TIMESTAMP_OFFSET = 103;
 const HOST_TRANSFER_FLAG_OFFSET = 111;
 const HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET = 112;
+const HOST_LAST_VOTE_TIMESTAMP_OFFSET = 116;
 
 const HOST_ADDRESS_OFFSET = 0;
 const HOST_CPU_MODEL_NAME_OFFSET = 20;
@@ -150,7 +152,8 @@ class StateHelpers {
             lastHeartbeatIndex: Number(stateDataBuf.readBigUInt64BE(HOST_HEARTBEAT_TIMESTAMP_OFFSET)),
             version: `${stateDataBuf.readUInt8(HOST_VERSION_OFFSET)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 1)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 2)}`,
             isATransferer: (stateDataBuf.length > HOST_TRANSFER_FLAG_OFFSET && (stateDataBuf.readUInt8(HOST_TRANSFER_FLAG_OFFSET) === PENDING_TRANSFER)) ? TRANSFER_STATES.HAS_A_TRANSFER : TRANSFER_STATES.NO_TRANSFER,
-            lastVoteCandidateIdx: stateDataBuf.length > HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET ? stateDataBuf.readUInt16BE(HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET) : 0,
+            lastVoteCandidateIdx: stateDataBuf.length > HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET ? stateDataBuf.readUInt32BE(HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET) : 0,
+            lastVoteTimestamp: stateDataBuf.length > HOST_LAST_VOTE_TIMESTAMP_OFFSET ? Number(stateDataBuf.readBigUInt64BE(HOST_LAST_VOTE_TIMESTAMP_OFFSET)) : 0,
         }
         if (stateDataBuf.length > HOST_REG_TIMESTAMP_OFFSET)
             data.registrationTimestamp = Number(stateDataBuf.readBigUInt64BE(HOST_REG_TIMESTAMP_OFFSET));
@@ -395,10 +398,11 @@ class StateHelpers {
                 key: hexKey,
                 value: {
                     governanceMode: mode,
-                    lastCandidateIds: stateData.readUInt16BE(LAST_CANDIDATE_IDX_OFFSET),
+                    lastCandidateIdx: stateData.readUInt32BE(LAST_CANDIDATE_IDX_OFFSET),
                     voteBaseCount: stateData.readUInt32BE(VOTER_BASE_COUNT_OFFSET),
                     voteBaseCountChangedTimestamp: Number(stateData.readBigUInt64BE(VOTER_BASE_COUNT_CHANGED_TIMESTAMP_OFFSET)),
-                    foundationLastVotedCandidateIds: stateData.readUInt16BE(FOUNDATION_LAST_VOTED_CANDIDATE_IDX),
+                    foundationLastVotedCandidateIdx: stateData.readUInt32BE(FOUNDATION_LAST_VOTED_CANDIDATE_IDX),
+                    foundationLastVotedTimestamp: Number(stateData.readBigUInt64BE(FOUNDATION_LAST_VOTED_TIMESTAMP_OFFSET)),
                     electedProposalUniqueId: stateData.readUInt32BE(ELECTED_PROPOSAL_UNIQUE_ID_OFFSET),
                     proposalElectedTimestamp: Number(stateData.readBigUInt64BE(PROPOSAL_ELECTED_TIMESTAMP_OFFSET)),
                     updatedHookCount: stateData.readUInt8(UPDATED_HOOK_COUNT_OFFSET)
@@ -448,7 +452,7 @@ class StateHelpers {
             Buffer.from(HookStateKeys.REWARD_INFO, 'hex').compare(stateKey) === 0) {
             return {
                 key: hexKey,
-                type: this.STATE_TYPES.SIGLETON
+                type: this.StateTypes.SIGLETON
             };
         }
         else if (Buffer.from(HookStateKeys.EVR_ISSUER_ADDR, 'hex').compare(stateKey) === 0 ||
@@ -468,7 +472,7 @@ class StateHelpers {
             Buffer.from(HookStateKeys.GOVERNANCE_INFO, 'hex').compare(stateKey) === 0) {
             return {
                 key: hexKey,
-                type: this.STATE_TYPES.CONFIGURATION
+                type: this.StateTypes.CONFIGURATION
             };
         }
         else
