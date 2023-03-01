@@ -116,7 +116,7 @@ async function app() {
             // () => reportDudHost(),
             // () => voteDudHost(),
             // () => votePilotedMode(),
-            () => changeGovernanceMode(),
+            // () => changeGovernanceMode(),
             // () => makePayment()
 
         ];
@@ -567,7 +567,7 @@ async function changeGovernanceMode() {
     const client = await getTenantClient(foundationAddress, foundationSecret);
 
     console.log(`-----------Changing the governor mode`);
-    await client.changeGovernanceMode(evernode.EvernodeConstants.GovernanceModes.Piloted);
+    await client.changeGovernanceMode(evernode.EvernodeConstants.GovernanceModes.AutoPiloted);
 }
 
 async function makePayment() {
