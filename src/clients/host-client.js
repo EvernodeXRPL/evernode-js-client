@@ -8,6 +8,7 @@ const codec = require('ripple-address-codec');
 const { XflHelpers } = require('../xfl-helpers');
 const { EvernodeHelpers } = require('../evernode-helpers');
 const { StateHelpers } = require('../state-helpers');
+const { TransactionHelper } = require('../transaction-helper');
 
 const OFFER_WAIT_TIMEOUT = 60;
 
@@ -105,10 +106,9 @@ class HostClient extends BaseEvernodeClient {
         uriBuf.writeUInt16BE(leaseIndex, prefixLen);
         Buffer.from(tosHash, 'hex').copy(uriBuf, prefixLen + 2, 0, halfToSLen);
         uriBuf.writeBigInt64BE(XflHelpers.getXfl(leaseAmount.toString()), prefixLen + 2 + halfToSLen);
-        const uri = uriBuf.toString('hex').toUpperCase();
-
-        await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: true });
-        const uriToken = await this.xrplAcc.getURITokenByUri(uri, true);
+        const uri = uriBuf.toString('base64');
+        await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: false });
+        const uriToken = await this.xrplAcc.getURITokenByUri(uri);
         if (!uriToken)
             throw "Offer lease NFT creation error.";
 
@@ -215,8 +215,11 @@ class HostClient extends BaseEvernodeClient {
         let sellOffer = null;
         let attempts = 0;
         let offerLedgerIndex = 0;
+        const firstPart = tx.id.substring(0, 8);
+        const lastPart = tx.id.substring(tx.id.length - 8);
+        const trxRef = TransactionHelper.asciiToHex(firstPart + lastPart);
         while (attempts < OFFER_WAIT_TIMEOUT) {
-            sellOffer = (await registryAcc.getURITokens()).find(n => (n.Amount && n.Destination === this.xrplAcc.address && n.URI === `${EvernodeConstants.NFT_PREFIX_HEX}${tx.id}`) || (n.index === transferredNFTokenId));
+            sellOffer = (await registryAcc.getURITokens()).find(n => (n.Amount && n.Destination === this.xrplAcc.address && n.URI === `${EvernodeConstants.NFT_PREFIX_HEX}${trxRef}`) || (n.index === transferredNFTokenId));
 
             offerLedgerIndex = this.xrplApi.ledgerIndex;
             if (sellOffer)
