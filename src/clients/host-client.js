@@ -57,7 +57,7 @@ class HostClient extends BaseEvernodeClient {
         const regUriToken = await this.getRegistrationUriToken();
         if (regUriToken) {
             const host = await this.getHostInfo();
-            return (host?.nfTokenId == regUriToken.index) ? host : null;
+            return (host?.uriTokenId == regUriToken.index) ? host : null;
         }
 
         return null;
@@ -161,7 +161,7 @@ class HostClient extends BaseEvernodeClient {
         if (!regUriToken) {
             const regInfo = await this.getHostInfo(this.xrplAcc.address);
             if (regInfo) {
-                const sellOffer = (await registryAcc.getURITokens()).find(o => o.index == regInfo.nfTokenId && o.Amount);
+                const sellOffer = (await registryAcc.getURITokens()).find(o => o.index == regInfo.uriTokenId && o.Amount);
                 console.log('sell offer')
                 if (sellOffer) {
                     await this.xrplAcc.buyURIToken(sellOffer);

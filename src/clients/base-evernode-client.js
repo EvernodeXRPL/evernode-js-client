@@ -465,14 +465,14 @@ class BaseEvernodeClient {
                     (addrStateDecoded.lastHeartbeatIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
                     (addrStateDecoded.lastHeartbeatIndex > 0))
 
-                const nftIdStatekey = StateHelpers.generateTokenIdStateKey(addrStateDecoded.nfTokenId);
-                const nftIdStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, nftIdStatekey);
-                const nftIdLedgerEntry = await this.xrplApi.getLedgerEntry(nftIdStateIndex);
+                const tokenIdStatekey = StateHelpers.generateTokenIdStateKey(addrStateDecoded.uriTokenId);
+                const tokenIdStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, tokenIdStatekey);
+                const tokenIdLedgerEntry = await this.xrplApi.getLedgerEntry(tokenIdStateIndex);
 
-                const nftIdStateData = nftIdLedgerEntry?.HookStateData;
-                if (nftIdStateData) {
-                    const nftIdStateDecoded = StateHelpers.decodeTokenIdState(Buffer.from(nftIdStateData, 'hex'));
-                    return { ...addrStateDecoded, ...nftIdStateDecoded };
+                const tokenIdStateData = tokenIdLedgerEntry?.HookStateData;
+                if (tokenIdStateData) {
+                    const tokenIdStateDecoded = StateHelpers.decodeTokenIdState(Buffer.from(tokenIdStateData, 'hex'));
+                    return { ...addrStateDecoded, ...tokenIdStateDecoded };
                 }
             }
         }
