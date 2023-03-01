@@ -102,7 +102,8 @@ async function app() {
         // // Account2: Buying party.
         // const acc2 = new evernode.XrplAccount(tenantAddress, tenantSecret);
         // await acc2.buyURIToken(uriToken);
-        // const uriToken2 = await acc2.getURITokenByUri(uri);        // console.log(uriTokens);
+        // const uriToken2 = await acc2.getURITokenByUri(uri);
+        // console.log(uriTokens);
 
         // // Burn URI Token by the issuer.
         // await acc1.burnURIToken(uriToken2.index);
@@ -435,7 +436,7 @@ async function transferHost(address = transfereeAddress) {
     await host.transfer(address);
 
     // Burn URI Tokens.
-    const uriTokens = (await host.xrplAcc.getURITokens()).filter(n => evernode.EncryptionHelper.isValidURI(n.URI, evernode.EvernodeConstants.LEASE_TOKEN_PREFIX_HEX))
+    const uriTokens = (await host.xrplAcc.getURITokens()).filter(n => evernode.EvernodeHelpers.isValidURI(n.URI, evernode.EvernodeConstants.LEASE_TOKEN_PREFIX_HEX))
         .map(o => { return { uriTokenId: o.index, ownerAddress: host.xrplAcc.address }; });
     for (const uriToken of uriTokens) {
         const sold = uriToken.ownerAddress !== host.xrplAcc.address;
