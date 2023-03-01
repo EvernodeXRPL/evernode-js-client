@@ -567,7 +567,7 @@ class BaseEvernodeClient {
 
         // To obtain registration NFT Page Keylet and index.
         const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
-        const regUriToken = (await hostAcc.getURITokens()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
+        const regUriToken = (await hostAcc.getURITokens()).find(n => n.URI.startsWith(EvernodeConstants.TOKEN_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
         if (regUriToken) {
             await this.xrplAcc.makePayment(this.config.registryAddress,
                 XrplConstants.MIN_XRP_AMOUNT,

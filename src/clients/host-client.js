@@ -48,7 +48,7 @@ class HostClient extends BaseEvernodeClient {
 
     async getRegistrationUriToken() {
         // Find an owned NFT with matching Evernode host NFT prefix.
-        const uriToken = (await this.xrplAcc.getURITokens()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
+        const uriToken = (await this.xrplAcc.getURITokens()).find(n => n.URI.startsWith(EvernodeConstants.TOKEN_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
         return uriToken ?? null;
     }
 
@@ -99,10 +99,10 @@ class HostClient extends BaseEvernodeClient {
 
     async offerLease(leaseIndex, leaseAmount, tosHash) {
         // <prefix><lease index 16)><half of tos hash><lease amount (uint32)>
-        const prefixLen = EvernodeConstants.LEASE_NFT_PREFIX_HEX.length / 2;
+        const prefixLen = EvernodeConstants.LEASE_TOKEN_PREFIX_HEX.length / 2;
         const halfToSLen = tosHash.length / 4;
         const uriBuf = Buffer.allocUnsafe(prefixLen + halfToSLen + 10);
-        Buffer.from(EvernodeConstants.LEASE_NFT_PREFIX_HEX, 'hex').copy(uriBuf);
+        Buffer.from(EvernodeConstants.LEASE_TOKEN_PREFIX_HEX, 'hex').copy(uriBuf);
         uriBuf.writeUInt16BE(leaseIndex, prefixLen);
         Buffer.from(tosHash, 'hex').copy(uriBuf, prefixLen + 2, 0, halfToSLen);
         uriBuf.writeBigInt64BE(XflHelpers.getXfl(leaseAmount.toString()), prefixLen + 2 + halfToSLen);
@@ -219,7 +219,7 @@ class HostClient extends BaseEvernodeClient {
         const lastPart = tx.id.substring(tx.id.length - 8);
         const trxRef = TransactionHelper.asciiToHex(firstPart + lastPart);
         while (attempts < OFFER_WAIT_TIMEOUT) {
-            sellOffer = (await registryAcc.getURITokens()).find(n => (n.Amount && n.Destination === this.xrplAcc.address && n.URI === `${EvernodeConstants.NFT_PREFIX_HEX}${trxRef}`) || (n.index === transferredNFTokenId));
+            sellOffer = (await registryAcc.getURITokens()).find(n => (n.Amount && n.Destination === this.xrplAcc.address && n.URI === `${EvernodeConstants.TOKEN_PREFIX_HEX}${trxRef}`) || (n.index === transferredNFTokenId));
 
             offerLedgerIndex = this.xrplApi.ledgerIndex;
             if (sellOffer)
@@ -419,13 +419,11 @@ class HostClient extends BaseEvernodeClient {
         const transfereeAcc = new XrplAccount(transfereeAddress, null, { xrplApi: this.xrplApi });
 
         if (this.xrplAcc.address !== transfereeAddress) {
-            // Find the new transferee also owns an Evernode Host Registration NFT.
-            const nft = (await transfereeAcc.getURITokens()).find(n => n.index.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
-            if (nft) {
+            // Find the new transferee also owns an Evernode Host Registration URIToken.
+            const uriToken = (await transfereeAcc.getURITokens()).find(n => n.index.startsWith(EvernodeConstants.TOKEN_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
+            if (uriToken) {
                 // Check whether the token was actually issued from Evernode registry contract.
-                const issuerHex = nft.index.substr(8, 40);
-                const issuerAddr = codec.encodeAccountID(Buffer.from(issuerHex, 'hex'));
-                if (issuerAddr == this.config.registryAddress) {
+                if (uriToken.Issuer == this.config.registryAddress) {
                     throw "The transferee is already registered in Evernode.";
                 }
             }

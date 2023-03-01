@@ -50,7 +50,9 @@ async function app() {
     try {
         await xrplApi.connect();
 
-        // Process of minting and selling a NFT.
+        /*
+         * Process of minting and selling a NFT - V2.
+         */
 
         // Account1: selling party.
         // const acc1 = new evernode.XrplAccount(ownerAddress, ownerSecret);
@@ -78,6 +80,32 @@ async function app() {
         // // Get information about the purchased nft.
         // const nft2 = await acc2.getNftByUri(uri);
         // console.log(nft2);
+
+
+        /*
+         * Test on URIToken Operations - V3
+         */
+        // Process of minting and selling a URIToken.
+        // Account1: selling party.
+        // const acc1 = new evernode.XrplAccount(initializerAddress, initializerSecret);
+        // const uri = "Test URI";
+        // await acc1.mintURIToken(uri, null, { isBurnable: true, isHexUri: false });
+
+        // // Get the minted nft information and sell it for a particular party.
+        // let uriToken = await acc1.getURITokenByUri(uri);
+        // // Make a sell offer (for free) while restricting it to be only purchased by the specified party.
+        // await acc1.sellURIToken(uriToken.index, '1', 'XRP', hostAddress);
+
+        // // NOTE : Amount filed is added the the URIToken once the sell offer has been created.
+        // uriToken = await acc1.getURITokenByUri(uri);
+
+        // // Account2: Buying party.
+        // const acc2 = new evernode.XrplAccount(tenantAddress, tenantSecret);
+        // await acc2.buyURIToken(uriToken);
+        // const uriToken2 = await acc2.getURITokenByUri(uri);        // console.log(uriTokens);
+
+        // // Burn URI Token by the issuer.
+        // await acc1.burnURIToken(uriToken2.index);
 
         const tests = [
             // () => initializeConfigs(),
@@ -208,13 +236,13 @@ async function deregisterHost(address = hostAddress, secret = hostSecret) {
 
     await host.deregister();
 
-    // Burn NFTs.
-    const nfts = (await host.xrplAcc.getNfts()).filter(n => n.URI.startsWith(evernode.EvernodeConstants.LEASE_NFT_PREFIX_HEX))
-        .map(o => { return { nfTokenId: o.NFTokenID, ownerAddress: host.xrplAcc.address }; });
-    for (const nft of nfts) {
-        const sold = nft.ownerAddress !== host.xrplAcc.address;
-        await host.xrplAcc.burnNft(nft.nfTokenId, sold ? nft.ownerAddress : null);
-        console.log(`Burnt ${sold ? 'sold' : 'unsold'} hosting NFT (${nft.nfTokenId}) of ${nft.ownerAddress + (sold ? ' tenant' : '')} account`);
+    // Burn URITokens.
+    const uriTokens = (await host.xrplAcc.getURITokens()).filter(n => evernode.EvernodeHelpers.isValidURI(n.URI, evernode.EvernodeConstants.LEASE_TOKEN_PREFIX_HEX))
+        .map(o => { return { uriTokenId: o.index, ownerAddress: host.xrplAcc.address }; });
+    for (const uriToken of uriTokens) {
+        const sold = uriToken.ownerAddress !== host.xrplAcc.address;
+        await host.xrplAcc.burnURIToken(uriToken.uriTokenId);
+        console.log(`Burnt ${sold ? 'sold' : 'unsold'} hosting URIToken (${uriToken.uriTokenId}) of ${uriToken.ownerAddress + (sold ? ' tenant' : '')} account`);
     }
 
     // Verify the deregistration.
@@ -251,8 +279,8 @@ async function acquire(scenario) {
             if (scenario === "success")
                 await host.acquireSuccess(r.acquireRefId, r.tenant, { content: "dummy success" });
             else if (scenario === "error") {
-                const nft = (await (new evernode.XrplAccount(r.tenant)).getNfts())?.find(n => n.NFTokenID == r.nfTokenId);
-                const leaseIndex = Buffer.from(nft.URI, 'hex').readUint16BE(evernode.EvernodeConstants.LEASE_NFT_PREFIX_HEX.length);
+                const uriToken = (await (new evernode.XrplAccount(r.tenant)).getURITokens())?.find(n => n.index == r.uriTokenId);
+                const leaseIndex = (evernode.UtilHelpers.decodeLeaseTokenUri(uriToken.URI)).leaseIndex;
 
                 await host.expireLease(r.nfTokenId, r.tenant);
                 await host.offerLease(leaseIndex, r.leaseAmount, tosHash);
@@ -305,7 +333,7 @@ async function extendLease(scenario) {
 
     try {
         const timeout = (scenario === "timeout" ? 10000 : 30000);
-        const tokenIDs = (await tenant.xrplAcc.getNfts()).map(n => n.NFTokenID);
+        const tokenIDs = (await tenant.xrplAcc.getURITokens()).map(n => n.index);
         const result = await tenant.extendLease(hostAddress, 2, tokenIDs[0], { timeout: timeout });
         console.log(`Extend ref id: ${result.extendeRefId}, Expiry moments: ${result.expiryMoment}`);
     }
@@ -406,13 +434,13 @@ async function transferHost(address = transfereeAddress) {
     console.log("Initiating a transfer...");
     await host.transfer(address);
 
-    // Burn NFTs.
-    const nfts = (await host.xrplAcc.getNfts()).filter(n => n.URI.startsWith(evernode.EvernodeConstants.LEASE_NFT_PREFIX_HEX))
-        .map(o => { return { nfTokenId: o.NFTokenID, ownerAddress: host.xrplAcc.address }; });
-    for (const nft of nfts) {
-        const sold = nft.ownerAddress !== host.xrplAcc.address;
-        await host.xrplAcc.burnNft(nft.nfTokenId, sold ? nft.ownerAddress : null);
-        console.log(`Burnt ${sold ? 'sold' : 'unsold'} hosting NFT (${nft.nfTokenId}) of ${nft.ownerAddress + (sold ? ' tenant' : '')} account`);
+    // Burn URI Tokens.
+    const uriTokens = (await host.xrplAcc.getURITokens()).filter(n => evernode.EncryptionHelper.isValidURI(n.URI, evernode.EvernodeConstants.LEASE_TOKEN_PREFIX_HEX))
+        .map(o => { return { uriTokenId: o.index, ownerAddress: host.xrplAcc.address }; });
+    for (const uriToken of uriTokens) {
+        const sold = uriToken.ownerAddress !== host.xrplAcc.address;
+        await host.xrplAcc.burnURIToken(uriToken.uriTokenId);
+        console.log(`Burnt ${sold ? 'sold' : 'unsold'} hosting URIToken (${uriToken.uriTokenId}) of ${uriToken.ownerAddress + (sold ? ' tenant' : '')} account`);
     }
 
 }
