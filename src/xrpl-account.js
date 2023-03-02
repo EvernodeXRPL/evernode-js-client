@@ -569,7 +569,7 @@ class XrplAccount {
         return this.#submitAndVerifyTransaction(tx, options);
     }
 
-    sellURIToken(uriTokenID, amount, currency, issuer = null, toAddr = null, options = {}) {
+    sellURIToken(uriTokenID, amount, currency, issuer = null, toAddr = null, memos = null, options = {}) {
         const amountObj = makeAmountObject(amount, currency, issuer);
 
         const tx = {
@@ -581,6 +581,9 @@ class XrplAccount {
 
         if (toAddr)
             tx.Destination = toAddr;
+
+        if (memos)
+            tx.Memos = TransactionHelper.formatMemos(memos);
 
         return this.#submitAndVerifyTransaction(tx, options);
     }

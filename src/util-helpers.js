@@ -24,7 +24,7 @@ class UtilHelpers {
     static decodeLeaseNftUri(hexUri) {
         // Get the lease index from the nft URI.
         // <prefix><lease index (uint16)><half of tos hash (16 bytes)><lease amount (uint32)>
-        const prefixLen = EvernodeConstants.LEASE_NFT_PREFIX_HEX.length / 2;
+        const prefixLen = EvernodeConstants.LEASE_TOKEN_PREFIX_HEX.length / 2;
         const halfToSLen = 16;
         const uriBuf = Buffer.from(hexUri, 'hex');
         return {
