@@ -105,7 +105,10 @@ const TRANSFER_STATES = {
 
 const CANDIDATE_STATUSES = {
     CANDIDATE_REJECTED: 0,
-    CANDIDATE_SUPPORTED: 1
+    CANDIDATE_SUPPORTED: 1,
+    CANDIDATE_ELECTED: 2,
+    CANDIDATE_VETOED: 3,
+    CANDIDATE_EXPIRED: 4
 }
 
 const EVERNODE_PREFIX = 'EVR';
@@ -198,6 +201,25 @@ class StateHelpers {
     }
 
     static decodeCandidateIdState(stateDataBuf) {
+        let status = '';
+        switch (stateDataBuf.readUInt8(CANDIDATE_STATUS_OFFSET)) {
+            case CANDIDATE_STATUSES.CANDIDATE_SUPPORTED:
+                status = 'supported';
+                break;
+            case CANDIDATE_STATUSES.CANDIDATE_ELECTED:
+                status = 'elected';
+                break;
+            case CANDIDATE_STATUSES.CANDIDATE_VETOED:
+                status = 'vetoed';
+                break;
+            case CANDIDATE_STATUSES.CANDIDATE_EXPIRED:
+                status = 'expired';
+                break;
+            default:
+                status = 'rejected';
+                break;
+        }
+
         return {
             ownerAddress: codec.encodeAccountID(stateDataBuf.slice(CANDIDATE_OWNER_ADDRESS_OFFSET, CANDIDATE_IDX_OFFSET)),
             index: stateDataBuf.readUInt32BE(CANDIDATE_IDX_OFFSET),
@@ -206,7 +228,7 @@ class StateHelpers {
             proposalFee: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_PROPOSAL_FEE_OFFSET)),
             positiveVoteCount: stateDataBuf.readUInt32BE(CANDIDATE_POSITIVE_VOTE_COUNT_OFFSET),
             lastVoteTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_LAST_VOTE_TIMESTAMP_OFFSET)),
-            status: stateDataBuf.readUInt8(CANDIDATE_STATUS_OFFSET) === CANDIDATE_STATUSES.CANDIDATE_SUPPORTED ? 'supported' : 'rejected',
+            status: status,
             statusChangeTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_STATUS_CHANGE_TIMESTAMP_OFFSET)),
             foundationVoteStatus: stateDataBuf.readUInt8(CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET) === CANDIDATE_STATUSES.CANDIDATE_SUPPORTED ? 'supported' : 'rejected'
         }
