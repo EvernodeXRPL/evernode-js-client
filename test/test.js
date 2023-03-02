@@ -313,13 +313,13 @@ async function extendLease(scenario) {
 
     host.on(evernode.HostEvents.ExtendLease, async (r) => {
 
-        console.log(`Host received extend request for: '${r.nfTokenId}'`);
+        console.log(`Host received extend request for: '${r.uriTokenId}'`);
 
         console.log(`Host submitting ${scenario} response...`);
         await new Promise(resolve => setTimeout(resolve, 4000));
 
         if (scenario === "success")
-            await host.extendSuccess(r.extendRefId, r.tenant, { content: "dummy success" }).catch(console.error);
+            await host.extendSuccess(r.extendRefId, r.tenant, Math.floor(r.payment / 2), { content: "dummy success" }).catch(console.error);
         else if (scenario === "error") {
             await host.extendError(r.extendRefId, r.tenant, "dummy_error", r.payment.toString()).catch(console.error);
         }
@@ -331,7 +331,7 @@ async function extendLease(scenario) {
         const timeout = (scenario === "timeout" ? 10000 : 30000);
         const tokenIDs = (await tenant.xrplAcc.getURITokens()).map(n => n.index);
         const result = await tenant.extendLease(hostAddress, 2, tokenIDs[0], { timeout: timeout });
-        console.log(`Extend ref id: ${result.extendeRefId}, Expiry moments: ${result.expiryMoment}`);
+        console.log(`Extend ref id: ${result.extendRefId}, Expiry moments: ${result.expiryMoment}`);
     }
     catch (err) {
         console.log("Tenant recieved extend error: ", err.reason)

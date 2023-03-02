@@ -221,7 +221,7 @@ class TenantClient extends BaseEvernodeClient {
                     resolve({
                         transaction: relevantTx?.data.transaction,
                         expiryMoment: relevantTx?.data.expiryMoment,
-                        extendeRefId: relevantTx?.data.extendRefId
+                        extendRefId: relevantTx?.data.extendRefId
                     });
                 } else if (relevantTx?.name === TenantEvents.ExtendError) {
                     reject({
