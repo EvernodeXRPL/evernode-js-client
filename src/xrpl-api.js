@@ -67,7 +67,7 @@ class XrplApi {
                         // Here we access the offers that were there in this account based on the given ledger index.
                         const offers = await acc.getURITokens({ ledger_index: data.ledger_index - 1 });
                         // Filter out the matching URI token offer for the scenario.
-                        const offer = offers.find(o => o.index === data.transaction.URITokenID);
+                        const offer = offers.find(o => o.index === data.transaction.URITokenID && o.Amount);
                         // When we find the respective offer. We populate the destination and offer info and then we break the loop.
                         if (offer) {
                             // We populate some sell offer properties to the transaction to be sent with the event.
