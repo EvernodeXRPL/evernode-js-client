@@ -232,13 +232,13 @@ async function deregisterHost(address = hostAddress, secret = hostSecret) {
 
     await host.deregister();
 
-    // Burn Tokens.
-    const tokens = (await host.xrplAcc.getURITokens()).filter(n => evernode.EvernodeHelpers.isValidURI(n.URI, evernode.EvernodeConstants.LEASE_TOKEN_PREFIX_HEX))
-        .map(o => { return { tokenId: o.index, ownerAddress: host.xrplAcc.address }; });
+    // Burn tokens.
+    const tokens = (await host.xrplAcc.getURITokens()).filter(n => evernode.EvernodeHelpers.isValidURI(n.URI, evernode.EvernodeConstants.LEASE_TOKEN_PREFIX_HEX) && n.Issuer === host.xrplAcc.address)
+        .map(o => { return { uriTokenId: o.index, ownerAddress: o.Owner }; });
     for (const token of tokens) {
         const sold = token.ownerAddress !== host.xrplAcc.address;
-        await host.xrplAcc.burnURIToken(token.tokenId);
-        console.log(`Burnt ${sold ? 'sold' : 'unsold'} hosting token (${token.tokenId}) of ${token.ownerAddress + (sold ? ' tenant' : '')} account`);
+        await host.xrplAcc.burnURIToken(token.uriTokenId);
+        console.log(`Burnt ${sold ? 'sold' : 'unsold'} hosting token (${token.uriTokenId}) of ${token.ownerAddress + (sold ? ' tenant' : '')} account`);
     }
 
     // Verify the deregistration.
@@ -420,13 +420,13 @@ async function transferHost(address = transfereeAddress) {
     console.log(`-----------Transfer host`);
     await host.transfer(address);
 
-    // Burn Tokens.
-    const tokens = (await host.xrplAcc.getURITokens()).filter(n => evernode.EvernodeHelpers.isValidURI(n.URI, evernode.EvernodeConstants.LEASE_TOKEN_PREFIX_HEX))
-        .map(o => { return { tokenId: o.index, ownerAddress: host.xrplAcc.address }; });
+    // Burn tokens.
+    const tokens = (await host.xrplAcc.getURITokens()).filter(n => evernode.EvernodeHelpers.isValidURI(n.URI, evernode.EvernodeConstants.LEASE_TOKEN_PREFIX_HEX && n.Issuer === host.xrplAcc.address))
+        .map(o => { return { uriTokenId: o.index, ownerAddress: o.Owner }; });
     for (const token of tokens) {
         const sold = token.ownerAddress !== host.xrplAcc.address;
-        await host.xrplAcc.burnURIToken(token.tokenId);
-        console.log(`Burnt ${sold ? 'sold' : 'unsold'} hosting token (${token.tokenId}) of ${token.ownerAddress + (sold ? ' tenant' : '')} account`);
+        await host.xrplAcc.burnURIToken(token.uriTokenId);
+        console.log(`Burnt ${sold ? 'sold' : 'unsold'} hosting token (${token.uriTokenId}) of ${token.ownerAddress + (sold ? ' tenant' : '')} account`);
     }
 
 }
