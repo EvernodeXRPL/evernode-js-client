@@ -5,6 +5,7 @@ const { HeartbeatClient, HeartbeatEvents } = require("./clients/hook-clients/hea
 const { HookClientFactory } = require("./clients/hook-clients/hook-client-factory");
 const { TenantClient, TenantEvents } = require("./clients/tenant-client");
 const { HostClient, HostEvents } = require("./clients/host-client");
+const { FoundationClient, FoundationEvents } = require("./clients/foundation-client");
 const { XrplApi } = require('./xrpl-api');
 const { XrplApiEvents, XrplConstants } = require('./xrpl-common');
 const { XrplAccount } = require('./xrpl-account');
@@ -19,7 +20,7 @@ const { EncryptionHelper } = require('./encryption-helper');
 module.exports = {
     RegistryClient,
     RegistryEvents,
-    GovernorClient, 
+    GovernorClient,
     GovernorEvents,
     HeartbeatClient,
     HeartbeatEvents,
@@ -27,6 +28,8 @@ module.exports = {
     TenantEvents,
     HostClient,
     HostEvents,
+    FoundationClient,
+    FoundationEvents,
     XrplApi,
     XrplApiEvents,
     XrplConstants,

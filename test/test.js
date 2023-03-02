@@ -17,8 +17,8 @@ const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
 const transfereeAddress = 'rNAW13zAUA4DjkM45peek3WhUs23GZ2fYD';
 const multiSignerAddress = 'rsrpCr5j5phA58uQy9Ha3StMPBmSrXbVx6';
 const multiSignerSecret = 'shYrpNBRgnej2xmBhxze75MNLfTwq';
-const dudHostAddress = "rDTgb4cJ5PvdeoXwZR1wLqiraFw65L4ePa";
-const dudHostSecret = "ss4jvoC2ZfCJENJuTswGAxz41cBgN";
+const dudHostAddress = "rBDjYjqVdqXCxeyTHPDRfBN3HiySjcSSdj";
+const dudHostSecret = "sn6RrMDTFvL5XGR6GoTNR3ZdnkMFj";
 
 
 const signerList = [
@@ -111,11 +111,13 @@ async function app() {
             // () => withdraw(),
             // () => foundationWithdraw(),
             // () => getCandidateInfo(),
-            // () => getFoundationCandidateInfo(),
             // () => foundationVote(),
             // () => reportDudHost(),
+            // () => foundationReportDudHost(),
             // () => voteDudHost(),
+            // () => foundationVoteDudHost(),
             // () => votePilotedMode(),
+            // () => foundationVotePilotedMode(),
             // () => changeGovernanceMode(),
             // () => makePayment()
 
@@ -346,6 +348,13 @@ async function getHostClient(address = hostAddress, secret = hostSecret) {
     return client;
 }
 
+async function getFoundationClient(address = foundationAddress, secret = foundationSecret) {
+    const client = new evernode.FoundationClient(address, secret);
+    await client.connect();
+    clients.push(client);
+    return client;
+}
+
 async function getRegistryClient() {
     const client = await evernode.HookClientFactory.create(evernode.HookTypes.registry);
     await client.connect();
@@ -437,7 +446,6 @@ async function transferHost(address = transfereeAddress) {
         await host.xrplAcc.burnNft(nft.nfTokenId, sold ? nft.ownerAddress : null);
         console.log(`Burnt ${sold ? 'sold' : 'unsold'} hosting NFT (${nft.nfTokenId}) of ${nft.ownerAddress + (sold ? ' tenant' : '')} account`);
     }
-
 }
 
 async function requestRebate() {
@@ -479,32 +487,42 @@ async function propose() {
     // First epoch reward quota is considered.
     await fundAccount(host.xrplAcc, "5120");
 
-    if (!await host.isRegistered()) {
-        console.log("Host is not registered.");
-        return true;
-    }
-
     console.log(`-----------Proposing hook candidate`);
     await host.propose(hookCandidates, 'testProposal');
 }
 
 async function foundationPropose() {
-    const client = await getTenantClient(foundationAddress, foundationSecret);
+    const client = await getFoundationClient(foundationAddress, foundationSecret);
 
     console.log(`-----------Foundation proposing hook candidate`);
     await client.propose(hookCandidates, 'testProposal');
 }
 
-async function getFoundationCandidateInfo() {
-    const client = await getTenantClient(foundationAddress, foundationSecret);
-    const candidateInfo = await client.getCandidateInfo();
-    console.log(candidateInfo);
-    return candidateInfo;
+async function reportDudHost() {
+    // Register the dud host.
+    console.log("Registering the dud host...");
+    await registerHost(dudHostAddress, dudHostSecret).catch(console.error);
+
+    const client = await getHostClient(hostAddress, hostSecret);
+
+    console.log(`-----------Reporting dud host`);
+    await client.reportDudHost(dudHostAddress);
 }
 
-async function getCandidateInfo() {
-    const host = await getHostClient();
-    const candidateInfo = await host.getCandidateInfo();
+async function foundationReportDudHost() {
+    // Register the dud host.
+    console.log("Registering the dud host...");
+    await registerHost(dudHostAddress, dudHostSecret).catch(console.error);
+
+    const client = await getFoundationClient(foundationAddress, foundationSecret);
+
+    console.log(`-----------Foundation reporting dud host`);
+    await client.reportDudHost(dudHostAddress);
+}
+
+async function getCandidateInfo(owner = hostAddress) {
+    const host = await getHostClient(hostAddress, hostSecret);
+    const candidateInfo = await host.getCandidateInfo(owner);
     console.log(candidateInfo);
     return candidateInfo;
 }
@@ -513,61 +531,61 @@ async function withdraw() {
     const host = await getHostClient(hostAddress, hostSecret);
     const uniqueId = evernode.StateHelpers.getNewHookCandidateId(Buffer.from(hookCandidates, 'hex'));
 
-    if (!await host.isRegistered()) {
-        console.log("Host is not registered.");
-        return true;
-    }
-
     console.log(`-----------Withdrawing hook candidate`);
     await host.withdraw(uniqueId);
 }
 
 async function foundationWithdraw() {
-    const client = await getTenantClient(foundationAddress, foundationSecret);
+    const client = await getFoundationClient(foundationAddress, foundationSecret);
     const uniqueId = evernode.StateHelpers.getNewHookCandidateId(Buffer.from(hookCandidates, 'hex'));
 
     console.log(`-----------Foundation Withdrawing hook candidate`);
     await client.withdraw(uniqueId);
 }
 
-async function foundationVote() {
-    const client = await getTenantClient(foundationAddress, foundationSecret);
+async function foundationVote(vote = evernode.EvernodeConstants.CandidateVote.Support) {
+    const client = await getFoundationClient(foundationAddress, foundationSecret);
     const uniqueId = evernode.StateHelpers.getNewHookCandidateId(Buffer.from(hookCandidates, 'hex'));
 
     console.log(`-----------Foundation vote for hook candidate`);
-    await client.vote(uniqueId, evernode.EvernodeConstants.CandidateVote.Support);
+    await client.vote(uniqueId, vote);
 }
 
-async function reportDudHost() {
-    // Register the dud host.
-    console.log("Registering the dud host...");
-    await registerHost(dudHostAddress, dudHostSecret);
-
-    const client = await getHostClient();
-
-    console.log(`-----------Reporting dud host`);
-    await client.reportDudHost(dudHostAddress);
-}
-
-async function voteDudHost() {
-    const client = await getHostClient();
+async function voteDudHost(vote = evernode.EvernodeConstants.CandidateVote.Support) {
+    const client = await getHostClient(hostAddress, hostSecret);
+    const uniqueId = evernode.StateHelpers.getDudHostCandidateId(dudHostAddress);
 
     console.log(`-----------Voting for dud host`);
-    await client.voteDudHost(dudHostAddress, evernode.EvernodeConstants.CandidateVote.Support);
+    await await client.heartbeat({ vote: vote, candidate: uniqueId });
 }
 
-async function votePilotedMode() {
-    const client = await getHostClient();
+async function foundationVoteDudHost(vote = evernode.EvernodeConstants.CandidateVote.Support) {
+    const client = await getFoundationClient(foundationAddress, foundationSecret);
+
+    console.log(`-----------Foundation vote for dud host`);
+    await client.voteDudHost(dudHostAddress, vote);
+}
+
+async function votePilotedMode(vote = evernode.EvernodeConstants.CandidateVote.Support) {
+    const client = await getHostClient(hostAddress, hostSecret);
+    const uniqueId = evernode.StateHelpers.getPilotedModeCandidateId();
 
     console.log(`-----------Voting for piloted mode`);
-    await client.votePilotedMode(evernode.EvernodeConstants.CandidateVote.Support);
+    await await client.heartbeat({ vote: vote, candidate: uniqueId });
 }
 
-async function changeGovernanceMode() {
-    const client = await getTenantClient(foundationAddress, foundationSecret);
+async function foundationVotePilotedMode(vote = evernode.EvernodeConstants.CandidateVote.Support) {
+    const client = await getFoundationClient(foundationAddress, foundationSecret);
+
+    console.log(`-----------Foundation vote for piloted mode`);
+    await client.votePilotedMode(vote);
+}
+
+async function changeGovernanceMode(mode = evernode.EvernodeConstants.GovernanceModes.CoPiloted) {
+    const client = await getFoundationClient(foundationAddress, foundationSecret);
 
     console.log(`-----------Changing the governor mode`);
-    await client.changeGovernanceMode(evernode.EvernodeConstants.GovernanceModes.AutoPiloted);
+    await client.changeGovernanceMode(mode);
 }
 
 async function makePayment() {
