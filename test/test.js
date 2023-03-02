@@ -421,7 +421,7 @@ async function transferHost(address = transfereeAddress) {
     await host.transfer(address);
 
     // Burn tokens.
-    const tokens = (await host.xrplAcc.getURITokens()).filter(n => evernode.EvernodeHelpers.isValidURI(n.URI, evernode.EvernodeConstants.LEASE_TOKEN_PREFIX_HEX && n.Issuer === host.xrplAcc.address))
+    const tokens = (await host.xrplAcc.getURITokens()).filter(n => evernode.EvernodeHelpers.isValidURI(n.URI, evernode.EvernodeConstants.LEASE_TOKEN_PREFIX_HEX) && n.Issuer === host.xrplAcc.address)
         .map(o => { return { uriTokenId: o.index, ownerAddress: o.Owner }; });
     for (const token of tokens) {
         const sold = token.ownerAddress !== host.xrplAcc.address;
