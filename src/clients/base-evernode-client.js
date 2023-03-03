@@ -35,9 +35,8 @@ class BaseEvernodeClient {
         this.#firestoreHandler = new FirestoreHandler()
 
         this.xrplAcc.on(XrplApiEvents.PAYMENT, (tx, error) => this.#handleEvernodeEvent(tx, error));
-        this.xrplAcc.on(XrplApiEvents.NFT_OFFER_CREATE, (tx, error) => this.#handleEvernodeEvent(tx, error));
-        this.xrplAcc.on(XrplApiEvents.NFT_OFFER_ACCEPT, (tx, error) => this.#handleEvernodeEvent(tx, error));
-
+        this.xrplAcc.on(XrplApiEvents.URI_TOKEN_BUY, (tx, error) => this.#handleEvernodeEvent(tx, error));
+        this.xrplAcc.on(XrplApiEvents.URI_TOKEN_CREATE_SELL_OFFER, (tx, error) => this.#handleEvernodeEvent(tx, error));
     }
 
     /**
@@ -249,8 +248,8 @@ class BaseEvernodeClient {
                 data: {
                     transaction: tx,
                     host: tx.Destination,
-                    nfTokenId: tx.NFTokenSellOffer?.NFTokenID,
-                    leaseAmount: tx.NFTokenSellOffer?.Amount?.value,
+                    uriTokenId: tx.URITokenSellOffer?.index,
+                    leaseAmount: tx.URITokenSellOffer?.Amount?.value,
                     acquireRefId: tx.hash,
                     tenant: tx.Account,
                     payload: payload
@@ -337,7 +336,7 @@ class BaseEvernodeClient {
         else if (tx.Memos.length >= 1 &&
             tx.Memos[0].type === MemoTypes.EXTEND_LEASE && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
 
-            let nfTokenId = tx.Memos[0].data;
+            let uriTokenId = tx.Memos[0].data;
 
             return {
                 name: EvernodeEvents.ExtendLease,
@@ -347,7 +346,7 @@ class BaseEvernodeClient {
                     tenant: tx.Account,
                     currency: tx.Amount.currency,
                     payment: parseFloat(tx.Amount.value),
-                    nfTokenId: nfTokenId
+                    uriTokenId: uriTokenId
                 }
             }
         }
@@ -467,14 +466,14 @@ class BaseEvernodeClient {
                     (addrStateDecoded.lastHeartbeatIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
                     (addrStateDecoded.lastHeartbeatIndex > 0))
 
-                const nftIdStatekey = StateHelpers.generateTokenIdStateKey(addrStateDecoded.nfTokenId);
-                const nftIdStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, nftIdStatekey);
-                const nftIdLedgerEntry = await this.xrplApi.getLedgerEntry(nftIdStateIndex);
+                const tokenIdStatekey = StateHelpers.generateTokenIdStateKey(addrStateDecoded.uriTokenId);
+                const tokenIdStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, tokenIdStatekey);
+                const tokenIdLedgerEntry = await this.xrplApi.getLedgerEntry(tokenIdStateIndex);
 
-                const nftIdStateData = nftIdLedgerEntry?.HookStateData;
-                if (nftIdStateData) {
-                    const nftIdStateDecoded = StateHelpers.decodeTokenIdState(Buffer.from(nftIdStateData, 'hex'));
-                    return { ...addrStateDecoded, ...nftIdStateDecoded };
+                const tokenIdStateData = tokenIdLedgerEntry?.HookStateData;
+                if (tokenIdStateData) {
+                    const tokenIdStateDecoded = StateHelpers.decodeTokenIdState(Buffer.from(tokenIdStateData, 'hex'));
+                    return { ...addrStateDecoded, ...tokenIdStateDecoded };
                 }
             }
         }

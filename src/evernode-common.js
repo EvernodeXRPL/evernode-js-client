@@ -103,6 +103,11 @@ const EvernodeEvents = {
     HostRebate: "HostRebate"
 }
 
+const URITokenTypes = {
+    LEASE_URI_TOKEN: 1,
+    REGISTRATION_URI_TOKEN: 2
+}
+
 module.exports = {
     EvernodeConstants,
     MemoTypes,
@@ -110,5 +115,6 @@ module.exports = {
     ErrorCodes,
     ErrorReasons,
     HookStateKeys,
-    EvernodeEvents
+    EvernodeEvents,
+    URITokenTypes
 }

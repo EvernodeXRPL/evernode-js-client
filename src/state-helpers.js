@@ -98,7 +98,7 @@ class StateHelpers {
     static decodeHostAddressState(stateKeyBuf, stateDataBuf) {
         let data = {
             address: codec.encodeAccountID(stateKeyBuf.slice(12)),
-            nfTokenId: stateDataBuf.slice(HOST_TOKEN_ID_OFFSET, HOST_COUNTRY_CODE_OFFSET).toString('hex').toUpperCase(),
+            uriTokenId: stateDataBuf.slice(HOST_TOKEN_ID_OFFSET, HOST_COUNTRY_CODE_OFFSET).toString('hex').toUpperCase(),
             countryCode: stateDataBuf.slice(HOST_COUNTRY_CODE_OFFSET, HOST_RESERVED_OFFSET).toString(),
             description: stateDataBuf.slice(HOST_DESCRIPTION_OFFSET, HOST_REG_LEDGER_OFFSET).toString().replace(/\0/g, ''),
             registrationLedger: Number(stateDataBuf.readBigUInt64BE(HOST_REG_LEDGER_OFFSET)),
@@ -337,13 +337,13 @@ class StateHelpers {
             throw { type: 'Validation Error', message: 'Invalid state key.' };
     }
 
-    static generateTokenIdStateKey(nfTokenId) {
+    static generateTokenIdStateKey(uriToken) {
         // 1 byte - Key Type.
         let buf = Buffer.allocUnsafe(1);
         buf.writeUInt8(STATE_KEY_TYPES.TOKEN_ID);
 
-        const nfTokenIdBuf = Buffer.from(nfTokenId, "hex");
-        const stateKeyBuf = (Buffer.concat([Buffer.from(EVERNODE_PREFIX, "utf-8"), buf, nfTokenIdBuf.slice(4, 32)]));
+        const uriTokenBuf = Buffer.from(uriToken, "hex");
+        const stateKeyBuf = (Buffer.concat([Buffer.from(EVERNODE_PREFIX, "utf-8"), buf, uriTokenBuf.slice(4, 32)]));
         return stateKeyBuf.toString('hex').toUpperCase();
     }
 

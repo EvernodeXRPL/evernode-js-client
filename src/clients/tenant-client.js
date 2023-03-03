@@ -40,12 +40,12 @@ class TenantClient extends BaseEvernodeClient {
     async getLeaseHost(hostAddress) {
         const host = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
         // Find an owned URI token with matching Evernode host NFT prefix.
-        const urit = (await host.getURITokens()).find(n => n.URI.startsWith(EvernodeConstants.TOKEN_PREFIX_HEX));
-        if (!urit)
+        const uriToken = (await host.getURITokens()).find(n => n.URI.startsWith(EvernodeConstants.TOKEN_PREFIX_HEX));
+        if (!uriToken)
             throw { reason: ErrorReasons.HOST_INVALID, error: "Host is not registered." };
 
         // Check whether the token was actually issued from Evernode registry contract.
-        if (urit.Issuer != this.config.registryAddress)
+        if (uriToken.Issuer != this.config.registryAddress)
             throw { reason: ErrorReasons.HOST_INVALID, error: "Host is not registered." };
 
         // Check whether active.
@@ -71,15 +71,15 @@ class TenantClient extends BaseEvernodeClient {
         let selectedOfferIndex = options.leaseOfferIndex;
 
         let buyUriOffer = null;
-        const uritOffers = await EvernodeHelpers.getLeaseOffers(hostAcc);
+        const uriTokenOffers = await EvernodeHelpers.getLeaseOffers(hostAcc);
 
         if (!selectedOfferIndex) {
             // Attempt to get first available offer, if offer is not specified in options.
-            buyUriOffer = uritOffers && uritOffers[0];
+            buyUriOffer = uriTokenOffers && uriTokenOffers[0];
         }
         else {
             // Attempt to get relevant available offer using selectedOfferIndex.
-            buyUriOffer = uritOffers && uritOffers.find(uriOffer =>  uriOffer.index === selectedOfferIndex );
+            buyUriOffer = uriTokenOffers && uriTokenOffers.find(uriOffer => { uriOffer.index === selectedOfferIndex });
         }
 
         if (!buyUriOffer)
@@ -221,7 +221,7 @@ class TenantClient extends BaseEvernodeClient {
                     resolve({
                         transaction: relevantTx?.data.transaction,
                         expiryMoment: relevantTx?.data.expiryMoment,
-                        extendeRefId: relevantTx?.data.extendRefId
+                        extendRefId: relevantTx?.data.extendRefId
                     });
                 } else if (relevantTx?.name === TenantEvents.ExtendError) {
                     reject({
@@ -245,9 +245,9 @@ class TenantClient extends BaseEvernodeClient {
     extendLease(hostAddress, moments, instanceName, options = {}) {
         return new Promise(async (resolve, reject) => {
             const tokenID = instanceName;
-            const urit = (await this.xrplAcc.getURITokens())?.find(n => n.index == tokenID);
+            const uriToken = (await this.xrplAcc.getURITokens())?.find(n => n.index == tokenID);
 
-            if (!urit) {
+            if (!uriToken) {
                 reject({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.NO_NFT, content: 'Could not find the uri token for lease extend request.' });
                 return;
             }
@@ -255,7 +255,7 @@ class TenantClient extends BaseEvernodeClient {
             let minLedgerIndex = this.xrplApi.ledgerIndex;
 
             // Get the agreement lease amount from the nft and calculate EVR amount to be sent.
-            const uriInfo = UtilHelpers.decodeLeaseNftUri(urit.URI);
+            const uriInfo = UtilHelpers.decodeLeaseTokenUri(uriToken.URI);
             const tx = await this.extendLeaseSubmit(hostAddress, moments * uriInfo.leaseAmount, tokenID, options).catch(error => {
                 reject({ error: ErrorCodes.EXTEND_ERR, reason: error.reason || ErrorReasons.TRANSACTION_FAILURE, content: error.error || error });
             });
