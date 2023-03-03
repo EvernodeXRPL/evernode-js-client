@@ -572,6 +572,27 @@ class HostClient extends BaseEvernodeClient {
 
         return false;
     }
+
+    async propose(hashes, shortName, options = {}) {
+        if (!(await this.isRegistered()))
+            throw 'Host should be registered to propose candidates.';
+
+        return await super._propose(hashes, shortName, options);
+    }
+
+    async withdraw(candidateId, options = {}) {
+        if (!(await this.isRegistered()))
+            throw 'Host should be registered to withdraw candidates.';
+
+        return await super._withdraw(candidateId, options);
+    }
+
+    async reportDudHost(hostAddress, options = {}) {
+        if (!(await this.isRegistered()))
+            throw 'Host should be registered to report dud hosts.';
+
+        return await this._reportDudHost(hostAddress, options);
+    }
 }
 
 module.exports = {

@@ -4,6 +4,7 @@ const { HookStateKeys, EvernodeConstants } = require('./evernode-common');
 const { XflHelpers } = require('./xfl-helpers');
 const crypto = require("crypto");
 const { UtilHelpers } = require('./util-helpers');
+const { sha512Half } = require('xrpl-binary-codec/dist/hashes');
 
 const NFTOKEN_PREFIX = '00000000';
 
@@ -30,16 +31,16 @@ const ELIGIBILITY_PERIOD_OFFSET = 0;
 const CANDIDATE_LIFE_PERIOD_OFFSET = 4;
 const CANDIDATE_ELECTION_PERIOD_OFFSET = 8;
 const CANDIDATE_SUPPORT_AVERAGE_OFFSET = 12;
-const CANDIDATE_REJECT_AVERAGE_OFFSET = 14;
 
 const GOVERNANCE_MODE_OFFSET = 0;
 const LAST_CANDIDATE_IDX_OFFSET = 1;
-const VOTER_BASE_COUNT_OFFSET = 3;
-const VOTER_BASE_COUNT_CHANGED_TIMESTAMP_OFFSET = 7;
-const FOUNDATION_LAST_VOTED_CANDIDATE_IDX = 15;
-const ELECTED_PROPOSAL_UNIQUE_ID_OFFSET = 17;
-const PROPOSAL_ELECTED_TIMESTAMP_OFFSET = 49;
-const UPDATED_HOOK_COUNT_OFFSET = 57;
+const VOTER_BASE_COUNT_OFFSET = 5;
+const VOTER_BASE_COUNT_CHANGED_TIMESTAMP_OFFSET = 9;
+const FOUNDATION_LAST_VOTED_CANDIDATE_IDX = 17;
+const FOUNDATION_LAST_VOTED_TIMESTAMP_OFFSET = 21;
+const ELECTED_PROPOSAL_UNIQUE_ID_OFFSET = 29;
+const PROPOSAL_ELECTED_TIMESTAMP_OFFSET = 61;
+const UPDATED_HOOK_COUNT_OFFSET = 69;
 
 const HOST_TOKEN_ID_OFFSET = 0;
 const HOST_COUNTRY_CODE_OFFSET = 32;
@@ -54,6 +55,7 @@ const HOST_VERSION_OFFSET = 100;
 const HOST_REG_TIMESTAMP_OFFSET = 103;
 const HOST_TRANSFER_FLAG_OFFSET = 111;
 const HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET = 112;
+const HOST_LAST_VOTE_TIMESTAMP_OFFSET = 116;
 
 const HOST_ADDRESS_OFFSET = 0;
 const HOST_CPU_MODEL_NAME_OFFSET = 20;
@@ -74,15 +76,14 @@ const CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET = 64;
 
 const CANDIDATE_OWNER_ADDRESS_OFFSET = 0;
 const CANDIDATE_IDX_OFFSET = 20;
-const CANDIDATE_SHORT_NAME_OFFSET = 22;
-const CANDIDATE_CREATED_TIMESTAMP_OFFSET = 42;
-const CANDIDATE_PROPOSAL_FEE_OFFSET = 50;
-const CANDIDATE_POSITIVE_VOTE_COUNT_OFFSET = 58;
-const CANDIDATE_NEGATIVE_VOTE_COUNT_OFFSET = 62;
-const CANDIDATE_LAST_VOTE_TIMESTAMP_OFFSET = 66;
-const CANDIDATE_STATUS_OFFSET = 74;
-const CANDIDATE_STATUS_CHANGE_TIMESTAMP_OFFSET = 75;
-const CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET = 83;
+const CANDIDATE_SHORT_NAME_OFFSET = 24;
+const CANDIDATE_CREATED_TIMESTAMP_OFFSET = 44;
+const CANDIDATE_PROPOSAL_FEE_OFFSET = 52;
+const CANDIDATE_POSITIVE_VOTE_COUNT_OFFSET = 60;
+const CANDIDATE_LAST_VOTE_TIMESTAMP_OFFSET = 64;
+const CANDIDATE_STATUS_OFFSET = 72;
+const CANDIDATE_STATUS_CHANGE_TIMESTAMP_OFFSET = 73;
+const CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET = 81;
 
 const STATE_KEY_TYPES = {
     TOKEN_ID: 2,
@@ -102,16 +103,12 @@ const TRANSFER_STATES = {
     HAS_A_TRANSFER: 1
 }
 
-const GOVERNANCE_MODES = {
-    PILOTED: 1,
-    CO_PILOTED: 2,
-    AUTO_PILOTED: 3
-}
-
 const CANDIDATE_STATUSES = {
-    CANDIDATE_ABSTAINED: 0,
+    CANDIDATE_REJECTED: 0,
     CANDIDATE_SUPPORTED: 1,
-    CANDIDATE_REJECTED: 2
+    CANDIDATE_ELECTED: 2,
+    CANDIDATE_VETOED: 3,
+    CANDIDATE_EXPIRED: 4
 }
 
 const EVERNODE_PREFIX = 'EVR';
@@ -158,7 +155,8 @@ class StateHelpers {
             lastHeartbeatIndex: Number(stateDataBuf.readBigUInt64BE(HOST_HEARTBEAT_TIMESTAMP_OFFSET)),
             version: `${stateDataBuf.readUInt8(HOST_VERSION_OFFSET)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 1)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 2)}`,
             isATransferer: (stateDataBuf.length > HOST_TRANSFER_FLAG_OFFSET && (stateDataBuf.readUInt8(HOST_TRANSFER_FLAG_OFFSET) === PENDING_TRANSFER)) ? TRANSFER_STATES.HAS_A_TRANSFER : TRANSFER_STATES.NO_TRANSFER,
-            lastVoteCandidateIdx: stateDataBuf.length > HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET ? stateDataBuf.readUInt16BE(HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET) : 0,
+            lastVoteCandidateIdx: stateDataBuf.length > HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET ? stateDataBuf.readUInt32BE(HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET) : 0,
+            lastVoteTimestamp: stateDataBuf.length > HOST_LAST_VOTE_TIMESTAMP_OFFSET ? Number(stateDataBuf.readBigUInt64BE(HOST_LAST_VOTE_TIMESTAMP_OFFSET)) : 0,
         }
         if (stateDataBuf.length > HOST_REG_TIMESTAMP_OFFSET)
             data.registrationTimestamp = Number(stateDataBuf.readBigUInt64BE(HOST_REG_TIMESTAMP_OFFSET));
@@ -194,7 +192,7 @@ class StateHelpers {
     static decodeCandidateOwnerState(stateKeyBuf, stateDataBuf) {
         let data = {
             ownerAddress: codec.encodeAccountID(stateKeyBuf.slice(12)),
-            uniqueId: UtilHelpers.getCandidateUniqueId(stateDataBuf),
+            uniqueId: this.getNewHookCandidateId(stateDataBuf),
             governorHookHash: stateDataBuf.slice(CANDIDATE_GOVERNOR_HOOK_HASH_OFFSET, CANDIDATE_REGISTRY_HOOK_HASH_OFFSET).toString('hex').toUpperCase(),
             registryHookHash: stateDataBuf.slice(CANDIDATE_REGISTRY_HOOK_HASH_OFFSET, CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET).toString('hex').toUpperCase(),
             heartbeatHookHash: stateDataBuf.slice(CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET, CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET + 32).toString('hex').toUpperCase(),
@@ -205,46 +203,34 @@ class StateHelpers {
     static decodeCandidateIdState(stateDataBuf) {
         let status = '';
         switch (stateDataBuf.readUInt8(CANDIDATE_STATUS_OFFSET)) {
-            case CANDIDATE_STATUSES.CANDIDATE_ABSTAINED:
-                status = 'abstained';
-                break;
             case CANDIDATE_STATUSES.CANDIDATE_SUPPORTED:
                 status = 'supported';
                 break;
-            case CANDIDATE_STATUSES.CANDIDATE_REJECTED:
+            case CANDIDATE_STATUSES.CANDIDATE_ELECTED:
+                status = 'elected';
+                break;
+            case CANDIDATE_STATUSES.CANDIDATE_VETOED:
+                status = 'vetoed';
+                break;
+            case CANDIDATE_STATUSES.CANDIDATE_EXPIRED:
+                status = 'expired';
+                break;
+            default:
                 status = 'rejected';
                 break;
-            default:
-                status = 'undefined';
-                break;
         }
-        let foundationStatus = '';
-        switch (stateDataBuf.readUInt8(CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET)) {
-            case CANDIDATE_STATUSES.CANDIDATE_ABSTAINED:
-                foundationStatus = 'abstained';
-                break;
-            case CANDIDATE_STATUSES.CANDIDATE_SUPPORTED:
-                foundationStatus = 'supported';
-                break;
-            case CANDIDATE_STATUSES.CANDIDATE_REJECTED:
-                foundationStatus = 'rejected';
-                break;
-            default:
-                foundationStatus = 'undefined';
-                break;
-        }
+
         return {
             ownerAddress: codec.encodeAccountID(stateDataBuf.slice(CANDIDATE_OWNER_ADDRESS_OFFSET, CANDIDATE_IDX_OFFSET)),
-            index: stateDataBuf.readUInt16BE(CANDIDATE_IDX_OFFSET),
+            index: stateDataBuf.readUInt32BE(CANDIDATE_IDX_OFFSET),
             shortName: stateDataBuf.slice(CANDIDATE_SHORT_NAME_OFFSET, CANDIDATE_CREATED_TIMESTAMP_OFFSET).toString().replace(/\x00+$/, ''), // Remove trailing \x00 characters.
             createdTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_CREATED_TIMESTAMP_OFFSET)),
             proposalFee: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_PROPOSAL_FEE_OFFSET)),
             positiveVoteCount: stateDataBuf.readUInt32BE(CANDIDATE_POSITIVE_VOTE_COUNT_OFFSET),
-            negativeVoteCount: stateDataBuf.readUInt32BE(CANDIDATE_NEGATIVE_VOTE_COUNT_OFFSET),
             lastVoteTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_LAST_VOTE_TIMESTAMP_OFFSET)),
             status: status,
             statusChangeTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_STATUS_CHANGE_TIMESTAMP_OFFSET)),
-            foundationVoteStatus: foundationStatus
+            foundationVoteStatus: stateDataBuf.readUInt8(CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET) === CANDIDATE_STATUSES.CANDIDATE_SUPPORTED ? 'supported' : 'rejected'
         }
     }
 
@@ -277,21 +263,25 @@ class StateHelpers {
             }
         }
         else if (Buffer.from(HookStateKeys.PREFIX_CANDIDATE_OWNER, 'hex').compare(stateKey, 0, 4) === 0) {
+            const decoded = this.decodeCandidateOwnerState(stateKey, stateData);
+
+            // Generate the address state key.
+            const idBuf = Buffer.alloc(32, 0);
+            Buffer.from(HookStateKeys.PREFIX_CANDIDATE_ID, 'hex').copy(idBuf);
+            Buffer.from(decoded.uniqueId, 'hex').copy(idBuf, 4, 4, 32)
+
             return {
                 type: this.StateTypes.CANDIDATE_OWNER,
                 key: hexKey,
-                ...this.decodeCandidateOwnerState(stateKey, stateData)
+                idKey: idBuf.toString('hex').toUpperCase(),
+                ...decoded
             }
         }
         else if (Buffer.from(HookStateKeys.PREFIX_CANDIDATE_ID, 'hex').compare(stateKey, 0, 4) === 0) {
             // Generate the owner state key.
-            const ownerKeyBuf = Buffer.alloc(32, 0);
-            Buffer.from(HookStateKeys.PREFIX_CANDIDATE_OWNER, 'hex').copy(ownerKeyBuf);
-            stateData.copy(ownerKeyBuf, 12, CANDIDATE_OWNER_ADDRESS_OFFSET, CANDIDATE_SHORT_NAME_OFFSET)
             return {
                 type: this.StateTypes.CANDIDATE_ID,
                 key: hexKey,
-                ownerKey: ownerKeyBuf.toString('hex').toUpperCase(),
                 ...this.decodeCandidateIdState(stateData)
             }
         }
@@ -405,21 +395,20 @@ class StateHelpers {
                     eligibilityPeriod: stateData.readUInt32BE(ELIGIBILITY_PERIOD_OFFSET),
                     candidateLifePeriod: stateData.readUInt32BE(CANDIDATE_LIFE_PERIOD_OFFSET),
                     candidateElectionPeriod: stateData.readUInt32BE(CANDIDATE_ELECTION_PERIOD_OFFSET),
-                    candidateSupportAverage: stateData.readUInt16BE(CANDIDATE_SUPPORT_AVERAGE_OFFSET),
-                    candidateRejectAverage: stateData.readUInt16BE(CANDIDATE_REJECT_AVERAGE_OFFSET)
+                    candidateSupportAverage: stateData.readUInt16BE(CANDIDATE_SUPPORT_AVERAGE_OFFSET)
                 }
             }
         }
         else if (Buffer.from(HookStateKeys.GOVERNANCE_INFO, 'hex').compare(stateKey) === 0) {
             let mode = '';
             switch (stateData.readUInt8(GOVERNANCE_MODE_OFFSET)) {
-                case GOVERNANCE_MODES.PILOTED:
+                case EvernodeConstants.GovernanceModes.Piloted:
                     mode = 'piloted';
                     break;
-                case GOVERNANCE_MODES.CO_PILOTED:
+                case EvernodeConstants.GovernanceModes.CoPiloted:
                     mode = 'co-piloted';
                     break;
-                case GOVERNANCE_MODES.AUTO_PILOTED:
+                case EvernodeConstants.GovernanceModes.AutoPiloted:
                     mode = 'auto-piloted';
                     break;
                 default:
@@ -431,10 +420,11 @@ class StateHelpers {
                 key: hexKey,
                 value: {
                     governanceMode: mode,
-                    lastCandidateIds: stateData.readUInt16BE(LAST_CANDIDATE_IDX_OFFSET),
+                    lastCandidateIdx: stateData.readUInt32BE(LAST_CANDIDATE_IDX_OFFSET),
                     voteBaseCount: stateData.readUInt32BE(VOTER_BASE_COUNT_OFFSET),
                     voteBaseCountChangedTimestamp: Number(stateData.readBigUInt64BE(VOTER_BASE_COUNT_CHANGED_TIMESTAMP_OFFSET)),
-                    foundationLastVotedCandidateIds: stateData.readUInt16BE(FOUNDATION_LAST_VOTED_CANDIDATE_IDX),
+                    foundationLastVotedCandidateIdx: stateData.readUInt32BE(FOUNDATION_LAST_VOTED_CANDIDATE_IDX),
+                    foundationLastVotedTimestamp: Number(stateData.readBigUInt64BE(FOUNDATION_LAST_VOTED_TIMESTAMP_OFFSET)),
                     electedProposalUniqueId: stateData.readUInt32BE(ELECTED_PROPOSAL_UNIQUE_ID_OFFSET),
                     proposalElectedTimestamp: Number(stateData.readBigUInt64BE(PROPOSAL_ELECTED_TIMESTAMP_OFFSET)),
                     updatedHookCount: stateData.readUInt8(UPDATED_HOOK_COUNT_OFFSET)
@@ -484,7 +474,7 @@ class StateHelpers {
             Buffer.from(HookStateKeys.REWARD_INFO, 'hex').compare(stateKey) === 0) {
             return {
                 key: hexKey,
-                type: this.STATE_TYPES.SIGLETON
+                type: this.StateTypes.SIGLETON
             };
         }
         else if (Buffer.from(HookStateKeys.EVR_ISSUER_ADDR, 'hex').compare(stateKey) === 0 ||
@@ -504,7 +494,7 @@ class StateHelpers {
             Buffer.from(HookStateKeys.GOVERNANCE_INFO, 'hex').compare(stateKey) === 0) {
             return {
                 key: hexKey,
-                type: this.STATE_TYPES.CONFIGURATION
+                type: this.StateTypes.CONFIGURATION
             };
         }
         else
@@ -591,6 +581,31 @@ class StateHelpers {
         const digest = data.digest('hex');
         // Get the first 32 bytes of hash.
         return digest.substring(0, 64).toUpperCase();
+    }
+
+    static getNewHookCandidateId(hashesBuf) {
+        const idBuf = Buffer.alloc(32, 0);
+        idBuf.writeUInt8(EvernodeConstants.CandidateTypes.NewHook, 4);
+        Buffer.from(sha512Half(hashesBuf)).copy(idBuf, 5, 5);
+        return idBuf.toString('hex').toUpperCase();
+    }
+
+    static getPilotedModeCandidateId() {
+        const idBuf = Buffer.alloc(32, 0);
+        idBuf.writeUInt8(EvernodeConstants.CandidateTypes.PilotedMode, 4);
+        Buffer.from(EvernodeConstants.HOOK_NAMESPACE, 'hex').copy(idBuf, 5, 5);
+        return idBuf.toString('hex').toUpperCase();
+    }
+
+    static getDudHostCandidateId(hostAddress) {
+        const idBuf = Buffer.alloc(32, 0);
+        idBuf.writeUInt8(EvernodeConstants.CandidateTypes.DudHost, 4);
+        codec.decodeAccountID(hostAddress).copy(idBuf, 12);
+        return idBuf.toString('hex').toUpperCase();
+    }
+
+    static getCandidateType(candidateId) {
+        return Buffer.from(candidateId, 'hex').readUInt8(4);
     }
 }
 

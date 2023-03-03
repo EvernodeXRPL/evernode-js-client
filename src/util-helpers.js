@@ -1,7 +1,6 @@
 const { Buffer } = require('buffer');
 const { XflHelpers } = require('./xfl-helpers');
 const { EvernodeConstants } = require('./evernode-common');
-const { sha512Half } = require('xrpl-binary-codec/dist/hashes');
 
 // Utility helper functions.
 class UtilHelpers {
@@ -43,10 +42,6 @@ class UtilHelpers {
             default:
                 return time;
         }
-    }
-
-    static getCandidateUniqueId(hashesBuf) {
-        return sha512Half(hashesBuf).toString('hex').toUpperCase();
     }
 }
 

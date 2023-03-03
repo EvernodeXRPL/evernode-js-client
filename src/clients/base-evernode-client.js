@@ -13,14 +13,12 @@ const { StateHelpers } = require('../state-helpers');
 const { EvernodeHelpers } = require('../evernode-helpers');
 const { HookHelpers } = require('../hook-helpers');
 
-const CANDIDATE_VOTE_UNIQUE_ID_MEMO_OFFSET = 0;
-const CANDIDATE_VOTE_VALUE_MEMO_OFFSET = 32;
-const CANDIDATE_VOTE_MEMO_SIZE = 33;
-
 const CANDIDATE_PROPOSE_UNIQUE_ID_MEMO_OFFSET = 0;
 const CANDIDATE_PROPOSE_SHORT_NAME_MEMO_OFFSET = 32;
 const CANDIDATE_PROPOSE_KEYLETS_MEMO_OFFSET = 52;
 const CANDIDATE_PROPOSE_MEMO_SIZE = 154;
+
+const DUD_HOST_CANDID_ADDRESS_OFFSET = 12;
 
 class BaseEvernodeClient {
 
@@ -351,11 +349,20 @@ class BaseEvernodeClient {
         else if (tx.Memos.length >= 1 &&
             tx.Memos[0].type === MemoTypes.HEARTBEAT) {
 
+            const voteInfo = (tx.Memos[0].data && tx.Memos[0].data.length) ?
+                {
+                    voteInfo: {
+                        candidateId: tx.Memos[0].data.substr(0, 64),
+                        vote: Buffer.from(tx.Memos[0].data, 'hex').slice(32, 33).readUInt8()
+                    }
+                } : {};
+
             return {
                 name: EvernodeEvents.Heartbeat,
                 data: {
                     transaction: tx,
-                    host: tx.Account
+                    host: tx.Account,
+                    ...voteInfo
                 }
             }
         }
@@ -413,10 +420,10 @@ class BaseEvernodeClient {
             }
         }
         else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.REGISTRY_INIT && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+            tx.Memos[0].type === MemoTypes.INIT && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
 
             return {
-                name: EvernodeEvents.RegistryInitialized,
+                name: EvernodeEvents.Initialized,
                 data: {
                     transaction: tx
                 }
@@ -467,6 +474,115 @@ class BaseEvernodeClient {
                 data: {
                     transaction: tx,
                     transferee: codec.encodeAccountID(addrsBuf)
+                }
+            }
+        }
+        else if (tx.Memos.length >= 2 &&
+            tx.Memos[0].type === MemoTypes.CANDIDATE_PROPOSE && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data &&
+            tx.Memos[1].type === MemoTypes.CANDIDATE_PROPOSE_REF && tx.Memos[1].format === MemoFormats.HEX && tx.Memos[1].data) {
+
+            return {
+                name: EvernodeEvents.CandidateProposed,
+                data: {
+                    transaction: tx,
+                    owner: tx.Account,
+                    candidateId: tx.Memos[1].data.substr(0, 64)
+                }
+            }
+        }
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.CANDIDATE_WITHDRAW && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+            return {
+                name: EvernodeEvents.CandidateWithdrew,
+                data: {
+                    transaction: tx,
+                    owner: tx.Account,
+                    candidateId: tx.Memos[0].data.substr(0, 64)
+                }
+            }
+        }
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.CANDIDATE_STATUS_CHANGE && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+            const candidateId = tx.Memos[0].data.substr(0, 64);
+            const candidateType = StateHelpers.getCandidateType(candidateId);
+
+            switch (candidateType) {
+                case (EvernodeConstants.CandidateTypes.DudHost):
+                    return {
+                        name: EvernodeEvents.DudHostRemoved,
+                        data: {
+                            transaction: tx,
+                            candidateId: candidateId,
+                            host: codec.encodeAccountID(Buffer.from(candidateId, 'hex').slice(DUD_HOST_CANDID_ADDRESS_OFFSET, 32))
+                        }
+                    }
+                case (EvernodeConstants.CandidateTypes.PilotedMode):
+                    return {
+                        name: EvernodeEvents.FallbackToPiloted,
+                        data: {
+                            transaction: tx,
+                            candidateId: candidateId,
+                        }
+                    }
+                case (EvernodeConstants.CandidateTypes.NewHook):
+                    return {
+                        name: EvernodeEvents.NewHookStatusChanged,
+                        data: {
+                            transaction: tx,
+                            candidateId: candidateId,
+                        }
+                    }
+                default:
+                    return null;
+            }
+
+        }
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.HOOK_UPDATE_RES && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+            return {
+                name: EvernodeEvents.ChildHookUpdated,
+                data: {
+                    transaction: tx,
+                    account: tx.Account,
+                    candidateId: tx.Memos[0].data.substr(0, 64)
+                }
+            }
+        }
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.GOVERNANCE_MODE_CHANGE && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+            const mode = Buffer.from(tx.Memos[0].data, 'hex').slice(0, 1).readUInt8();
+
+            return {
+                name: EvernodeEvents.GovernanceModeChanged,
+                data: {
+                    transaction: tx,
+                    mode: mode
+                }
+            }
+        }
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.CANDIDATE_VOTE && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+            const vote = Buffer.from(tx.Memos[0].data, 'hex').slice(32, 33).readUInt8();
+
+            return {
+                name: EvernodeEvents.FoundationVoted,
+                data: {
+                    transaction: tx,
+                    candidateId: tx.Memos[0].data.substr(0, 64),
+                    vote: vote
+                }
+            }
+        }
+        else if (tx.Memos.length >= 1 &&
+            tx.Memos[0].type === MemoTypes.DUD_HOST_REPORT && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+            const candidateId = tx.Memos[0].data.substr(0, 64);
+
+            return {
+                name: EvernodeEvents.DudHostReported,
+                data: {
+                    transaction: tx,
+                    candidateId: candidateId,
+                    host: codec.encodeAccountID(Buffer.from(candidateId, 'hex').slice(DUD_HOST_CANDID_ADDRESS_OFFSET, 32))
                 }
             }
         }
@@ -536,6 +652,18 @@ class BaseEvernodeClient {
     }
 
     /**
+     * Get all the candidates proposed in Evernode. The result's are paginated. Default page size is 20. Note: Specifying both filter and pagination does not supported.
+     * @param {object} filters [Optional] Filter criteria to filter the hosts. The filter key can be a either property of the host.
+     * @param {number} pageSize [Optional] Page size for the results.
+     * @param {string} nextPageToken [Optional] Next page's token, If received by the previous result set.
+     * @returns The list of candidates. The response will be in '{data: [], nextPageToken: ''}' only if there are more pages. Otherwise the response will only contain the host list. 
+     */
+    async getCandidates(filters = null, pageSize = null, nextPageToken = null) {
+        const candidates = await this.#firestoreHandler.getCandidates(filters, pageSize, nextPageToken);
+        return candidates;
+    }
+
+    /**
      * Get all Evernode configuration without paginating.
      * @returns The list of configuration.
      */
@@ -582,6 +710,29 @@ class BaseEvernodeClient {
     }
 
     /**
+     * Get all the candidates without paginating.
+     * @returns The list of candidates.
+     */
+    async getAllCandidates() {
+        let fullCandidateList = [];
+        const candidates = await this.#firestoreHandler.getCandidates();
+        if (candidates.nextPageToken) {
+            let currentPageToken = candidates.nextPageToken;
+            let nextCandidates = null;
+            fullCandidateList = fullCandidateList.concat(candidates.data);
+            while (currentPageToken) {
+                nextCandidates = await this.#firestoreHandler.getCandidates(null, 50, currentPageToken);
+                fullCandidateList = fullCandidateList.concat(nextCandidates.nextPageToken ? nextCandidates.data : nextCandidates);
+                currentPageToken = nextCandidates.nextPageToken;
+            }
+        } else {
+            fullCandidateList = fullCandidateList.concat(candidates);
+        }
+
+        return fullCandidateList;
+    }
+
+    /**
      * Remove a host which is inactive for a long period. The inactivity is checked by Evernode it self and only pruned if inactive thresholds are met.
      * @param {string} hostAddress XRPL address of the host to be pruned.
      */
@@ -618,89 +769,6 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Withdraw a hook candidate.
-     * @param {*} hashes Hook candidate hashes in hex format, <GOVERNOR_HASH(32)><REGISTRY_HASH(32)><HEARTBEAT_HASH(32)>.
-     * @param {*} shortName Short name for the proposal candidate.
-     * @param {*} options [Optional] transaction options.
-     * @returns Options for the transaction.
-     */
-    async propose(hashes, shortName, options = {}) {
-        const hashesBuf = Buffer.from(hashes, 'hex');
-        if (!hashesBuf || hashesBuf.length != 96)
-            throw 'Invalid hashes: Hashes should contain all three Governor, Registry, Heartbeat hook hashes.';
-
-        // Check whether hook hashes exist in the definition.
-        let keylets = [];
-        for (const [i, hook] of EvernodeConstants.HOOKS.entries()) {
-            const index = HookHelpers.getHookDefinitionIndex(hashes.substr(i * 64, 64));
-            const ledgerEntry = await this.xrplApi.getLedgerEntry(index);
-            if (!ledgerEntry)
-                throw `No hook exists with the specified ${hook} hook hash.`;
-            else
-                keylets.push(HookHelpers.getHookDefinitionKeylet(index));
-        }
-
-        const uniqueId = UtilHelpers.getCandidateUniqueId(hashesBuf);
-        const memoBuf = Buffer.alloc(CANDIDATE_PROPOSE_MEMO_SIZE);
-        Buffer.from(uniqueId, 'hex').copy(memoBuf, CANDIDATE_PROPOSE_UNIQUE_ID_MEMO_OFFSET);
-        Buffer.from(shortName.substr(0, 20), "utf-8").copy(memoBuf, CANDIDATE_PROPOSE_SHORT_NAME_MEMO_OFFSET);
-        Buffer.from(keylets.join(''), 'hex').copy(memoBuf, CANDIDATE_PROPOSE_KEYLETS_MEMO_OFFSET);
-
-        // Get the proposal fee. Proposal fee is current epochs moment worth of rewards.
-        const proposalFee = EvernodeHelpers.getEpochRewardQuota(this.config.rewardInfo.epoch, this.config.rewardConfiguration.firstEpochRewardQuota)
-
-        return await this.xrplAcc.makePayment(this.governorAddress,
-            proposalFee.toString(),
-            EvernodeConstants.EVR,
-            this.config.evrIssuerAddress,
-            [
-                { type: MemoTypes.CANDIDATE_PROPOSE, format: MemoFormats.HEX, data: hashesBuf.toString('hex').toUpperCase() },
-                { type: MemoTypes.CANDIDATE_PROPOSE_REF, format: MemoFormats.HEX, data: memoBuf.toString('hex').toUpperCase() }
-            ],
-            options.transactionOptions);
-    }
-
-    /**
-     * Withdraw a hook candidate.
-     * @param {string} candidateId Id of the candidate in hex format.
-     * @param {*} options [Optional] transaction options.
-     * @returns Options for the transaction.
-     */
-    async withdraw(candidateId, options = {}) {
-        const candidateIdBuf = Buffer.from(candidateId, 'hex');
-        return await this.xrplAcc.makePayment(this.governorAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
-            null,
-            [
-                { type: MemoTypes.CANDIDATE_WITHDRAW, format: MemoFormats.HEX, data: candidateIdBuf.toString('hex').toUpperCase() }
-            ],
-            options.transactionOptions);
-    }
-
-    /**
-     * Vote for a hook candidate.
-     * @param {string} candidateId Id of the candidate in hex format.
-     * @param {int} vote Vote value CandidateVote (0 - Abstain, 1 - Support , 2 - Reject).
-     * @param {*} options [Optional] transaction options.
-     * @returns Options for the transaction.
-     */
-    async vote(candidateId, vote, options = {}) {
-        const voteBuf = Buffer.alloc(CANDIDATE_VOTE_MEMO_SIZE);
-        Buffer.from(candidateId, 'hex').copy(voteBuf, CANDIDATE_VOTE_UNIQUE_ID_MEMO_OFFSET);
-        voteBuf.writeUInt8(vote, CANDIDATE_VOTE_VALUE_MEMO_OFFSET)
-
-        return await this.xrplAcc.makePayment(this.governorAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
-            null,
-            [
-                { type: MemoTypes.CANDIDATE_VOTE, format: MemoFormats.HEX, data: voteBuf.toString('hex').toUpperCase() }
-            ],
-            options.transactionOptions);
-    }
-
-    /**
      * Get proposed candidate info.
      * @param {string} ownerAddress [Optional] Address of the owner.
      * @returns The registered host information object. Returns null is not registered.
@@ -732,6 +800,86 @@ class BaseEvernodeClient {
         }
 
         return null;
+    }
+
+    /**
+     * Withdraw a hook candidate.
+     * @param {*} hashes Hook candidate hashes in hex format, <GOVERNOR_HASH(32)><REGISTRY_HASH(32)><HEARTBEAT_HASH(32)>.
+     * @param {*} shortName Short name for the proposal candidate.
+     * @param {*} options [Optional] transaction options.
+     * @returns Transaction result.
+     */
+    async _propose(hashes, shortName, options = {}) {
+        const hashesBuf = Buffer.from(hashes, 'hex');
+        if (!hashesBuf || hashesBuf.length != 96)
+            throw 'Invalid hashes: Hashes should contain all three Governor, Registry, Heartbeat hook hashes.';
+
+        // Check whether hook hashes exist in the definition.
+        let keylets = [];
+        for (const [i, hook] of EvernodeConstants.HOOKS.entries()) {
+            const index = HookHelpers.getHookDefinitionIndex(hashes.substr(i * 64, 64));
+            const ledgerEntry = await this.xrplApi.getLedgerEntry(index);
+            if (!ledgerEntry)
+                throw `No hook exists with the specified ${hook} hook hash.`;
+            else
+                keylets.push(HookHelpers.getHookDefinitionKeylet(index));
+        }
+
+        const uniqueId = StateHelpers.getNewHookCandidateId(hashesBuf);
+        const memoBuf = Buffer.alloc(CANDIDATE_PROPOSE_MEMO_SIZE);
+        Buffer.from(uniqueId, 'hex').copy(memoBuf, CANDIDATE_PROPOSE_UNIQUE_ID_MEMO_OFFSET);
+        Buffer.from(shortName.substr(0, 20), "utf-8").copy(memoBuf, CANDIDATE_PROPOSE_SHORT_NAME_MEMO_OFFSET);
+        Buffer.from(keylets.join(''), 'hex').copy(memoBuf, CANDIDATE_PROPOSE_KEYLETS_MEMO_OFFSET);
+
+        // Get the proposal fee. Proposal fee is current epochs moment worth of rewards.
+        const proposalFee = EvernodeHelpers.getEpochRewardQuota(this.config.rewardInfo.epoch, this.config.rewardConfiguration.firstEpochRewardQuota)
+
+        return await this.xrplAcc.makePayment(this.governorAddress,
+            proposalFee.toString(),
+            EvernodeConstants.EVR,
+            this.config.evrIssuerAddress,
+            [
+                { type: MemoTypes.CANDIDATE_PROPOSE, format: MemoFormats.HEX, data: hashesBuf.toString('hex').toUpperCase() },
+                { type: MemoTypes.CANDIDATE_PROPOSE_REF, format: MemoFormats.HEX, data: memoBuf.toString('hex').toUpperCase() }
+            ],
+            options.transactionOptions);
+    }
+
+    /**
+     * Withdraw a hook candidate.
+     * @param {string} candidateId Id of the candidate in hex format.
+     * @param {*} options [Optional] transaction options.
+     * @returns Transaction result.
+     */
+    async _withdraw(candidateId, options = {}) {
+        const candidateIdBuf = Buffer.from(candidateId, 'hex');
+        return await this.xrplAcc.makePayment(this.governorAddress,
+            XrplConstants.MIN_XRP_AMOUNT,
+            XrplConstants.XRP,
+            null,
+            [
+                { type: MemoTypes.CANDIDATE_WITHDRAW, format: MemoFormats.HEX, data: candidateIdBuf.toString('hex').toUpperCase() }
+            ],
+            options.transactionOptions);
+    }
+
+    /**
+     * Report dud host for removal.
+     * @param {*} hostAddress Address of the dud host.
+     * @param {*} options [Optional] transaction options.
+     * @returns Transaction result.
+     */
+    async _reportDudHost(hostAddress, options = {}) {
+        const candidateId = StateHelpers.getDudHostCandidateId(hostAddress);
+
+        return await this.xrplAcc.makePayment(this.governorAddress,
+            XrplConstants.MIN_XRP_AMOUNT,
+            XrplConstants.XRP,
+            null,
+            [
+                { type: MemoTypes.DUD_HOST_REPORT, format: MemoFormats.HEX, data: candidateId }
+            ],
+            options.transactionOptions);
     }
 }
 
