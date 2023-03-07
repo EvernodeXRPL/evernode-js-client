@@ -4,6 +4,7 @@ const { EventEmitter } = require('./event-emitter');
 const { DefaultValues } = require('./defaults');
 const { TransactionHelper } = require('./transaction-helper');
 const { XrplApiEvents } = require('./xrpl-common');
+const { XrplAccount } = require('./xrpl-account');
 
 const MAX_PAGE_LIMIT = 400;
 const API_REQ_TYPE = {
@@ -59,19 +60,20 @@ class XrplApi {
         this.#client.on("transaction", async (data) => {
             if (data.validated) {
                 // NFTokenAcceptOffer transactions does not contain a Destination. So we check whether the accepted offer is created by which subscribed account
-                if (data.transaction.TransactionType === 'NFTokenAcceptOffer') {
+                if (data.transaction.TransactionType === 'URITokenBuy') {
                     // We take all the offers created by subscribed accounts in previous ledger until we get the respective offer.
                     for (const subscription of this.#addressSubscriptions) {
-                        const offer = (await this.getNftOffers(subscription.address, { ledger_index: data.ledger_index - 1 }))?.find(o => o.index === (data.transaction.NFTokenSellOffer || data.transaction.NFTokenBuyOffer));
+                        const acc = new XrplAccount(subscription.address, null);
+                        // Here we access the offers that were there in this account based on the given ledger index.
+                        const offers = await acc.getURITokens({ ledger_index: data.ledger_index - 1 });
+                        // Filter out the matching URI token offer for the scenario.
+                        const offer = offers.find(o => o.index === data.transaction.URITokenID && o.Amount);
                         // When we find the respective offer. We populate the destination and offer info and then we break the loop.
                         if (offer) {
                             // We populate some sell offer properties to the transaction to be sent with the event.
                             data.transaction.Destination = subscription.address;
                             // Replace the offer with the found offer object.
-                            if (data.transaction.NFTokenSellOffer)
-                                data.transaction.NFTokenSellOffer = offer;
-                            else if (data.transaction.NFTokenBuyOffer)
-                                data.transaction.NFTokenBuyOffer = offer;
+                            data.transaction.URITokenSellOffer = offer;
                             break;
                         }
                     }
@@ -218,6 +220,11 @@ class XrplApi {
         return resp?.result?.account_data;
     }
 
+    async getServerDefinition() {
+        const resp = (await this.#client.request({ command: 'server_definitions' }));
+        return resp?.result;
+    }
+
     async getAccountObjects(address, options) {
         return this.#requestWithPaging({ command: 'account_objects', account: address, ...options }, API_REQ_TYPE.ACCOUNT_OBJECTS);
     }
@@ -296,7 +303,7 @@ class XrplApi {
     }
 
     async submitMultisigned(tx) {
-        return await this.#client.request({command: 'submit_multisigned', tx_json: tx});
+        return await this.#client.request({ command: 'submit_multisigned', tx_json: tx });
     }
 
     /**
@@ -307,10 +314,10 @@ class XrplApi {
      * @returns A single signed Transaction string which has all Signers from transactions within it.
      */
     multiSign(transactions) {
-        if(transactions.length > 0){
+        if (transactions.length > 0) {
             return xrpl.multisign(transactions);
         } else
-            throw("Transaction list is empty for multi-signing.");
+            throw ("Transaction list is empty for multi-signing.");
     }
 }
 

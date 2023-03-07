@@ -1,12 +1,13 @@
-const { EvernodeConstants } = require('./evernode-common');
+const { EvernodeConstants, URITokenTypes } = require('./evernode-common');
+const { UtilHelpers } = require('./util-helpers');
+const { TransactionHelper } = require('./transaction-helper');
+
 const NFT_PAGE_LEDGER_ENTRY_TYPE_HEX = '0050';
 
 class EvernodeHelpers {
     static async getLeaseOffers(xrplAcc) {
-        const hostNfts = (await xrplAcc.getNfts()).filter(nft => nft.URI.startsWith(EvernodeConstants.LEASE_NFT_PREFIX_HEX));
-        const hostTokenIDs = hostNfts.map(nft => nft.NFTokenID);
-        const nftOffers = (await xrplAcc.getNftOffers())?.filter(offer => (offer.Flags == 1 && hostTokenIDs.includes(offer.NFTokenID))); // Filter only sell offers
-        return nftOffers;
+        const hostUriOffers = (await xrplAcc.getURITokens()).filter(uriToken => this.isValidURI(uriToken.URI, EvernodeConstants.LEASE_TOKEN_PREFIX_HEX) && uriToken.Flags == 1 && uriToken.Amount);
+        return hostUriOffers;
     }
 
     static async getNFTPageAndLocation(nfTokenId, xrplAcc, xrplApi, buffer = true) {
@@ -42,6 +43,15 @@ class EvernodeHelpers {
     static getEpochRewardQuota(epoch, firstEpochRewardQuota) {
         const div = (epoch > 1) ? Math.pow(2, epoch - 1) : 1;
         return firstEpochRewardQuota / div;
+    }
+
+    static isValidURI(uri, pattern, tokenCategory = URITokenTypes.LEASE_URI_TOKEN) {
+        if (tokenCategory === URITokenTypes.LEASE_URI_TOKEN) {
+            uri = TransactionHelper.hexToASCII(uri);
+            const uriBuf = Buffer.from(uri, 'base64');
+            uri = uriBuf.toString('hex').toUpperCase();
+        }
+        return uri.startsWith(pattern);
     }
 }
 

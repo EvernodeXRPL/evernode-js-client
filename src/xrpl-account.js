@@ -457,7 +457,6 @@ class XrplAccount {
         //     details: submission and transaction details, (if signing success)
         //     error: Any error that prevents submission.
         // }
-
         return new Promise(async (resolve, reject) => {
 
             // Attach tx options to the transaction.
@@ -465,7 +464,8 @@ class XrplAccount {
                 LastLedgerSequence: options.maxLedgerIndex || (this.xrplApi.ledgerIndex + XrplConstants.MAX_LEDGER_OFFSET),
                 Sequence: options.sequence || await this.getSequence(),
                 SigningPubKey: '', // This field is required for fee calculation.
-                Fee: '0' // This field is required for fee calculation.
+                Fee: '0', // This field is required for fee calculation.
+                NetworkID: DefaultValues.networkID
             }
             Object.assign(tx, txOptions);
             const txnBlob = xrplCodec.encode(tx);
@@ -556,6 +556,83 @@ class XrplAccount {
      */
     sign(tx, isMultiSign = false) {
         return this.wallet.sign(tx, isMultiSign);
+    }
+
+    // URIToken related methods
+
+    mintURIToken(uri, digest = null, flags = {}, options = {}) {
+        const tx = {
+            Account: this.address,
+            TransactionType: "URITokenMint",
+            URI: flags.isHexUri ? uri : TransactionHelper.asciiToHex(uri).toUpperCase(),
+            Flags: flags.isBurnable ? 1 : 0
+        }
+
+        if (digest)
+            tx.Digest = digest;
+
+        return this.#submitAndVerifyTransaction(tx, options);
+    }
+
+    burnURIToken(uriTokenID, options = {}) {
+        const tx = {
+            Account: this.address,
+            TransactionType: "URITokenBurn",
+            URITokenID: uriTokenID
+        }
+        return this.#submitAndVerifyTransaction(tx, options);
+    }
+
+    sellURIToken(uriTokenID, amount, currency, issuer = null, toAddr = null, memos = null, options = {}) {
+        const amountObj = makeAmountObject(amount, currency, issuer);
+
+        const tx = {
+            Account: this.address,
+            TransactionType: "URITokenCreateSellOffer",
+            Amount: amountObj,
+            URITokenID: uriTokenID
+        };
+
+        if (toAddr)
+            tx.Destination = toAddr;
+
+        if (memos)
+            tx.Memos = TransactionHelper.formatMemos(memos);
+
+        return this.#submitAndVerifyTransaction(tx, options);
+    }
+
+    buyURIToken(uriToken, memos = null, options = {}) {
+        const tx = {
+            Account: this.address,
+            TransactionType: "URITokenBuy",
+            Amount: uriToken.Amount,
+            URITokenID: uriToken.index
+        }
+
+        if (memos)
+            tx.Memos = TransactionHelper.formatMemos(memos);
+
+        return this.#submitAndVerifyTransaction(tx, options);
+    }
+
+    async clearURITokenOffer(uriTokenID, options = {}) {
+        return this.#submitAndVerifyTransaction({
+            Account: this.address,
+            TransactionType: "URITokenCancelSellOffer",
+            URITokenID: uriTokenID
+        }, options);
+    }
+
+    async getURITokens(options) {
+        const obj = await this.getAccountObjects(options);
+        return obj.filter(t => t.LedgerEntryType == 'URIToken');
+    }
+
+    async getURITokenByUri(uri, isHexUri = false) {
+        const tokens = await this.getURITokens();
+        const hexUri = isHexUri ? uri : TransactionHelper.asciiToHex(uri).toUpperCase();
+        return tokens.find(t => t.URI == hexUri);
     }
 }
 
