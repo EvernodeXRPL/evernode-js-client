@@ -10,7 +10,6 @@ const { EventEmitter } = require('../event-emitter');
 const { UtilHelpers } = require('../util-helpers');
 const { FirestoreHandler } = require('../firestore/firestore-handler');
 const { StateHelpers } = require('../state-helpers');
-const { EvernodeHelpers } = require('../evernode-helpers');
 
 class BaseEvernodeClient {
 
@@ -36,9 +35,8 @@ class BaseEvernodeClient {
         this.#firestoreHandler = new FirestoreHandler()
 
         this.xrplAcc.on(XrplApiEvents.PAYMENT, (tx, error) => this.#handleEvernodeEvent(tx, error));
-        this.xrplAcc.on(XrplApiEvents.NFT_OFFER_CREATE, (tx, error) => this.#handleEvernodeEvent(tx, error));
-        this.xrplAcc.on(XrplApiEvents.NFT_OFFER_ACCEPT, (tx, error) => this.#handleEvernodeEvent(tx, error));
-
+        this.xrplAcc.on(XrplApiEvents.URI_TOKEN_BUY, (tx, error) => this.#handleEvernodeEvent(tx, error));
+        this.xrplAcc.on(XrplApiEvents.URI_TOKEN_CREATE_SELL_OFFER, (tx, error) => this.#handleEvernodeEvent(tx, error));
     }
 
     /**
@@ -232,7 +230,7 @@ class BaseEvernodeClient {
      * @returns The event object in the format {name: '', data: {}}. Returns null if not handled. Note: You need to deserialize memos before passing the transaction to this function.
      */
     async extractEvernodeEvent(tx) {
-        if (tx.TransactionType === 'NFTokenAcceptOffer' && tx.NFTokenSellOffer && tx.Memos.length >= 1 &&
+        if (tx.TransactionType === 'URITokenBuy' && tx.Memos.length >= 1 &&
             tx.Memos[0].type === MemoTypes.ACQUIRE_LEASE && tx.Memos[0].format === MemoFormats.BASE64 && tx.Memos[0].data) {
 
             // If our account is the destination host account, then decrypt the payload.
@@ -250,24 +248,11 @@ class BaseEvernodeClient {
                 data: {
                     transaction: tx,
                     host: tx.Destination,
-                    nfTokenId: tx.NFTokenSellOffer?.NFTokenID,
-                    leaseAmount: tx.NFTokenSellOffer?.Amount?.value,
+                    uriTokenId: tx.URITokenSellOffer?.index,
+                    leaseAmount: tx.URITokenSellOffer?.Amount?.value,
                     acquireRefId: tx.hash,
                     tenant: tx.Account,
                     payload: payload
-                }
-            }
-        }
-
-        else if (tx.TransactionType === 'NFTokenAcceptOffer' && tx.NFTokenBuyOffer && tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.HOST_POST_DEREG && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
-            return {
-                name: EvernodeEvents.HostPostDeregistered,
-                data: {
-                    transaction: tx,
-                    nfTokenId: tx.NFTokenBuyOffer.NFTokenID,
-                    flags: tx.Flags,
-                    hash: tx.hash
                 }
             }
         }
@@ -351,7 +336,7 @@ class BaseEvernodeClient {
         else if (tx.Memos.length >= 1 &&
             tx.Memos[0].type === MemoTypes.EXTEND_LEASE && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
 
-            let nfTokenId = tx.Memos[0].data;
+            let uriTokenId = tx.Memos[0].data;
 
             return {
                 name: EvernodeEvents.ExtendLease,
@@ -361,7 +346,7 @@ class BaseEvernodeClient {
                     tenant: tx.Account,
                     currency: tx.Amount.currency,
                     payment: parseFloat(tx.Amount.value),
-                    nfTokenId: nfTokenId
+                    uriTokenId: uriTokenId
                 }
             }
         }
@@ -466,7 +451,7 @@ class BaseEvernodeClient {
     /**
      * Get the registered host information.
      * @param {string} hostAddress [Optional] Address of the host.
-     * @returns The registered host information object. Returns null is not registered.
+     * @returns The registered host information object. Returns null if not registered.
      */
     async getHostInfo(hostAddress = this.xrplAcc.address) {
         try {
@@ -481,14 +466,14 @@ class BaseEvernodeClient {
                     (addrStateDecoded.lastHeartbeatIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
                     (addrStateDecoded.lastHeartbeatIndex > 0))
 
-                const nftIdStatekey = StateHelpers.generateTokenIdStateKey(addrStateDecoded.nfTokenId);
-                const nftIdStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, nftIdStatekey);
-                const nftIdLedgerEntry = await this.xrplApi.getLedgerEntry(nftIdStateIndex);
+                const tokenIdStatekey = StateHelpers.generateTokenIdStateKey(addrStateDecoded.uriTokenId);
+                const tokenIdStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, tokenIdStatekey);
+                const tokenIdLedgerEntry = await this.xrplApi.getLedgerEntry(tokenIdStateIndex);
 
-                const nftIdStateData = nftIdLedgerEntry?.HookStateData;
-                if (nftIdStateData) {
-                    const nftIdStateDecoded = StateHelpers.decodeTokenIdState(Buffer.from(nftIdStateData, 'hex'));
-                    return { ...addrStateDecoded, ...nftIdStateDecoded };
+                const tokenIdStateData = tokenIdLedgerEntry?.HookStateData;
+                if (tokenIdStateData) {
+                    const tokenIdStateDecoded = StateHelpers.decodeTokenIdState(Buffer.from(tokenIdStateData, 'hex'));
+                    return { ...addrStateDecoded, ...tokenIdStateDecoded };
                 }
             }
         }
@@ -583,26 +568,17 @@ class BaseEvernodeClient {
 
         // To obtain registration NFT Page Keylet and index.
         const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
-        const regNFT = (await hostAcc.getNfts()).find(n => n.URI.startsWith(EvernodeConstants.NFT_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
-        if (regNFT) {
-            // Check whether the token was actually issued from Evernode registry contract.
-            const issuerHex = regNFT.NFTokenID.substr(8, 40);
-            const issuerAddr = codec.encodeAccountID(Buffer.from(issuerHex, 'hex'));
-            if (issuerAddr == this.config.registryAddress) {
-                const nftPageDataBuf = await EvernodeHelpers.getNFTPageAndLocation(regNFT.NFTokenID, hostAcc, this.xrplApi);
-
-                await this.xrplAcc.makePayment(this.config.registryAddress,
-                    XrplConstants.MIN_XRP_AMOUNT,
-                    XrplConstants.XRP,
-                    null,
-                    [
-                        { type: MemoTypes.DEAD_HOST_PRUNE, format: MemoFormats.HEX, data: memoData.toString('hex') },
-                        { type: MemoTypes.HOST_REGISTRY_REF, format: MemoFormats.HEX, data: nftPageDataBuf.toString('hex') }
-                    ]);
-            } else
-                throw "Invalid Registration NFT."
+        const regUriToken = (await hostAcc.getURITokens()).find(n => n.URI.startsWith(EvernodeConstants.TOKEN_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
+        if (regUriToken) {
+            await this.xrplAcc.makePayment(this.config.registryAddress,
+                XrplConstants.MIN_XRP_AMOUNT,
+                XrplConstants.XRP,
+                null,
+                [
+                    { type: MemoTypes.DEAD_HOST_PRUNE, format: MemoFormats.HEX, data: memoData.toString('hex') }
+                ]);
         } else
-            throw "No Registration NFT was found for the Host account."
+            throw "No Registration URI token was found for the Host account."
 
     }
 }

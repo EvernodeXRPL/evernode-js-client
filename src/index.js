@@ -15,6 +15,8 @@ const { StateHelpers } = require('./state-helpers');
 const { UtilHelpers } = require('./util-helpers');
 const { TransactionHelper } = require('./transaction-helper');
 const { EncryptionHelper } = require('./encryption-helper');
+const { EvernodeHelpers } = require('./evernode-helpers');
+
 
 module.exports = {
     RegistryClient,
@@ -42,5 +44,6 @@ module.exports = {
     HookStateKeys,
     MemoTypes,
     HookTypes,
-    HookClientFactory
+    HookClientFactory,
+    EvernodeHelpers
 }
