@@ -5,7 +5,6 @@ const RegistryEvents = {
     HostRegistered: EvernodeEvents.HostRegistered,
     HostDeregistered: EvernodeEvents.HostDeregistered,
     HostRegUpdated: EvernodeEvents.HostRegUpdated,
-    HostPostDeregistered: EvernodeEvents.HostPostDeregistered,
     DeadHostPrune: EvernodeEvents.DeadHostPrune,
     HostTransfer: EvernodeEvents.HostTransfer,
     HostRebate: EvernodeEvents.HostRebate

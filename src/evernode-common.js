@@ -118,7 +118,6 @@ const HookStateKeys = {
 const EvernodeEvents = {
     HostRegistered: "HostRegistered",
     HostDeregistered: "HostDeregistered",
-    HostPostDeregistered: "HostPostDeregistered",
     HostTransfer: "HostTransfer",
     AcquireLease: "AcquireLease",
     AcquireSuccess: "AcquireSuccess",

@@ -2,24 +2,24 @@
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 const codec = require('ripple-address-codec');
 
-const evrIssuerAddress = "rszpt6nQmGZsXD4MoYVCbfCwYFPgbcq2Md";
-const registryAddress = "rBjgZ7uxUVtopfLE7ou1jPdPTxU3gRCeYp";
-const governorAddress = 'r3DzWozd3CCvkBjCFzsvRNBLcYD11hoJzG';
-const heartbeatAddress = 'rnaJfKxnjcNk88fKZ4SM59qqz3xpUn2Jwp';
-const hostAddress = "rESDJA9HFfd6SUEwtQjhStD5ZhPGPt4nMJ";
-const hostSecret = "shmTU3sMshnrCSTm7BGkKutD4p2AC";
-const foundationAddress = "r4L7Z8TnwLyQcAqAXP9GzyL9dsHA8tGWSo";
-const foundationSecret = "snjCbzpwRojsMwiD2SJxjG3bTy7QM";
-const tenantAddress = "r41xYGU6FHJ4vKiXPBm1BGrijL6zjcdp5D";
-const tenantSecret = "shXiekLBdkxpv5hFBDEmUFqDUjaKU";
+const evrIssuerAddress = "rahQthTVHH9SfX7LwiZjhL5bY6Y9cnMug7";
+const registryAddress = "r49LVwEyojf3yKLDD9JQeJEoAGoKUYqgPT";
+const governorAddress = 'rKp2PsX3Qajq26PFtcm3pbxicGdkx4UjkT';
+const heartbeatAddress = 'rhpEaY65fWSbqYzNieXY4xR9GS1441qhzY';
+const hostAddress = "rJrM3QK4NDW4iPPxB5MujhcknbVYDW6R2d";
+const hostSecret = "sp8rAVsJP97hN2GzQJq5srUCZdfgW";
+const foundationAddress = "rpYFK4uC2iqQsCPbH2foFjCB4c654wFXVB";
+const foundationSecret = "spjD8ivyxvdxZSWnLBtgsMcwdJRun";
+const tenantAddress = "r3vbdktYDxVSe7K1oo2McKeBJhQng3uFeH";
+const tenantSecret = "shjBr5yFDNzyUkBiFXjexFYiAsPBS";
 const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
 const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
-const transfereeAddress = 'rMukZHU1BGWbEkdbXZtF3Tf6Epf2Pj1DRA';
-const transfereeSecret = 'ss9ZB8ncuMh6KLtFdZBp9gMv9rRPN';
+const transfereeAddress = 'rsPxbXNo5XnBpnLZ3yu3ZufCZiA22hS5R7';
+const transfereeSecret = 'snXTbrMTJ64MALdMv56b2p7FoBQTw';
 const multiSigninerAddress = 'rsrpCr5j5phA58uQy9Ha3StMPBmSrXbVx6';
 const multiSignerSecret = 'shYrpNBRgnej2xmBhxze75MNLfTwq';
-const dudHostAddress = "rBDjYjqVdqXCxeyTHPDRfBN3HiySjcSSdj";
-const dudHostSecret = "sn6RrMDTFvL5XGR6GoTNR3ZdnkMFj";
+const dudHostAddress = "rGTGBxN2ABeLjxveHXFCU5V8uqfoDEUJLB";
+const dudHostSecret = "shCGdyvmpj3bJPFgYWLt8N55Cgf8S";
 
 
 const signerList = [
@@ -38,7 +38,7 @@ const signerQuorum = 1;
 
 const tosHash = "757A0237B44D8B2BBB04AE2BAD5813858E0AECD2F0B217075E27E0630BA74314";
 
-const hookCandidates = "35A04AB81692C2C1A618D4B9DB0D22F7FFA8DAD202D4A38F573EC3312FE5976D071948DB5B9B92331104C51E5062694E28F6B192A89D8CB8B80A2A7424829005D97647A442742D0ED69F65832B3BD7F002F35E3405B3406FCAC83634B06B8EC1";
+const hookCandidates = "7E8095F5E8537421EE596D3E7C540B54904F6199EF9FC14D467A615A38C01A78F5FE2B8FB7969F863A698AD10473CD5D27ADBBB418717AAE042123BE38818850DFD7A95B6FE6C439E4A204F29DFAC02B5F82463DDD366DBDB65C6B9EDD643BDA";
 
 const clients = [];
 

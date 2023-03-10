@@ -331,10 +331,13 @@ class HostClient extends BaseEvernodeClient {
             return res;
         }
         catch (e) {
-            // If this is a vote validation error, Try heartbeat again without votes.
-            if (e?.hookExecutionResult?.find(r => r.message.includes(VOTE_VALIDATION_ERR))) {
-                console.log('Vote validation error occurred, Retrying without votes..')
-                return await this.heartbeat({}, options);
+            const validationErr = e?.hookExecutionResult?.find(r => r.message.includes(VOTE_VALIDATION_ERR));
+            if (validationErr) {
+                console.log('Vote validation error occurred.')
+                throw {
+                    code: VOTE_VALIDATION_ERR,
+                    error: validationErr.message
+                }
             }
             throw e;
         }
