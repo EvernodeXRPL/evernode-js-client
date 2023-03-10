@@ -22,6 +22,13 @@ const EvernodeConstants = {
         Piloted: 1,
         CoPiloted: 2,
         AutoPiloted: 3
+    },
+    CandidateStatuses: {
+        CANDIDATE_REJECTED: 0,
+        CANDIDATE_SUPPORTED: 1,
+        CANDIDATE_ELECTED: 2,
+        CANDIDATE_VETOED: 3,
+        CANDIDATE_EXPIRED: 4
     }
 }
 
@@ -138,6 +145,7 @@ const EvernodeEvents = {
     FoundationVoted: "FoundationVoted",
     DudHostReported: "DudHostReported",
     DudHostRemoved: "DudHostRemoved",
+    DudHostStatusChanged: "DudHostStatusChanged",
     FallbackToPiloted: "FallbackToPiloted",
     NewHookStatusChanged: "NewHookStatusChanged"
 }

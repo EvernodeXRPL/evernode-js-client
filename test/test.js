@@ -2,14 +2,14 @@
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 const codec = require('ripple-address-codec');
 
-const evrIssuerAddress = "rahQthTVHH9SfX7LwiZjhL5bY6Y9cnMug7";
-const registryAddress = "r49LVwEyojf3yKLDD9JQeJEoAGoKUYqgPT";
-const governorAddress = 'rKp2PsX3Qajq26PFtcm3pbxicGdkx4UjkT';
-const heartbeatAddress = 'rhpEaY65fWSbqYzNieXY4xR9GS1441qhzY';
-const hostAddress = "rJrM3QK4NDW4iPPxB5MujhcknbVYDW6R2d";
-const hostSecret = "sp8rAVsJP97hN2GzQJq5srUCZdfgW";
-const foundationAddress = "rpYFK4uC2iqQsCPbH2foFjCB4c654wFXVB";
-const foundationSecret = "spjD8ivyxvdxZSWnLBtgsMcwdJRun";
+const evrIssuerAddress = "rfiSAWGDEWPUdsmAjChiLZJuM2NraFcG5S";
+const registryAddress = "rUa1GXRBRWE54iR3DpW3GpZWwKuLUb1okM";
+const governorAddress = 'rL94TjhDFsTcBh18igHBpHD6mQZVbcenWY';
+const heartbeatAddress = 'rncWTCSuTACWEia9Nad5ggj7KUnFmE8S3y';
+const hostAddress = "rGzeVppW7oNLLuWz9K4gCU96DgB3XkfrFR";
+const hostSecret = "sh66inwX1o2AaD7qbdbdVxieJVufU";
+const foundationAddress = "rJFMj1ozDyfcNgGBQvCuChYeQThXJBRE3J";
+const foundationSecret = "snhEP6aDMSd9RDudKQtG9fk5jfBUJ";
 const tenantAddress = "r3vbdktYDxVSe7K1oo2McKeBJhQng3uFeH";
 const tenantSecret = "shjBr5yFDNzyUkBiFXjexFYiAsPBS";
 const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
@@ -138,12 +138,16 @@ async function app() {
             // () => getCandidateInfo(),
             // () => foundationVote(),
             // () => reportDudHost(),
+            // () => withdrawDudHost(),
+            // () => getDudHostVoteInfo(),
             // () => foundationReportDudHost(),
+            // () => foundationWithdrawDudHost(),
             // () => voteDudHost(),
             // () => foundationVoteDudHost(),
+            // () => getPilotedModeVoteInfo(),
             // () => votePilotedMode(),
             // () => foundationVotePilotedMode(),
-            // () => changeGovernanceMode(),
+            // () => changeGovernanceMode(evernode.EvernodeConstants.GovernanceModes.AutoPiloted),
             // () => makePayment()
 
         ];
@@ -231,7 +235,7 @@ async function registerHost(address = hostAddress, secret = hostSecret) {
     }
 
     console.log("Register...");
-    const instanceCount = 2;
+    const instanceCount = 1;
     await host.register("AU", 10000, 512, 1024, instanceCount, 'Intel', 10, 10, "Test desctiption", "testemail@gmail.com", 2);
 
     console.log("Lease Offer...");
@@ -519,6 +523,8 @@ async function reportDudHost() {
     await registerHost(dudHostAddress, dudHostSecret).catch(console.error);
 
     const client = await getHostClient(hostAddress, hostSecret);
+    // First epoch reward quota is considered.
+    await fundAccount(client.xrplAcc, "5120");
 
     console.log(`-----------Reporting dud host`);
     await client.reportDudHost(dudHostAddress);
@@ -535,9 +541,39 @@ async function foundationReportDudHost() {
     await client.reportDudHost(dudHostAddress);
 }
 
+async function withdrawDudHost() {
+    const host = await getHostClient(hostAddress, hostSecret);
+    const uniqueId = evernode.StateHelpers.getDudHostCandidateId(dudHostAddress);
+
+    console.log(`-----------Withdrawing dud host candidate`);
+    await host.withdraw(uniqueId);
+}
+
+async function foundationWithdrawDudHost() {
+    const client = await getFoundationClient(foundationAddress, foundationSecret);
+    const uniqueId = evernode.StateHelpers.getDudHostCandidateId(dudHostAddress);
+
+    console.log(`-----------Foundation Withdrawing dud host candidate`);
+    await client.withdraw(uniqueId);
+}
+
 async function getCandidateInfo(owner = hostAddress) {
     const host = await getHostClient(hostAddress, hostSecret);
     const candidateInfo = await host.getCandidateInfo(owner);
+    console.log(candidateInfo);
+    return candidateInfo;
+}
+
+async function getDudHostVoteInfo(dudHost = dudHostAddress) {
+    const host = await getHostClient(dudHost);
+    const candidateInfo = await host.getDudHostVoteInfo();
+    console.log(candidateInfo);
+    return candidateInfo;
+}
+
+async function getPilotedModeVoteInfo() {
+    const host = await getHostClient(hostAddress, hostSecret);
+    const candidateInfo = await host.getPilotedModeVoteInfo();
     console.log(candidateInfo);
     return candidateInfo;
 }

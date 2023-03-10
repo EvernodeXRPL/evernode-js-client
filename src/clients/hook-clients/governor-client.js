@@ -11,6 +11,7 @@ const GovernorEvents = {
     FoundationVoted: EvernodeEvents.FoundationVoted,
     DudHostReported: EvernodeEvents.DudHostReported,
     DudHostRemoved: EvernodeEvents.DudHostRemoved,
+    DudHostStatusChanged: EvernodeEvents.DudHostStatusChanged,
     FallbackToPiloted: EvernodeEvents.FallbackToPiloted,
     NewHookStatusChanged: EvernodeEvents.NewHookStatusChanged
 }
