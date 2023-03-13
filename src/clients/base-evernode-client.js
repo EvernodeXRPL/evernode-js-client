@@ -489,13 +489,14 @@ class BaseEvernodeClient {
         }
         else if (tx.Memos.length >= 1 &&
             tx.Memos[0].type === MemoTypes.CANDIDATE_STATUS_CHANGE && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
-            const candidateId = tx.Memos[0].data.substr(0, 64);
+            const memoBuf = Buffer.from(tx.Memos[0].data, 'hex');
+            const candidateId = memoBuf.slice(0, 32).toString('hex');
             const candidateType = StateHelpers.getCandidateType(candidateId);
 
             switch (candidateType) {
                 case (EvernodeConstants.CandidateTypes.DudHost):
                     return {
-                        name: EvernodeEvents.DudHostRemoved,
+                        name: memoBuf.readUInt8(32) === EvernodeConstants.CandidateStatuses.CANDIDATE_ELECTED ? EvernodeEvents.DudHostRemoved : EvernodeEvents.DudHostStatusChanged,
                         data: {
                             transaction: tx,
                             candidateId: candidateId,
@@ -748,7 +749,7 @@ class BaseEvernodeClient {
     /**
      * Get proposed candidate info.
      * @param {string} ownerAddress [Optional] Address of the owner.
-     * @returns The registered host information object. Returns null is not registered.
+     * @returns The candidate information. Returns null if no candidate.
      */
     async getCandidateInfo(ownerAddress = this.xrplAcc.address) {
         try {
@@ -768,6 +769,59 @@ class BaseEvernodeClient {
                     const idStateDecoded = StateHelpers.decodeCandidateIdState(Buffer.from(idStateData, 'hex'));
                     return { ...ownerStateDecoded, ...idStateDecoded };
                 }
+            }
+        }
+        catch (e) {
+            // If the exception is entryNotFound from Rippled there's no entry for the host, So return null.
+            if (e?.data?.error !== 'entryNotFound')
+                throw e;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get reported dud host info.
+     * @param {string} hostAddress [Optional] Address of the dud host.
+     * @returns The dud host candidate information. Returns null if no candidate.
+     */
+    async getDudHostVoteInfo(hostAddress = this.xrplAcc.address) {
+        try {
+            const candidateId = StateHelpers.getDudHostCandidateId(hostAddress);
+            const idStateKey = StateHelpers.generateCandidateIdStateKey(candidateId);
+            const idStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, idStateKey);
+            const idLedgerEntry = await this.xrplApi.getLedgerEntry(idStateIndex);
+
+            const idStateData = idLedgerEntry?.HookStateData;
+            if (idStateData) {
+                const idStateDecoded = StateHelpers.decodeCandidateIdState(Buffer.from(idStateData, 'hex'));
+                return idStateDecoded;
+            }
+        }
+        catch (e) {
+            // If the exception is entryNotFound from Rippled there's no entry for the host, So return null.
+            if (e?.data?.error !== 'entryNotFound')
+                throw e;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get piloted mode vote info.
+     * @returns The piloted mode candidate information. Returns null if no candidate.
+     */
+    async getPilotedModeVoteInfo() {
+        try {
+            const candidateId = StateHelpers.getPilotedModeCandidateId();
+            const idStateKey = StateHelpers.generateCandidateIdStateKey(candidateId);
+            const idStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, idStateKey);
+            const idLedgerEntry = await this.xrplApi.getLedgerEntry(idStateIndex);
+
+            const idStateData = idLedgerEntry?.HookStateData;
+            if (idStateData) {
+                const idStateDecoded = StateHelpers.decodeCandidateIdState(Buffer.from(idStateData, 'hex'));
+                return idStateDecoded;
             }
         }
         catch (e) {
@@ -809,7 +863,7 @@ class BaseEvernodeClient {
         Buffer.from(keylets.join(''), 'hex').copy(memoBuf, CANDIDATE_PROPOSE_KEYLETS_MEMO_OFFSET);
 
         // Get the proposal fee. Proposal fee is current epochs moment worth of rewards.
-        const proposalFee = EvernodeHelpers.getEpochRewardQuota(this.config.rewardInfo.epoch, this.config.rewardConfiguration.firstEpochRewardQuota)
+        const proposalFee = EvernodeHelpers.getEpochRewardQuota(this.config.rewardInfo.epoch, this.config.rewardConfiguration.firstEpochRewardQuota);
 
         return await this.xrplAcc.makePayment(this.governorAddress,
             proposalFee.toString(),
@@ -849,10 +903,13 @@ class BaseEvernodeClient {
     async _reportDudHost(hostAddress, options = {}) {
         const candidateId = StateHelpers.getDudHostCandidateId(hostAddress);
 
+        // Get the proposal fee. Proposal fee is 25% of current epochs moment worth of rewards.
+        const proposalFee = (EvernodeHelpers.getEpochRewardQuota(this.config.rewardInfo.epoch, this.config.rewardConfiguration.firstEpochRewardQuota) / 4);
+
         return await this.xrplAcc.makePayment(this.governorAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
-            null,
+            proposalFee.toString(),
+            EvernodeConstants.EVR,
+            this.config.evrIssuerAddress,
             [
                 { type: MemoTypes.DUD_HOST_REPORT, format: MemoFormats.HEX, data: candidateId }
             ],

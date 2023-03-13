@@ -103,14 +103,6 @@ const TRANSFER_STATES = {
     HAS_A_TRANSFER: 1
 }
 
-const CANDIDATE_STATUSES = {
-    CANDIDATE_REJECTED: 0,
-    CANDIDATE_SUPPORTED: 1,
-    CANDIDATE_ELECTED: 2,
-    CANDIDATE_VETOED: 3,
-    CANDIDATE_EXPIRED: 4
-}
-
 const EVERNODE_PREFIX = 'EVR';
 const HOST_ADDR_KEY_ZERO_COUNT = 8;
 const TRANSFEREE_ADDR_KEY_ZERO_COUNT = 8;
@@ -203,16 +195,16 @@ class StateHelpers {
     static decodeCandidateIdState(stateDataBuf) {
         let status = '';
         switch (stateDataBuf.readUInt8(CANDIDATE_STATUS_OFFSET)) {
-            case CANDIDATE_STATUSES.CANDIDATE_SUPPORTED:
+            case EvernodeConstants.CandidateStatuses.CANDIDATE_SUPPORTED:
                 status = 'supported';
                 break;
-            case CANDIDATE_STATUSES.CANDIDATE_ELECTED:
+            case EvernodeConstants.CandidateStatuses.CANDIDATE_ELECTED:
                 status = 'elected';
                 break;
-            case CANDIDATE_STATUSES.CANDIDATE_VETOED:
+            case EvernodeConstants.CandidateStatuses.CANDIDATE_VETOED:
                 status = 'vetoed';
                 break;
-            case CANDIDATE_STATUSES.CANDIDATE_EXPIRED:
+            case EvernodeConstants.CandidateStatuses.CANDIDATE_EXPIRED:
                 status = 'expired';
                 break;
             default:
@@ -225,12 +217,12 @@ class StateHelpers {
             index: stateDataBuf.readUInt32BE(CANDIDATE_IDX_OFFSET),
             shortName: stateDataBuf.slice(CANDIDATE_SHORT_NAME_OFFSET, CANDIDATE_CREATED_TIMESTAMP_OFFSET).toString().replace(/\x00+$/, ''), // Remove trailing \x00 characters.
             createdTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_CREATED_TIMESTAMP_OFFSET)),
-            proposalFee: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_PROPOSAL_FEE_OFFSET)),
+            proposalFee: XflHelpers.toString(stateDataBuf.readBigInt64BE(CANDIDATE_PROPOSAL_FEE_OFFSET)),
             positiveVoteCount: stateDataBuf.readUInt32BE(CANDIDATE_POSITIVE_VOTE_COUNT_OFFSET),
             lastVoteTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_LAST_VOTE_TIMESTAMP_OFFSET)),
             status: status,
             statusChangeTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_STATUS_CHANGE_TIMESTAMP_OFFSET)),
-            foundationVoteStatus: stateDataBuf.readUInt8(CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET) === CANDIDATE_STATUSES.CANDIDATE_SUPPORTED ? 'supported' : 'rejected'
+            foundationVoteStatus: stateDataBuf.readUInt8(CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET) === EvernodeConstants.CandidateStatuses.CANDIDATE_SUPPORTED ? 'supported' : 'rejected'
         }
     }
 

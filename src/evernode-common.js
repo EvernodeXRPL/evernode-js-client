@@ -22,6 +22,13 @@ const EvernodeConstants = {
         Piloted: 1,
         CoPiloted: 2,
         AutoPiloted: 3
+    },
+    CandidateStatuses: {
+        CANDIDATE_REJECTED: 0,
+        CANDIDATE_SUPPORTED: 1,
+        CANDIDATE_ELECTED: 2,
+        CANDIDATE_VETOED: 3,
+        CANDIDATE_EXPIRED: 4
     }
 }
 
@@ -34,7 +41,6 @@ const MemoTypes = {
     HOST_DEREG: 'evnHostDereg',
     HOST_UPDATE_INFO: 'evnHostUpdateReg',
     HEARTBEAT: 'evnHeartbeat',
-    HOST_POST_DEREG: 'evnHostPostDereg',
     HOST_TRANSFER: 'evnTransfer',
     EXTEND_LEASE: 'evnExtendLease',
     EXTEND_SUCCESS: 'evnExtendSuccess',
@@ -45,10 +51,9 @@ const MemoTypes = {
     REFUND_REF: 'evnRefundRef',
     DEAD_HOST_PRUNE: 'evnDeadHostPrune',
     HOST_REBATE: 'evnHostRebate',
-    HOST_REGISTRY_REF: 'evnHostRegistryRef',
     CANDIDATE_PROPOSE: 'evnCandidatePropose',
     CANDIDATE_PROPOSE_REF: 'evnCandidateProposeRef',
-    CANDIDATE_WITHDRAW: "evnCandidateWithdraw",
+    CANDIDATE_WITHDRAW: 'evnCandidateWithdraw',
     CANDIDATE_VOTE: 'evnCandidateVote',
     CANDIDATE_STATUS_CHANGE: 'evnCandidateStatusChange',
     DUD_HOST_REPORT: 'evnDudHostReport',
@@ -138,6 +143,7 @@ const EvernodeEvents = {
     FoundationVoted: "FoundationVoted",
     DudHostReported: "DudHostReported",
     DudHostRemoved: "DudHostRemoved",
+    DudHostStatusChanged: "DudHostStatusChanged",
     FallbackToPiloted: "FallbackToPiloted",
     NewHookStatusChanged: "NewHookStatusChanged"
 }
