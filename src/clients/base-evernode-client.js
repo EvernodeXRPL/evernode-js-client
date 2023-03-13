@@ -808,7 +808,7 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get reported dud host info.
+     * Get piloted mode vote info.
      * @returns The piloted mode candidate information. Returns null if no candidate.
      */
     async getPilotedModeVoteInfo() {
