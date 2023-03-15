@@ -41,6 +41,7 @@ const FOUNDATION_LAST_VOTED_TIMESTAMP_OFFSET = 21;
 const ELECTED_PROPOSAL_UNIQUE_ID_OFFSET = 29;
 const PROPOSAL_ELECTED_TIMESTAMP_OFFSET = 61;
 const UPDATED_HOOK_COUNT_OFFSET = 69;
+const FOUNDATION_SUPPORT_VOTE_FLAG_OFFSET = 70;
 
 const HOST_TOKEN_ID_OFFSET = 0;
 const HOST_COUNTRY_CODE_OFFSET = 32;
@@ -56,6 +57,7 @@ const HOST_REG_TIMESTAMP_OFFSET = 103;
 const HOST_TRANSFER_FLAG_OFFSET = 111;
 const HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET = 112;
 const HOST_LAST_VOTE_TIMESTAMP_OFFSET = 116;
+const HOST_SUPPORT_VOTE_FLAG_OFFSET = 124;
 
 const HOST_ADDRESS_OFFSET = 0;
 const HOST_CPU_MODEL_NAME_OFFSET = 20;
@@ -146,9 +148,10 @@ class StateHelpers {
             activeInstances: stateDataBuf.readUInt32BE(HOST_ACT_INS_COUNT_OFFSET),
             lastHeartbeatIndex: Number(stateDataBuf.readBigUInt64BE(HOST_HEARTBEAT_TIMESTAMP_OFFSET)),
             version: `${stateDataBuf.readUInt8(HOST_VERSION_OFFSET)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 1)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 2)}`,
-            isATransferer: (stateDataBuf.length > HOST_TRANSFER_FLAG_OFFSET && (stateDataBuf.readUInt8(HOST_TRANSFER_FLAG_OFFSET) === PENDING_TRANSFER)) ? TRANSFER_STATES.HAS_A_TRANSFER : TRANSFER_STATES.NO_TRANSFER,
-            lastVoteCandidateIdx: stateDataBuf.length > HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET ? stateDataBuf.readUInt32BE(HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET) : 0,
-            lastVoteTimestamp: stateDataBuf.length > HOST_LAST_VOTE_TIMESTAMP_OFFSET ? Number(stateDataBuf.readBigUInt64BE(HOST_LAST_VOTE_TIMESTAMP_OFFSET)) : 0,
+            isATransferer: (stateDataBuf.readUInt8(HOST_TRANSFER_FLAG_OFFSET) === PENDING_TRANSFER) ? TRANSFER_STATES.HAS_A_TRANSFER : TRANSFER_STATES.NO_TRANSFER,
+            lastVoteCandidateIdx: stateDataBuf.readUInt32BE(HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET),
+            lastVoteTimestamp: Number(stateDataBuf.readBigUInt64BE(HOST_LAST_VOTE_TIMESTAMP_OFFSET)),
+            supportVoteSent: stateDataBuf.readUInt8(HOST_SUPPORT_VOTE_FLAG_OFFSET)
         }
         if (stateDataBuf.length > HOST_REG_TIMESTAMP_OFFSET)
             data.registrationTimestamp = Number(stateDataBuf.readBigUInt64BE(HOST_REG_TIMESTAMP_OFFSET));
@@ -164,9 +167,7 @@ class StateHelpers {
             cpuMicrosec: stateDataBuf.readUInt32BE(HOST_CPU_MICROSEC_OFFSET),
             ramMb: stateDataBuf.readUInt32BE(HOST_RAM_MB_OFFSET),
             diskMb: stateDataBuf.readUInt32BE(HOST_DISK_MB_OFFSET),
-            email: (stateDataBuf.length > HOST_EMAIL_ADDRESS_OFFSET ?
-                stateDataBuf.slice(HOST_EMAIL_ADDRESS_OFFSET, HOST_EMAIL_ADDRESS_OFFSET + HOST_EMAIL_ADDRESS_LEN).toString().toString().replace(/\0/g, '') :
-                "")
+            email: stateDataBuf.slice(HOST_EMAIL_ADDRESS_OFFSET, HOST_EMAIL_ADDRESS_OFFSET + HOST_EMAIL_ADDRESS_LEN).toString().toString().replace(/\0/g, '')
         }
     }
 
@@ -419,7 +420,8 @@ class StateHelpers {
                     foundationLastVotedTimestamp: Number(stateData.readBigUInt64BE(FOUNDATION_LAST_VOTED_TIMESTAMP_OFFSET)),
                     electedProposalUniqueId: stateData.readUInt32BE(ELECTED_PROPOSAL_UNIQUE_ID_OFFSET),
                     proposalElectedTimestamp: Number(stateData.readBigUInt64BE(PROPOSAL_ELECTED_TIMESTAMP_OFFSET)),
-                    updatedHookCount: stateData.readUInt8(UPDATED_HOOK_COUNT_OFFSET)
+                    updatedHookCount: stateData.readUInt8(UPDATED_HOOK_COUNT_OFFSET),
+                    supportVoteSent: stateData.readUInt8(FOUNDATION_SUPPORT_VOTE_FLAG_OFFSET)
                 }
             }
         }
