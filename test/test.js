@@ -135,7 +135,8 @@ async function app() {
             // () => foundationPropose(),
             // () => withdraw(),
             // () => foundationWithdraw(),
-            // () => getCandidateInfo(),
+            // () => getCandidateByOwner(),
+            // () => getCandidateById(),
             // () => foundationVote(),
             // () => reportDudHost(),
             // () => withdrawDudHost(),
@@ -557,9 +558,17 @@ async function foundationWithdrawDudHost() {
     await client.withdraw(uniqueId);
 }
 
-async function getCandidateInfo(owner = hostAddress) {
+async function getCandidateByOwner(owner = hostAddress) {
     const host = await getHostClient(hostAddress, hostSecret);
-    const candidateInfo = await host.getCandidateInfo(owner);
+    const candidateInfo = await host.getCandidateByOwner(owner);
+    console.log(candidateInfo);
+    return candidateInfo;
+}
+
+async function getCandidateById() {
+    const host = await getHostClient(hostAddress, hostSecret);
+    const uniqueId = evernode.StateHelpers.getNewHookCandidateId(Buffer.from(hookCandidates, 'hex'));
+    const candidateInfo = await host.getCandidateById(uniqueId);
     console.log(candidateInfo);
     return candidateInfo;
 }
