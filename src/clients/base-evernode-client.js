@@ -751,7 +751,7 @@ class BaseEvernodeClient {
      * @param {string} ownerAddress [Optional] Address of the owner.
      * @returns The candidate information. Returns null if no candidate.
      */
-    async getCandidateInfo(ownerAddress = this.xrplAcc.address) {
+    async getCandidateByOwner(ownerAddress = this.xrplAcc.address) {
         try {
             const ownerStateKey = StateHelpers.generateCandidateOwnerStateKey(ownerAddress);
             const ownerStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, ownerStateKey);
@@ -767,6 +767,40 @@ class BaseEvernodeClient {
                 const idStateData = idLedgerEntry?.HookStateData;
                 if (idStateData) {
                     const idStateDecoded = StateHelpers.decodeCandidateIdState(Buffer.from(idStateData, 'hex'));
+                    return { ...ownerStateDecoded, ...idStateDecoded };
+                }
+            }
+        }
+        catch (e) {
+            // If the exception is entryNotFound from Rippled there's no entry for the host, So return null.
+            if (e?.data?.error !== 'entryNotFound')
+                throw e;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get proposed candidate info.
+     * @param {string} candidateId Id of the candidate.
+     * @returns The candidate information. Returns null if no candidate.
+     */
+    async getCandidateById(candidateId) {
+        try {
+            const idStateKey = StateHelpers.generateCandidateIdStateKey(candidateId);
+            const idStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, idStateKey);
+            const idLedgerEntry = await this.xrplApi.getLedgerEntry(idStateIndex);
+            const idStateData = idLedgerEntry?.HookStateData;
+            if (idStateData) {
+                const idStateDecoded = StateHelpers.decodeCandidateIdState(Buffer.from(idStateData, 'hex'));
+
+                const ownerStateKey = StateHelpers.generateCandidateOwnerStateKey(idStateDecoded.ownerAddress);
+                const ownerStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, ownerStateKey);
+                const ownerLedgerEntry = await this.xrplApi.getLedgerEntry(ownerStateIndex);
+
+                const ownerStateData = ownerLedgerEntry?.HookStateData;
+                if (ownerStateData) {
+                    const ownerStateDecoded = StateHelpers.decodeCandidateOwnerState(Buffer.from(ownerStateKey, 'hex'), Buffer.from(ownerStateData, 'hex'));
                     return { ...ownerStateDecoded, ...idStateDecoded };
                 }
             }
@@ -838,7 +872,7 @@ class BaseEvernodeClient {
      * @param {*} hashes Hook candidate hashes in hex format, <GOVERNOR_HASH(32)><REGISTRY_HASH(32)><HEARTBEAT_HASH(32)>.
      * @param {*} shortName Short name for the proposal candidate.
      * @param {*} options [Optional] transaction options.
-     * @returns Transaction result.
+     * @returns Proposed candidate id.
      */
     async _propose(hashes, shortName, options = {}) {
         const hashesBuf = Buffer.from(hashes, 'hex');
@@ -865,7 +899,7 @@ class BaseEvernodeClient {
         // Get the proposal fee. Proposal fee is current epochs moment worth of rewards.
         const proposalFee = EvernodeHelpers.getEpochRewardQuota(this.config.rewardInfo.epoch, this.config.rewardConfiguration.firstEpochRewardQuota);
 
-        return await this.xrplAcc.makePayment(this.governorAddress,
+        await this.xrplAcc.makePayment(this.governorAddress,
             proposalFee.toString(),
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress,
@@ -874,6 +908,8 @@ class BaseEvernodeClient {
                 { type: MemoTypes.CANDIDATE_PROPOSE_REF, format: MemoFormats.HEX, data: memoBuf.toString('hex').toUpperCase() }
             ],
             options.transactionOptions);
+
+        return uniqueId;
     }
 
     /**
