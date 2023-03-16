@@ -8,7 +8,6 @@ const GovernorEvents = {
     CandidateWithdrew: EvernodeEvents.CandidateWithdrew,
     ChildHookUpdated: EvernodeEvents.ChildHookUpdated,
     GovernanceModeChanged: EvernodeEvents.GovernanceModeChanged,
-    FoundationVoted: EvernodeEvents.FoundationVoted,
     DudHostReported: EvernodeEvents.DudHostReported,
     DudHostRemoved: EvernodeEvents.DudHostRemoved,
     DudHostStatusChanged: EvernodeEvents.DudHostStatusChanged,

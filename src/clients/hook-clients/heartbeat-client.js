@@ -2,7 +2,8 @@ const { BaseEvernodeClient } = require("../base-evernode-client");
 const { EvernodeEvents } = require('../../evernode-common');
 
 const HeartbeatEvents = {
-    Heartbeat: EvernodeEvents.Heartbeat
+    Heartbeat: EvernodeEvents.Heartbeat,
+    FoundationVoted: EvernodeEvents.FoundationVoted
 }
 
 class HeartbeatClient extends BaseEvernodeClient {
