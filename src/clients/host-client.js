@@ -109,7 +109,20 @@ class HostClient extends BaseEvernodeClient {
         Buffer.from(tosHash, 'hex').copy(uriBuf, prefixLen + 2, 0, halfToSLen);
         uriBuf.writeBigInt64BE(XflHelpers.getXfl(leaseAmount.toString()), prefixLen + 2 + halfToSLen);
         const uri = uriBuf.toString('base64');
-        await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: false });
+
+        try {
+            await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: false });
+        } catch (e) {
+            // Re-minting the URIToken after burning that sold URIToken.
+            if (e.code === "tecDUPLICATE") {
+                const uriTokenId = this.xrplAcc.generateIssuedURITokenId(uri);
+                console.log(`Burning URIToken related to a previously sold lease.`);
+                await this.xrplAcc.burnURIToken(uriTokenId);
+                console.log("Re-mint the URIToken for the new lease offer.")
+                await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: false });
+            }
+        }
+
         const uriToken = await this.xrplAcc.getURITokenByUri(uri);
         if (!uriToken)
             throw "Offer lease NFT creation error.";
@@ -154,6 +167,15 @@ class HostClient extends BaseEvernodeClient {
 
         if (await this.isRegistered())
             throw "Host already registered.";
+
+        // Check whether are there lease offers in for the host due to a previous registration.
+        const existingLeaseURITokens = (await this.xrplAcc.getURITokens()).filter(n => EvernodeHelpers.isValidURI(n.URI, EvernodeConstants.LEASE_TOKEN_PREFIX_HEX));
+        if (existingLeaseURITokens) {
+            console.log("Burning unsold URITokens related to the previous leases.");
+            for (const uriToken of existingLeaseURITokens) {
+                await this.xrplAcc.burnURIToken(uriToken.index);
+            }
+        }
 
         // Check whether is there any missed NFT sell offer that needs to be accepted
         // from the client-side in order to complete the registration.

@@ -634,6 +634,35 @@ class XrplAccount {
         const hexUri = isHexUri ? uri : TransactionHelper.asciiToHex(uri).toUpperCase();
         return tokens.find(t => t.URI == hexUri);
     }
+
+
+    generateIssuedURITokenId(uri) {
+        if (uri.length < 1 || uri.length > 256)
+            throw 'Invalid URI';
+
+        const URITOKEN_LEDGER_TYPE_PREFIX = 85; // Decimal value of ASCII 'U'
+        const accIdHex = (codec.decodeAccountID(this.address)).toString('hex').toUpperCase();
+        let uriHex = '';
+        for (let n in uri) {
+            let digit = uri.charCodeAt(n).toString(16).toUpperCase();
+            uriHex += (digit.length == 1 ? '0' : '') + digit
+        }
+
+        let hash = crypto.createHash('sha512');
+
+        const typeBuf = Buffer.allocUnsafe(2);
+        typeBuf.writeInt16BE(URITOKEN_LEDGER_TYPE_PREFIX);
+
+        const dataBuf = Buffer.from(`${accIdHex}${uriHex}`, 'hex');
+
+        let output = hash.update(typeBuf);
+        output = hash.update(dataBuf);
+
+        const digest = output.digest('hex');
+
+        // Get the first 32 bytes of hash.
+        return digest.substring(0, 64).toUpperCase();
+    }
 }
 
 function makeAmountObject(amount, currency, issuer) {
