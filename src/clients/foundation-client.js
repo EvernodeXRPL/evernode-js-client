@@ -51,7 +51,7 @@ class FoundationClient extends BaseEvernodeClient {
         Buffer.from(candidateId, 'hex').copy(voteBuf, CANDIDATE_VOTE_UNIQUE_ID_MEMO_OFFSET);
         voteBuf.writeUInt8(vote, CANDIDATE_VOTE_VALUE_MEMO_OFFSET)
 
-        return await this.xrplAcc.makePayment(this.governorAddress,
+        return await this.xrplAcc.makePayment(this.config.heartbeatAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
