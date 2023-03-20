@@ -418,7 +418,7 @@ class StateHelpers {
                     voteBaseCountChangedTimestamp: Number(stateData.readBigUInt64BE(VOTER_BASE_COUNT_CHANGED_TIMESTAMP_OFFSET)),
                     foundationLastVotedCandidateIdx: stateData.readUInt32BE(FOUNDATION_LAST_VOTED_CANDIDATE_IDX),
                     foundationLastVotedTimestamp: Number(stateData.readBigUInt64BE(FOUNDATION_LAST_VOTED_TIMESTAMP_OFFSET)),
-                    electedProposalUniqueId: stateData.readUInt32BE(ELECTED_PROPOSAL_UNIQUE_ID_OFFSET),
+                    electedProposalUniqueId: stateData.slice(ELECTED_PROPOSAL_UNIQUE_ID_OFFSET, PROPOSAL_ELECTED_TIMESTAMP_OFFSET).toString('hex').toUpperCase(),
                     proposalElectedTimestamp: Number(stateData.readBigUInt64BE(PROPOSAL_ELECTED_TIMESTAMP_OFFSET)),
                     updatedHookCount: stateData.readUInt8(UPDATED_HOOK_COUNT_OFFSET),
                     supportVoteSent: stateData.readUInt8(FOUNDATION_SUPPORT_VOTE_FLAG_OFFSET)
