@@ -804,7 +804,7 @@ class BaseEvernodeClient {
                     return { ...ownerStateDecoded, ...idStateDecoded };
                 }
 
-                return idStateDecoded;
+                return { ...idStateDecoded, uniqueId: candidateId };
             }
         }
         catch (e) {
