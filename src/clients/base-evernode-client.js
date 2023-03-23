@@ -803,6 +803,8 @@ class BaseEvernodeClient {
                     const ownerStateDecoded = StateHelpers.decodeCandidateOwnerState(Buffer.from(ownerStateKey, 'hex'), Buffer.from(ownerStateData, 'hex'));
                     return { ...ownerStateDecoded, ...idStateDecoded };
                 }
+
+                return { ...idStateDecoded, uniqueId: candidateId };
             }
         }
         catch (e) {
