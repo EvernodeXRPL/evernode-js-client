@@ -18,6 +18,7 @@ const EPOCH_COUNT_OFFSET = 0;
 const FIRST_EPOCH_REWARD_QUOTA_OFFSET = 1;
 const EPOCH_REWARD_AMOUNT_OFFSET = 5;
 const REWARD_START_MOMENT_OFFSET = 9;
+const ACCUMULATED_REWARD_FREQUENCY_OFFSET = 13;
 
 const TRANSIT_IDX_OFFSET = 0;
 const TRANSIT_MOMENT_SIZE_OFFSET = 8;
@@ -67,6 +68,7 @@ const HOST_CPU_MICROSEC_OFFSET = 64;
 const HOST_RAM_MB_OFFSET = 68;
 const HOST_DISK_MB_OFFSET = 72;
 const HOST_EMAIL_ADDRESS_OFFSET = 76;
+const HOST_ACCUMULATED_REWARD_OFFSET = 116;
 
 const PREV_HOST_ADDRESS_OFFSET = 0;
 const TRANSFER_LEDGER_IDX_OFFSET = 20;
@@ -167,7 +169,8 @@ class StateHelpers {
             cpuMicrosec: stateDataBuf.readUInt32BE(HOST_CPU_MICROSEC_OFFSET),
             ramMb: stateDataBuf.readUInt32BE(HOST_RAM_MB_OFFSET),
             diskMb: stateDataBuf.readUInt32BE(HOST_DISK_MB_OFFSET),
-            email: stateDataBuf.slice(HOST_EMAIL_ADDRESS_OFFSET, HOST_EMAIL_ADDRESS_OFFSET + HOST_EMAIL_ADDRESS_LEN).toString().toString().replace(/\0/g, '')
+            email: stateDataBuf.slice(HOST_EMAIL_ADDRESS_OFFSET, HOST_EMAIL_ADDRESS_OFFSET + HOST_EMAIL_ADDRESS_LEN).toString().toString().replace(/\0/g, ''),
+            accumulatedRewardAmount: XflHelpers.toString(stateDataBuf.readBigInt64BE(HOST_ACCUMULATED_REWARD_OFFSET))
         }
     }
 
@@ -337,7 +340,8 @@ class StateHelpers {
                     epochCount: stateData.readUInt8(EPOCH_COUNT_OFFSET),
                     firstEpochRewardQuota: stateData.readUInt32BE(FIRST_EPOCH_REWARD_QUOTA_OFFSET),
                     epochRewardAmount: stateData.readUInt32BE(EPOCH_REWARD_AMOUNT_OFFSET),
-                    rewardStartMoment: stateData.readUInt32BE(REWARD_START_MOMENT_OFFSET)
+                    rewardStartMoment: stateData.readUInt32BE(REWARD_START_MOMENT_OFFSET),
+                    accumulatedRewardFrequency: stateData.readUInt16BE(ACCUMULATED_REWARD_FREQUENCY_OFFSET)
                 }
             }
         }
