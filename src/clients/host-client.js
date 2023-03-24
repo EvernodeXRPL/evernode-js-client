@@ -346,7 +346,7 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async heartbeat(voteInfo = {}, options = {}) {
-        let data = "";
+        let data;
         // Prepare voteInfo
         if (Object.keys(voteInfo).length > 1) {
             let voteBuf = Buffer.alloc(33);
@@ -364,7 +364,7 @@ class HostClient extends BaseEvernodeClient {
                 {
                     hookParams: [
                         { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HEARTBEAT },
-                        { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: data }
+                        ...(data ? [{ name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: data }] : [])
                     ],
                     ...options.transactionOptions
                 });
