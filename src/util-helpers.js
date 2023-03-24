@@ -1,26 +1,10 @@
 const { Buffer } = require('buffer');
 const { XflHelpers } = require('./xfl-helpers');
-const { EvernodeConstants, ErrorReasons } = require('./evernode-common');
+const { EvernodeConstants } = require('./evernode-common');
 const { TransactionHelper } = require('./transaction-helper');
 
 // Utility helper functions.
 class UtilHelpers {
-
-    static readUInt(buf, base = 32, isBE = true) {
-        buf = Buffer.from(buf);
-        switch (base) {
-            case (8):
-                return buf.readUInt8();
-            case (16):
-                return isBE ? buf.readUInt16BE() : buf.readUInt16LE();
-            case (32):
-                return isBE ? buf.readUInt32BE() : buf.readUInt32LE();
-            case (64):
-                return isBE ? Number(buf.readBigUInt64BE()) : Number(buf.readBigUInt64LE());
-            default:
-                throw 'Invalid base value';
-        }
-    }
 
     static decodeLeaseNftUri(hexUri) {
         // Get the lease index from the nft URI.

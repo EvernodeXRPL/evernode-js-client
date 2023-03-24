@@ -218,13 +218,13 @@ class HostClient extends BaseEvernodeClient {
         // <country_code(2)><cpu_microsec(4)><ram_mb(4)><disk_mb(4)><no_of_total_instances(4)><cpu_model(40)><cpu_count(2)><cpu_speed(2)><description(26)><email_address(40)>
         const memoBuf = Buffer.alloc(HOST_REG_MEMO_SIZE, 0);
         Buffer.from(countryCode.substr(0, 2), "utf-8").copy(memoBuf, HOST_COUNTRY_CODE_MEMO_OFFSET);
-        memoBuf.writeUInt32BE(cpuMicroSec, HOST_CPU_MICROSEC_MEMO_OFFSET);
-        memoBuf.writeUInt32BE(ramMb, HOST_RAM_MB_MEMO_OFFSET);
-        memoBuf.writeUInt32BE(diskMb, HOST_DISK_MB_MEMO_OFFSET);
-        memoBuf.writeUInt32BE(totalInstanceCount, HOST_TOT_INS_COUNT_MEMO_OFFSET);
+        memoBuf.writeUInt32LE(cpuMicroSec, HOST_CPU_MICROSEC_MEMO_OFFSET);
+        memoBuf.writeUInt32LE(ramMb, HOST_RAM_MB_MEMO_OFFSET);
+        memoBuf.writeUInt32LE(diskMb, HOST_DISK_MB_MEMO_OFFSET);
+        memoBuf.writeUInt32LE(totalInstanceCount, HOST_TOT_INS_COUNT_MEMO_OFFSET);
         Buffer.from(cpuModel.substr(0, 40), "utf-8").copy(memoBuf, HOST_CPU_MODEL_NAME_MEMO_OFFSET);
-        memoBuf.writeUInt16BE(cpuCount, HOST_CPU_COUNT_MEMO_OFFSET);
-        memoBuf.writeUInt16BE(cpuSpeed, HOST_CPU_SPEED_MEMO_OFFSET);
+        memoBuf.writeUInt16LE(cpuCount, HOST_CPU_COUNT_MEMO_OFFSET);
+        memoBuf.writeUInt16LE(cpuSpeed, HOST_CPU_SPEED_MEMO_OFFSET);
         Buffer.from(description.substr(0, 26), "utf-8").copy(memoBuf, HOST_DESCRIPTION_MEMO_OFFSET);
         Buffer.from(emailAddress.substr(0, 40), "utf-8").copy(memoBuf, HOST_EMAIL_ADDRESS_MEMO_OFFSET);
 
@@ -301,15 +301,15 @@ class HostClient extends BaseEvernodeClient {
         if (countryCode)
             Buffer.from(countryCode.substr(0, 2), "utf-8").copy(memoBuf, HOST_UPDATE_COUNTRY_CODE_MEMO_OFFSET);
         if (cpuMicroSec)
-            memoBuf.writeUInt32BE(cpuMicroSec, HOST_UPDATE_CPU_MICROSEC_MEMO_OFFSET);
+            memoBuf.writeUInt32LE(cpuMicroSec, HOST_UPDATE_CPU_MICROSEC_MEMO_OFFSET);
         if (ramMb)
-            memoBuf.writeUInt32BE(ramMb, HOST_UPDATE_RAM_MB_MEMO_OFFSET);
+            memoBuf.writeUInt32LE(ramMb, HOST_UPDATE_RAM_MB_MEMO_OFFSET);
         if (diskMb)
-            memoBuf.writeUInt32BE(diskMb, HOST_UPDATE_DISK_MB_MEMO_OFFSET);
+            memoBuf.writeUInt32LE(diskMb, HOST_UPDATE_DISK_MB_MEMO_OFFSET);
         if (totalInstanceCount)
-            memoBuf.writeUInt32BE(totalInstanceCount, HOST_UPDATE_TOT_INS_COUNT_MEMO_OFFSET);
+            memoBuf.writeUInt32LE(totalInstanceCount, HOST_UPDATE_TOT_INS_COUNT_MEMO_OFFSET);
         if (activeInstanceCount)
-            memoBuf.writeUInt32BE(activeInstanceCount, HOST_UPDATE_ACT_INS_COUNT_MEMO_OFFSET);
+            memoBuf.writeUInt32LE(activeInstanceCount, HOST_UPDATE_ACT_INS_COUNT_MEMO_OFFSET);
         if (description)
             Buffer.from(description.substr(0, 26), "utf-8").copy(memoBuf, HOST_UPDATE_DESCRIPTION_MEMO_OFFSET);
         if (version) {

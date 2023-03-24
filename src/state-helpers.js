@@ -144,19 +144,19 @@ class StateHelpers {
             uriTokenId: stateDataBuf.slice(HOST_TOKEN_ID_OFFSET, HOST_COUNTRY_CODE_OFFSET).toString('hex').toUpperCase(),
             countryCode: stateDataBuf.slice(HOST_COUNTRY_CODE_OFFSET, HOST_RESERVED_OFFSET).toString(),
             description: stateDataBuf.slice(HOST_DESCRIPTION_OFFSET, HOST_REG_LEDGER_OFFSET).toString().replace(/\0/g, ''),
-            registrationLedger: Number(stateDataBuf.readBigUInt64BE(HOST_REG_LEDGER_OFFSET)),
-            registrationFee: Number(stateDataBuf.readBigUInt64BE(HOST_REG_FEE_OFFSET)),
-            maxInstances: stateDataBuf.readUInt32BE(HOST_TOT_INS_COUNT_OFFSET),
-            activeInstances: stateDataBuf.readUInt32BE(HOST_ACT_INS_COUNT_OFFSET),
-            lastHeartbeatIndex: Number(stateDataBuf.readBigUInt64BE(HOST_HEARTBEAT_TIMESTAMP_OFFSET)),
+            registrationLedger: Number(stateDataBuf.readBigUInt64LE(HOST_REG_LEDGER_OFFSET)),
+            registrationFee: Number(stateDataBuf.readBigUInt64LE(HOST_REG_FEE_OFFSET)),
+            maxInstances: stateDataBuf.readUInt32LE(HOST_TOT_INS_COUNT_OFFSET),
+            activeInstances: stateDataBuf.readUInt32LE(HOST_ACT_INS_COUNT_OFFSET),
+            lastHeartbeatIndex: Number(stateDataBuf.readBigUInt64LE(HOST_HEARTBEAT_TIMESTAMP_OFFSET)),
             version: `${stateDataBuf.readUInt8(HOST_VERSION_OFFSET)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 1)}.${stateDataBuf.readUInt8(HOST_VERSION_OFFSET + 2)}`,
             isATransferer: (stateDataBuf.readUInt8(HOST_TRANSFER_FLAG_OFFSET) === PENDING_TRANSFER) ? TRANSFER_STATES.HAS_A_TRANSFER : TRANSFER_STATES.NO_TRANSFER,
-            lastVoteCandidateIdx: stateDataBuf.readUInt32BE(HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET),
-            lastVoteTimestamp: Number(stateDataBuf.readBigUInt64BE(HOST_LAST_VOTE_TIMESTAMP_OFFSET)),
+            lastVoteCandidateIdx: stateDataBuf.readUInt32LE(HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET),
+            lastVoteTimestamp: Number(stateDataBuf.readBigUInt64LE(HOST_LAST_VOTE_TIMESTAMP_OFFSET)),
             supportVoteSent: stateDataBuf.readUInt8(HOST_SUPPORT_VOTE_FLAG_OFFSET)
         }
         if (stateDataBuf.length > HOST_REG_TIMESTAMP_OFFSET)
-            data.registrationTimestamp = Number(stateDataBuf.readBigUInt64BE(HOST_REG_TIMESTAMP_OFFSET));
+            data.registrationTimestamp = Number(stateDataBuf.readBigUInt64LE(HOST_REG_TIMESTAMP_OFFSET));
         return data;
     }
 
@@ -164,13 +164,13 @@ class StateHelpers {
         return {
             address: codec.encodeAccountID(stateDataBuf.slice(HOST_ADDRESS_OFFSET, HOST_CPU_MODEL_NAME_OFFSET)),
             cpuModelName: stateDataBuf.slice(HOST_CPU_MODEL_NAME_OFFSET, HOST_CPU_COUNT_OFFSET).toString().replace(/\x00+$/, ''), // Remove trailing \x00 characters.
-            cpuCount: stateDataBuf.readUInt16BE(HOST_CPU_COUNT_OFFSET),
-            cpuMHz: stateDataBuf.readUInt16BE(HOST_CPU_SPEED_OFFSET),
-            cpuMicrosec: stateDataBuf.readUInt32BE(HOST_CPU_MICROSEC_OFFSET),
-            ramMb: stateDataBuf.readUInt32BE(HOST_RAM_MB_OFFSET),
-            diskMb: stateDataBuf.readUInt32BE(HOST_DISK_MB_OFFSET),
+            cpuCount: stateDataBuf.readUInt16LE(HOST_CPU_COUNT_OFFSET),
+            cpuMHz: stateDataBuf.readUInt16LE(HOST_CPU_SPEED_OFFSET),
+            cpuMicrosec: stateDataBuf.readUInt32LE(HOST_CPU_MICROSEC_OFFSET),
+            ramMb: stateDataBuf.readUInt32LE(HOST_RAM_MB_OFFSET),
+            diskMb: stateDataBuf.readUInt32LE(HOST_DISK_MB_OFFSET),
             email: stateDataBuf.slice(HOST_EMAIL_ADDRESS_OFFSET, HOST_EMAIL_ADDRESS_OFFSET + HOST_EMAIL_ADDRESS_LEN).toString().toString().replace(/\0/g, ''),
-            accumulatedRewardAmount: XflHelpers.toString(stateDataBuf.readBigInt64BE(HOST_ACCUMULATED_REWARD_OFFSET))
+            accumulatedRewardAmount: XflHelpers.toString(stateDataBuf.readBigInt64LE(HOST_ACCUMULATED_REWARD_OFFSET))
         }
     }
 
@@ -180,7 +180,7 @@ class StateHelpers {
             futureOwnerAddress: codec.encodeAccountID(stateKeyBuf.slice(12)),
             prevHostAddressKey: this.generateHostAddrStateKey(prevHostClassicAddress),
             prevHostAddress: prevHostClassicAddress,
-            transferLedgerIdx: Number(stateDataBuf.readBigUInt64BE(TRANSFER_LEDGER_IDX_OFFSET)),
+            transferLedgerIdx: Number(stateDataBuf.readBigUInt64LE(TRANSFER_LEDGER_IDX_OFFSET)),
             transferredNfTokenId: stateDataBuf.slice(TRANSFERRED_NFT_ID_OFFSET, 60).toString('hex').toUpperCase()
         }
     }
@@ -218,14 +218,14 @@ class StateHelpers {
 
         return {
             ownerAddress: codec.encodeAccountID(stateDataBuf.slice(CANDIDATE_OWNER_ADDRESS_OFFSET, CANDIDATE_IDX_OFFSET)),
-            index: stateDataBuf.readUInt32BE(CANDIDATE_IDX_OFFSET),
+            index: stateDataBuf.readUInt32LE(CANDIDATE_IDX_OFFSET),
             shortName: stateDataBuf.slice(CANDIDATE_SHORT_NAME_OFFSET, CANDIDATE_CREATED_TIMESTAMP_OFFSET).toString().replace(/\x00+$/, ''), // Remove trailing \x00 characters.
-            createdTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_CREATED_TIMESTAMP_OFFSET)),
-            proposalFee: XflHelpers.toString(stateDataBuf.readBigInt64BE(CANDIDATE_PROPOSAL_FEE_OFFSET)),
-            positiveVoteCount: stateDataBuf.readUInt32BE(CANDIDATE_POSITIVE_VOTE_COUNT_OFFSET),
-            lastVoteTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_LAST_VOTE_TIMESTAMP_OFFSET)),
+            createdTimestamp: Number(stateDataBuf.readBigUInt64LE(CANDIDATE_CREATED_TIMESTAMP_OFFSET)),
+            proposalFee: XflHelpers.toString(stateDataBuf.readBigInt64LE(CANDIDATE_PROPOSAL_FEE_OFFSET)),
+            positiveVoteCount: stateDataBuf.readUInt32LE(CANDIDATE_POSITIVE_VOTE_COUNT_OFFSET),
+            lastVoteTimestamp: Number(stateDataBuf.readBigUInt64LE(CANDIDATE_LAST_VOTE_TIMESTAMP_OFFSET)),
             status: status,
-            statusChangeTimestamp: Number(stateDataBuf.readBigUInt64BE(CANDIDATE_STATUS_CHANGE_TIMESTAMP_OFFSET)),
+            statusChangeTimestamp: Number(stateDataBuf.readBigUInt64LE(CANDIDATE_STATUS_CHANGE_TIMESTAMP_OFFSET)),
             foundationVoteStatus: stateDataBuf.readUInt8(CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET) === EvernodeConstants.CandidateStatuses.CANDIDATE_SUPPORTED ? 'supported' : 'rejected'
         }
     }
@@ -285,7 +285,7 @@ class StateHelpers {
             return {
                 type: this.StateTypes.SIGLETON,
                 key: hexKey,
-                value: stateData.readUInt32BE()
+                value: stateData.readUInt32LE()
             }
         }
         else if (Buffer.from(HookStateKeys.MOMENT_BASE_INFO, 'hex').compare(stateKey) === 0) {
@@ -293,8 +293,8 @@ class StateHelpers {
                 type: this.StateTypes.SIGLETON,
                 key: hexKey,
                 value: {
-                    baseIdx: Number(stateData.readBigUInt64BE(MOMENT_BASE_POINT_OFFSET)),
-                    baseTransitionMoment: stateData.length > MOMENT_AT_TRANSITION_OFFSET ? stateData.readUInt32BE(MOMENT_AT_TRANSITION_OFFSET) : 0,
+                    baseIdx: Number(stateData.readBigUInt64LE(MOMENT_BASE_POINT_OFFSET)),
+                    baseTransitionMoment: stateData.length > MOMENT_AT_TRANSITION_OFFSET ? stateData.readUInt32LE(MOMENT_AT_TRANSITION_OFFSET) : 0,
                     momentType: (stateData.length <= MOMENT_TYPE_OFFSET || stateData.readUInt8(MOMENT_TYPE_OFFSET) === MOMENT_TYPES.LEDGER) ? 'ledger' : 'timestamp'
                 }
             }
@@ -303,7 +303,7 @@ class StateHelpers {
             return {
                 type: this.StateTypes.SIGLETON,
                 key: hexKey,
-                value: Number(stateData.readBigUInt64BE())
+                value: Number(stateData.readBigUInt64LE())
             }
         }
         else if (Buffer.from(HookStateKeys.REGISTRY_ADDR, 'hex').compare(stateKey) === 0 ||
@@ -322,14 +322,14 @@ class StateHelpers {
             return {
                 type: this.StateTypes.CONFIGURATION,
                 key: hexKey,
-                value: stateData.readUInt16BE()
+                value: stateData.readUInt16LE()
             }
         }
         else if (Buffer.from(HookStateKeys.MINT_LIMIT, 'hex').compare(stateKey) === 0 || Buffer.from(HookStateKeys.FIXED_REG_FEE, 'hex').compare(stateKey) === 0) {
             return {
                 type: this.StateTypes.CONFIGURATION,
                 key: hexKey,
-                value: Number(stateData.readBigUInt64BE())
+                value: Number(stateData.readBigUInt64LE())
             }
         }
         else if (Buffer.from(HookStateKeys.REWARD_CONFIGURATION, 'hex').compare(stateKey) === 0) {
@@ -338,10 +338,10 @@ class StateHelpers {
                 key: hexKey,
                 value: {
                     epochCount: stateData.readUInt8(EPOCH_COUNT_OFFSET),
-                    firstEpochRewardQuota: stateData.readUInt32BE(FIRST_EPOCH_REWARD_QUOTA_OFFSET),
-                    epochRewardAmount: stateData.readUInt32BE(EPOCH_REWARD_AMOUNT_OFFSET),
-                    rewardStartMoment: stateData.readUInt32BE(REWARD_START_MOMENT_OFFSET),
-                    accumulatedRewardFrequency: stateData.readUInt16BE(ACCUMULATED_REWARD_FREQUENCY_OFFSET)
+                    firstEpochRewardQuota: stateData.readUInt32LE(FIRST_EPOCH_REWARD_QUOTA_OFFSET),
+                    epochRewardAmount: stateData.readUInt32LE(EPOCH_REWARD_AMOUNT_OFFSET),
+                    rewardStartMoment: stateData.readUInt32LE(REWARD_START_MOMENT_OFFSET),
+                    accumulatedRewardFrequency: stateData.readUInt16LE(ACCUMULATED_REWARD_FREQUENCY_OFFSET)
                 }
             }
         }
@@ -351,10 +351,10 @@ class StateHelpers {
                 key: hexKey,
                 value: {
                     epoch: stateData.readUInt8(EPOCH_OFFSET),
-                    savedMoment: stateData.readUInt32BE(SAVED_MOMENT_OFFSET),
-                    prevMomentActiveHostCount: stateData.readUInt32BE(PREV_MOMENT_ACTIVE_HOST_COUNT_OFFSET),
-                    curMomentActiveHostCount: stateData.readUInt32BE(CUR_MOMENT_ACTIVE_HOST_COUNT_OFFSET),
-                    epochPool: XflHelpers.toString(stateData.readBigInt64BE(EPOCH_POOL_OFFSET))
+                    savedMoment: stateData.readUInt32LE(SAVED_MOMENT_OFFSET),
+                    prevMomentActiveHostCount: stateData.readUInt32LE(PREV_MOMENT_ACTIVE_HOST_COUNT_OFFSET),
+                    curMomentActiveHostCount: stateData.readUInt32LE(CUR_MOMENT_ACTIVE_HOST_COUNT_OFFSET),
+                    epochPool: XflHelpers.toString(stateData.readBigInt64LE(EPOCH_POOL_OFFSET))
                 }
             }
         }
@@ -362,7 +362,7 @@ class StateHelpers {
             return {
                 type: this.StateTypes.CONFIGURATION,
                 key: hexKey,
-                value: stateData.readUInt16BE()
+                value: stateData.readUInt16LE()
             }
         }
         else if (Buffer.from(HookStateKeys.MOMENT_TRANSIT_INFO, 'hex').compare(stateKey) === 0) {
@@ -371,8 +371,8 @@ class StateHelpers {
                 type: this.StateTypes.CONFIGURATION,
                 key: hexKey,
                 value: {
-                    transitionIndex: Number(stateData.readBigInt64BE(TRANSIT_IDX_OFFSET)),
-                    momentSize: stateData.readUInt16BE(TRANSIT_MOMENT_SIZE_OFFSET),
+                    transitionIndex: Number(stateData.readBigInt64LE(TRANSIT_IDX_OFFSET)),
+                    momentSize: stateData.readUInt16LE(TRANSIT_MOMENT_SIZE_OFFSET),
                     momentType: stateData.readUInt8(TRANSIT_MOMENT_TYPE_OFFSET) === MOMENT_TYPES.LEDGER ? 'ledger' : 'timestamp'
                 }
             }
@@ -381,7 +381,7 @@ class StateHelpers {
             return {
                 type: this.StateTypes.CONFIGURATION,
                 key: hexKey,
-                value: Number(stateData.readBigUInt64BE())
+                value: Number(stateData.readBigUInt64LE())
             }
         }
         else if (Buffer.from(HookStateKeys.GOVERNANCE_CONFIGURATION, 'hex').compare(stateKey) === 0) {
@@ -389,10 +389,10 @@ class StateHelpers {
                 type: this.StateTypes.CONFIGURATION,
                 key: hexKey,
                 value: {
-                    eligibilityPeriod: stateData.readUInt32BE(ELIGIBILITY_PERIOD_OFFSET),
-                    candidateLifePeriod: stateData.readUInt32BE(CANDIDATE_LIFE_PERIOD_OFFSET),
-                    candidateElectionPeriod: stateData.readUInt32BE(CANDIDATE_ELECTION_PERIOD_OFFSET),
-                    candidateSupportAverage: stateData.readUInt16BE(CANDIDATE_SUPPORT_AVERAGE_OFFSET)
+                    eligibilityPeriod: stateData.readUInt32LE(ELIGIBILITY_PERIOD_OFFSET),
+                    candidateLifePeriod: stateData.readUInt32LE(CANDIDATE_LIFE_PERIOD_OFFSET),
+                    candidateElectionPeriod: stateData.readUInt32LE(CANDIDATE_ELECTION_PERIOD_OFFSET),
+                    candidateSupportAverage: stateData.readUInt16LE(CANDIDATE_SUPPORT_AVERAGE_OFFSET)
                 }
             }
         }
@@ -417,13 +417,13 @@ class StateHelpers {
                 key: hexKey,
                 value: {
                     governanceMode: mode,
-                    lastCandidateIdx: stateData.readUInt32BE(LAST_CANDIDATE_IDX_OFFSET),
-                    voteBaseCount: stateData.readUInt32BE(VOTER_BASE_COUNT_OFFSET),
-                    voteBaseCountChangedTimestamp: Number(stateData.readBigUInt64BE(VOTER_BASE_COUNT_CHANGED_TIMESTAMP_OFFSET)),
-                    foundationLastVotedCandidateIdx: stateData.readUInt32BE(FOUNDATION_LAST_VOTED_CANDIDATE_IDX),
-                    foundationLastVotedTimestamp: Number(stateData.readBigUInt64BE(FOUNDATION_LAST_VOTED_TIMESTAMP_OFFSET)),
+                    lastCandidateIdx: stateData.readUInt32LE(LAST_CANDIDATE_IDX_OFFSET),
+                    voteBaseCount: stateData.readUInt32LE(VOTER_BASE_COUNT_OFFSET),
+                    voteBaseCountChangedTimestamp: Number(stateData.readBigUInt64LE(VOTER_BASE_COUNT_CHANGED_TIMESTAMP_OFFSET)),
+                    foundationLastVotedCandidateIdx: stateData.readUInt32LE(FOUNDATION_LAST_VOTED_CANDIDATE_IDX),
+                    foundationLastVotedTimestamp: Number(stateData.readBigUInt64LE(FOUNDATION_LAST_VOTED_TIMESTAMP_OFFSET)),
                     electedProposalUniqueId: stateData.slice(ELECTED_PROPOSAL_UNIQUE_ID_OFFSET, PROPOSAL_ELECTED_TIMESTAMP_OFFSET).toString('hex').toUpperCase(),
-                    proposalElectedTimestamp: Number(stateData.readBigUInt64BE(PROPOSAL_ELECTED_TIMESTAMP_OFFSET)),
+                    proposalElectedTimestamp: Number(stateData.readBigUInt64LE(PROPOSAL_ELECTED_TIMESTAMP_OFFSET)),
                     updatedHookCount: stateData.readUInt8(UPDATED_HOOK_COUNT_OFFSET),
                     supportVoteSent: stateData.readUInt8(FOUNDATION_SUPPORT_VOTE_FLAG_OFFSET)
                 }
