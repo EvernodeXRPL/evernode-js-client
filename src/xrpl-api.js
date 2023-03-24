@@ -90,6 +90,7 @@ class XrplApi {
                     // Emit the event only for successful transactions, Otherwise emit error.
                     if (data.engine_result === "tesSUCCESS") {
                         tx.Memos = TransactionHelper.deserializeMemos(tx.Memos);
+                        tx.HookParameters = TransactionHelper.deserializeHookParams(tx.HookParameters);
                         matches.forEach(s => s.handler(eventName, tx));
                     }
                     else {

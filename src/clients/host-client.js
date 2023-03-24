@@ -1,6 +1,6 @@
 const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { EvernodeEvents, EvernodeConstants, MemoFormats, MemoTypes, ErrorCodes } = require('../evernode-common');
+const { EvernodeEvents, EvernodeConstants, MemoFormats, EventTypes, ErrorCodes, HookParamKeys } = require('../evernode-common');
 const { XrplAccount } = require('../xrpl-account');
 const { EncryptionHelper } = require('../encryption-helper');
 const { Buffer } = require('buffer');
@@ -17,28 +17,28 @@ const HostEvents = {
     ExtendLease: EvernodeEvents.ExtendLease
 }
 
-const HOST_COUNTRY_CODE_MEMO_OFFSET = 0;
-const HOST_CPU_MICROSEC_MEMO_OFFSET = 2;
-const HOST_RAM_MB_MEMO_OFFSET = 6;
-const HOST_DISK_MB_MEMO_OFFSET = 10;
-const HOST_TOT_INS_COUNT_MEMO_OFFSET = 14;
-const HOST_CPU_MODEL_NAME_MEMO_OFFSET = 18;
-const HOST_CPU_COUNT_MEMO_OFFSET = 58;
-const HOST_CPU_SPEED_MEMO_OFFSET = 60;
-const HOST_DESCRIPTION_MEMO_OFFSET = 62;
-const HOST_EMAIL_ADDRESS_MEMO_OFFSET = 88;
-const HOST_REG_MEMO_SIZE = 128;
+const HOST_COUNTRY_CODE_PARAM_OFFSET = 0;
+const HOST_CPU_MICROSEC_PARAM_OFFSET = 2;
+const HOST_RAM_MB_PARAM_OFFSET = 6;
+const HOST_DISK_MB_PARAM_OFFSET = 10;
+const HOST_TOT_INS_COUNT_PARAM_OFFSET = 14;
+const HOST_CPU_MODEL_NAME_PARAM_OFFSET = 18;
+const HOST_CPU_COUNT_PARAM_OFFSET = 58;
+const HOST_CPU_SPEED_PARAM_OFFSET = 60;
+const HOST_DESCRIPTION_PARAM_OFFSET = 62;
+const HOST_EMAIL_ADDRESS_PARAM_OFFSET = 88;
+const HOST_REG_PARAM_SIZE = 128;
 
-const HOST_UPDATE_TOKEN_ID_MEMO_OFFSET = 0;
-const HOST_UPDATE_COUNTRY_CODE_MEMO_OFFSET = 32;
-const HOST_UPDATE_CPU_MICROSEC_MEMO_OFFSET = 34;
-const HOST_UPDATE_RAM_MB_MEMO_OFFSET = 38;
-const HOST_UPDATE_DISK_MB_MEMO_OFFSET = 42;
-const HOST_UPDATE_TOT_INS_COUNT_MEMO_OFFSET = 46;
-const HOST_UPDATE_ACT_INS_COUNT_MEMO_OFFSET = 50;
-const HOST_UPDATE_DESCRIPTION_MEMO_OFFSET = 54;
-const HOST_UPDATE_VERSION_MEMO_OFFSET = 80;
-const HOST_UPDATE_MEMO_SIZE = 83;
+const HOST_UPDATE_TOKEN_ID_PARAM_OFFSET = 0;
+const HOST_UPDATE_COUNTRY_CODE_PARAM_OFFSET = 32;
+const HOST_UPDATE_CPU_MICROSEC_PARAM_OFFSET = 34;
+const HOST_UPDATE_RAM_MB_PARAM_OFFSET = 38;
+const HOST_UPDATE_DISK_MB_PARAM_OFFSET = 42;
+const HOST_UPDATE_TOT_INS_COUNT_PARAM_OFFSET = 46;
+const HOST_UPDATE_ACT_INS_COUNT_PARAM_OFFSET = 50;
+const HOST_UPDATE_DESCRIPTION_PARAM_OFFSET = 54;
+const HOST_UPDATE_VERSION_PARAM_OFFSET = 80;
+const HOST_UPDATE_PARAM_SIZE = 83;
 
 const VOTE_VALIDATION_ERR = "VOTE_VALIDATION_ERR";
 
@@ -216,24 +216,30 @@ class HostClient extends BaseEvernodeClient {
         }
 
         // <country_code(2)><cpu_microsec(4)><ram_mb(4)><disk_mb(4)><no_of_total_instances(4)><cpu_model(40)><cpu_count(2)><cpu_speed(2)><description(26)><email_address(40)>
-        const memoBuf = Buffer.alloc(HOST_REG_MEMO_SIZE, 0);
-        Buffer.from(countryCode.substr(0, 2), "utf-8").copy(memoBuf, HOST_COUNTRY_CODE_MEMO_OFFSET);
-        memoBuf.writeUInt32LE(cpuMicroSec, HOST_CPU_MICROSEC_MEMO_OFFSET);
-        memoBuf.writeUInt32LE(ramMb, HOST_RAM_MB_MEMO_OFFSET);
-        memoBuf.writeUInt32LE(diskMb, HOST_DISK_MB_MEMO_OFFSET);
-        memoBuf.writeUInt32LE(totalInstanceCount, HOST_TOT_INS_COUNT_MEMO_OFFSET);
-        Buffer.from(cpuModel.substr(0, 40), "utf-8").copy(memoBuf, HOST_CPU_MODEL_NAME_MEMO_OFFSET);
-        memoBuf.writeUInt16LE(cpuCount, HOST_CPU_COUNT_MEMO_OFFSET);
-        memoBuf.writeUInt16LE(cpuSpeed, HOST_CPU_SPEED_MEMO_OFFSET);
-        Buffer.from(description.substr(0, 26), "utf-8").copy(memoBuf, HOST_DESCRIPTION_MEMO_OFFSET);
-        Buffer.from(emailAddress.substr(0, 40), "utf-8").copy(memoBuf, HOST_EMAIL_ADDRESS_MEMO_OFFSET);
+        const paramBuf = Buffer.alloc(HOST_REG_PARAM_SIZE, 0);
+        Buffer.from(countryCode.substr(0, 2), "utf-8").copy(paramBuf, HOST_COUNTRY_CODE_PARAM_OFFSET);
+        paramBuf.writeUInt32LE(cpuMicroSec, HOST_CPU_MICROSEC_PARAM_OFFSET);
+        paramBuf.writeUInt32LE(ramMb, HOST_RAM_MB_PARAM_OFFSET);
+        paramBuf.writeUInt32LE(diskMb, HOST_DISK_MB_PARAM_OFFSET);
+        paramBuf.writeUInt32LE(totalInstanceCount, HOST_TOT_INS_COUNT_PARAM_OFFSET);
+        Buffer.from(cpuModel.substr(0, 40), "utf-8").copy(paramBuf, HOST_CPU_MODEL_NAME_PARAM_OFFSET);
+        paramBuf.writeUInt16LE(cpuCount, HOST_CPU_COUNT_PARAM_OFFSET);
+        paramBuf.writeUInt16LE(cpuSpeed, HOST_CPU_SPEED_PARAM_OFFSET);
+        Buffer.from(description.substr(0, 26), "utf-8").copy(paramBuf, HOST_DESCRIPTION_PARAM_OFFSET);
+        Buffer.from(emailAddress.substr(0, 40), "utf-8").copy(paramBuf, HOST_EMAIL_ADDRESS_PARAM_OFFSET);
 
         const tx = await this.xrplAcc.makePayment(this.config.registryAddress,
             (transferredNFTokenId) ? EvernodeConstants.NOW_IN_EVRS : this.config.hostRegFee.toString(),
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress,
-            [{ type: MemoTypes.HOST_REG, format: MemoFormats.HEX, data: memoBuf.toString('hex') }],
-            options.transactionOptions);
+            null,
+            {
+                hookParams: [
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_REG },
+                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramBuf.toString('hex').toUpperCase() }
+                ],
+                ...options.transactionOptions
+            });
 
         console.log('Waiting for the sell offer', tx.id)
         let sellOffer = null;
@@ -285,50 +291,58 @@ class HostClient extends BaseEvernodeClient {
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            [
-                { type: MemoTypes.HOST_DEREG, format: MemoFormats.HEX, data: regUriToken.index }
-            ],
-            options.transactionOptions);
+            null,
+            {
+                hookParams: [
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_DEREG },
+                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: regUriToken.index }
+                ],
+                ...options.transactionOptions
+            });
 
         return await this.isRegistered();
     }
 
     async updateRegInfo(activeInstanceCount = null, version = null, totalInstanceCount = null, tokenID = null, countryCode = null, cpuMicroSec = null, ramMb = null, diskMb = null, description = null, options = {}) {
         // <token_id(32)><country_code(2)><cpu_microsec(4)><ram_mb(4)><disk_mb(4)><total_instance_count(4)><active_instances(4)><description(26)><version(3)>
-        const memoBuf = Buffer.alloc(HOST_UPDATE_MEMO_SIZE, 0);
+        const paramBuf = Buffer.alloc(HOST_UPDATE_PARAM_SIZE, 0);
         if (tokenID)
-            Buffer.from(tokenID.substr(0, 32), "hex").copy(memoBuf, HOST_UPDATE_TOKEN_ID_MEMO_OFFSET);
+            Buffer.from(tokenID.substr(0, 32), "hex").copy(paramBuf, HOST_UPDATE_TOKEN_ID_PARAM_OFFSET);
         if (countryCode)
-            Buffer.from(countryCode.substr(0, 2), "utf-8").copy(memoBuf, HOST_UPDATE_COUNTRY_CODE_MEMO_OFFSET);
+            Buffer.from(countryCode.substr(0, 2), "utf-8").copy(paramBuf, HOST_UPDATE_COUNTRY_CODE_PARAM_OFFSET);
         if (cpuMicroSec)
-            memoBuf.writeUInt32LE(cpuMicroSec, HOST_UPDATE_CPU_MICROSEC_MEMO_OFFSET);
+            paramBuf.writeUInt32LE(cpuMicroSec, HOST_UPDATE_CPU_MICROSEC_PARAM_OFFSET);
         if (ramMb)
-            memoBuf.writeUInt32LE(ramMb, HOST_UPDATE_RAM_MB_MEMO_OFFSET);
+            paramBuf.writeUInt32LE(ramMb, HOST_UPDATE_RAM_MB_PARAM_OFFSET);
         if (diskMb)
-            memoBuf.writeUInt32LE(diskMb, HOST_UPDATE_DISK_MB_MEMO_OFFSET);
+            paramBuf.writeUInt32LE(diskMb, HOST_UPDATE_DISK_MB_PARAM_OFFSET);
         if (totalInstanceCount)
-            memoBuf.writeUInt32LE(totalInstanceCount, HOST_UPDATE_TOT_INS_COUNT_MEMO_OFFSET);
+            paramBuf.writeUInt32LE(totalInstanceCount, HOST_UPDATE_TOT_INS_COUNT_PARAM_OFFSET);
         if (activeInstanceCount)
-            memoBuf.writeUInt32LE(activeInstanceCount, HOST_UPDATE_ACT_INS_COUNT_MEMO_OFFSET);
+            paramBuf.writeUInt32LE(activeInstanceCount, HOST_UPDATE_ACT_INS_COUNT_PARAM_OFFSET);
         if (description)
-            Buffer.from(description.substr(0, 26), "utf-8").copy(memoBuf, HOST_UPDATE_DESCRIPTION_MEMO_OFFSET);
+            Buffer.from(description.substr(0, 26), "utf-8").copy(paramBuf, HOST_UPDATE_DESCRIPTION_PARAM_OFFSET);
         if (version) {
             const components = version.split('.').map(v => parseInt(v));
             if (components.length != 3)
                 throw 'Invalid version format.';
-            memoBuf.writeUInt8(components[0], HOST_UPDATE_VERSION_MEMO_OFFSET);
-            memoBuf.writeUInt8(components[1], HOST_UPDATE_VERSION_MEMO_OFFSET + 1);
-            memoBuf.writeUInt8(components[2], HOST_UPDATE_VERSION_MEMO_OFFSET + 2);
+            paramBuf.writeUInt8(components[0], HOST_UPDATE_VERSION_PARAM_OFFSET);
+            paramBuf.writeUInt8(components[1], HOST_UPDATE_VERSION_PARAM_OFFSET + 1);
+            paramBuf.writeUInt8(components[2], HOST_UPDATE_VERSION_PARAM_OFFSET + 2);
         }
 
         return await this.xrplAcc.makePayment(this.config.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            [
-                { type: MemoTypes.HOST_UPDATE_INFO, format: MemoFormats.HEX, data: memoBuf.toString('hex') }
-            ],
-            options.transactionOptions);
+            null,
+            {
+                hookParams: [
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_UPDATE_INFO },
+                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramBuf.toString('hex') }
+                ],
+                ...options.transactionOptions
+            });
     }
 
     async heartbeat(voteInfo = {}, options = {}) {
@@ -346,10 +360,14 @@ class HostClient extends BaseEvernodeClient {
                 XrplConstants.MIN_XRP_AMOUNT,
                 XrplConstants.XRP,
                 null,
-                [
-                    { type: MemoTypes.HEARTBEAT, format: MemoFormats.HEX, data: data }
-                ],
-                options.transactionOptions);
+                null,
+                {
+                    hookParams: [
+                        { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HEARTBEAT },
+                        { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: data }
+                    ],
+                    ...options.transactionOptions
+                });
             return res;
         }
         catch (e) {
@@ -374,74 +392,94 @@ class HostClient extends BaseEvernodeClient {
             throw "Tenant encryption key not set.";
 
         const encrypted = await EncryptionHelper.encrypt(encKey, instanceInfo);
-        const memos = [
-            { type: MemoTypes.ACQUIRE_SUCCESS, format: MemoFormats.BASE64, data: encrypted },
-            { type: MemoTypes.ACQUIRE_REF, format: MemoFormats.HEX, data: txHash }];
-
         return this.xrplAcc.makePayment(tenantAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            memos,
-            options.transactionOptions);
+            [
+                { type: EventTypes.ACQUIRE_SUCCESS, format: MemoFormats.BASE64, data: encrypted }
+            ],
+            {
+                hookParams: [
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.ACQUIRE_SUCCESS },
+                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: txHash }
+                ],
+                ...options.transactionOptions
+            });
     }
 
     async acquireError(txHash, tenantAddress, leaseAmount, reason, options = {}) {
-
-        const memos = [
-            { type: MemoTypes.ACQUIRE_ERROR, format: MemoFormats.JSON, data: { type: ErrorCodes.ACQUIRE_ERR, reason: reason } },
-            { type: MemoTypes.ACQUIRE_REF, format: MemoFormats.HEX, data: txHash }];
 
         return this.xrplAcc.makePayment(tenantAddress,
             leaseAmount.toString(),
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress,
-            memos,
-            options.transactionOptions);
+            [
+                { type: EventTypes.ACQUIRE_ERROR, format: MemoFormats.JSON, data: { type: ErrorCodes.ACQUIRE_ERR, reason: reason } }
+            ],
+            {
+                hookParams: [
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.ACQUIRE_ERROR },
+                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: txHash }
+                ],
+                ...options.transactionOptions
+            });
     }
 
     async extendSuccess(txHash, tenantAddress, expiryMoment, options = {}) {
         let buf = Buffer.allocUnsafe(4);
         buf.writeUInt32BE(expiryMoment);
 
-        const memos = [
-            { type: MemoTypes.EXTEND_SUCCESS, format: MemoFormats.HEX, data: buf.toString('hex') },
-            { type: MemoTypes.EXTEND_REF, format: MemoFormats.HEX, data: txHash }];
-
         return this.xrplAcc.makePayment(tenantAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            memos,
-            options.transactionOptions);
+            [
+                { type: EventTypes.EXTEND_SUCCESS, format: MemoFormats.HEX, data: buf.toString('hex') }
+            ],
+            {
+                hookParams: [
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.EXTEND_SUCCESS },
+                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: txHash }
+                ],
+                ...options.transactionOptions
+            });
     }
 
     async extendError(txHash, tenantAddress, reason, refund, options = {}) {
-
-        const memos = [
-            { type: MemoTypes.EXTEND_ERROR, format: MemoFormats.JSON, data: { type: ErrorCodes.EXTEND_ERR, reason: reason } },
-            { type: MemoTypes.EXTEND_REF, format: MemoFormats.HEX, data: txHash }];
 
         // Required to refund the paid EVR amount as the offer extention is not successfull.
         return this.xrplAcc.makePayment(tenantAddress,
             refund.toString(),
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress,
-            memos,
-            options.transactionOptions);
+            [
+                { type: EventTypes.EXTEND_ERROR, format: MemoFormats.JSON, data: { type: ErrorCodes.EXTEND_ERR, reason: reason } }
+            ],
+            {
+                hookParams: [
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.EXTEND_ERROR },
+                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: txHash }
+                ],
+                ...options.transactionOptions
+            });
     }
 
     async refundTenant(txHash, tenantAddress, refundAmount, options = {}) {
-        const memos = [
-            { type: MemoTypes.REFUND, format: '', data: '' },
-            { type: MemoTypes.REFUND_REF, format: MemoFormats.HEX, data: txHash }];
-
         return this.xrplAcc.makePayment(tenantAddress,
             refundAmount.toString(),
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress,
-            memos,
-            options.transactionOptions);
+            [
+                { type: EventTypes.REFUND, format: '', data: '' }
+            ],
+            {
+                hookParams: [
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.REFUND },
+                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: txHash }
+                ],
+                ...options.transactionOptions
+            });
     }
 
     async requestRebate(options = {}) {
@@ -450,9 +488,14 @@ class HostClient extends BaseEvernodeClient {
             XrplConstants.XRP,
             null,
             [
-                { type: MemoTypes.HOST_REBATE, format: "", data: "" }
+                { type: EventTypes.HOST_REBATE, format: "", data: "" }
             ],
-            options.transactionOptions);
+            {
+                hookParams: [
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_REBATE }
+                ],
+                ...options.transactionOptions
+            });
     }
 
     getLeaseNFTokenIdPrefix() {
@@ -476,8 +519,7 @@ class HostClient extends BaseEvernodeClient {
                 throw "The transferee is already registered in Evernode.";
         }
 
-        let memoData = Buffer.allocUnsafe(20);
-        codec.decodeAccountID(transfereeAddress).copy(memoData);
+        const paramData = codec.decodeAccountID(transfereeAddress);
 
         const regUriToken = await this.getRegistrationUriToken();
 
@@ -486,10 +528,14 @@ class HostClient extends BaseEvernodeClient {
             XrplConstants.XRP,
             null,
             this.config.registryAddress,
-            [
-                { type: MemoTypes.HOST_TRANSFER, format: MemoFormats.HEX, data: memoData.toString('hex') }
-            ],
-            options.transactionOptions);
+            null,
+            {
+                hookParams: [
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_TRANSFER },
+                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramData.toString('hex') }
+                ],
+                ...options.transactionOptions
+            });
 
         let token = null;
         let attempts = 0;

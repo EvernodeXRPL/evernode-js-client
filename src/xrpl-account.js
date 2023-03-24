@@ -231,7 +231,8 @@ class XrplAccount {
             Account: this.address,
             Amount: amountObj,
             Destination: toAddr,
-            Memos: TransactionHelper.formatMemos(memos)
+            Memos: TransactionHelper.formatMemos(memos),
+            HookParameters: TransactionHelper.formatHookParams(options.hookParams)
         }, options);
     }
 
@@ -248,7 +249,8 @@ class XrplAccount {
                 issuer: issuer,
                 value: limit
             },
-            Memos: TransactionHelper.formatMemos(memos)
+            Memos: TransactionHelper.formatMemos(memos),
+            HookParameters: TransactionHelper.formatHookParams(options.hookParams)
         };
 
         if (!allowRippling)
@@ -263,7 +265,8 @@ class XrplAccount {
             TransactionType: 'SetRegularKey',
             Account: this.address,
             RegularKey: regularKey,
-            Memos: TransactionHelper.formatMemos(memos)
+            Memos: TransactionHelper.formatMemos(memos),
+            HookParameters: TransactionHelper.formatHookParams(options.hookParams)
         }, options);
     }
 
@@ -300,7 +303,8 @@ class XrplAccount {
             TakerGets: sellAmountObj,
             TakerPays: forAmountObj,
             Expiration: expiration,
-            Memos: TransactionHelper.formatMemos(memos)
+            Memos: TransactionHelper.formatMemos(memos),
+            HookParameters: TransactionHelper.formatHookParams(options.hookParams)
         }, options);
     }
 
@@ -315,7 +319,8 @@ class XrplAccount {
             TakerGets: forAmountObj,
             TakerPays: buyAmountObj,
             Expiration: expiration,
-            Memos: TransactionHelper.formatMemos(memos)
+            Memos: TransactionHelper.formatMemos(memos),
+            HookParameters: TransactionHelper.formatHookParams(options.hookParams)
         }, options);
     }
 
@@ -324,7 +329,8 @@ class XrplAccount {
             TransactionType: 'OfferCancel',
             Account: this.address,
             OfferSequence: offerSequence,
-            Memos: TransactionHelper.formatMemos(memos)
+            Memos: TransactionHelper.formatMemos(memos),
+            HookParameters: TransactionHelper.formatHookParams(options.hookParams)
         }, options);
     }
 
@@ -336,7 +342,8 @@ class XrplAccount {
             NFTokenTaxon: taxon,
             TransferFee: transferFee,
             Flags: (flags.isBurnable ? 1 : 0) | (flags.isOnlyXRP ? 2 : 0) | (flags.isTrustLine ? 4 : 0) | (flags.isTransferable ? 8 : 0),
-            Memos: TransactionHelper.formatMemos(memos)
+            Memos: TransactionHelper.formatMemos(memos),
+            HookParameters: TransactionHelper.formatHookParams(options.hookParams)
         }, options);
     }
 
@@ -350,7 +357,8 @@ class XrplAccount {
             Amount: amountObj,
             Expiration: expiration,
             Flags: 1, // tfSellToken
-            Memos: TransactionHelper.formatMemos(memos)
+            Memos: TransactionHelper.formatMemos(memos),
+            HookParameters: TransactionHelper.formatHookParams(options.hookParams)
         };
 
         return this.#submitAndVerifyTransaction(destination ? { ...tx, Destination: destination } : tx, options);
@@ -368,7 +376,8 @@ class XrplAccount {
             Amount: amountObj,
             Expiration: expiration,
             Flags: 0, // Buy offer
-            Memos: TransactionHelper.formatMemos(memos)
+            Memos: TransactionHelper.formatMemos(memos),
+            HookParameters: TransactionHelper.formatHookParams(options.hookParams)
         }, options);
     }
 
@@ -378,7 +387,8 @@ class XrplAccount {
             TransactionType: 'NFTokenAcceptOffer',
             Account: this.address,
             NFTokenBuyOffer: offerId,
-            Memos: TransactionHelper.formatMemos(memos)
+            Memos: TransactionHelper.formatMemos(memos),
+            HookParameters: TransactionHelper.formatHookParams(options.hookParams)
         }, options);
     }
 
@@ -388,7 +398,8 @@ class XrplAccount {
             TransactionType: 'NFTokenAcceptOffer',
             Account: this.address,
             NFTokenSellOffer: offerId,
-            Memos: TransactionHelper.formatMemos(memos)
+            Memos: TransactionHelper.formatMemos(memos),
+            HookParameters: TransactionHelper.formatHookParams(options.hookParams)
         }, options);
     }
 
@@ -398,7 +409,8 @@ class XrplAccount {
             TransactionType: 'NFTokenBurn',
             Account: this.address,
             NFTokenID: nfTokenId,
-            Memos: TransactionHelper.formatMemos(memos)
+            Memos: TransactionHelper.formatMemos(memos),
+            HookParameters: TransactionHelper.formatHookParams(options.hookParams)
         };
 
         return this.#submitAndVerifyTransaction(owner ? { ...tx, Owner: owner } : tx, options);
@@ -599,6 +611,9 @@ class XrplAccount {
         if (memos)
             tx.Memos = TransactionHelper.formatMemos(memos);
 
+        if (options.hookParams)
+            tx.HookParameters = TransactionHelper.formatHookParams(options.hookParams);
+
         return this.#submitAndVerifyTransaction(tx, options);
     }
 
@@ -612,6 +627,9 @@ class XrplAccount {
 
         if (memos)
             tx.Memos = TransactionHelper.formatMemos(memos);
+
+        if (options.hookParams)
+            tx.HookParameters = TransactionHelper.formatHookParams(options.hookParams);
 
         return this.#submitAndVerifyTransaction(tx, options);
     }

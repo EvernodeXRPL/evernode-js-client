@@ -1,5 +1,5 @@
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { EvernodeEvents, MemoFormats, MemoTypes, ErrorCodes, ErrorReasons, EvernodeConstants } = require('../evernode-common');
+const { EvernodeEvents, MemoFormats, EventTypes, ErrorCodes, ErrorReasons, EvernodeConstants, HookParamKeys } = require('../evernode-common');
 const { EncryptionHelper } = require('../encryption-helper');
 const { XrplAccount } = require('../xrpl-account');
 const { UtilHelpers } = require('../util-helpers');
@@ -95,7 +95,17 @@ class TenantClient extends BaseEvernodeClient {
             ephemPrivateKey: options.ephemPrivateKey // Must be null or 32 bytes.
         });
 
-        return this.xrplAcc.buyURIToken(buyUriOffer, [{ type: MemoTypes.ACQUIRE_LEASE, format: MemoFormats.BASE64, data: ecrypted }], options.transactionOptions);
+        return this.xrplAcc.buyURIToken(
+            buyUriOffer,
+            [
+                { type: EventTypes.ACQUIRE_LEASE, format: MemoFormats.BASE64, data: ecrypted }
+            ],
+            {
+                hookParams: [
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.ACQUIRE_LEASE }
+                ],
+                ...options.transactionOptions
+            });
     }
 
     /**
@@ -119,6 +129,7 @@ class TenantClient extends BaseEvernodeClient {
                 const txList = await this.xrplAcc.getAccountTrx(tx.details.ledger_index);
                 for (let t of txList) {
                     t.tx.Memos = TransactionHelper.deserializeMemos(t.tx?.Memos);
+                    t.tx.HookParameters = TransactionHelper.deserializeHookParams(t.tx?.HookParameters);
                     const res = await this.extractEvernodeEvent(t.tx);
                     if ((res?.name === EvernodeEvents.AcquireSuccess || res?.name === EvernodeEvents.AcquireError) && res?.data?.acquireRefId === tx.id) {
                         clearTimeout(failTimeout);
@@ -181,8 +192,18 @@ class TenantClient extends BaseEvernodeClient {
      */
     async extendLeaseSubmit(hostAddress, amount, tokenID, options = {}) {
         const host = await this.getLeaseHost(hostAddress);
-        return this.xrplAcc.makePayment(host.address, amount.toString(), EvernodeConstants.EVR, this.config.evrIssuerAddress,
-            [{ type: MemoTypes.EXTEND_LEASE, format: MemoFormats.HEX, data: tokenID }], options.transactionOptions);
+        return this.xrplAcc.makePayment(
+            host.address, amount.toString(),
+            EvernodeConstants.EVR,
+            this.config.evrIssuerAddress,
+            null,
+            {
+                hookParams: [
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.EXTEND_LEASE },
+                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: tokenID }
+                ],
+                ...options.transactionOptions
+            });
     }
 
     /**
@@ -206,6 +227,7 @@ class TenantClient extends BaseEvernodeClient {
                 const txList = await this.xrplAcc.getAccountTrx(tx.details.ledger_index);
                 for (let t of txList) {
                     t.tx.Memos = TransactionHelper.deserializeMemos(t.tx.Memos);
+                    t.tx.HookParameters = TransactionHelper.deserializeHookParams(t.tx?.HookParameters);
                     const res = await this.extractEvernodeEvent(t.tx);
                     if ((res?.name === TenantEvents.ExtendSuccess || res?.name === TenantEvents.ExtendError) && res?.data?.extendRefId === tx.id) {
                         clearTimeout(failTimeout);

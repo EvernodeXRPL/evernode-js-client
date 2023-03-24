@@ -3,7 +3,7 @@ const { Buffer } = require('buffer');
 const { XrplApi } = require('../xrpl-api');
 const { XrplAccount } = require('../xrpl-account');
 const { XrplApiEvents, XrplConstants } = require('../xrpl-common');
-const { EvernodeEvents, MemoTypes, MemoFormats, EvernodeConstants, HookStateKeys } = require('../evernode-common');
+const { EvernodeEvents, EventTypes, MemoFormats, EvernodeConstants, HookStateKeys, HookParamKeys } = require('../evernode-common');
 const { DefaultValues } = require('../defaults');
 const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
@@ -13,12 +13,15 @@ const { StateHelpers } = require('../state-helpers');
 const { EvernodeHelpers } = require('../evernode-helpers');
 const { HookHelpers } = require('../hook-helpers');
 
-const CANDIDATE_PROPOSE_UNIQUE_ID_MEMO_OFFSET = 0;
-const CANDIDATE_PROPOSE_SHORT_NAME_MEMO_OFFSET = 32;
-const CANDIDATE_PROPOSE_KEYLETS_MEMO_OFFSET = 52;
-const CANDIDATE_PROPOSE_MEMO_SIZE = 154;
+const CANDIDATE_PROPOSE_HASHES_PARAM_OFFSET = 0;
+const CANDIDATE_PROPOSE_KEYLETS_PARAM_OFFSET = 96;
+const CANDIDATE_PROPOSE_UNIQUE_ID_PARAM_OFFSET = 198;
+const CANDIDATE_PROPOSE_SHORT_NAME_PARAM_OFFSET = 230;
+const CANDIDATE_PROPOSE_PARAM_SIZE = 250;
 
 const DUD_HOST_CANDID_ADDRESS_OFFSET = 12;
+
+const MAX_HOOK_PARAM_SIZE = 128;
 
 class BaseEvernodeClient {
 
@@ -237,11 +240,20 @@ class BaseEvernodeClient {
     /**
      * Extracts the transaction info from a given transaction.
      * @param {object} tx Transaction to be deserialized and extracted.
-     * @returns The event object in the format {name: '', data: {}}. Returns null if not handled. Note: You need to deserialize memos before passing the transaction to this function.
+     * @returns The event object in the format {name: '', data: {}}. Returns null if not handled. Note: You need to deserialize HookParameters before passing the transaction to this function.
      */
     async extractEvernodeEvent(tx) {
-        if (tx.TransactionType === 'URITokenBuy' && tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.ACQUIRE_LEASE && tx.Memos[0].format === MemoFormats.BASE64 && tx.Memos[0].data) {
+        let eventType;
+        let eventData;
+        if (tx.HookParameters.length) {
+            let test = [];
+            test.find(p => p.name === HookParamKeys.PARAM_EVENT_TYPE_KEY);
+            eventType = tx.HookParameters.find(p => p.name === HookParamKeys.PARAM_EVENT_TYPE_KEY)?.value;
+            eventData = tx.HookParameters.find(p => p.name === HookParamKeys.PARAM_EVENT_DATA1_KEY)?.value;
+            eventData += tx.HookParameters.find(p => p.name === HookParamKeys.PARAM_EVENT_DATA2_KEY)?.value ?? '';
+        }
+        if (tx.TransactionType === 'URITokenBuy' && eventType === EventTypes.ACQUIRE_LEASE && tx.Memos.length &&
+            tx.HookParameters[0].type === EventTypes.ACQUIRE_LEASE && tx.Memos[0].format === MemoFormats.BASE64 && tx.Memos[0].data) {
 
             // If our account is the destination host account, then decrypt the payload.
             let payload = tx.Memos[0].data;
@@ -267,12 +279,11 @@ class BaseEvernodeClient {
             }
         }
 
-        else if (tx.Memos.length >= 2 &&
-            tx.Memos[0].type === MemoTypes.ACQUIRE_SUCCESS && tx.Memos[0].data &&
-            tx.Memos[1].type === MemoTypes.ACQUIRE_REF && tx.Memos[1].data) {
+        else if (eventType === EventTypes.ACQUIRE_SUCCESS && eventData && tx.Memos.length &&
+            tx.Memos[0].type === EventTypes.ACQUIRE_SUCCESS && tx.Memos[0].data) {
 
             let payload = tx.Memos[0].data;
-            const acquireRefId = tx.Memos[1].data;
+            const acquireRefId = eventData;
 
             // If our account is the destination user account, then decrypt the payload.
             if (tx.Memos[0].format === MemoFormats.BASE64 && tx.Destination === this.xrplAcc.address) {
@@ -293,12 +304,11 @@ class BaseEvernodeClient {
             }
 
         }
-        else if (tx.Memos.length >= 2 &&
-            tx.Memos[0].type === MemoTypes.ACQUIRE_ERROR && tx.Memos[0].data &&
-            tx.Memos[1].type === MemoTypes.ACQUIRE_REF && tx.Memos[1].data) {
+        else if (eventType === EventTypes.ACQUIRE_ERROR && eventData && tx.Memos.length &&
+            tx.Memos[0].type === EventTypes.ACQUIRE_ERROR && tx.Memos[0].data) {
 
             let error = tx.Memos[0].data;
-            const acquireRefId = tx.Memos[1].data;
+            const acquireRefId = eventData;
 
             if (tx.Memos[0].format === MemoFormats.JSON)
                 error = JSON.parse(error).reason;
@@ -312,8 +322,7 @@ class BaseEvernodeClient {
                 }
             }
         }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.HOST_REG && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+        else if (eventType === EventTypes.HOST_REG && eventData) {
 
             return {
                 name: EvernodeEvents.HostRegistered,
@@ -323,7 +332,7 @@ class BaseEvernodeClient {
                 }
             }
         }
-        else if (tx.Memos.length >= 1 && tx.Memos[0].type === MemoTypes.HOST_DEREG) {
+        else if (eventType === EventTypes.HOST_DEREG && eventData) {
             return {
                 name: EvernodeEvents.HostDeregistered,
                 data: {
@@ -332,14 +341,13 @@ class BaseEvernodeClient {
                 }
             }
         }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.HEARTBEAT) {
+        else if (eventType === EventTypes.HEARTBEAT) {
 
-            const voteInfo = (tx.Memos[0].data && tx.Memos[0].data.length) ?
+            const voteInfo = (eventData && eventData.length) ?
                 {
                     voteInfo: {
-                        candidateId: tx.Memos[0].data.substr(0, 64),
-                        vote: Buffer.from(tx.Memos[0].data, 'hex').slice(32, 33).readUInt8()
+                        candidateId: eventData.substr(0, 64),
+                        vote: Buffer.from(eventData, 'hex').slice(32, 33).readUInt8()
                     }
                 } : {};
 
@@ -352,10 +360,9 @@ class BaseEvernodeClient {
                 }
             }
         }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.EXTEND_LEASE && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+        else if (eventType === EventTypes.EXTEND_LEASE && eventData) {
 
-            let uriTokenId = tx.Memos[0].data;
+            let uriTokenId = eventData;
 
             return {
                 name: EvernodeEvents.ExtendLease,
@@ -369,12 +376,11 @@ class BaseEvernodeClient {
                 }
             }
         }
-        else if (tx.Memos.length >= 2 &&
-            tx.Memos[0].type === MemoTypes.EXTEND_SUCCESS && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data &&
-            tx.Memos[1].type === MemoTypes.EXTEND_REF && tx.Memos[1].format === MemoFormats.HEX && tx.Memos[1].data) {
+        else if (eventType === EventTypes.EXTEND_SUCCESS && eventData && tx.Memos.length &&
+            tx.Memos[0].type === EventTypes.EXTEND_SUCCESS && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
 
             const extendResBuf = Buffer.from(tx.Memos[0].data, 'hex');
-            const extendRefId = tx.Memos[1].data;
+            const extendRefId = eventData;
 
             return {
                 name: EvernodeEvents.ExtendSuccess,
@@ -386,12 +392,11 @@ class BaseEvernodeClient {
             }
 
         }
-        else if (tx.Memos.length >= 2 &&
-            tx.Memos[0].type === MemoTypes.EXTEND_ERROR && tx.Memos[0].data &&
-            tx.Memos[1].type === MemoTypes.EXTEND_REF && tx.Memos[1].data) {
+        else if (eventType === EventTypes.EXTEND_ERROR && eventData && tx.Memos.length &&
+            tx.Memos[0].type === EventTypes.EXTEND_ERROR && tx.Memos[0].data) {
 
             let error = tx.Memos[0].data;
-            const extendRefId = tx.Memos[1].data;
+            const extendRefId = eventData;
 
             if (tx.Memos[0].format === MemoFormats.JSON)
                 error = JSON.parse(error).reason;
@@ -405,8 +410,7 @@ class BaseEvernodeClient {
                 }
             }
         }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.INIT && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+        else if (eventType === EventTypes.INIT && eventData) {
 
             return {
                 name: EvernodeEvents.Initialized,
@@ -415,8 +419,7 @@ class BaseEvernodeClient {
                 }
             }
         }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.HOST_UPDATE_INFO && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+        else if (eventType === EventTypes.HOST_UPDATE_INFO && eventData) {
 
             return {
                 name: EvernodeEvents.HostRegUpdated,
@@ -426,10 +429,9 @@ class BaseEvernodeClient {
                 }
             }
         }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.DEAD_HOST_PRUNE && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+        else if (eventType === EventTypes.DEAD_HOST_PRUNE && eventData) {
 
-            const addrsBuf = Buffer.from(tx.Memos[0].data, 'hex');
+            const addrsBuf = Buffer.from(eventData, 'hex');
 
             return {
                 name: EvernodeEvents.DeadHostPrune,
@@ -439,8 +441,7 @@ class BaseEvernodeClient {
                 }
             }
         }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.HOST_REBATE) {
+        else if (eventType === EventTypes.HOST_REBATE) {
 
             return {
                 name: EvernodeEvents.HostRebate,
@@ -450,10 +451,9 @@ class BaseEvernodeClient {
                 }
             }
         }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.HOST_TRANSFER && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+        else if (eventType === EventTypes.HOST_TRANSFER && eventData) {
 
-            const addrsBuf = Buffer.from(tx.Memos[0].data, 'hex');
+            const addrsBuf = Buffer.from(eventData, 'hex');
 
             return {
                 name: EvernodeEvents.HostTransfer,
@@ -463,40 +463,36 @@ class BaseEvernodeClient {
                 }
             }
         }
-        else if (tx.Memos.length >= 2 &&
-            tx.Memos[0].type === MemoTypes.CANDIDATE_PROPOSE && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data &&
-            tx.Memos[1].type === MemoTypes.CANDIDATE_PROPOSE_REF && tx.Memos[1].format === MemoFormats.HEX && tx.Memos[1].data) {
+        else if (eventType === EventTypes.CANDIDATE_PROPOSE && eventData) {
 
             return {
                 name: EvernodeEvents.CandidateProposed,
                 data: {
                     transaction: tx,
                     owner: tx.Account,
-                    candidateId: tx.Memos[1].data.substr(0, 64)
+                    candidateId: eventData.substr(CANDIDATE_PROPOSE_UNIQUE_ID_PARAM_OFFSET * 2, 64)
                 }
             }
         }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.CANDIDATE_WITHDRAW && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+        else if (eventType === EventTypes.CANDIDATE_WITHDRAW && eventData) {
             return {
                 name: EvernodeEvents.CandidateWithdrew,
                 data: {
                     transaction: tx,
                     owner: tx.Account,
-                    candidateId: tx.Memos[0].data.substr(0, 64)
+                    candidateId: eventData.substr(0, 64)
                 }
             }
         }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.CANDIDATE_STATUS_CHANGE && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
-            const memoBuf = Buffer.from(tx.Memos[0].data, 'hex');
-            const candidateId = memoBuf.slice(0, 32).toString('hex');
+        else if (eventType === EventTypes.CANDIDATE_STATUS_CHANGE && eventData) {
+            const eventDataBuf = Buffer.from(eventData, 'hex');
+            const candidateId = eventDataBuf.slice(0, 32).toString('hex');
             const candidateType = StateHelpers.getCandidateType(candidateId);
 
             switch (candidateType) {
                 case (EvernodeConstants.CandidateTypes.DudHost):
                     return {
-                        name: memoBuf.readUInt8(32) === EvernodeConstants.CandidateStatuses.CANDIDATE_ELECTED ? EvernodeEvents.DudHostRemoved : EvernodeEvents.DudHostStatusChanged,
+                        name: eventDataBuf.readUInt8(32) === EvernodeConstants.CandidateStatuses.CANDIDATE_ELECTED ? EvernodeEvents.DudHostRemoved : EvernodeEvents.DudHostStatusChanged,
                         data: {
                             transaction: tx,
                             candidateId: candidateId,
@@ -524,20 +520,18 @@ class BaseEvernodeClient {
             }
 
         }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.HOOK_UPDATE_RES && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
+        else if (eventType === EventTypes.HOOK_UPDATE_RES && eventData) {
             return {
                 name: EvernodeEvents.ChildHookUpdated,
                 data: {
                     transaction: tx,
                     account: tx.Account,
-                    candidateId: tx.Memos[0].data.substr(0, 64)
+                    candidateId: eventData.substr(0, 64)
                 }
             }
         }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.GOVERNANCE_MODE_CHANGE && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
-            const mode = Buffer.from(tx.Memos[0].data, 'hex').slice(0, 1).readUInt8();
+        else if (eventType === EventTypes.GOVERNANCE_MODE_CHANGE && eventData) {
+            const mode = Buffer.from(eventData, 'hex').slice(0, 1).readUInt8();
 
             return {
                 name: EvernodeEvents.GovernanceModeChanged,
@@ -547,22 +541,20 @@ class BaseEvernodeClient {
                 }
             }
         }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.CANDIDATE_VOTE && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
-            const vote = Buffer.from(tx.Memos[0].data, 'hex').slice(32, 33).readUInt8();
+        else if (eventType === EventTypes.CANDIDATE_VOTE && eventData) {
+            const vote = Buffer.from(eventData, 'hex').slice(32, 33).readUInt8();
 
             return {
                 name: EvernodeEvents.FoundationVoted,
                 data: {
                     transaction: tx,
-                    candidateId: tx.Memos[0].data.substr(0, 64),
+                    candidateId: eventData.substr(0, 64),
                     vote: vote
                 }
             }
         }
-        else if (tx.Memos.length >= 1 &&
-            tx.Memos[0].type === MemoTypes.DUD_HOST_REPORT && tx.Memos[0].format === MemoFormats.HEX && tx.Memos[0].data) {
-            const candidateId = tx.Memos[0].data.substr(0, 64);
+        else if (eventType === EventTypes.DUD_HOST_REPORT && eventData) {
+            const candidateId = eventData.substr(0, 64);
 
             return {
                 name: EvernodeEvents.DudHostReported,
@@ -727,8 +719,8 @@ class BaseEvernodeClient {
         if (this.xrplAcc.address === this.config.registryAddress)
             throw 'Invalid function call';
 
-        let memoData = Buffer.allocUnsafe(20);
-        codec.decodeAccountID(hostAddress).copy(memoData);
+        let paramData = Buffer.allocUnsafe(20);
+        codec.decodeAccountID(hostAddress).copy(paramData);
 
         // To obtain registration NFT Page Keylet and index.
         const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
@@ -738,9 +730,13 @@ class BaseEvernodeClient {
                 XrplConstants.MIN_XRP_AMOUNT,
                 XrplConstants.XRP,
                 null,
-                [
-                    { type: MemoTypes.DEAD_HOST_PRUNE, format: MemoFormats.HEX, data: memoData.toString('hex') }
-                ]);
+                null,
+                {
+                    hookParams: [
+                        { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.DEAD_HOST_PRUNE },
+                        { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramData.toString('hex') }
+                    ]
+                });
         } else
             throw "No Registration URI token was found for the Host account."
 
@@ -893,10 +889,11 @@ class BaseEvernodeClient {
         }
 
         const uniqueId = StateHelpers.getNewHookCandidateId(hashesBuf);
-        const memoBuf = Buffer.alloc(CANDIDATE_PROPOSE_MEMO_SIZE);
-        Buffer.from(uniqueId, 'hex').copy(memoBuf, CANDIDATE_PROPOSE_UNIQUE_ID_MEMO_OFFSET);
-        Buffer.from(shortName.substr(0, 20), "utf-8").copy(memoBuf, CANDIDATE_PROPOSE_SHORT_NAME_MEMO_OFFSET);
-        Buffer.from(keylets.join(''), 'hex').copy(memoBuf, CANDIDATE_PROPOSE_KEYLETS_MEMO_OFFSET);
+        const paramBuf = Buffer.alloc(CANDIDATE_PROPOSE_PARAM_SIZE);
+        hashesBuf.copy(paramBuf, CANDIDATE_PROPOSE_HASHES_PARAM_OFFSET);
+        Buffer.from(keylets.join(''), 'hex').copy(paramBuf, CANDIDATE_PROPOSE_KEYLETS_PARAM_OFFSET);
+        Buffer.from(uniqueId, 'hex').copy(paramBuf, CANDIDATE_PROPOSE_UNIQUE_ID_PARAM_OFFSET);
+        Buffer.from(shortName.substr(0, 20), "utf-8").copy(paramBuf, CANDIDATE_PROPOSE_SHORT_NAME_PARAM_OFFSET);
 
         // Get the proposal fee. Proposal fee is current epochs moment worth of rewards.
         const proposalFee = EvernodeHelpers.getEpochRewardQuota(this.config.rewardInfo.epoch, this.config.rewardConfiguration.firstEpochRewardQuota);
@@ -905,11 +902,15 @@ class BaseEvernodeClient {
             proposalFee.toString(),
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress,
-            [
-                { type: MemoTypes.CANDIDATE_PROPOSE, format: MemoFormats.HEX, data: hashesBuf.toString('hex').toUpperCase() },
-                { type: MemoTypes.CANDIDATE_PROPOSE_REF, format: MemoFormats.HEX, data: memoBuf.toString('hex').toUpperCase() }
-            ],
-            options.transactionOptions);
+            null,
+            {
+                hookParams: [
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.CANDIDATE_PROPOSE },
+                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramBuf.slice(0, MAX_HOOK_PARAM_SIZE).toString('hex').toUpperCase() },
+                    { name: HookParamKeys.PARAM_EVENT_DATA2_KEY, value: paramBuf.slice(MAX_HOOK_PARAM_SIZE).toString('hex').toUpperCase() }
+                ],
+                ...options.transactionOptions
+            });
 
         return uniqueId;
     }
@@ -926,10 +927,14 @@ class BaseEvernodeClient {
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            [
-                { type: MemoTypes.CANDIDATE_WITHDRAW, format: MemoFormats.HEX, data: candidateIdBuf.toString('hex').toUpperCase() }
-            ],
-            options.transactionOptions);
+            null,
+            {
+                hookParams: [
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.CANDIDATE_WITHDRAW },
+                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: candidateIdBuf.toString('hex').toUpperCase() }
+                ],
+                ...options.transactionOptions
+            });
     }
 
     /**
@@ -948,10 +953,14 @@ class BaseEvernodeClient {
             proposalFee.toString(),
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress,
-            [
-                { type: MemoTypes.DUD_HOST_REPORT, format: MemoFormats.HEX, data: candidateId }
-            ],
-            options.transactionOptions);
+            null,
+            {
+                hookParams: [
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.DUD_HOST_REPORT },
+                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: candidateId }
+                ],
+                ...options.transactionOptions
+            });
     }
 }
 
