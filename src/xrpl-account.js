@@ -498,7 +498,7 @@ class XrplAccount {
                 const hookExecRes = txResult.details?.meta?.HookExecutions?.map(o => {
                     return {
                         result: o.HookExecution?.HookResult,
-                        returnCode: o.HookExecution?.HookReturnCode,
+                        returnCode: parseInt(o.HookExecution?.HookReturnCode, 16),
                         message: TransactionHelper.hexToASCII(o.HookExecution?.HookReturnString).replace(/\x00+$/, '')
                     }
                 });
@@ -543,7 +543,7 @@ class XrplAccount {
                 const hookExecRes = txResult.details?.meta?.HookExecutions?.map(o => {
                     return {
                         result: o.HookExecution?.HookResult,
-                        returnCode: o.HookExecution?.HookReturnCode,
+                        returnCode: parseInt(o.HookExecution?.HookReturnCode, 16),
                         message: TransactionHelper.hexToASCII(o.HookExecution?.HookReturnString).replace(/\x00+$/, '')
                     }
                 });
