@@ -246,14 +246,12 @@ class BaseEvernodeClient {
         let eventType;
         let eventData;
         if (tx.HookParameters.length) {
-            let test = [];
-            test.find(p => p.name === HookParamKeys.PARAM_EVENT_TYPE_KEY);
             eventType = tx.HookParameters.find(p => p.name === HookParamKeys.PARAM_EVENT_TYPE_KEY)?.value;
             eventData = tx.HookParameters.find(p => p.name === HookParamKeys.PARAM_EVENT_DATA1_KEY)?.value;
             eventData += tx.HookParameters.find(p => p.name === HookParamKeys.PARAM_EVENT_DATA2_KEY)?.value ?? '';
         }
         if (tx.TransactionType === 'URITokenBuy' && eventType === EventTypes.ACQUIRE_LEASE && tx.Memos.length &&
-            tx.HookParameters[0].type === EventTypes.ACQUIRE_LEASE && tx.Memos[0].format === MemoFormats.BASE64 && tx.Memos[0].data) {
+            tx.Memos[0].type === EventTypes.ACQUIRE_LEASE && tx.Memos[0].format === MemoFormats.BASE64 && tx.Memos[0].data) {
 
             // If our account is the destination host account, then decrypt the payload.
             let payload = tx.Memos[0].data;
