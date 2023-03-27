@@ -662,7 +662,12 @@ async function makePayment() {
     const tenant = new evernode.XrplAccount(tenantAddress, tenantSecret);
     console.log("-----------Simple payment");
     const res = await tenant.makePayment(governorAddress, "1", "EVR", evrIssuerAddress,
-        [{ type: 'evnTest', format: evernode.MemoFormats.TEXT, data: 'Test Data' }]);
+        [{ type: 'evnTest', format: 'text/plain', data: 'Test Data' }],
+        {
+            hookParams: [
+                { name: '546573744E616D65', value: '5465737456616C7565' }
+            ]
+        });
     console.log(res);
 }
 
