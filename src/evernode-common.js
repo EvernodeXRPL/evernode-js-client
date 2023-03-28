@@ -77,7 +77,7 @@ const ErrorCodes = {
 const ErrorReasons = {
     TRANSACTION_FAILURE: 'TRANSACTION_FAILURE',
     NO_OFFER: 'NO_OFFER',
-    NO_NFT: 'NO_NFT',
+    NO_TOKEN: 'NO_TOKEN',
     INTERNAL_ERR: 'INTERNAL_ERR',
     TIMEOUT: 'TIMEOUT',
     HOST_INVALID: 'HOST_INVALID',

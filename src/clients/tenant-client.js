@@ -270,7 +270,7 @@ class TenantClient extends BaseEvernodeClient {
             const uriToken = (await this.xrplAcc.getURITokens())?.find(n => n.index == tokenID);
 
             if (!uriToken) {
-                reject({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.NO_NFT, content: 'Could not find the uri token for lease extend request.' });
+                reject({ error: ErrorCodes.EXTEND_ERR, reason: ErrorReasons.NO_TOKEN, content: 'Could not find the uri token for lease extend request.' });
                 return;
             }
 
