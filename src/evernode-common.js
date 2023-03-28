@@ -32,7 +32,7 @@ const EvernodeConstants = {
     }
 }
 
-const MemoTypes = {
+const EventTypes = {
     ACQUIRE_LEASE: 'evnAcquireLease',
     ACQUIRE_SUCCESS: 'evnAcquireSuccess',
     ACQUIRE_ERROR: 'evnAcquireError',
@@ -77,7 +77,7 @@ const ErrorCodes = {
 const ErrorReasons = {
     TRANSACTION_FAILURE: 'TRANSACTION_FAILURE',
     NO_OFFER: 'NO_OFFER',
-    NO_NFT: 'NO_NFT',
+    NO_TOKEN: 'NO_TOKEN',
     INTERNAL_ERR: 'INTERNAL_ERR',
     TIMEOUT: 'TIMEOUT',
     HOST_INVALID: 'HOST_INVALID',
@@ -120,6 +120,14 @@ const HookStateKeys = {
     PREFIX_CANDIDATE_ID: "45565206",
 }
 
+// All keys are prefixed with 'EVR' (0x455652)
+const HookParamKeys = {
+    PARAM_STATE_HOOK_KEY: "4556520100000000000000000000000000000000000000000000000000000001",
+    PARAM_EVENT_TYPE_KEY: "4556520100000000000000000000000000000000000000000000000000000002",
+    PARAM_EVENT_DATA1_KEY: "4556520100000000000000000000000000000000000000000000000000000003",
+    PARAM_EVENT_DATA2_KEY: "4556520100000000000000000000000000000000000000000000000000000004",
+}
+
 const EvernodeEvents = {
     HostRegistered: "HostRegistered",
     HostDeregistered: "HostDeregistered",
@@ -155,11 +163,12 @@ const URITokenTypes = {
 
 module.exports = {
     EvernodeConstants,
-    MemoTypes,
+    EventTypes,
     MemoFormats,
     ErrorCodes,
     ErrorReasons,
     HookStateKeys,
     EvernodeEvents,
-    URITokenTypes
+    URITokenTypes,
+    HookParamKeys
 }

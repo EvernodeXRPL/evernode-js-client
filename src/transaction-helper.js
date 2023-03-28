@@ -1,4 +1,4 @@
-const { MemoFormats } = require('./evernode-common');
+const { MemoFormats, HookParamKeys } = require('./evernode-common');
 
 class TransactionHelper {
 
@@ -34,26 +34,47 @@ class TransactionHelper {
         })
     }
 
+    // Convert hook params from our object type to xrpl lib object type.
+    static formatHookParams(params) {
+        return params ? params.filter(m => m.name).map(m => {
+            return {
+                HookParameter: {
+                    HookParameterName: m.name,
+                    HookParameterValue: m.value ?
+                        (m.name === HookParamKeys.PARAM_EVENT_TYPE_KEY ? TransactionHelper.asciiToHex(m.value) :
+                            m.value.toUpperCase()) : ''
+                }
+            }
+        }) : [];
+    }
+
+    // Convert hook params from xrpl lib object type to our object type.
+    static deserializeHookParams(params) {
+        if (!params)
+            return [];
+
+        return params.filter(m => m.HookParameter).map(m => {
+            return {
+                name: m.HookParameter.HookParameterName,
+                value: m.HookParameter.HookParameterValue ?
+                    (m.HookParameter.HookParameterName === HookParamKeys.PARAM_EVENT_TYPE_KEY ? TransactionHelper.hexToASCII(m.HookParameter.HookParameterValue) :
+                        m.HookParameter.HookParameterValue.toUpperCase()) : '',
+            }
+        })
+    }
+
     static hexToASCII(hex) {
         if (!hex)
             return "";
 
-        let str = "";
-        for (let n = 0; n < hex.length; n += 2) {
-            str += String.fromCharCode(parseInt(hex.substr(n, 2), 16));
-        }
-        return str;
+        return Buffer.from(hex, 'hex').toString();
     }
 
     static asciiToHex(str) {
         if (!str)
             return "";
 
-        let hex = "";
-        for (let n = 0; n < str.length; n++) {
-            hex += str.charCodeAt(n).toString(16)
-        }
-        return hex;
+        return Buffer.from(str).toString('hex').toUpperCase();
     }
 }
 

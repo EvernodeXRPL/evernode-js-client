@@ -38,7 +38,7 @@ const signerQuorum = 1;
 
 const tosHash = "757A0237B44D8B2BBB04AE2BAD5813858E0AECD2F0B217075E27E0630BA74314";
 
-const hookCandidates = "7E8095F5E8537421EE596D3E7C540B54904F6199EF9FC14D467A615A38C01A78F5FE2B8FB7969F863A698AD10473CD5D27ADBBB418717AAE042123BE38818850DFD7A95B6FE6C439E4A204F29DFAC02B5F82463DDD366DBDB65C6B9EDD643BDA";
+const hookCandidates = "E2F7D833DF05EE69C6F4244F2E6C9B9D2745EAD1EC7503FA2B5102E24DA2C6F91ADCDEF05B87BC22565647A2676B9961DD75C20212BE9E98E7A7EBC8A9BCF72B33BDC163ACFFE34EDE3C607DDF295B239A0A3C0506372072B370DB3786359938";
 
 const clients = [];
 
@@ -204,15 +204,25 @@ async function getActiveHosts() {
 
 async function initializeConfigs() {
     console.log(`-----------Initialize configs`);
-    let memoData = Buffer.allocUnsafe(80);
-    codec.decodeAccountID(evrIssuerAddress).copy(memoData);
-    codec.decodeAccountID(foundationAddress).copy(memoData, 20);
-    codec.decodeAccountID(registryAddress).copy(memoData, 40);
-    codec.decodeAccountID(heartbeatAddress).copy(memoData, 60);
+    let paramData = Buffer.allocUnsafe(80);
+    codec.decodeAccountID(evrIssuerAddress).copy(paramData);
+    codec.decodeAccountID(foundationAddress).copy(paramData, 20);
+    codec.decodeAccountID(registryAddress).copy(paramData, 40);
+    codec.decodeAccountID(heartbeatAddress).copy(paramData, 60);
 
     const initAccount = new evernode.XrplAccount(initializerAddress, initializerSecret);
-    await initAccount.makePayment(governorAddress, '1', 'XRP', null,
-        [{ type: 'evnInitialize', format: 'hex', data: memoData.toString('hex') }]);
+    await initAccount.makePayment(
+        governorAddress,
+        '1',
+        'XRP',
+        null,
+        null,
+        {
+            hookParams: [
+                { name: evernode.HookParamKeys.PARAM_EVENT_TYPE_KEY, value: 'evnInitialize' },
+                { name: evernode.HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramData.toString('hex') }
+            ]
+        });
 }
 
 async function registerHost(address = hostAddress, secret = hostSecret) {
@@ -652,7 +662,12 @@ async function makePayment() {
     const tenant = new evernode.XrplAccount(tenantAddress, tenantSecret);
     console.log("-----------Simple payment");
     const res = await tenant.makePayment(governorAddress, "1", "EVR", evrIssuerAddress,
-        [{ type: 'evnTest', format: evernode.MemoFormats.TEXT, data: 'Test Data' }]);
+        [{ type: 'evnTest', format: 'text/plain', data: 'Test Data' }],
+        {
+            hookParams: [
+                { name: '546573744E616D65', value: '5465737456616C7565' }
+            ]
+        });
     console.log(res);
 }
 

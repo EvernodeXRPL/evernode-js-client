@@ -1,12 +1,12 @@
 const { Buffer } = require('buffer');
-const { MemoTypes, MemoFormats } = require('../evernode-common');
+const { EventTypes, HookParamKeys } = require('../evernode-common');
 const { StateHelpers } = require('../state-helpers');
 const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
 
-const CANDIDATE_VOTE_UNIQUE_ID_MEMO_OFFSET = 0;
-const CANDIDATE_VOTE_VALUE_MEMO_OFFSET = 32;
-const CANDIDATE_VOTE_MEMO_SIZE = 33;
+const CANDIDATE_VOTE_UNIQUE_ID_PARAM_OFFSET = 0;
+const CANDIDATE_VOTE_VALUE_PARAM_OFFSET = 32;
+const CANDIDATE_VOTE_PARAM_SIZE = 33;
 
 const FoundationEvents = {}
 
@@ -47,18 +47,22 @@ class FoundationClient extends BaseEvernodeClient {
         if (this.xrplAcc.address !== this.config.foundationAddress)
             throw `Invalid foundation address ${this.xrplAcc.address}.`;
 
-        const voteBuf = Buffer.alloc(CANDIDATE_VOTE_MEMO_SIZE);
-        Buffer.from(candidateId, 'hex').copy(voteBuf, CANDIDATE_VOTE_UNIQUE_ID_MEMO_OFFSET);
-        voteBuf.writeUInt8(vote, CANDIDATE_VOTE_VALUE_MEMO_OFFSET)
+        const voteBuf = Buffer.alloc(CANDIDATE_VOTE_PARAM_SIZE);
+        Buffer.from(candidateId, 'hex').copy(voteBuf, CANDIDATE_VOTE_UNIQUE_ID_PARAM_OFFSET);
+        voteBuf.writeUInt8(vote, CANDIDATE_VOTE_VALUE_PARAM_OFFSET)
 
         return await this.xrplAcc.makePayment(this.config.heartbeatAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            [
-                { type: MemoTypes.CANDIDATE_VOTE, format: MemoFormats.HEX, data: voteBuf.toString('hex').toUpperCase() }
-            ],
-            options.transactionOptions);
+            null,
+            {
+                hookParams: [
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.CANDIDATE_VOTE },
+                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: voteBuf.toString('hex').toUpperCase() }
+                ],
+                ...options.transactionOptions
+            });
     }
 
     async reportDudHost(hostAddress, options = {}) {
@@ -114,10 +118,14 @@ class FoundationClient extends BaseEvernodeClient {
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
-            [
-                { type: MemoTypes.GOVERNANCE_MODE_CHANGE, format: MemoFormats.HEX, data: modeBuf.toString('hex').toUpperCase() }
-            ],
-            options.transactionOptions);
+            null,
+            {
+                hookParams: [
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.GOVERNANCE_MODE_CHANGE },
+                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: modeBuf.toString('hex').toUpperCase() }
+                ],
+                ...options.transactionOptions
+            });
     }
 }
 
