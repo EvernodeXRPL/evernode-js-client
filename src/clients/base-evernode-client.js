@@ -247,7 +247,7 @@ class BaseEvernodeClient {
         let eventData;
         if (tx.HookParameters.length) {
             eventType = tx.HookParameters.find(p => p.name === HookParamKeys.PARAM_EVENT_TYPE_KEY)?.value;
-            eventData = tx.HookParameters.find(p => p.name === HookParamKeys.PARAM_EVENT_DATA1_KEY)?.value;
+            eventData = tx.HookParameters.find(p => p.name === HookParamKeys.PARAM_EVENT_DATA1_KEY)?.value ?? '';
             eventData += tx.HookParameters.find(p => p.name === HookParamKeys.PARAM_EVENT_DATA2_KEY)?.value ?? '';
         }
         if (tx.TransactionType === 'URITokenBuy' && eventType === EventTypes.ACQUIRE_LEASE && tx.Memos.length &&
