@@ -7,7 +7,7 @@ const process = require('process');
 async function main() {
 
     // Paths to update.
-    const basePath = process.env.EXTERNAL == 1 ? "../../" : "./"
+    const basePath = (process.argv[2] == 'external') ? "../../" : "./"
     const XRPL_BIN_CODEC_PATH = `${basePath}node_modules/xrpl-binary-codec/dist/enums/definitions.json`
     const RIPPLE_BIN_CODEC_PATH = `${basePath}node_modules/ripple-binary-codec/dist/enums/definitions.json`
 
