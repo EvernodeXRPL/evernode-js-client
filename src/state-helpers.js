@@ -275,9 +275,21 @@ class StateHelpers {
         }
         else if (Buffer.from(HookStateKeys.PREFIX_CANDIDATE_ID, 'hex').compare(stateKey, 0, 4) === 0) {
             // Generate the owner state key.
-            return {
+            const candidateData = {
                 type: this.StateTypes.CANDIDATE_ID,
-                key: hexKey,
+                key: hexKey
+            };
+
+            const uniqueIdBuf = Buffer.alloc(32, 0);
+            stateKey.copy(uniqueIdBuf, 4, 4, 32);
+            candidateData.uniqueId = uniqueIdBuf.toString('hex').toUpperCase();
+
+            const candidateType = stateKey.readUInt8(4);
+            if (EvernodeConstants.CandidateTypes.DudHost === candidateType)
+                candidateData.dudHostAddress = codec.encodeAccountID(stateKey.slice(12, 32));
+
+            return {
+                ...candidateData,
                 ...this.decodeCandidateIdState(stateData)
             }
         }
