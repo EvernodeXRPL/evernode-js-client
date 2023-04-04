@@ -775,6 +775,24 @@ class BaseEvernodeClient {
     }
 
     /**
+     * 
+     * @param {string} ownerAddress | Address of the owner
+     * @returns An array of candidate information. Returns empty array if no candidates;
+     */
+    async getDudHostCandidatesByOwner(ownerAddress = this.xrplAcc.address) {
+        try {
+            let candidates = await this.#firestoreHandler.getCandidates({ownerAddress: ownerAddress});
+            if(candidates && candidates.length > 0) {
+                candidates = candidates.filter(c => StateHelpers.getCandidateType(c.uniqueId) == EvernodeConstants.CandidateTypes.DudHost);
+                return candidates;
+            }
+        } catch (error) {
+            console.log(error)
+        }
+        return [];
+    }
+
+    /**
      * Get proposed candidate info.
      * @param {string} candidateId Id of the candidate.
      * @returns The candidate information. Returns null if no candidate.
