@@ -149,7 +149,8 @@ async function app() {
             // () => votePilotedMode(),
             // () => foundationVotePilotedMode(),
             // () => changeGovernanceMode(evernode.EvernodeConstants.GovernanceModes.AutoPiloted),
-            // () => makePayment()
+            // () => makePayment(),
+            // () => getDudHostCandidatesByOwner()
 
         ];
 
@@ -575,6 +576,13 @@ async function getCandidateByOwner(owner = hostAddress) {
     return candidateInfo;
 }
 
+async function getDudHostCandidatesByOwner(owner = hostAddress) {
+    const host = await getHostClient(hostAddress, hostSecret);
+    const candidatesInfo = await host.getDudHostCandidatesByOwner(owner);
+    console.log(candidatesInfo);
+    return candidatesInfo;
+}
+
 async function getCandidateById() {
     const host = await getHostClient(hostAddress, hostSecret);
     const uniqueId = evernode.StateHelpers.getNewHookCandidateId(Buffer.from(hookCandidates, 'hex'));
@@ -631,7 +639,6 @@ async function voteDudHost(vote = evernode.EvernodeConstants.CandidateVote.Suppo
 
 async function foundationVoteDudHost(vote = evernode.EvernodeConstants.CandidateVote.Support) {
     const client = await getFoundationClient(foundationAddress, foundationSecret);
-
     console.log(`-----------Foundation vote for dud host`);
     await client.voteDudHost(dudHostAddress, vote);
 }
