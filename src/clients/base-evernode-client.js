@@ -780,11 +780,10 @@ class BaseEvernodeClient {
      * @returns An array of candidate information. Returns empty array if no candidates;
      */
     async getDudHostCandidatesByOwner(ownerAddress = this.xrplAcc.address) {
-        console.log(ownerAddress)
         try {
             let candidates = await this.#firestoreHandler.getCandidates({ownerAddress: ownerAddress});
             if(candidates && candidates.length > 0) {
-                candidates = candidates.filter(c => c.uniqueId[9] == '3');
+                candidates = candidates.filter(c => StateHelpers.getCandidateType(c.uniqueId) == EvernodeConstants.CandidateTypes.DudHost);
                 return candidates;
             }
         } catch (error) {
