@@ -12,7 +12,8 @@ const GovernorEvents = {
     DudHostRemoved: EvernodeEvents.DudHostRemoved,
     DudHostStatusChanged: EvernodeEvents.DudHostStatusChanged,
     FallbackToPiloted: EvernodeEvents.FallbackToPiloted,
-    NewHookStatusChanged: EvernodeEvents.NewHookStatusChanged
+    NewHookStatusChanged: EvernodeEvents.NewHookStatusChanged,
+    LinkedDudHostCandidateRemoved: EvernodeEvents.LinkedDudHostCandidateRemoved
 }
 
 class GovernorClient extends BaseEvernodeClient {

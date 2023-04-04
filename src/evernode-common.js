@@ -58,7 +58,8 @@ const EventTypes = {
     CANDIDATE_STATUS_CHANGE: 'evnCandidateStatusChange',
     DUD_HOST_REPORT: 'evnDudHostReport',
     HOOK_UPDATE_RES: 'evnHookUpdateRes',
-    GOVERNANCE_MODE_CHANGE: 'evnGovernanceModeChange'
+    GOVERNANCE_MODE_CHANGE: 'evnGovernanceModeChange',
+    LINKED_CANDIDATE_REMOVE: 'evnRemoveLinkedCandidate'
 }
 
 const MemoFormats = {
@@ -153,7 +154,8 @@ const EvernodeEvents = {
     DudHostRemoved: "DudHostRemoved",
     DudHostStatusChanged: "DudHostStatusChanged",
     FallbackToPiloted: "FallbackToPiloted",
-    NewHookStatusChanged: "NewHookStatusChanged"
+    NewHookStatusChanged: "NewHookStatusChanged",
+    LinkedDudHostCandidateRemoved: "LinkedDudHostCandidateRemoved"
 }
 
 const URITokenTypes = {
