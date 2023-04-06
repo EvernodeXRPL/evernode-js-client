@@ -518,6 +518,22 @@ class BaseEvernodeClient {
             }
 
         }
+        else if (eventType === EventTypes.LINKED_CANDIDATE_REMOVE && eventData) {
+            const eventDataBuf = Buffer.from(eventData, 'hex');
+            const candidateId = eventDataBuf.slice(0, 32).toString('hex');
+            const candidateType = StateHelpers.getCandidateType(candidateId);
+
+            if (candidateType === EvernodeConstants.CandidateTypes.DudHost) {
+                return {
+                    name: EvernodeEvents.LinkedDudHostCandidateRemoved,
+                    data: {
+                        transaction: tx,
+                        candidateId: candidateId,
+                        host: codec.encodeAccountID(Buffer.from(candidateId, 'hex').slice(DUD_HOST_CANDID_ADDRESS_OFFSET, 32))
+                    }
+                }
+            }
+        }
         else if (eventType === EventTypes.HOOK_UPDATE_RES && eventData) {
             return {
                 name: EvernodeEvents.ChildHookUpdated,
@@ -781,8 +797,8 @@ class BaseEvernodeClient {
      */
     async getDudHostCandidatesByOwner(ownerAddress = this.xrplAcc.address) {
         try {
-            let candidates = await this.#firestoreHandler.getCandidates({ownerAddress: ownerAddress});
-            if(candidates && candidates.length > 0) {
+            let candidates = await this.#firestoreHandler.getCandidates({ ownerAddress: ownerAddress });
+            if (candidates && candidates.length > 0) {
                 candidates = candidates.filter(c => StateHelpers.getCandidateType(c.uniqueId) == EvernodeConstants.CandidateTypes.DudHost);
                 return candidates;
             }
