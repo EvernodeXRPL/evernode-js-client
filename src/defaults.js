@@ -1,5 +1,5 @@
 const DefaultValues = {
-    governorAddress: 'r9keGGSTDRg58RuiWYAQYuAAA8nqMG7EP5',
+    governorAddress: 'raVhw4Q8FQr296jdaDLDfZ4JDhh7tFG7SF',
     rippledServer: 'wss://hooks-testnet-v3.xrpl-labs.com',
     xrplApi: null,
     stateIndexId: 'evernodeindex',
