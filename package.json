@@ -6,13 +6,13 @@
     ],
     "homepage": "https://github.com/HotPocketDev/evernode-js-client",
     "license": "MIT",
-    "version": "0.5.17-beta-v3.10",
+    "version": "0.6.0",
     "scripts": {
         "lint": "./node_modules/.bin/eslint src/**/*.js",
         "build:scripts": "ncc build scripts/postinstall.js --minify -o dist/postinstall.js",
         "build": "npm run lint && npm run build:scripts && ncc build src/index.js -e elliptic -e xrpl -e ripple-address-codec -e ripple-keypairs -o dist/",
         "bundle": "npm run build && ./clean-pkg.sh",
-        "publish": "npm run bundle && cp npm-readme.md dist/README.md && npm publish ./dist --tag beta-v3",
+        "publish": "npm run bundle && cp npm-readme.md dist/README.md && npm publish ./dist",
         "postinstall" : "node scripts/postinstall.js"
     },
     "dependencies": {
