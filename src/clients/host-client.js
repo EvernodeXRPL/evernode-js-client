@@ -162,7 +162,7 @@ class HostClient extends BaseEvernodeClient {
         else if (!/^((?![;])[\x00-\x7F]){0,26}$/.test(description))
             throw "description should consist of 0-26 ascii characters except ';'";
 
-        else if (!emailAddress || !(/[a-z0-9]+@[a-z]+.[a-z]{2,3}/.test(emailAddress)) || (emailAddress.length > 40))
+        else if (!emailAddress || !(/.+@.+/.test(emailAddress)) || (emailAddress.length > 40))
             throw "Email address should be valid and can not have more than 40 characters.";
 
         if (await this.isRegistered())
