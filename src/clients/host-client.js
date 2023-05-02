@@ -388,17 +388,36 @@ class HostClient extends BaseEvernodeClient {
 
         // Encrypt the instance info with the tenant's encryption key (Specified in MessageKey field of the tenant account).
         const tenantAcc = new XrplAccount(tenantAddress, null, { xrplApi: this.xrplApi });
-        const encKey = await tenantAcc.getMessageKey();
-        if (!encKey)
-            throw "Tenant encryption key not set.";
 
-        const encrypted = await EncryptionHelper.encrypt(encKey, instanceInfo);
+        let encKey = null;
+        let doEncrypt = true;
+        let data = Buffer.concat([Buffer.from([0x00]), Buffer.from(JSON.stringify(instanceInfo))]).toString('base64');
+
+        if ('messageKey' in options) {
+            const regex = /^[0-9A-F]{66}$/;
+            if (options.messageKey !== 'none' && regex.test(options.messageKey)) {
+                encKey = options.messageKey;
+            } else if (options.messageKey === 'none') {
+                doEncrypt = false;
+            } else
+                throw "Tenant encryption key not valid.";
+        } else {
+            encKey = await tenantAcc.getMessageKey();
+        }
+
+        if (doEncrypt) {
+            if (!encKey)
+                throw "Tenant encryption key not set.";
+            const encrypt = await EncryptionHelper.encrypt(encKey, instanceInfo);
+            data = Buffer.concat([Buffer.from([0x01]), Buffer.from(encrypt, 'base64')]).toString('base64');
+        }
+
         return this.xrplAcc.makePayment(tenantAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
             [
-                { type: EventTypes.ACQUIRE_SUCCESS, format: MemoFormats.BASE64, data: encrypted }
+                { type: EventTypes.ACQUIRE_SUCCESS, format: MemoFormats.BASE64, data: data }
             ],
             {
                 hookParams: [

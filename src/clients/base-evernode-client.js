@@ -283,13 +283,20 @@ class BaseEvernodeClient {
             let payload = tx.Memos[0].data;
             const acquireRefId = eventData;
 
-            // If our account is the destination user account, then decrypt the payload.
+            // If our account is the destination user account, then decrypt the payload if it is encrypted.
             if (tx.Memos[0].format === MemoFormats.BASE64 && tx.Destination === this.xrplAcc.address) {
-                const decrypted = this.accKeyPair && await EncryptionHelper.decrypt(this.accKeyPair.privateKey, payload);
-                if (decrypted)
-                    payload = decrypted;
-                else
-                    console.log('Failed to decrypt instance data.');
+                const prefixBuf = (Buffer.from(payload, 'base64')).slice(0, 1);
+                if (prefixBuf.readInt8() == 1) { // 1 denoted the data is encrypted
+                    payload = Buffer.from(payload, 'base64').slice(1).toString('base64');
+                    const decrypted = this.accKeyPair && await EncryptionHelper.decrypt(this.accKeyPair.privateKey, payload);
+                    if (decrypted)
+                        payload = decrypted;
+                    else
+                        console.log('Failed to decrypt instance data.');
+                }
+                else {
+                    payload = JSON.parse(Buffer.from(payload, 'base64').slice(1).toString());
+                }
             }
 
             return {

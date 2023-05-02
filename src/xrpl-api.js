@@ -276,6 +276,11 @@ class XrplApi {
         }
     }
 
+    async getTxnInfo(txnHash, options) {
+        const resp = (await this.#client.request({ command: 'tx', transaction: txnHash, binary: false, ...options }));
+        return resp?.result;
+    }
+
     async submitAndVerify(tx, options) {
         return await this.#client.submitAndWait(tx, options);
     }
