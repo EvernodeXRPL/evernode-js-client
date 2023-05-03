@@ -63,7 +63,7 @@ class XrplApi {
                 if (data.transaction.TransactionType === 'URITokenBuy') {
                     // We take all the offers created by subscribed accounts in previous ledger until we get the respective offer.
                     for (const subscription of this.#addressSubscriptions) {
-                        const acc = new XrplAccount(subscription.address, null);
+                        const acc = new XrplAccount(subscription.address, null, { xrplApi: this });
                         // Here we access the offers that were there in this account based on the given ledger index.
                         const offers = await acc.getURITokens({ ledger_index: data.ledger_index - 1 });
                         // Filter out the matching URI token offer for the scenario.

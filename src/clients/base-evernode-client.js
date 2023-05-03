@@ -639,7 +639,7 @@ class BaseEvernodeClient {
         const hosts = await this.#firestoreHandler.getHosts(filters, pageSize, nextPageToken);
         const curMomentStartIdx = await this.getMomentStartIndex();
         const res = await Promise.all((hosts.nextPageToken ? hosts.data : hosts).map(async host => {
-            const hostAcc = new XrplAccount(host.address);
+            const hostAcc = new XrplAccount(host.address, null, { xrplApi: this.xrplApi });
             host.domain = await hostAcc.getDomain();
 
             host.active = (host.lastHeartbeatIndex > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
