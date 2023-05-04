@@ -163,6 +163,10 @@ const URITokenTypes = {
     REGISTRATION_URI_TOKEN: 2
 }
 
+const RegExp = {
+    PublicPrivateKey: /^[0-9A-Fa-f]{66}$/
+}
+
 module.exports = {
     EvernodeConstants,
     EventTypes,
@@ -172,5 +176,6 @@ module.exports = {
     HookStateKeys,
     EvernodeEvents,
     URITokenTypes,
-    HookParamKeys
+    HookParamKeys,
+    RegExp
 }

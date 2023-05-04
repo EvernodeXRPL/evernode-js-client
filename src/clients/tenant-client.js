@@ -1,6 +1,7 @@
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { EvernodeEvents, MemoFormats, EventTypes, ErrorCodes, ErrorReasons, EvernodeConstants, HookParamKeys } = require('../evernode-common');
+const { EvernodeEvents, MemoFormats, EventTypes, ErrorCodes, ErrorReasons, EvernodeConstants, HookParamKeys, RegExp } = require('../evernode-common');
 const { EncryptionHelper } = require('../encryption-helper');
+const { Buffer } = require('buffer');
 const { XrplAccount } = require('../xrpl-account');
 const { UtilHelpers } = require('../util-helpers');
 const { EvernodeHelpers } = require('../evernode-helpers');
@@ -85,20 +86,37 @@ class TenantClient extends BaseEvernodeClient {
         if (!buyUriOffer)
             throw { reason: ErrorReasons.NO_OFFER, error: "No offers available." };
 
-        // Encrypt the requirements with the host's encryption key (Specified in MessageKey field of the host account).
-        const encKey = await hostAcc.getMessageKey();
-        if (!encKey)
-            throw { reason: ErrorReasons.INTERNAL_ERR, error: "Host encryption key not set." };
+        let encKey = null;
+        let doEncrypt = true;
+        // Initialize with not-encrypted prefix flag and the data.
+        let data = Buffer.concat([Buffer.from([0x00]), Buffer.from(JSON.stringify(requirement))]).toString('base64');
 
-        const ecrypted = await EncryptionHelper.encrypt(encKey, requirement, {
-            iv: options.iv, // Must be null or 16 bytes.
-            ephemPrivateKey: options.ephemPrivateKey // Must be null or 32 bytes.
-        });
+        if ('messageKey' in options) {
+            if (options.messageKey !== 'none' && RegExp.PublicPrivateKey.test(options.messageKey)) {
+                encKey = options.messageKey;
+            } else if (options.messageKey === 'none') {
+                doEncrypt = false;
+            } else
+                throw "Tenant encryption key not valid.";
+        } else {
+            encKey = await hostAcc.getMessageKey();
+        }
+
+        if (doEncrypt) {
+            if (!encKey)
+                throw "Tenant encryption key not set.";
+            const encrypted = await EncryptionHelper.encrypt(encKey, requirement, {
+                iv: options.iv, // Must be null or 16 bytes.
+                ephemPrivateKey: options.ephemPrivateKey // Must be null or 32 bytes.
+            });
+            // Override encrypted prefix flag and the data.
+            data = Buffer.concat([Buffer.from([0x01]), Buffer.from(encrypted, 'base64')]).toString('base64');
+        }
 
         return this.xrplAcc.buyURIToken(
             buyUriOffer,
             [
-                { type: EventTypes.ACQUIRE_LEASE, format: MemoFormats.BASE64, data: ecrypted }
+                { type: EventTypes.ACQUIRE_LEASE, format: MemoFormats.BASE64, data: data }
             ],
             {
                 hookParams: [

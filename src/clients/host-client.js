@@ -1,6 +1,6 @@
 const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { EvernodeEvents, EvernodeConstants, MemoFormats, EventTypes, ErrorCodes, HookParamKeys } = require('../evernode-common');
+const { EvernodeEvents, EvernodeConstants, MemoFormats, EventTypes, ErrorCodes, HookParamKeys, RegExp } = require('../evernode-common');
 const { XrplAccount } = require('../xrpl-account');
 const { EncryptionHelper } = require('../encryption-helper');
 const { Buffer } = require('buffer');
@@ -388,17 +388,37 @@ class HostClient extends BaseEvernodeClient {
 
         // Encrypt the instance info with the tenant's encryption key (Specified in MessageKey field of the tenant account).
         const tenantAcc = new XrplAccount(tenantAddress, null, { xrplApi: this.xrplApi });
-        const encKey = await tenantAcc.getMessageKey();
-        if (!encKey)
-            throw "Tenant encryption key not set.";
 
-        const encrypted = await EncryptionHelper.encrypt(encKey, instanceInfo);
+        let encKey = null;
+        let doEncrypt = true;
+        // Initialize with not-encrypted prefix flag and the data.
+        let data = Buffer.concat([Buffer.from([0x00]), Buffer.from(JSON.stringify(instanceInfo))]).toString('base64');
+
+        if ('messageKey' in options) {
+            if (options.messageKey !== 'none' && RegExp.PublicPrivateKey.test(options.messageKey)) {
+                encKey = options.messageKey;
+            } else if (options.messageKey === 'none') {
+                doEncrypt = false;
+            } else
+                throw "Tenant encryption key not valid.";
+        } else {
+            encKey = await tenantAcc.getMessageKey();
+        }
+
+        if (doEncrypt) {
+            if (!encKey)
+                throw "Tenant encryption key not set.";
+            const encrypted = await EncryptionHelper.encrypt(encKey, instanceInfo);
+            // Override encrypted prefix flag and the data.
+            data = Buffer.concat([Buffer.from([0x01]), Buffer.from(encrypted, 'base64')]).toString('base64');
+        }
+
         return this.xrplAcc.makePayment(tenantAddress,
             XrplConstants.MIN_XRP_AMOUNT,
             XrplConstants.XRP,
             null,
             [
-                { type: EventTypes.ACQUIRE_SUCCESS, format: MemoFormats.BASE64, data: encrypted }
+                { type: EventTypes.ACQUIRE_SUCCESS, format: MemoFormats.BASE64, data: data }
             ],
             {
                 hookParams: [

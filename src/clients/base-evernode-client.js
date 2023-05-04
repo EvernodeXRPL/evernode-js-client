@@ -3,7 +3,7 @@ const { Buffer } = require('buffer');
 const { XrplApi } = require('../xrpl-api');
 const { XrplAccount } = require('../xrpl-account');
 const { XrplApiEvents, XrplConstants } = require('../xrpl-common');
-const { EvernodeEvents, EventTypes, MemoFormats, EvernodeConstants, HookStateKeys, HookParamKeys } = require('../evernode-common');
+const { EvernodeEvents, EventTypes, MemoFormats, EvernodeConstants, HookStateKeys, HookParamKeys, RegExp } = require('../evernode-common');
 const { DefaultValues } = require('../defaults');
 const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
@@ -41,6 +41,9 @@ class BaseEvernodeClient {
 
         this.xrplAcc = new XrplAccount(xrpAddress, xrpSecret, { xrplApi: this.xrplApi });
         this.accKeyPair = xrpSecret && this.xrplAcc.deriveKeypair();
+        this.messagePrivateKey = options.messagePrivateKey || (this.accKeyPair ? this.accKeyPair.privateKey : null);
+        if (this.messagePrivateKey && !RegExp.PublicPrivateKey.test(this.messagePrivateKey))
+            throw "Message private key is not valid.";
         this.#watchEvents = watchEvents;
         this.#autoSubscribe = autoSubscribe;
         this.events = new EventEmitter();
@@ -253,14 +256,21 @@ class BaseEvernodeClient {
         if (tx.TransactionType === 'URITokenBuy' && eventType === EventTypes.ACQUIRE_LEASE && tx.Memos.length &&
             tx.Memos[0].type === EventTypes.ACQUIRE_LEASE && tx.Memos[0].format === MemoFormats.BASE64 && tx.Memos[0].data) {
 
-            // If our account is the destination host account, then decrypt the payload.
+            // If our account is the destination host account, then decrypt the payload if it is encrypted.
             let payload = tx.Memos[0].data;
-            if (tx.Destination === this.xrplAcc.address) {
-                const decrypted = this.accKeyPair && await EncryptionHelper.decrypt(this.accKeyPair.privateKey, payload);
-                if (decrypted)
-                    payload = decrypted;
-                else
-                    console.log('Failed to decrypt acquire data.');
+            if (tx.Memos[0].format === MemoFormats.BASE64 && tx.Destination === this.xrplAcc.address) {
+                const prefixBuf = (Buffer.from(payload, 'base64')).slice(0, 1);
+                if (prefixBuf.readInt8() == 1) { // 1 denoted the data is encrypted
+                    payload = Buffer.from(payload, 'base64').slice(1).toString('base64');
+                    const decrypted = this.messagePrivateKey && await EncryptionHelper.decrypt(this.messagePrivateKey, payload);
+                    if (decrypted)
+                        payload = decrypted;
+                    else
+                        console.log('Failed to decrypt acquire data.');
+                }
+                else {
+                    payload = JSON.parse(Buffer.from(payload, 'base64').slice(1).toString());
+                }
             }
 
             return {
@@ -283,13 +293,20 @@ class BaseEvernodeClient {
             let payload = tx.Memos[0].data;
             const acquireRefId = eventData;
 
-            // If our account is the destination user account, then decrypt the payload.
+            // If our account is the destination user account, then decrypt the payload if it is encrypted.
             if (tx.Memos[0].format === MemoFormats.BASE64 && tx.Destination === this.xrplAcc.address) {
-                const decrypted = this.accKeyPair && await EncryptionHelper.decrypt(this.accKeyPair.privateKey, payload);
-                if (decrypted)
-                    payload = decrypted;
-                else
-                    console.log('Failed to decrypt instance data.');
+                const prefixBuf = (Buffer.from(payload, 'base64')).slice(0, 1);
+                if (prefixBuf.readInt8() == 1) { // 1 denoted the data is encrypted
+                    payload = Buffer.from(payload, 'base64').slice(1).toString('base64');
+                    const decrypted = this.messagePrivateKey && await EncryptionHelper.decrypt(this.messagePrivateKey, payload);
+                    if (decrypted)
+                        payload = decrypted;
+                    else
+                        console.log('Failed to decrypt instance data.');
+                }
+                else {
+                    payload = JSON.parse(Buffer.from(payload, 'base64').slice(1).toString());
+                }
             }
 
             return {
@@ -632,7 +649,7 @@ class BaseEvernodeClient {
         const hosts = await this.#firestoreHandler.getHosts(filters, pageSize, nextPageToken);
         const curMomentStartIdx = await this.getMomentStartIndex();
         const res = await Promise.all((hosts.nextPageToken ? hosts.data : hosts).map(async host => {
-            const hostAcc = new XrplAccount(host.address);
+            const hostAcc = new XrplAccount(host.address, null, { xrplApi: this.xrplApi });
             host.domain = await hostAcc.getDomain();
 
             host.active = (host.lastHeartbeatIndex > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
