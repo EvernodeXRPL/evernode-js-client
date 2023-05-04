@@ -1,6 +1,6 @@
 const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { EvernodeEvents, EvernodeConstants, MemoFormats, EventTypes, ErrorCodes, HookParamKeys } = require('../evernode-common');
+const { EvernodeEvents, EvernodeConstants, MemoFormats, EventTypes, ErrorCodes, HookParamKeys, RegExp } = require('../evernode-common');
 const { XrplAccount } = require('../xrpl-account');
 const { EncryptionHelper } = require('../encryption-helper');
 const { Buffer } = require('buffer');
@@ -394,8 +394,7 @@ class HostClient extends BaseEvernodeClient {
         let data = Buffer.concat([Buffer.from([0x00]), Buffer.from(JSON.stringify(instanceInfo))]).toString('base64');
 
         if ('messageKey' in options) {
-            const regex = /^[0-9A-F]{66}$/;
-            if (options.messageKey !== 'none' && regex.test(options.messageKey)) {
+            if (options.messageKey !== 'none' && RegExp.PublicPrivateKey.test(options.messageKey)) {
                 encKey = options.messageKey;
             } else if (options.messageKey === 'none') {
                 doEncrypt = false;
