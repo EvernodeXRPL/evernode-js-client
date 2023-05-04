@@ -391,6 +391,7 @@ class HostClient extends BaseEvernodeClient {
 
         let encKey = null;
         let doEncrypt = true;
+        // Initialize with not-encrypted prefix flag and the data.
         let data = Buffer.concat([Buffer.from([0x00]), Buffer.from(JSON.stringify(instanceInfo))]).toString('base64');
 
         if ('messageKey' in options) {
@@ -407,8 +408,9 @@ class HostClient extends BaseEvernodeClient {
         if (doEncrypt) {
             if (!encKey)
                 throw "Tenant encryption key not set.";
-            const encrypt = await EncryptionHelper.encrypt(encKey, instanceInfo);
-            data = Buffer.concat([Buffer.from([0x01]), Buffer.from(encrypt, 'base64')]).toString('base64');
+            const encrypted = await EncryptionHelper.encrypt(encKey, instanceInfo);
+            // Override encrypted prefix flag and the data.
+            data = Buffer.concat([Buffer.from([0x01]), Buffer.from(encrypted, 'base64')]).toString('base64');
         }
 
         return this.xrplAcc.makePayment(tenantAddress,
