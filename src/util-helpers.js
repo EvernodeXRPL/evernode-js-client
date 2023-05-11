@@ -18,7 +18,7 @@ class UtilHelpers {
             leaseIndex: uriBuf.readUint16BE(prefixLen),
             halfTos: uriBuf.slice(prefixLen + 2, halfToSLen),
             leaseAmount: parseFloat(XflHelpers.toString(uriBuf.readBigInt64BE(prefixLen + 2 + halfToSLen))),
-            identifier: uriBuf.readUInt32BE(prefixLen + 10 + halfToSLen)
+            identifier: uriBuf.length >= (prefixLen + 10 + halfToSLen) ? uriBuf.readUInt32BE(prefixLen + 10 + halfToSLen) : null
         }
     }
 
