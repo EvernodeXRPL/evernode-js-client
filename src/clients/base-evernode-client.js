@@ -201,7 +201,9 @@ class BaseEvernodeClient {
             momentTransitInfo: HookStateKeys.MOMENT_TRANSIT_INFO,
             registryMaxTrxEmitFee: HookStateKeys.MAX_TRX_EMISSION_FEE,
             governanceConfiguration: HookStateKeys.GOVERNANCE_CONFIGURATION,
-            governanceInfo: HookStateKeys.GOVERNANCE_INFO
+            governanceInfo: HookStateKeys.GOVERNANCE_INFO,
+            transactionFeeBaseInfo: HookStateKeys.TRX_FEE_BASE_INFO,
+            networkConfiguration: HookStateKeys.NETWORK_CONFIGURATION,
         }
         let config = {};
         for (const [key, value] of Object.entries(configStateKeys)) {
