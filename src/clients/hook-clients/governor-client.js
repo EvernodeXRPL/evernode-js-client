@@ -5,7 +5,7 @@ const { EvernodeEvents } = require('../../evernode-common');
 const GovernorEvents = {
     Initialized: EvernodeEvents.Initialized,
     CandidateProposed: EvernodeEvents.CandidateProposed,
-    CandidateWithdrew: EvernodeEvents.CandidateWithdrew,
+    CandidateWithdrawn: EvernodeEvents.CandidateWithdrawn,
     ChildHookUpdated: EvernodeEvents.ChildHookUpdated,
     GovernanceModeChanged: EvernodeEvents.GovernanceModeChanged,
     DudHostReported: EvernodeEvents.DudHostReported,
