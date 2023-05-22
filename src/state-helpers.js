@@ -213,11 +213,11 @@ class StateHelpers {
             case EvernodeConstants.CandidateStatuses.CANDIDATE_ELECTED:
                 status = 'elected';
                 break;
-            case EvernodeConstants.CandidateStatuses.CANDIDATE_VETOED:
-                status = 'vetoed';
+            case EvernodeConstants.CandidateStatuses.CANDIDATE_PURGED:
+                status = 'purged';
                 break;
-            case EvernodeConstants.CandidateStatuses.CANDIDATE_EXPIRED:
-                status = 'expired';
+            case EvernodeConstants.CandidateStatuses.CANDIDATE_WITHDRAWN:
+                status = 'withdrawn';
                 break;
             default:
                 status = 'rejected';

@@ -493,7 +493,7 @@ class BaseEvernodeClient {
         }
         else if (eventType === EventTypes.CANDIDATE_WITHDRAW && eventData) {
             return {
-                name: EvernodeEvents.CandidateWithdrew,
+                name: EvernodeEvents.CandidateWithdrawn,
                 data: {
                     transaction: tx,
                     owner: tx.Account,

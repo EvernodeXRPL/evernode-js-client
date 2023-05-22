@@ -27,8 +27,8 @@ const EvernodeConstants = {
         CANDIDATE_REJECTED: 0,
         CANDIDATE_SUPPORTED: 1,
         CANDIDATE_ELECTED: 2,
-        CANDIDATE_VETOED: 3,
-        CANDIDATE_EXPIRED: 4
+        CANDIDATE_PURGED: 3,
+        CANDIDATE_WITHDRAWN: 4
     }
 }
 
@@ -148,7 +148,7 @@ const EvernodeEvents = {
     DeadHostPrune: "DeadHostPrune",
     HostRebate: "HostRebate",
     CandidateProposed: "CandidateProposed",
-    CandidateWithdrew: "CandidateWithdrew",
+    CandidateWithdrawn: "CandidateWithdrawn",
     ChildHookUpdated: "ChildHookUpdated",
     GovernanceModeChanged: "GovernanceModeChanged",
     FoundationVoted: "FoundationVoted",
