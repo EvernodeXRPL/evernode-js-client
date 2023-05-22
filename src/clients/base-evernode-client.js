@@ -841,14 +841,16 @@ class BaseEvernodeClient {
             if (idStateData) {
                 const idStateDecoded = StateHelpers.decodeCandidateIdState(Buffer.from(idStateData, 'hex'));
 
-                const ownerStateKey = StateHelpers.generateCandidateOwnerStateKey(idStateDecoded.ownerAddress);
-                const ownerStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, ownerStateKey);
-                const ownerLedgerEntry = await this.xrplApi.getLedgerEntry(ownerStateIndex);
+                if (StateHelpers.getCandidateType(candidateId) === EvernodeConstants.CandidateTypes.NewHook) {
+                    const ownerStateKey = StateHelpers.generateCandidateOwnerStateKey(idStateDecoded.ownerAddress);
+                    const ownerStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, ownerStateKey);
+                    const ownerLedgerEntry = await this.xrplApi.getLedgerEntry(ownerStateIndex);
 
-                const ownerStateData = ownerLedgerEntry?.HookStateData;
-                if (ownerStateData) {
-                    const ownerStateDecoded = StateHelpers.decodeCandidateOwnerState(Buffer.from(ownerStateKey, 'hex'), Buffer.from(ownerStateData, 'hex'));
-                    return { ...ownerStateDecoded, ...idStateDecoded };
+                    const ownerStateData = ownerLedgerEntry?.HookStateData;
+                    if (ownerStateData) {
+                        const ownerStateDecoded = StateHelpers.decodeCandidateOwnerState(Buffer.from(ownerStateKey, 'hex'), Buffer.from(ownerStateData, 'hex'));
+                        return { ...ownerStateDecoded, ...idStateDecoded };
+                    }
                 }
 
                 return { ...idStateDecoded, uniqueId: candidateId };
