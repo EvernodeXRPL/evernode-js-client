@@ -42,7 +42,6 @@ const FOUNDATION_LAST_VOTED_TIMESTAMP_OFFSET = 21;
 const ELECTED_PROPOSAL_UNIQUE_ID_OFFSET = 29;
 const PROPOSAL_ELECTED_TIMESTAMP_OFFSET = 61;
 const UPDATED_HOOK_COUNT_OFFSET = 69;
-const FOUNDATION_SUPPORT_VOTE_FLAG_OFFSET = 70;
 
 const FEE_BASE_AVG_OFFSET = 0;
 const FEE_BASE_AVG_CHANGED_IDX_OFFSET = 4;
@@ -444,8 +443,7 @@ class StateHelpers {
                     foundationLastVotedTimestamp: Number(stateData.readBigUInt64LE(FOUNDATION_LAST_VOTED_TIMESTAMP_OFFSET)),
                     electedProposalUniqueId: stateData.slice(ELECTED_PROPOSAL_UNIQUE_ID_OFFSET, PROPOSAL_ELECTED_TIMESTAMP_OFFSET).toString('hex').toUpperCase(),
                     proposalElectedTimestamp: Number(stateData.readBigUInt64LE(PROPOSAL_ELECTED_TIMESTAMP_OFFSET)),
-                    updatedHookCount: stateData.readUInt8(UPDATED_HOOK_COUNT_OFFSET),
-                    supportVoteSent: stateData.readUInt8(FOUNDATION_SUPPORT_VOTE_FLAG_OFFSET)
+                    updatedHookCount: stateData.readUInt8(UPDATED_HOOK_COUNT_OFFSET)
                 }
             }
         }
