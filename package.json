@@ -6,7 +6,7 @@
     ],
     "homepage": "https://github.com/HotPocketDev/evernode-js-client",
     "license": "MIT",
-    "version": "0.6.8",
+    "version": "0.6.9",
     "scripts": {
         "lint": "./node_modules/.bin/eslint src/**/*.js",
         "build:scripts": "ncc build scripts/postinstall.js --minify -o dist/postinstall.js",
