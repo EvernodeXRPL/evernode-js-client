@@ -306,7 +306,7 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async updateRegInfo(activeInstanceCount = null, version = null, totalInstanceCount = null, tokenID = null, countryCode = null, cpuMicroSec = null, ramMb = null, diskMb = null, description = null, emailAddress = null, options = {}) {
-        // <token_id(32)><country_code(2)><country_code(2)><cpu_microsec(4)><ram_mb(4)><disk_mb(4)><total_instance_count(4)><active_instances(4)><description(26)><version(3)><email(40)>
+        // <token_id(32)><country_code(2)><cpu_microsec(4)><ram_mb(4)><disk_mb(4)><total_instance_count(4)><active_instances(4)><description(26)><version(3)><email(40)>
         const paramBuf = Buffer.alloc(HOST_UPDATE_PARAM_SIZE, 0);
         if (tokenID)
             Buffer.from(tokenID.substr(0, 32), "hex").copy(paramBuf, HOST_UPDATE_TOKEN_ID_PARAM_OFFSET);
