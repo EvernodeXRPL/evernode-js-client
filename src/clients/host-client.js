@@ -38,7 +38,8 @@ const HOST_UPDATE_TOT_INS_COUNT_PARAM_OFFSET = 46;
 const HOST_UPDATE_ACT_INS_COUNT_PARAM_OFFSET = 50;
 const HOST_UPDATE_DESCRIPTION_PARAM_OFFSET = 54;
 const HOST_UPDATE_VERSION_PARAM_OFFSET = 80;
-const HOST_UPDATE_PARAM_SIZE = 83;
+const HOST_UPDATE_EMAIL_ADDRESS_PARAM_OFFSET = 83;
+const HOST_UPDATE_PARAM_SIZE = 123;
 
 const VOTE_VALIDATION_ERR = "VOTE_VALIDATION_ERR";
 
@@ -304,8 +305,8 @@ class HostClient extends BaseEvernodeClient {
         return await this.isRegistered();
     }
 
-    async updateRegInfo(activeInstanceCount = null, version = null, totalInstanceCount = null, tokenID = null, countryCode = null, cpuMicroSec = null, ramMb = null, diskMb = null, description = null, options = {}) {
-        // <token_id(32)><country_code(2)><cpu_microsec(4)><ram_mb(4)><disk_mb(4)><total_instance_count(4)><active_instances(4)><description(26)><version(3)>
+    async updateRegInfo(activeInstanceCount = null, version = null, totalInstanceCount = null, tokenID = null, countryCode = null, cpuMicroSec = null, ramMb = null, diskMb = null, description = null, emailAddress = null, options = {}) {
+        // <token_id(32)><country_code(2)><cpu_microsec(4)><ram_mb(4)><disk_mb(4)><total_instance_count(4)><active_instances(4)><description(26)><version(3)><email(40)>
         const paramBuf = Buffer.alloc(HOST_UPDATE_PARAM_SIZE, 0);
         if (tokenID)
             Buffer.from(tokenID.substr(0, 32), "hex").copy(paramBuf, HOST_UPDATE_TOKEN_ID_PARAM_OFFSET);
@@ -323,6 +324,8 @@ class HostClient extends BaseEvernodeClient {
             paramBuf.writeUInt32LE(activeInstanceCount, HOST_UPDATE_ACT_INS_COUNT_PARAM_OFFSET);
         if (description)
             Buffer.from(description.substr(0, 26), "utf-8").copy(paramBuf, HOST_UPDATE_DESCRIPTION_PARAM_OFFSET);
+        if (emailAddress)
+            Buffer.from(emailAddress.substr(0, 40), "utf-8").copy(paramBuf, HOST_UPDATE_EMAIL_ADDRESS_PARAM_OFFSET);
         if (version) {
             const components = version.split('.').map(v => parseInt(v));
             if (components.length != 3)
