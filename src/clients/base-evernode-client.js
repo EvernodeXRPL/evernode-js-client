@@ -755,10 +755,20 @@ class BaseEvernodeClient {
         let paramData = Buffer.allocUnsafe(20);
         codec.decodeAccountID(hostAddress).copy(paramData);
 
-        // To obtain registration NFT Page Keylet and index.
-        const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
-        const regUriToken = (await hostAcc.getURITokens()).find(n => n.URI.startsWith(EvernodeConstants.TOKEN_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
-        if (regUriToken) {
+        const hostInfo = await this.getHostInfo(hostAddress);
+
+        let validPrune = false;
+        // If this host is a transferer, it does not own a registration token
+        if (!hostInfo.isATransferer) {
+            const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
+            const regUriToken = (await hostAcc.getURITokens()).find(n => n.URI.startsWith(EvernodeConstants.TOKEN_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
+            validPrune = !!regUriToken;
+        }
+        else
+            validPrune = true;
+
+
+        if (validPrune) {
             await this.xrplAcc.makePayment(this.config.registryAddress,
                 XrplConstants.MIN_XRP_AMOUNT,
                 XrplConstants.XRP,
