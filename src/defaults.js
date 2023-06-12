@@ -1,5 +1,5 @@
 const DefaultValues = {
-    governorAddress: 'raVhw4Q8FQr296jdaDLDfZ4JDhh7tFG7SF',
+    governorAddress: 'rGVHr1PrfL93UAjyw3DWZoi9adz2sLp2yL',
     rippledServer: 'wss://hooks-testnet-v3.xrpl-labs.com',
     xrplApi: null,
     stateIndexId: 'evernodeindex',
@@ -13,10 +13,18 @@ const HookTypes = {
 }
 
 class Defaults {
+    /**
+     * Override Evernode default configs.
+     * @param {object} newDefaults Configurations to override `{ governorAddress: '{string} governor xrpl address', rippledServer: '{string} rippled server url', xrplApi: '{XrplApi} xrpl instance', stateIndexId: '{string} firestore index', networkID: '{number} rippled network id' }`
+     */
     static set(newDefaults) {
         Object.assign(DefaultValues, newDefaults)
     }
 
+    /**
+     * Read Evernode default configs.
+     * @returns The Object of Evernode configs
+     */
     static get() {
         return { ...DefaultValues };
     }

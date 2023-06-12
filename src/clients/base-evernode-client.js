@@ -167,7 +167,7 @@ class BaseEvernodeClient {
 
     /**
      * Get start index (timestamp) of the moment.
-     * @param {number} index [Optional] Index (timestamp) to get the moment value.
+     * @param {number} index [Optional] Index (timestamp) to get the moment start index.
      * @returns The index (timestamp) of the moment as a 'number'. Returns the current moment's start index (timestamp) if ledger index parameter is not given.
      */
     async getMomentStartIndex(index = null) {
@@ -641,7 +641,7 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get all the hosts registered in Evernode. The result's are paginated. Default page size is 20. Note: Specifying both filter and pagination does not supported.
+     * Get the hosts registered in Evernode. The result's are paginated. Default page size is 20. _Note: Specifying both filter and pagination does not supported._
      * @param {object} filters [Optional] Filter criteria to filter the hosts. The filter key can be a either property of the host.
      * @param {number} pageSize [Optional] Page size for the results.
      * @param {string} nextPageToken [Optional] Next page's token, If received by the previous result set.
@@ -664,8 +664,8 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get all the candidates proposed in Evernode. The result's are paginated. Default page size is 20. Note: Specifying both filter and pagination does not supported.
-     * @param {object} filters [Optional] Filter criteria to filter the hosts. The filter key can be a either property of the host.
+     * Get the candidates proposed in Evernode. The result's are paginated. Default page size is 20. _Note: Specifying both filter and pagination does not supported._
+     * @param {object} filters [Optional] Filter criteria to filter the candidates. The filter key can be a either property of the candidate.
      * @param {number} pageSize [Optional] Page size for the results.
      * @param {string} nextPageToken [Optional] Next page's token, If received by the previous result set.
      * @returns The list of candidates. The response will be in '{data: [], nextPageToken: ''}' only if there are more pages. Otherwise the response will only contain the host list. 
@@ -786,7 +786,7 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get proposed candidate info.
+     * Get proposed new hook candidate info.
      * @param {string} ownerAddress [Optional] Address of the owner.
      * @returns The candidate information. Returns null if no candidate.
      */
@@ -820,9 +820,9 @@ class BaseEvernodeClient {
     }
 
     /**
-     * 
+     * Get proposed dud host candidates.
      * @param {string} ownerAddress | Address of the owner
-     * @returns An array of candidate information. Returns empty array if no candidates;
+     * @returns An array of candidate information. Returns empty array if no candidates.
      */
     async getDudHostCandidatesByOwner(ownerAddress = this.xrplAcc.address) {
         try {
@@ -838,7 +838,7 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get proposed candidate info.
+     * Get candidate info.
      * @param {string} candidateId Id of the candidate.
      * @returns The candidate information. Returns null if no candidate.
      */
