@@ -4,6 +4,11 @@ const { GovernorClient } = require("./governor-client");
 const { HeartbeatClient } = require("./heartbeat-client");
 
 class HookClientFactory {
+    /**
+     * Creates a hook client from given type.
+     * @param {string} hookType Type of the Required Hook. (Supported Hook types 'GOVERNOR', 'REGISTRY' and 'HEARTBEAT')
+     * @returns Instance of requested HookClient type.
+     */
     static async create(hookType) {
         let hookClient;
         switch (hookType) {

@@ -929,9 +929,9 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Withdraw a hook candidate.
-     * @param {*} hashes Hook candidate hashes in hex format, <GOVERNOR_HASH(32)><REGISTRY_HASH(32)><HEARTBEAT_HASH(32)>.
-     * @param {*} shortName Short name for the proposal candidate.
+     * Propose a new hook candidate.
+     * @param {string} hashes Hook candidate hashes in hex format, <GOVERNOR_HASH(32)><REGISTRY_HASH(32)><HEARTBEAT_HASH(32)>.
+     * @param {string} shortName Short name for the proposal candidate.
      * @param {*} options [Optional] transaction options.
      * @returns Proposed candidate id.
      */
@@ -1002,7 +1002,7 @@ class BaseEvernodeClient {
 
     /**
      * Report dud host for removal.
-     * @param {*} hostAddress Address of the dud host.
+     * @param {string} hostAddress Address of the dud host.
      * @param {*} options [Optional] transaction options.
      * @returns Transaction result.
      */

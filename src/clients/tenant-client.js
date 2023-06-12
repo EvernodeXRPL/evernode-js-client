@@ -18,12 +18,6 @@ const TenantEvents = {
 
 class TenantClient extends BaseEvernodeClient {
 
-    /**
-     * Constructs a tenant client instance.
-     * @param {string} xrpAddress XRPL address of the tenant.
-     * @param {string} XRPL secret of the tenant.
-     * @param {object} options [Optional] An object with 'rippledServer' URL and 'governorAddress'.
-     */
     constructor(xrpAddress, xrpSecret, options = {}) {
         super(xrpAddress, xrpSecret, Object.values(TenantEvents), false, options);
     }
