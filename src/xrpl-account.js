@@ -690,7 +690,6 @@ class XrplAccount {
 
     prepareSellURIToken(uriTokenID, amount, currency, issuer = null, toAddr = null, memos = null, options = {}) {
         const amountObj = makeAmountObject(amount, currency, issuer);
-        console.log(amountObj)
         const tx = {
             Account: this.address,
             TransactionType: XrplTransactionTypes.URI_TOKEN_CREATE_SELL_OFFER,
@@ -707,7 +706,6 @@ class XrplAccount {
         if (options.hookParams)
             tx.HookParameters = TransactionHelper.formatHookParams(options.hookParams);
 
-        console.log(tx)
         return this.#prepareSubmissionTransaction(tx, options);
     }
 
@@ -729,7 +727,7 @@ class XrplAccount {
 
         if (options.hookParams)
             tx.HookParameters = TransactionHelper.formatHookParams(options.hookParams);
-        console.log(tx);
+
         return this.#prepareSubmissionTransaction(tx, options);
     }
 
