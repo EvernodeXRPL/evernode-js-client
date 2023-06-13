@@ -49,12 +49,20 @@ class HostClient extends BaseEvernodeClient {
         super(xrpAddress, xrpSecret, Object.values(HostEvents), true, options);
     }
 
+    /**
+     * Get registration URI token info.
+     * @returns The registration URI token object.
+     */
     async getRegistrationUriToken() {
         // Find an owned NFT with matching Evernode host NFT prefix.
         const uriToken = (await this.xrplAcc.getURITokens()).find(n => n.URI.startsWith(EvernodeConstants.TOKEN_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
         return uriToken ?? null;
     }
 
+    /**
+     * Get host info if registered.
+     * @returns Host info object if registered, Otherwise null.
+     */
     async getRegistration() {
         // Check whether we own an evernode host token.
         const regUriToken = await this.getRegistrationUriToken();
@@ -66,18 +74,26 @@ class HostClient extends BaseEvernodeClient {
         return null;
     }
 
+    /**
+     * Get lease offers created by the host.
+     * @returns Array of lease offer objects.
+     */
     async getLeaseOffers() {
         return await EvernodeHelpers.getLeaseOffers(this.xrplAcc);
     }
 
-    async cancelOffer(offerIndex) {
-        return this.xrplAcc.cancelOffer(offerIndex);
-    }
-
+    /**
+     * Check wether the host is registered.
+     * @returns Boolean if the host is registered or not.
+     */
     async isRegistered() {
         return (await this.getRegistration()) !== null;
     }
 
+    /**
+     * Prepare the host account with account fields and trust lines.
+     * @param {string} domain Domain which the host machine is reachable.
+     */
     async prepareAccount(domain) {
         const [flags, trustLines, msgKey, curDomain] = await Promise.all([
             this.xrplAcc.getFlags(),
@@ -100,6 +116,12 @@ class HostClient extends BaseEvernodeClient {
             await this.xrplAcc.setTrustLine(EvernodeConstants.EVR, this.config.evrIssuerAddress, "99999999999999");
     }
 
+    /**
+     * Create a lease offer.
+     * @param {number} leaseIndex Index number for the lease.
+     * @param {number} leaseAmount Amount (EVRs) of the lease offer.
+     * @param {string} tosHash Hex hash of the Terms Of Service text.
+     */
     async offerLease(leaseIndex, leaseAmount, tosHash) {
         // <prefix><lease index 16)><half of tos hash><lease amount (int64)><identifier (uint32)>
         const prefixLen = EvernodeConstants.LEASE_TOKEN_PREFIX_HEX.length / 2;
@@ -135,10 +157,29 @@ class HostClient extends BaseEvernodeClient {
             this.config.evrIssuerAddress);
     }
 
+    /**
+     * Expire the lease offer.
+     * @param {string} uriTokenId Hex URI token id of the lease.
+     */
     async expireLease(uriTokenId) {
         await this.xrplAcc.burnURIToken(uriTokenId);
     }
 
+    /**
+     * Register the host in the Evernode network.
+     * @param {string} countryCode Upper case country code with two letters.
+     * @param {number} cpuMicroSec CPU cycle in micro seconds of the host.
+     * @param {number} ramMb Ram size in mega bytes.
+     * @param {number} diskMb Disk size in mega bytes.
+     * @param {number} totalInstanceCount Total number of instance slots in the host.
+     * @param {string} cpuModel Model of the host CPU.
+     * @param {number} cpuCount Number of CPUs in the host.
+     * @param {number} cpuSpeed CPU MHz.
+     * @param {string} description Description about the host.
+     * @param {string} emailAddress Email address of the host.
+     * @param {*} options [Optional] transaction options.
+     * @returns Transaction result.
+     */
     async register(countryCode, cpuMicroSec, ramMb, diskMb, totalInstanceCount, cpuModel, cpuCount, cpuSpeed, description, emailAddress, options = {}) {
         if (!/^([A-Z]{2})$/.test(countryCode))
             throw "countryCode should consist of 2 uppercase alphabetical characters";
@@ -282,6 +323,11 @@ class HostClient extends BaseEvernodeClient {
         return await this.isRegistered();
     }
 
+    /**
+     * Deregister a host from the Evernode network.
+     * @param {*} options [Optional] transaction options.
+     * @returns Boolean whether host is registered or not.
+     */
     async deregister(options = {}) {
 
         if (!(await this.isRegistered()))
@@ -305,6 +351,21 @@ class HostClient extends BaseEvernodeClient {
         return await this.isRegistered();
     }
 
+    /**
+     * Update the host registration in the Evernode network.
+     * @param {number} activeInstanceCount Currently active instance count in the host.
+     * @param {string} version Sashimono version installed on the host
+     * @param {number} totalInstanceCount Total number of instance slots in the host.
+     * @param {string} tokenID Registration Token Id of the host.
+     * @param {string} countryCode Upper case country code with two letters.
+     * @param {number} cpuMicroSec 
+     * @param {number} ramMb Ram size in mega bytes.
+     * @param {number} diskMb Disk size in mega bytes.
+     * @param {string} description Description about the host.
+     * @param {string} emailAddress Email address of the host.
+     * @param {*} options [Optional] transaction options.
+     * @returns Transaction result.
+     */
     async updateRegInfo(activeInstanceCount = null, version = null, totalInstanceCount = null, tokenID = null, countryCode = null, cpuMicroSec = null, ramMb = null, diskMb = null, description = null, emailAddress = null, options = {}) {
         // <token_id(32)><country_code(2)><cpu_microsec(4)><ram_mb(4)><disk_mb(4)><total_instance_count(4)><active_instances(4)><description(26)><version(3)><email(40)>
         const paramBuf = Buffer.alloc(HOST_UPDATE_PARAM_SIZE, 0);
@@ -349,6 +410,12 @@ class HostClient extends BaseEvernodeClient {
             });
     }
 
+    /**
+     * Send a heartbeat from the host.
+     * @param {*} voteInfo [Optional] Candidate votes if there's any `{ '<candidateId>': '{number 0|1} vote', ... }`
+     * @param {*} options [Optional] transaction options.
+     * @returns Transaction result.
+     */
     async heartbeat(voteInfo = {}, options = {}) {
         let data;
         // Prepare voteInfo
@@ -387,6 +454,14 @@ class HostClient extends BaseEvernodeClient {
         }
     }
 
+    /**
+     * Send acquire success response to the tenant.
+     * @param {string} txHash Acquire lease transaction hash in hex.
+     * @param {string} tenantAddress XRPL address of the tenant.
+     * @param {string} instanceInfo Created instance info.
+     * @param {*} options [Optional] transaction options.
+     * @returns Transaction result.
+     */
     async acquireSuccess(txHash, tenantAddress, instanceInfo, options = {}) {
 
         // Encrypt the instance info with the tenant's encryption key (Specified in MessageKey field of the tenant account).
@@ -432,6 +507,15 @@ class HostClient extends BaseEvernodeClient {
             });
     }
 
+    /**
+     * Send acquire error response to the tenant.
+     * @param {string} txHash Acquire lease transaction hash in hex.
+     * @param {string} tenantAddress Xrpl address of the tenant.
+     * @param {number} leaseAmount Lease amount to be refunded.
+     * @param {string} reason Reason for the error.
+     * @param {*} options [Optional] transaction options.
+     * @returns Transaction result.
+     */
     async acquireError(txHash, tenantAddress, leaseAmount, reason, options = {}) {
 
         return this.xrplAcc.makePayment(tenantAddress,
@@ -450,6 +534,14 @@ class HostClient extends BaseEvernodeClient {
             });
     }
 
+    /**
+     * Send extend success response to the tenant.
+     * @param {string} txHash Extend lease transaction hash in hex.
+     * @param {string} tenantAddress XRPL address of the tenant.
+     * @param {number} expiryMoment Moment which the instance will expire.
+     * @param {*} options [Optional] transaction options.
+     * @returns Transaction result.
+     */
     async extendSuccess(txHash, tenantAddress, expiryMoment, options = {}) {
         let buf = Buffer.allocUnsafe(4);
         buf.writeUInt32BE(expiryMoment);
@@ -470,6 +562,15 @@ class HostClient extends BaseEvernodeClient {
             });
     }
 
+    /**
+     * Send extend error response to the tenant.
+     * @param {string} txHash Extend lease transaction hash in hex.
+     * @param {string} tenantAddress Xrpl address of the tenant.
+     * @param {string} reason Reason for the error.
+     * @param {number} refund Amount to be refunded.
+     * @param {*} options [Optional] transaction options.
+     * @returns Transaction result.
+     */
     async extendError(txHash, tenantAddress, reason, refund, options = {}) {
 
         // Required to refund the paid EVR amount as the offer extention is not successfull.
@@ -489,6 +590,14 @@ class HostClient extends BaseEvernodeClient {
             });
     }
 
+    /**
+     * Send refunds to the tenant.
+     * @param {string} txHash Request transaction hash in hex.
+     * @param {string} tenantAddress Xrpl address of the tenant.
+     * @param {number} refundAmount Amount to be refunded.
+     * @param {*} options [Optional] transaction options.
+     * @returns Transaction result.
+     */
     async refundTenant(txHash, tenantAddress, refundAmount, options = {}) {
         return this.xrplAcc.makePayment(tenantAddress,
             refundAmount.toString(),
@@ -506,6 +615,11 @@ class HostClient extends BaseEvernodeClient {
             });
     }
 
+    /**
+     * Request registration rebates from the registry.
+     * @param {*} options [Optional] transaction options.
+     * @returns Transaction result.
+     */
     async requestRebate(options = {}) {
         return this.xrplAcc.makePayment(this.config.registryAddress,
             XrplConstants.MIN_XRP_AMOUNT,
@@ -522,14 +636,11 @@ class HostClient extends BaseEvernodeClient {
             });
     }
 
-    getLeaseNFTokenIdPrefix() {
-        let buf = Buffer.allocUnsafe(24);
-        buf.writeUInt16BE(1);
-        buf.writeUInt16BE(0, 2);
-        codec.decodeAccountID(this.xrplAcc.address).copy(buf, 4);
-        return buf.toString('hex');
-    }
-
+    /**
+     * Initiate a host transfer.
+     * @param {string} transfereeAddress [Optional] Xrpl account address to host registration to be transferred.
+     * @param {*} options [Optional] transaction options.
+     */
     async transfer(transfereeAddress = this.xrplAcc.address, options = {}) {
         if (!(await this.isRegistered()))
             throw "Host is not registered.";
@@ -576,6 +687,10 @@ class HostClient extends BaseEvernodeClient {
             throw 'Token hasn\'t transferred within timeout.';
     }
 
+    /**
+     * Check whether this host is a transferee.
+     * @returns Boolean wether the host is a transferee or not.
+     */
     async isTransferee() {
 
         // Check the availability of TRANSFEREE state for this host address.
@@ -589,6 +704,13 @@ class HostClient extends BaseEvernodeClient {
         return false;
     }
 
+    /**
+     * Propose a new hook candidate.
+     * @param {string} hashes Hook candidate hashes in hex format, <GOVERNOR_HASH(32)><REGISTRY_HASH(32)><HEARTBEAT_HASH(32)>.
+     * @param {string} shortName Short name for the proposal candidate.
+     * @param {*} options [Optional] transaction options.
+     * @returns Proposed candidate id.
+     */
     async propose(hashes, shortName, options = {}) {
         if (!(await this.isRegistered()))
             throw 'Host should be registered to propose candidates.';
@@ -596,6 +718,12 @@ class HostClient extends BaseEvernodeClient {
         return await super._propose(hashes, shortName, options);
     }
 
+    /**
+     * Withdraw a hook candidate.
+     * @param {string} candidateId Id of the candidate in hex format.
+     * @param {*} options [Optional] transaction options.
+     * @returns Transaction result.
+     */
     async withdraw(candidateId, options = {}) {
         if (!(await this.isRegistered()))
             throw 'Host should be registered to withdraw candidates.';
@@ -603,6 +731,12 @@ class HostClient extends BaseEvernodeClient {
         return await super._withdraw(candidateId, options);
     }
 
+    /**
+     * Report dud host for removal.
+     * @param {string} hostAddress Address of the dud host.
+     * @param {*} options [Optional] transaction options.
+     * @returns Transaction result.
+     */
     async reportDudHost(hostAddress, options = {}) {
         if (!(await this.isRegistered()))
             throw 'Host should be registered to report dud hosts.';

@@ -12,16 +12,17 @@ const FoundationEvents = {}
 
 class FoundationClient extends BaseEvernodeClient {
 
-    /**
-     * Constructs a tenant client instance.
-     * @param {string} xrpAddress XRPL address of the tenant.
-     * @param {string} XRPL secret of the tenant.
-     * @param {object} options [Optional] An object with 'rippledServer' URL and 'governorAddress'.
-     */
     constructor(xrpAddress, xrpSecret, options = {}) {
         super(xrpAddress, xrpSecret, Object.values(FoundationEvents), false, options);
     }
 
+    /**
+     * Propose a new hook candidate.
+     * @param {string} hashes Hook candidate hashes in hex format, <GOVERNOR_HASH(32)><REGISTRY_HASH(32)><HEARTBEAT_HASH(32)>.
+     * @param {string} shortName Short name for the proposal candidate.
+     * @param {*} options [Optional] transaction options.
+     * @returns Proposed candidate id.
+     */
     async propose(hashes, shortName, options = {}) {
         if (this.xrplAcc.address !== this.config.foundationAddress)
             throw `Invalid foundation address ${this.xrplAcc.address}.`;
@@ -29,6 +30,12 @@ class FoundationClient extends BaseEvernodeClient {
         return await super._propose(hashes, shortName, options);
     }
 
+    /**
+     * Withdraw a hook candidate.
+     * @param {string} candidateId Id of the candidate in hex format.
+     * @param {*} options [Optional] transaction options.
+     * @returns Transaction result.
+     */
     async withdraw(candidateId, options = {}) {
         if (this.xrplAcc.address !== this.config.foundationAddress)
             throw `Invalid foundation address ${this.xrplAcc.address}.`;
@@ -65,6 +72,12 @@ class FoundationClient extends BaseEvernodeClient {
             });
     }
 
+    /**
+     * Report dud host for removal.
+     * @param {string} hostAddress Address of the dud host.
+     * @param {*} options [Optional] transaction options.
+     * @returns Transaction result.
+     */
     async reportDudHost(hostAddress, options = {}) {
         if (this.xrplAcc.address !== this.config.foundationAddress)
             throw `Invalid foundation address ${this.xrplAcc.address}.`;
