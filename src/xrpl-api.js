@@ -351,10 +351,10 @@ class XrplApi {
     }
 
     /**
-     * Arrange the response to a standard format.
+     * Arrange the transaction result to a standard format.
      * @param {object} tx Submitted Transaction
      * @param {object} submissionResult Response related to that transaction.
-     * @returns 
+     * @returns prepared response of the transaction result.
      */
     async #prepareResponse(tx, submissionResult) {
         const resultCode = submissionResult?.result?.engine_result;
