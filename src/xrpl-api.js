@@ -16,6 +16,8 @@ const API_REQ_TYPE = {
     TRANSACTIONS: 'transactions'
 }
 
+const LEDGER_CLOSE_TIME = 1000
+
 class XrplApi {
 
     #rippledServer;
@@ -308,8 +310,99 @@ class XrplApi {
         await this.#client.request({ command: 'subscribe', streams: [streamName] });
     }
 
+    /**
+     * Watching to acquire the transaction submission. (Waits until txn. is applied to the ledger.)
+     * @param {string} txHash Transaction Hash
+     * @param {number} lastLedger Last ledger sequence of the transaction.
+     * @param {object} submissionResult Result of the submission.
+     * @returns Returns the applied transaction object.
+     */
+    async #waitForFinalTransactionOutcome(txHash, lastLedger, submissionResult) {
+        if (lastLedger == null)
+            throw 'Transaction must contain a LastLedgerSequence value for reliable submission.';
+
+        await new Promise(r => setTimeout(r, LEDGER_CLOSE_TIME));
+
+        const latestLedger = this.#client.getLedgerIndex();
+
+        if (lastLedger < latestLedger) {
+            throw `The latest ledger sequence ${latestLedger} is greater than the transaction's LastLedgerSequence (${lastLedger}).\n` +
+            `Preliminary result: ${submissionResult}`;
+        }
+
+        const txResponse = await this.getTxnInfo(txHash)
+            .catch(async (error) => {
+                const message = error?.data?.error;
+                if (message === 'txnNotFound') {
+                    return await this.#waitForFinalTransactionOutcome(
+                        txHash,
+                        lastLedger,
+                        submissionResult
+                    );
+                }
+                throw `${message} \n Preliminary result: ${submissionResult}.\nFull error details: ${String(
+                    error,)}`;
+            });
+
+        if (txResponse.validated)
+            return txResponse;
+
+        return await this.#waitForFinalTransactionOutcome(txHash, lastLedger, submissionResult);
+    }
+
+    /**
+     * Arrange the response to a standard format.
+     * @param {object} tx Submitted Transaction
+     * @param {object} submissionResult Response related to that transaction.
+     * @returns 
+     */
+    async #prepareResponse(tx, submissionResult) {
+        const resultCode = submissionResult?.result?.engine_result;
+        if (resultCode === "tesSUCCESS" || resultCode === "tefPAST_SEQ" || resultCode === "tefALREADY") {
+            const result = await this.#waitForFinalTransactionOutcome(submissionResult.result.tx_json.hash, tx.LastLedgerSequence, submissionResult);
+            const txResult = {
+                id: result?.hash,
+                code: result?.meta?.TransactionResult,
+                details: result
+            };
+
+            console.log("Transaction result: " + txResult.code);
+            const hookExecRes = txResult.details?.meta?.HookExecutions?.map(o => {
+                return {
+                    result: o.HookExecution?.HookResult,
+                    returnCode: parseInt(o.HookExecution?.HookReturnCode, 16),
+                    message: TransactionHelper.hexToASCII(o.HookExecution?.HookReturnString).replace(/\x00+$/, '')
+                }
+            });
+            if (txResult.code === "tesSUCCESS")
+                return { ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) };
+            else
+                return { ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) };
+        }
+        else
+            throw resultCode ? `Transaction failed with error ${resultCode}` : 'Transaction failed';
+
+    }
+
+    /**
+     * Submit a multi-signature transaction.
+     * @param {object} tx Multi-signed transaction object.
+     * @returns response object of the submitted transaction.
+     */
     async submitMultisigned(tx) {
-        return await this.#client.request({ command: 'submit_multisigned', tx_json: tx });
+        tx.SigningPubKey = "";
+        const submissionResult = await this.#client.request({ command: 'submit_multisigned', tx_json: tx });
+        return await this.#prepareResponse(tx, submissionResult);
+    }
+
+    /**
+     * Submit a single-signature transaction.
+     * @param {string} tx_blob 
+     * @returns response object of the submitted transaction.
+     */
+    async submit(tx, tx_blob) {
+        const submissionResult = await this.#client.request({ command: 'submit', tx_blob: tx_blob });
+        return await this.#prepareResponse(tx, submissionResult);
     }
 
     /**
