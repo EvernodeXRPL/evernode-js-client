@@ -144,7 +144,7 @@ class XrplAccount {
 
     async setAccountFields(fields, options = {}) {
         const preparedTxn = await this.prepareSetAccountFields(fields, options);
-        return await this.#signAndSubmit(preparedTxn);
+        return await this.signAndSubmit(preparedTxn);
     }
 
     prepareSetAccountFields(fields, options = {}) {
@@ -190,7 +190,7 @@ class XrplAccount {
 
     async setSignerList(signerList = [], options = {}) {
         const preparedTxn = await this.prepareSetSignerList(signerList, options);
-        return await this.#signAndSubmit(preparedTxn);
+        return await this.signAndSubmit(preparedTxn);
     }
 
     /**
@@ -234,7 +234,7 @@ class XrplAccount {
 
     async makePayment(toAddr, amount, currency, issuer = null, memos = null, options = {}) {
         const preparedTxn = await this.prepareMakePayment(toAddr, amount, currency, issuer, memos, options);
-        return await this.#signAndSubmit(preparedTxn);
+        return await this.signAndSubmit(preparedTxn);
     }
 
     prepareMakePayment(toAddr, amount, currency, issuer = null, memos = null, options = {}) {
@@ -253,7 +253,7 @@ class XrplAccount {
 
     async setTrustLine(currency, issuer, limit, allowRippling = false, memos = null, options = {}) {
         const preparedTxn = await this.prepareSetTrustLine(currency, issuer, limit, allowRippling, memos, options);
-        return await this.#signAndSubmit(preparedTxn);
+        return await this.signAndSubmit(preparedTxn);
     }
 
     prepareSetTrustLine(currency, issuer, limit, allowRippling = false, memos = null, options = {}) {
@@ -262,7 +262,7 @@ class XrplAccount {
             throw "Limit must be a string.";
 
         let tx = {
-            TransactionType: XrplTransactionTypes.PAYMENT,
+            TransactionType: XrplTransactionTypes.TRUST_SET,
             Account: this.address,
             LimitAmount: {
                 currency: currency,
@@ -281,7 +281,7 @@ class XrplAccount {
 
     async setRegularKey(regularKey, memos = null, options = {}) {
         const preparedTxn = await this.prepareSetRegularKey(regularKey, memos, options);
-        return await this.#signAndSubmit(preparedTxn);
+        return await this.signAndSubmit(preparedTxn);
     }
 
     prepareSetRegularKey(regularKey, memos = null, options = {}) {
@@ -297,7 +297,7 @@ class XrplAccount {
 
     async cashCheck(check, options = {}) {
         const preparedTxn = await this.prepareCashCheck(check, options);
-        return await this.#signAndSubmit(preparedTxn);
+        return await this.signAndSubmit(preparedTxn);
     }
 
     prepareCashCheck(check, options = {}) {
@@ -324,7 +324,7 @@ class XrplAccount {
 
     async offerSell(sellAmount, sellCurrency, sellIssuer, forAmount, forCurrency, forIssuer = null, expiration = 4294967295, memos = null, options = {}) {
         const preparedTxn = await this.prepareOfferSell(sellAmount, sellCurrency, sellIssuer, forAmount, forCurrency, forIssuer, expiration, memos, options);
-        return await this.#signAndSubmit(preparedTxn);
+        return await this.signAndSubmit(preparedTxn);
     }
 
     prepareOfferSell(sellAmount, sellCurrency, sellIssuer, forAmount, forCurrency, forIssuer = null, expiration = 4294967295, memos = null, options = {}) {
@@ -345,7 +345,7 @@ class XrplAccount {
 
     async offerBuy(buyAmount, buyCurrency, buyIssuer, forAmount, forCurrency, forIssuer = null, expiration = 4294967295, memos = null, options = {}) {
         const preparedTxn = await this.prepareOfferBuy(buyAmount, buyCurrency, buyIssuer, forAmount, forCurrency, forIssuer, expiration, memos, options);
-        return await this.#signAndSubmit(preparedTxn);
+        return await this.signAndSubmit(preparedTxn);
     }
 
     prepareOfferBuy(buyAmount, buyCurrency, buyIssuer, forAmount, forCurrency, forIssuer = null, expiration = 4294967295, memos = null, options = {}) {
@@ -366,7 +366,7 @@ class XrplAccount {
 
     async cancelOffer(offerSequence, memos = null, options = {}) {
         const preparedTxn = await this.prepareCancelOffer(offerSequence, memos, options);
-        return await this.#signAndSubmit(preparedTxn);
+        return await this.signAndSubmit(preparedTxn);
     }
 
     prepareCancelOffer(offerSequence, memos = null, options = {}) {
@@ -381,7 +381,7 @@ class XrplAccount {
 
     async mintNft(uri, taxon, transferFee, flags = {}, memos = null, options = {}) {
         const preparedTxn = await this.prepareMintNft(uri, taxon, transferFee, flags, memos, options);
-        return await this.#signAndSubmit(preparedTxn);
+        return await this.signAndSubmit(preparedTxn);
     }
 
     prepareMintNft(uri, taxon, transferFee, flags = {}, memos = null, options = {}) {
@@ -399,7 +399,7 @@ class XrplAccount {
 
     async offerSellNft(nfTokenId, amount, currency, issuer = null, destination = null, expiration = 4294967295, memos = null, options = {}) {
         const preparedTxn = await this.prepareOfferSellNft(nfTokenId, amount, currency, issuer, destination, expiration, memos, options);
-        return await this.#signAndSubmit(preparedTxn);
+        return await this.signAndSubmit(preparedTxn);
     }
 
     prepareOfferSellNft(nfTokenId, amount, currency, issuer = null, destination = null, expiration = 4294967295, memos = null, options = {}) {
@@ -421,7 +421,7 @@ class XrplAccount {
 
     async offerBuyNft(nfTokenId, owner, amount, currency, issuer = null, expiration = 4294967295, memos = null, options = {}) {
         const preparedTxn = await this.prepareOfferSellNft(nfTokenId, owner, amount, currency, issuer, expiration, memos, options);
-        return await this.#signAndSubmit(preparedTxn);
+        return await this.signAndSubmit(preparedTxn);
     }
 
     prepareOfferBuyNft(nfTokenId, owner, amount, currency, issuer = null, expiration = 4294967295, memos = null, options = {}) {
@@ -444,7 +444,7 @@ class XrplAccount {
 
     async sellNft(offerId, memos = null, options = {}) {
         const preparedTxn = await this.prepareSellNft(offerId, memos, options);
-        return await this.#signAndSubmit(preparedTxn);
+        return await this.signAndSubmit(preparedTxn);
     }
 
     prepareSellNft(offerId, memos = null, options = {}) {
@@ -460,7 +460,7 @@ class XrplAccount {
 
     async buyNft(offerId, memos = null, options = {}) {
         const preparedTxn = await this.prepareBuyNft(offerId, memos, options);
-        return await this.#signAndSubmit(preparedTxn);
+        return await this.signAndSubmit(preparedTxn);
     }
 
     prepareBuyNft(offerId, memos = null, options = {}) {
@@ -476,7 +476,7 @@ class XrplAccount {
 
     async burnNft(nfTokenId, owner = null, memos = null, options = {}) {
         const preparedTxn = await this.prepareBurnNft(nfTokenId, owner, memos, options);
-        return await this.#signAndSubmit(preparedTxn);
+        return await this.signAndSubmit(preparedTxn);
     }
 
     prepareBurnNft(nfTokenId, owner = null, memos = null, options = {}) {
@@ -533,7 +533,7 @@ class XrplAccount {
         this.#subscribed = false;
     }
 
-    // TODO : Decide to keep this or remove this.
+
     #submitAndVerifyTransaction(tx, options) {
 
         if (!this.wallet)
@@ -651,7 +651,7 @@ class XrplAccount {
 
     async mintURIToken(uri, digest = null, flags = {}, options = {}) {
         const preparedTxn = await this.prepareMintURIToken(uri, digest, flags, options);
-        return await this.#signAndSubmit(preparedTxn);
+        return await this.signAndSubmit(preparedTxn);
     }
 
     prepareMintURIToken(uri, digest = null, flags = {}, options = {}) {
@@ -671,7 +671,7 @@ class XrplAccount {
 
     async burnURIToken(uriTokenID, options = {}) {
         const preparedTxn = await this.prepareBurnURIToken(uriTokenID, options);
-        return await this.#signAndSubmit(preparedTxn);
+        return await this.signAndSubmit(preparedTxn);
     }
 
     prepareBurnURIToken(uriTokenID, options = {}) {
@@ -685,7 +685,7 @@ class XrplAccount {
 
     async sellURIToken(uriTokenID, amount, currency, issuer = null, toAddr = null, memos = null, options = {}) {
         const preparedTxn = await this.prepareSellURIToken(uriTokenID, amount, currency, issuer, toAddr, memos, options);
-        return await this.#signAndSubmit(preparedTxn);
+        return await this.signAndSubmit(preparedTxn);
     }
 
     prepareSellURIToken(uriTokenID, amount, currency, issuer = null, toAddr = null, memos = null, options = {}) {
@@ -711,7 +711,7 @@ class XrplAccount {
 
     async buyURIToken(uriToken, memos = null, options = {}) {
         const preparedTxn = await this.prepareBuyURIToken(uriToken, memos, options);
-        return await this.#signAndSubmit(preparedTxn);
+        return await this.signAndSubmit(preparedTxn);
     }
 
     prepareBuyURIToken(uriToken, memos = null, options = {}) {
@@ -733,7 +733,7 @@ class XrplAccount {
 
     async clearURITokenOffer(uriTokenID, options = {}) {
         const preparedTxn = await this.prepareClearURITokenOffer(uriTokenID, options);
-        return await this.#signAndSubmit(preparedTxn);
+        return await this.signAndSubmit(preparedTxn);
     }
 
     async prepareClearURITokenOffer(uriTokenID, options = {}) {
@@ -817,7 +817,7 @@ class XrplAccount {
      * @param {object} preparedTransaction Prepared transaction.
      * @returns result of the submitted transaction.
      */
-    async #signAndSubmit(preparedTransaction) {
+    async signAndSubmit(preparedTransaction) {
         const signedTxn = this.sign(preparedTransaction, false);
         return await this.xrplApi.submit(preparedTransaction, signedTxn.tx_blob);
     }

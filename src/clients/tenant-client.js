@@ -54,13 +54,26 @@ class TenantClient extends BaseEvernodeClient {
     }
 
     /**
-     * 
+     * Prepare and submit acquire transaction.(Single signed scenario)
      * @param {string} hostAddress XRPL address of the host to acquire the lease.
      * @param {object} requirement The instance requirements and configuration.
      * @param {object} options [Optional] Options for the XRPL transaction.
      * @returns The transaction result.
      */
     async acquireLeaseSubmit(hostAddress, requirement, options = {}) {
+
+        const preparedAcquireTxn = await this.prepareAcquireLeaseTransaction(hostAddress, requirement, options);
+        return await this.xrplAcc.signAndSubmit(preparedAcquireTxn);
+    }
+
+    /**
+     * Prepare the Acquire transaction.
+     * @param {string} hostAddress XRPL address of the host to acquire the lease.
+     * @param {object} requirement The instance requirements and configuration.
+     * @param {object} options [Optional] Options for the XRPL transaction.
+     * @returns Prepared Acquire transaction.
+     */
+    async prepareAcquireLeaseTransaction(hostAddress, requirement, options = {}) {
 
         const hostAcc = await this.getLeaseHost(hostAddress);
         let selectedOfferIndex = options.leaseOfferIndex;
@@ -107,7 +120,7 @@ class TenantClient extends BaseEvernodeClient {
             data = Buffer.concat([Buffer.from([0x01]), Buffer.from(encrypted, 'base64')]).toString('base64');
         }
 
-        return this.xrplAcc.buyURIToken(
+        return this.xrplAcc.prepareBuyURIToken(
             buyUriOffer,
             [
                 { type: EventTypes.ACQUIRE_LEASE, format: MemoFormats.BASE64, data: data }
@@ -203,8 +216,21 @@ class TenantClient extends BaseEvernodeClient {
      * @returns The transaction result.
      */
     async extendLeaseSubmit(hostAddress, amount, tokenID, options = {}) {
+        const preparedExtendTxn = await this.prepareExtendLeaseTransaction(hostAddress, amount, tokenID, options);
+        return await this.xrplAcc.signAndSubmit(preparedExtendTxn);
+    }
+
+    /**
+     * This function is called to prepare an instance extension transaction for a particular host.
+     * @param {string} hostAddress XRPL account address of the host.
+     * @param {number} amount Cost for the extended moments , in EVRs.
+     * @param {string} tokenID Tenant received instance name. this name can be retrieve by performing acquire Lease.
+     * @param {object} options This is an optional field and contains necessary details for the transactions.
+     * @returns The prepared transaction.
+     */
+    async prepareExtendLeaseTransaction(hostAddress, amount, tokenID, options = {}) {
         const host = await this.getLeaseHost(hostAddress);
-        return this.xrplAcc.makePayment(
+        return this.xrplAcc.prepareMakePayment(
             host.address, amount.toString(),
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress,
