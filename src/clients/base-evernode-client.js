@@ -624,6 +624,9 @@ class BaseEvernodeClient {
                 const tokenIdStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, tokenIdStatekey);
                 const tokenIdLedgerEntry = await this.xrplApi.getLedgerEntry(tokenIdStateIndex);
 
+                const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
+                addrStateDecoded.domain = await hostAcc.getDomain();
+
                 const tokenIdStateData = tokenIdLedgerEntry?.HookStateData;
                 if (tokenIdStateData) {
                     const tokenIdStateDecoded = StateHelpers.decodeTokenIdState(Buffer.from(tokenIdStateData, 'hex'));
