@@ -120,7 +120,7 @@ class TenantClient extends BaseEvernodeClient {
             data = Buffer.concat([Buffer.from([0x01]), Buffer.from(encrypted, 'base64')]).toString('base64');
         }
 
-        return this.xrplAcc.prepareBuyURIToken(
+        return await this.xrplAcc.prepareBuyURIToken(
             buyUriOffer,
             [
                 { type: EventTypes.ACQUIRE_LEASE, format: MemoFormats.BASE64, data: data }
@@ -230,7 +230,7 @@ class TenantClient extends BaseEvernodeClient {
      */
     async prepareExtendLeaseTransaction(hostAddress, amount, tokenID, options = {}) {
         const host = await this.getLeaseHost(hostAddress);
-        return this.xrplAcc.prepareMakePayment(
+        return await this.xrplAcc.prepareMakePayment(
             host.address, amount.toString(),
             EvernodeConstants.EVR,
             this.config.evrIssuerAddress,
