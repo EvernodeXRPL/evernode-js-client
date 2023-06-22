@@ -1,6 +1,7 @@
 // const evernode = require("evernode-js-client");
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 const codec = require('ripple-address-codec');
+const xrplCodec = require('xrpl-binary-codec');
 
 const evrIssuerAddress = "ra328vuQhL5fKrjqGB3FzVM45a5zuNS2KR";
 const registryAddress = "rDSj7Qhv8qjhnnbvaHPjZQ3Vx7edN3dXNF";
@@ -16,19 +17,23 @@ const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
 const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
 const transfereeAddress = 'rsPxbXNo5XnBpnLZ3yu3ZufCZiA22hS5R7';
 const transfereeSecret = 'snXTbrMTJ64MALdMv56b2p7FoBQTw';
-const multiSigninerAddress = 'rsrpCr5j5phA58uQy9Ha3StMPBmSrXbVx6';
-const multiSignerSecret = 'shYrpNBRgnej2xmBhxze75MNLfTwq';
+const multiSignerAddress = 'rN7MCSD6xTkdXnD94Q2YJjTmcwVSbkwiDL';
+const multiSignerSecret = 'sn5VhmQreHjFTadZqMYx7m1tE9JAx';
 const dudHostAddress = "rGTGBxN2ABeLjxveHXFCU5V8uqfoDEUJLB";
 const dudHostSecret = "shCGdyvmpj3bJPFgYWLt8N55Cgf8S";
+const signerOneAddress = "rshF5zDNaR5jiyWMkK9qqHPuR5susDdCrW";
+const signerOneSecret = "shkEQpH63R9KW8v5EHfibBQ8wACdQ";
+const signerTwoAddress = "rQL7pzkQkdB5jV7Big6QSNZdzeT6zZQXHU";
+const signerTwoSecret = "sptkPWTDoqrnP1LNAHx47wM6ssjY2";
 
 
 const signerList = [
     {
-        account: "rKqX6K3h43Wf1HT4hrpkpM92pf7DJAwFju",
+        account: signerOneAddress,
         weight: 1
     },
     {
-        account: "rGtN3sWmB84cVHqkPeEUngdwVZte9fH6Nn",
+        account: signerTwoAddress,
         weight: 1
     }
 ];
@@ -151,6 +156,7 @@ async function app() {
             // () => changeGovernanceMode(evernode.EvernodeConstants.GovernanceModes.AutoPiloted),
             // () => makePayment(),
             // () => getDudHostCandidatesByOwner()
+            // () => multiSignedMakePayment(),
 
         ];
 
@@ -676,6 +682,42 @@ async function makePayment() {
             ]
         });
     console.log(res);
+}
+
+async function multiSignedMakePayment() {
+    console.log("-----------Multi-Signed payment");
+    const multiSig = new evernode.XrplAccount(multiSignerAddress, multiSignerSecret);
+    let transaction = await multiSig.prepareMakePayment(governorAddress, "1", "EVR", evrIssuerAddress,
+        [{ type: 'evnTest', format: 'text/plain', data: 'Test Data' }],
+        {
+            hookParams: [
+                { name: '546573744E616D65', value: '5465737456616C7565' }
+            ]
+        });
+
+    // Create signer accounts.
+    const acc1 = new evernode.XrplAccount(signerOneAddress, signerOneSecret);
+    const acc2 = new evernode.XrplAccount(signerTwoAddress, signerTwoSecret);
+
+    // Prepare Fee.
+    transaction.Fee = `${transaction.Fee * (2 + 2)}`;
+
+    // Signing transaction.
+    const signedTx1 = await acc1.sign(transaction, true);
+    const signedTx2 = await acc2.sign(transaction, true);
+
+    // Appending signatures.
+    let decodedTx = JSON.parse(JSON.stringify(xrplCodec.decode(signedTx1.tx_blob)));
+    let signature1 = decodedTx.Signers[0];
+
+    decodedTx = JSON.parse(JSON.stringify(xrplCodec.decode(signedTx2.tx_blob)));
+    let signature2 = decodedTx.Signers[0];
+
+    transaction.Signers = [signature1, signature2];
+
+    // Submit transaction.
+    const res = await multiSig.submitMultisigned(transaction);
+    console.log(res)
 }
 
 app();
