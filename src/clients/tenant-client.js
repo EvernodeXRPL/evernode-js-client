@@ -87,7 +87,7 @@ class TenantClient extends BaseEvernodeClient {
         }
         else {
             // Attempt to get relevant available offer using selectedOfferIndex.
-            buyUriOffer = uriTokenOffers && uriTokenOffers.find(uriOffer => { uriOffer.index === selectedOfferIndex });
+            buyUriOffer = uriTokenOffers && uriTokenOffers.find(uriOffer => (uriOffer.index === selectedOfferIndex));
         }
 
         if (!buyUriOffer)
@@ -104,14 +104,14 @@ class TenantClient extends BaseEvernodeClient {
             } else if (options.messageKey === 'none') {
                 doEncrypt = false;
             } else
-                throw "Tenant encryption key not valid.";
+                throw { reason: ErrorReasons.INTERNAL_ERR, error: "Host encryption key not valid." };
         } else {
             encKey = await hostAcc.getMessageKey();
         }
 
         if (doEncrypt) {
             if (!encKey)
-                throw "Tenant encryption key not set.";
+                throw { reason: ErrorReasons.INTERNAL_ERR, error: "Host encryption key not set." };
             const encrypted = await EncryptionHelper.encrypt(encKey, requirement, {
                 iv: options.iv, // Must be null or 16 bytes.
                 ephemPrivateKey: options.ephemPrivateKey // Must be null or 32 bytes.
