@@ -189,6 +189,8 @@ class XrplAccount {
     }
 
     async setSignerList(signerList = [], options = {}) {
+        signerList = signerList.sort((a, b) => a.account < b.account ? -1 : 1);
+
         const preparedTxn = await this.prepareSetSignerList(signerList, options);
         return await this.signAndSubmit(preparedTxn);
     }
