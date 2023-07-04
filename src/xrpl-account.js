@@ -189,7 +189,6 @@ class XrplAccount {
     }
 
     async setSignerList(signerList = [], options = {}) {
-        signerList = signerList.sort((a, b) => a.account < b.account ? -1 : 1);
 
         const preparedTxn = await this.prepareSetSignerList(signerList, options);
         return await this.signAndSubmit(preparedTxn);
@@ -215,6 +214,8 @@ class XrplAccount {
             if (totalWeight < options.signerQuorum)
                 throw ("Everpocket: Total weight is less than the quorum");
         }
+
+        signerList = signerList.sort((a, b) => a.account < b.account ? -1 : 1);
 
         const signerListTx =
         {
