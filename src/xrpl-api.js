@@ -377,7 +377,7 @@ class XrplApi {
             if (txResult.code === "tesSUCCESS")
                 return { ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) };
             else
-                return { ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) };
+                throw { ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) };
         }
         else
             throw resultCode ? `Transaction failed with error ${resultCode}` : 'Transaction failed';
