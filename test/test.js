@@ -134,7 +134,7 @@ async function app() {
             // () => transferHost(),
             // () => requestRebate(),
             // () => getAccountObjects(),
-            () => setSignerList(),
+            // () => setSignerList(),
             // () => propose(),
             // () => foundationPropose(),
             // () => withdraw(),
@@ -155,7 +155,7 @@ async function app() {
             // () => changeGovernanceMode(evernode.EvernodeConstants.GovernanceModes.AutoPiloted),
             // () => makePayment(),
             // () => getDudHostCandidatesByOwner()
-            () => multiSignedMakePayment(),
+            // () => multiSignedMakePayment(),
 
         ];
 
@@ -673,7 +673,7 @@ async function changeGovernanceMode(mode = evernode.EvernodeConstants.Governance
 async function makePayment() {
     const tenant = new evernode.XrplAccount(tenantAddress, tenantSecret);
     console.log("-----------Simple payment");
-    const res = await tenant.makePayment(foundationAddress, "1", "EVR", evrIssuerAddress,
+    const res = await tenant.makePayment(governorAddress, "1", "EVR", evrIssuerAddress,
         [{ type: 'evnTest', format: 'text/plain', data: 'Test Data' }],
         {
             hookParams: [
