@@ -19,11 +19,6 @@ class XrplHelpers{
             tx_blob: signed.signedTransaction
         }
     }
-    multiSign(transactions,isMultiSign=true,accountsArray){
-        const signed = sign(transactions,accountsArray ,this.newDefinitions)
-        console.log("----------xxx-------",signed)
-        return signed
-    }
 }
 
 module.exports = {

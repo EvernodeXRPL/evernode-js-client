@@ -134,7 +134,7 @@ async function app() {
             // () => transferHost(),
             // () => requestRebate(),
             // () => getAccountObjects(),
-            // () => setSignerList(),
+            () => setSignerList(),
             // () => propose(),
             // () => foundationPropose(),
             // () => withdraw(),
@@ -153,9 +153,9 @@ async function app() {
             // () => votePilotedMode(),
             // () => foundationVotePilotedMode(),
             // () => changeGovernanceMode(evernode.EvernodeConstants.GovernanceModes.AutoPiloted),
-            () => makePayment(),
+            // () => makePayment(),
             // () => getDudHostCandidatesByOwner()
-            // () => multiSignedMakePayment(),
+            () => multiSignedMakePayment(),
 
         ];
 
