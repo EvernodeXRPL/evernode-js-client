@@ -4,6 +4,7 @@
         "build": "ncc build test.js --minify -o dist"
     },
     "dependencies": {
-        "evernode-js-client": "0.6.0"
+        "evernode-js-client": "file:../dist",
+        "xrpl-accountlib": "^2.2.0"
     }
 }

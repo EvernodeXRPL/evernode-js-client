@@ -5,6 +5,7 @@ const { DefaultValues } = require('./defaults');
 const { TransactionHelper } = require('./transaction-helper');
 const { XrplApiEvents } = require('./xrpl-common');
 const { XrplAccount } = require('./xrpl-account');
+const {XrplHelpers} = require('./xrpl-helpers')
 
 const MAX_PAGE_LIMIT = 400;
 const API_REQ_TYPE = {
@@ -25,6 +26,7 @@ class XrplApi {
     #events = new EventEmitter();
     #addressSubscriptions = [];
     #maintainConnection = false;
+    xrplHelper;
 
     constructor(rippledServer = null, options = {}) {
 
@@ -183,6 +185,8 @@ class XrplApi {
 
         this.#maintainConnection = true;
         await this.#connectXrplClient();
+        const newDefinition = await this.#client.request({ command: 'server_definitions' })
+        this.xrplHelper = new XrplHelpers(newDefinition.result);
     }
 
     async disconnect() {
@@ -281,10 +285,6 @@ class XrplApi {
     async getTxnInfo(txnHash, options) {
         const resp = (await this.#client.request({ command: 'tx', transaction: txnHash, binary: false, ...options }));
         return resp?.result;
-    }
-
-    async submitAndVerify(tx, options) {
-        return await this.#client.submitAndWait(tx, options);
     }
 
     async subscribeToAddress(address, handler) {
@@ -396,11 +396,12 @@ class XrplApi {
     }
 
     /**
-     * Submit a single-signature transaction.
+     * Submit a single-signature transaction using tx_blob.
      * @param {string} tx_blob 
      * @returns response object of the submitted transaction.
      */
-    async submit(tx, tx_blob) {
+    async submit(tx_blob) {
+        const tx = this.xrplHelper.decode(tx_blob)
         const submissionResult = await this.#client.request({ command: 'submit', tx_blob: tx_blob });
         return await this.#prepareResponse(tx, submissionResult);
     }
@@ -412,11 +413,8 @@ class XrplApi {
      * @param {(string | Transaction)[]} transactions An array of signed Transactions (in object or blob form) to combine into a single signed Transaction.
      * @returns A single signed Transaction string which has all Signers from transactions within it.
      */
-    multiSign(transactions) {
-        if (transactions.length > 0) {
-            return xrpl.multisign(transactions);
-        } else
-            throw ("Transaction list is empty for multi-signing.");
+    multiSign(transactions,accountsArray) {
+        return this.xrplHelper.multiSign(transactions,true,accountsArray)
     }
 }
 
