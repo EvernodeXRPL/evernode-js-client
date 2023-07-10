@@ -6,7 +6,6 @@ const { XrplConstants, XrplTransactionTypes } = require('./xrpl-common');
 const { TransactionHelper } = require('./transaction-helper');
 const { EventEmitter } = require('./event-emitter');
 const { DefaultValues } = require('./defaults');
-const xrplCodec = require('xrpl-binary-codec');
 
 class XrplAccount {
 
