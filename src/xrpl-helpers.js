@@ -1,8 +1,8 @@
 const { sign, derive, XrplDefinitions, binary } = require('xrpl-accountlib')
 class XrplHelpers{
-    newDefinitions;
+    definitions;
     constructor(definition) {
-        this.newDefinitions = new XrplDefinitions(definition);
+        this.definitions = new XrplDefinitions(definition);
     }
     encode(transacion){
         return binary.encode(transacion);
