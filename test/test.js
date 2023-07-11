@@ -1,14 +1,13 @@
 // const evernode = require("evernode-js-client");
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 const codec = require('ripple-address-codec');
-const xrplCodec = require('xrpl-binary-codec');
 
 const evrIssuerAddress = "ra328vuQhL5fKrjqGB3FzVM45a5zuNS2KR";
 const registryAddress = "rDSj7Qhv8qjhnnbvaHPjZQ3Vx7edN3dXNF";
 const governorAddress = 'raVhw4Q8FQr296jdaDLDfZ4JDhh7tFG7SF';
 const heartbeatAddress = 'rKqE7J29TvYtb4MSksRSWRiK3KCVVEuZjA';
-const hostAddress = "rM5HSKpoCgJ1nbsNQCYvgUqXNnEXp5HsjW";
-const hostSecret = "shmjE1wY4fk9cURhJguWc2T8DRiet";
+const hostAddress = "rBWN6Ny726oAch41J3o8kGikewBKVr77qp";
+const hostSecret = "spkyyp2ucQfK18LJgeC2v4s4Kt8hq";
 const foundationAddress = "rhqHz5tuy3NnBTqcpsUVBXhSWCsDTCJmzE";
 const foundationSecret = "sn3nNMSuyXiqVjrhfQr9JxDhgHmds";
 const tenantAddress = "r3vbdktYDxVSe7K1oo2McKeBJhQng3uFeH";
@@ -707,10 +706,10 @@ async function multiSignedMakePayment() {
     const signedTx2 = await acc2.sign(transaction, true);
 
     // Appending signatures.
-    let decodedTx = JSON.parse(JSON.stringify(xrplCodec.decode(signedTx1.tx_blob)));
+    let decodedTx = JSON.parse(JSON.stringify(acc1.xrplApi.xrplHelper.decode(signedTx1.tx_blob)));
     let signature1 = decodedTx.Signers[0];
 
-    decodedTx = JSON.parse(JSON.stringify(xrplCodec.decode(signedTx2.tx_blob)));
+    decodedTx = JSON.parse(JSON.stringify(acc2.xrplApi.xrplHelper.decode(signedTx2.tx_blob)));
     let signature2 = decodedTx.Signers[0];
 
     transaction.Signers = [signature1, signature2];
