@@ -686,6 +686,9 @@ async function makePayment() {
 async function multiSignedMakePayment() {
     console.log("-----------Multi-Signed payment");
     const multiSig = new evernode.XrplAccount(multiSignerAddress, multiSignerSecret);
+
+    await fundAccount(multiSig, '1');
+
     let transaction = await multiSig.prepareMakePayment(governorAddress, "1", "EVR", evrIssuerAddress,
         [{ type: 'evnTest', format: 'text/plain', data: 'Test Data' }],
         {
