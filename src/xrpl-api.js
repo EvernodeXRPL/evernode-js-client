@@ -323,7 +323,7 @@ class XrplApi {
 
         await new Promise(r => setTimeout(r, LEDGER_CLOSE_TIME));
 
-        const latestLedger = this.#client.getLedgerIndex();
+        const latestLedger = await this.#client.getLedgerIndex();
 
         if (lastLedger < latestLedger) {
             throw `The latest ledger sequence ${latestLedger} is greater than the transaction's LastLedgerSequence (${lastLedger}).\n` +
