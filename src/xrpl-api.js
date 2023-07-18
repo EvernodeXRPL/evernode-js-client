@@ -340,8 +340,7 @@ class XrplApi {
                         submissionResult
                     );
                 }
-                throw `${message} \n Preliminary result: ${submissionResult}.\nFull error details: ${String(
-                    error,)}`;
+                throw `${message} \n Preliminary result: ${JSON.stringify(submissionResult, null, 2)}.\nFull error details: ${JSON.stringify(error, null, 2)}`;
             });
 
         if (txResponse.validated)
