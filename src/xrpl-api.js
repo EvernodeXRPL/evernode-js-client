@@ -327,7 +327,7 @@ class XrplApi {
 
         if (lastLedger < latestLedger) {
             throw `The latest ledger sequence ${latestLedger} is greater than the transaction's LastLedgerSequence (${lastLedger}).\n` +
-            `Preliminary result: ${submissionResult}`;
+            `Preliminary result: ${JSON.stringify(submissionResult, null, 2)}`;
         }
 
         const txResponse = await this.getTxnInfo(txHash)
