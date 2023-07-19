@@ -323,11 +323,11 @@ class XrplApi {
 
         await new Promise(r => setTimeout(r, LEDGER_CLOSE_TIME));
 
-        const latestLedger = this.#client.getLedgerIndex();
+        const latestLedger = await this.#client.getLedgerIndex();
 
         if (lastLedger < latestLedger) {
             throw `The latest ledger sequence ${latestLedger} is greater than the transaction's LastLedgerSequence (${lastLedger}).\n` +
-            `Preliminary result: ${submissionResult}`;
+            `Preliminary result: ${JSON.stringify(submissionResult, null, 2)}`;
         }
 
         const txResponse = await this.getTxnInfo(txHash)
@@ -340,8 +340,7 @@ class XrplApi {
                         submissionResult
                     );
                 }
-                throw `${message} \n Preliminary result: ${submissionResult}.\nFull error details: ${String(
-                    error,)}`;
+                throw `${message} \n Preliminary result: ${JSON.stringify(submissionResult, null, 2)}.\nFull error details: ${JSON.stringify(error, null, 2)}`;
             });
 
         if (txResponse.validated)
@@ -385,24 +384,43 @@ class XrplApi {
     }
 
     /**
-     * Submit a multi-signature transaction.
+     * Submit a multi-signature transaction and wait for validation.
      * @param {object} tx Multi-signed transaction object.
-     * @returns response object of the submitted transaction.
+     * @returns response object of the validated transaction.
      */
-    async submitMultisigned(tx) {
+    async submitMultisignedAndWait(tx) {
         tx.SigningPubKey = "";
         const submissionResult = await this.#client.request({ command: 'submit_multisigned', tx_json: tx });
         return await this.#prepareResponse(tx, submissionResult);
     }
 
     /**
-     * Submit a single-signature transaction.
-     * @param {string} tx_blob 
+     * Only submit a multi-signature transaction.
+     * @param {object} tx Multi-signed transaction object.
      * @returns response object of the submitted transaction.
      */
-    async submit(tx, tx_blob) {
+    async submitMultisigned(tx) {
+        tx.SigningPubKey = "";
+        return await this.#client.request({ command: 'submit_multisigned', tx_json: tx });
+    }
+
+    /**
+     * Submit a single-signature transaction.
+     * @param {string} tx_blob Signed transaction object.
+     * @returns response object of the validated transaction.
+     */
+    async submitAndWait(tx, tx_blob) {
         const submissionResult = await this.#client.request({ command: 'submit', tx_blob: tx_blob });
         return await this.#prepareResponse(tx, submissionResult);
+    }
+
+    /**
+     * Only submit a single-signature transaction.
+     * @param {string} tx_blob Signed transaction object.
+     * @returns response object of the submitted transaction.
+     */
+    async submit(tx_blob) {
+        return await this.#client.request({ command: 'submit', tx_blob: tx_blob });
     }
 
     /**
