@@ -384,24 +384,43 @@ class XrplApi {
     }
 
     /**
-     * Submit a multi-signature transaction.
+     * Submit a multi-signature transaction and wait for validation.
      * @param {object} tx Multi-signed transaction object.
-     * @returns response object of the submitted transaction.
+     * @returns response object of the validated transaction.
      */
-    async submitMultisigned(tx) {
+    async submitMultisignedAndWait(tx) {
         tx.SigningPubKey = "";
         const submissionResult = await this.#client.request({ command: 'submit_multisigned', tx_json: tx });
         return await this.#prepareResponse(tx, submissionResult);
     }
 
     /**
-     * Submit a single-signature transaction.
-     * @param {string} tx_blob 
+     * Only submit a multi-signature transaction.
+     * @param {object} tx Multi-signed transaction object.
      * @returns response object of the submitted transaction.
      */
-    async submit(tx, tx_blob) {
+    async submitMultisigned(tx) {
+        tx.SigningPubKey = "";
+        return await this.#client.request({ command: 'submit_multisigned', tx_json: tx });
+    }
+
+    /**
+     * Submit a single-signature transaction.
+     * @param {string} tx_blob Signed transaction object.
+     * @returns response object of the validated transaction.
+     */
+    async submitAndWait(tx, tx_blob) {
         const submissionResult = await this.#client.request({ command: 'submit', tx_blob: tx_blob });
         return await this.#prepareResponse(tx, submissionResult);
+    }
+
+    /**
+     * Only submit a single-signature transaction.
+     * @param {string} tx_blob Signed transaction object.
+     * @returns response object of the submitted transaction.
+     */
+    async submit(tx_blob) {
+        return await this.#client.request({ command: 'submit', tx_blob: tx_blob });
     }
 
     /**
