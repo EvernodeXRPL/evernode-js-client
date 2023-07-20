@@ -721,6 +721,16 @@ class BaseEvernodeClient {
             fullHostList = fullHostList.concat(hosts);
         }
 
+        const curMomentStartIdx = await this.getMomentStartIndex();
+        await Promise.all((fullHostList).map(async host => {
+            const hostAcc = new XrplAccount(host.address, null, { xrplApi: this.xrplApi });
+            host.domain = await hostAcc.getDomain();
+            host.active = (host.lastHeartbeatIndex > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
+                (host.lastHeartbeatIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
+                (host.lastHeartbeatIndex > 0));
+            return host;
+        }));
+
         return fullHostList;
     }
 
