@@ -25,11 +25,14 @@ class XrplApi {
     #events = new EventEmitter();
     #addressSubscriptions = [];
     #maintainConnection = false;
+    #handleConnectionFailures;
+
 
     constructor(rippledServer = null, options = {}) {
 
         this.#rippledServer = rippledServer || DefaultValues.rippledServer;
         this.#initXrplClient(options.xrplClientOptions);
+        this.#handleConnectionFailures = options.handleConnectionFailures || true;
     }
 
     async #initXrplClient(xrplClientOptions = {}) {
@@ -39,21 +42,22 @@ class XrplApi {
             await this.#client.disconnect();
             this.#client = null;
         }
-
+        // await new Promise(r =>  setTimeout(r,5000))
         this.#client = new xrpl.Client(this.#rippledServer, xrplClientOptions);
+        console.log("client connected")
 
         this.#client.on('error', (errorCode, errorMessage) => {
             console.log(errorCode + ': ' + errorMessage);
         });
 
         this.#client.on('disconnected', (code) => {
-            if (this.#maintainConnection) {
+            if (this.#handleConnectionFailures && this.#maintainConnection) {
                 console.log(`Connection failure for ${this.#rippledServer} (code:${code})`);
                 console.log("Reinitializing xrpl client.");
                 this.#initXrplClient().then(() => this.#connectXrplClient(true));
             }
         });
-
+        
         this.#client.on('ledgerClosed', (ledger) => {
             this.ledgerIndex = ledger.ledger_index;
             this.#events.emit(XrplApiEvents.LEDGER, ledger);
