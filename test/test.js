@@ -25,10 +25,10 @@ const signerOneAddress = "rshF5zDNaR5jiyWMkK9qqHPuR5susDdCrW";
 const signerOneSecret = "shkEQpH63R9KW8v5EHfibBQ8wACdQ";
 const signerTwoAddress = "rQL7pzkQkdB5jV7Big6QSNZdzeT6zZQXHU";
 const signerTwoSecret = "sptkPWTDoqrnP1LNAHx47wM6ssjY2";
-const signerThreeAddress= "rNndQCCrJVRpUVLZCkC34YS4yMhJUuQNL";
-const signerThreeSecret="ssTYtpyZetedewXmctcfTAvbd2iLc";
-const signerFourAddress="r9AcERHGU3tnUo3KqdhYqiDjHYRdch1NWq";
-const signerFourSecret="shiLveSvDvxL8NYceCJwoScUu6cXo";
+const signerThreeAddress = "rNndQCCrJVRpUVLZCkC34YS4yMhJUuQNL";
+const signerThreeSecret = "ssTYtpyZetedewXmctcfTAvbd2iLc";
+const signerFourAddress = "r9AcERHGU3tnUo3KqdhYqiDjHYRdch1NWq";
+const signerFourSecret = "shiLveSvDvxL8NYceCJwoScUu6cXo";
 
 
 const signerList = [
@@ -62,7 +62,7 @@ const clients = [];
 async function app() {
 
     // Use a singleton xrplApi for all tests.
-    const xrplApi = new evernode.XrplApi('wss://hooks-testnet-v3.xrpl-labs.com',options={handleConnectionFailures:true});
+    const xrplApi = new evernode.XrplApi('wss://hooks-testnet-v3.xrpl-labs.com', { handleConnectionFailures: true });
     evernode.Defaults.set({
         governorAddress: governorAddress,
         xrplApi: xrplApi,
@@ -72,13 +72,11 @@ async function app() {
 
     try {
         console.log("connection starting")
-        
+
         await xrplApi.connect();
-        console.log("Starting timeouut")
-        await new Promise(r =>  setTimeout(r,5000))
-        console.log("connected=======================")
-        
-        
+        console.log("Starting-----------------------")
+
+
 
         /*
          * Process of minting and selling a NFT - V2.
@@ -136,7 +134,7 @@ async function app() {
             // () => initializeConfigs(),
             // () => getHookStates(),
             // () => registerHost(),
-            () => getHostInfo(),
+            // () => getHostInfo(),
             // () => updateInfo(),
             // () => getAllHosts(),
             // () => getActiveHosts(),
@@ -174,7 +172,7 @@ async function app() {
             // () => votePilotedMode(),
             // () => foundationVotePilotedMode(),
             // () => changeGovernanceMode(evernode.EvernodeConstants.GovernanceModes.AutoPiloted),
-            // () => makePayment(),
+            () => makePayment(),
             // () => getDudHostCandidatesByOwner()
             // () => multiSignedMakePayment(),
 
@@ -184,6 +182,9 @@ async function app() {
             await test();
             await Promise.all(clients.map(c => c.disconnect())); // Cleanup clients after every test.
         }
+
+        console.log("20 ms Additional wait")
+        await new Promise(r => setTimeout(r, 20000))
 
         // await registerHost();
         // Accepting the sell offer created by registry.
@@ -693,6 +694,7 @@ async function changeGovernanceMode(mode = evernode.EvernodeConstants.Governance
 
 async function makePayment() {
     const tenant = new evernode.XrplAccount(tenantAddress, tenantSecret);
+    await tenant.subscribe();
     console.log("-----------Simple payment");
     const res = await tenant.makePayment(governorAddress, "1", "EVR", evrIssuerAddress,
         [{ type: 'evnTest', format: 'text/plain', data: 'Test Data' }],
@@ -714,7 +716,7 @@ async function multiSignedMakePayment() {
                 { name: '546573744E616D65', value: '5465737456616C7565' }
             ]
         });
-    
+
     // Create signer accounts.
     const acc1 = new evernode.XrplAccount(signerOneAddress, signerOneSecret);
     const acc2 = new evernode.XrplAccount(signerTwoAddress, signerTwoSecret);
@@ -731,37 +733,37 @@ async function multiSignedMakePayment() {
     const signedTx3 = await acc3.sign(transaction, true);
     const signedTx4 = await acc4.sign(transaction, true);
 
-    console.log("signedTx1: ",signedTx1)
-    console.log("signedTx2: ",signedTx2)
-    console.log("signedTx2: ",signedTx3)
-    console.log("signedTx4: ",signedTx4)
+    console.log("signedTx1: ", signedTx1)
+    console.log("signedTx2: ", signedTx2)
+    console.log("signedTx2: ", signedTx3)
+    console.log("signedTx4: ", signedTx4)
 
     // Appending signatures.
     let decodedTx = JSON.parse(JSON.stringify(xrplCodec.decode(signedTx1.tx_blob)));
-    console.log("decodedTx1: ",decodedTx)
+    console.log("decodedTx1: ", decodedTx)
     let signature1 = decodedTx.Signers[0];
 
     decodedTx = JSON.parse(JSON.stringify(xrplCodec.decode(signedTx2.tx_blob)));
-    console.log("decodedTx2: ",decodedTx)
+    console.log("decodedTx2: ", decodedTx)
     let signature2 = decodedTx.Signers[0];
 
     let decodedTx2 = JSON.parse(JSON.stringify(xrplCodec.decode(signedTx3.tx_blob)));
-    console.log("decodedTx3: ",decodedTx2)
+    console.log("decodedTx3: ", decodedTx2)
     let signature3 = decodedTx2.Signers[0];
 
     decodedTx2 = JSON.parse(JSON.stringify(xrplCodec.decode(signedTx4.tx_blob)));
-    console.log("decodedTx4: ",decodedTx2)
+    console.log("decodedTx4: ", decodedTx2)
     let signature4 = decodedTx.Signers[0];
 
     transaction2.Signers = [signature3, signature4]
     transaction.Signers = [signature1, signature2];
-    console.log("trans-----",transaction) 
-    console.log("trans2222-----",transaction2) 
+    console.log("trans-----", transaction)
+    console.log("trans2222-----", transaction2)
     // Submit transaction.
     const res = await multiSig.submitMultisigned(transaction);
     const res2 = await multiSig.submitMultisigned(transaction2);
-    console.log("result from transaction 1 ***************",res)
-    console.log("result from transaction 2 ***************",res2)
+    console.log("result from transaction 1 ***************", res)
+    console.log("result from transaction 2 ***************", res2)
 }
 
 app();

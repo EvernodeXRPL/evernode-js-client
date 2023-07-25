@@ -27,7 +27,6 @@ class XrplApi {
     #maintainConnection = false;
     #handleConnectionFailures;
 
-
     constructor(rippledServer = null, options = {}) {
 
         this.#rippledServer = rippledServer || DefaultValues.rippledServer;
@@ -57,13 +56,14 @@ class XrplApi {
                 this.#initXrplClient().then(() => this.#connectXrplClient(true));
             }
         });
-        
+
         this.#client.on('ledgerClosed', (ledger) => {
             this.ledgerIndex = ledger.ledger_index;
             this.#events.emit(XrplApiEvents.LEDGER, ledger);
         });
 
         this.#client.on("transaction", async (data) => {
+            console.log("BR-0");
             if (data.validated) {
                 // NFTokenAcceptOffer transactions does not contain a Destination. So we check whether the accepted offer is created by which subscribed account
                 if (data.transaction.TransactionType === 'URITokenBuy') {
@@ -102,6 +102,15 @@ class XrplApi {
                     else {
                         matches.forEach(s => s.handler(eventName, null, data.engine_result_message));
                     }
+                }
+            }
+
+            if (this.#handleConnectionFailures) {
+                console.log("BR1")
+                if (this.#handleConnectionFailures && this.#maintainConnection) {
+                    console.log(`Connection failure for ${this.#rippledServer} (code:${"Test"})`);
+                    console.log("Reinitializing xrpl client.");
+                    this.#initXrplClient().then(() => this.#connectXrplClient(true));
                 }
             }
         });
