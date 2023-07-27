@@ -62,7 +62,8 @@ const clients = [];
 async function app() {
 
     // Use a singleton xrplApi for all tests.
-    const xrplApi = new evernode.XrplApi('wss://hooks-testnet-v3.xrpl-labs.com',options={handleConnectionFailures:true});
+    const xrplApi = new evernode.XrplApi('wss://hooks-testnet-v3.xrpl-labs.com',options={handleConnectionFailures:false});
+    console.log("XRPL API SET ON TEST")
     evernode.Defaults.set({
         governorAddress: governorAddress,
         xrplApi: xrplApi,
@@ -71,12 +72,11 @@ async function app() {
     })
 
     try {
-        console.log("connection starting")
+        
         
         await xrplApi.connect();
-        console.log("Starting timeouut")
         await new Promise(r =>  setTimeout(r,5000))
-        console.log("connected=======================")
+        console.log("XRPL API CONNECTED ON TEST")
         
         
 
@@ -136,7 +136,7 @@ async function app() {
             // () => initializeConfigs(),
             // () => getHookStates(),
             // () => registerHost(),
-            () => getHostInfo(),
+            // () => getHostInfo(),
             // () => updateInfo(),
             // () => getAllHosts(),
             // () => getActiveHosts(),
@@ -174,7 +174,7 @@ async function app() {
             // () => votePilotedMode(),
             // () => foundationVotePilotedMode(),
             // () => changeGovernanceMode(evernode.EvernodeConstants.GovernanceModes.AutoPiloted),
-            // () => makePayment(),
+            () => makePayment(),
             // () => getDudHostCandidatesByOwner()
             // () => multiSignedMakePayment(),
 
@@ -693,6 +693,8 @@ async function changeGovernanceMode(mode = evernode.EvernodeConstants.Governance
 
 async function makePayment() {
     const tenant = new evernode.XrplAccount(tenantAddress, tenantSecret);
+    await tenant.subscribe();
+    console.log("TENANT CREATED AND SUBSCRIBED ON TEST")
     console.log("-----------Simple payment");
     const res = await tenant.makePayment(governorAddress, "1", "EVR", evrIssuerAddress,
         [{ type: 'evnTest', format: 'text/plain', data: 'Test Data' }],
@@ -702,6 +704,7 @@ async function makePayment() {
             ]
         });
     console.log(res);
+    console.log("PAYMENT FINISHED ON TEST")
 }
 
 async function multiSignedMakePayment() {

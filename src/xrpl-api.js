@@ -32,11 +32,12 @@ class XrplApi {
 
         this.#rippledServer = rippledServer || DefaultValues.rippledServer;
         this.#initXrplClient(options.xrplClientOptions);
-        this.#handleConnectionFailures = options.handleConnectionFailures || true;
+        this.#handleConnectionFailures = (options.handleConnectionFailures === null || options.handleConnectionFailures === undefined || options.handleConnectionFailures === true);
     }
 
     async #initXrplClient(xrplClientOptions = {}) {
-
+        console.log("init client caLLED in XRPL API")
+        
         if (this.#client) { // If the client already exists, clean it up.
             this.#client.removeAllListeners(); // Remove existing event listeners to avoid them getting called from the old client object.
             await this.#client.disconnect();
@@ -49,9 +50,13 @@ class XrplApi {
         this.#client.on('error', (errorCode, errorMessage) => {
             console.log(errorCode + ': ' + errorMessage);
         });
-
+        
         this.#client.on('disconnected', (code) => {
+            console.log("disconnected called")
+            this.#handleConnectionFailures && console.log("handle connection failure passed", this.#handleConnectionFailures)
+            this.#maintainConnection = true
             if (this.#handleConnectionFailures && this.#maintainConnection) {
+                console.log("We are inside the if")
                 console.log(`Connection failure for ${this.#rippledServer} (code:${code})`);
                 console.log("Reinitializing xrpl client.");
                 this.#initXrplClient().then(() => this.#connectXrplClient(true));
@@ -64,6 +69,12 @@ class XrplApi {
         });
 
         this.#client.on("transaction", async (data) => {
+            console.log("on transaction")
+            // if (this.#handleConnectionFailures && this.#maintainConnection) {
+            //     console.log(`Connection failure for ${this.#rippledServer} (code:)`);
+            //     console.log("Reinitializing xrpl client.");
+            //     this.#initXrplClient().then(() => this.#connectXrplClient(true));
+            // }
             if (data.validated) {
                 // NFTokenAcceptOffer transactions does not contain a Destination. So we check whether the accepted offer is created by which subscribed account
                 if (data.transaction.TransactionType === 'URITokenBuy') {
@@ -114,10 +125,20 @@ class XrplApi {
             while (this.#maintainConnection) { // Keep attempting until consumer calls disconnect() manually.
                 console.log(`Reconnection attempt ${++attempts}`);
                 try {
+                    // if(this.#client){
+                    //     console.log("client exists in reconnecting")
+                    //     this.#client.removeAllListeners(); // Remove existing event listeners to avoid them getting called from the old client object.
+                    //     await this.#client.disconnect();
+                    //     this.#client = null;
+                    // }
                     await this.#client.connect();
+                    console.log("*******************************************************")
+                    this.#maintainConnection = false
                     break;
                 }
-                catch {
+                catch(e) {
+                    console.log("going to the catch block")
+                    console.log(e)
                     if (this.#maintainConnection) {
                         const delaySec = 2 * attempts; // Retry with backoff delay.
                         console.log(`Attempt ${attempts} failed. Retrying in ${delaySec}s...`);
@@ -194,6 +215,7 @@ class XrplApi {
 
         if (this.#client.isConnected()) {
             await this.#client.disconnect().catch(console.error);
+            console.log("===========client disconnected=============")
         }
     }
 
