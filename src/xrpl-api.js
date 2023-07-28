@@ -32,59 +32,42 @@ class XrplApi {
 
         this.#rippledServer = rippledServer || DefaultValues.rippledServer;
         this.#initXrplClient(options.xrplClientOptions);
-        // autoReconnect change the name of the var
         this.#autoReconnect = options.autoReconnect ?? true;
     }
 
     async #initXrplClient(xrplClientOptions = {}) {
-        console.log("init client caLLED in XRPL API")
-        
         if (this.#client) { // If the client already exists, clean it up.
             this.#client.removeAllListeners(); // Remove existing event listeners to avoid them getting called from the old client object.
             await this.#client.disconnect();
             this.#client = null;
         }
-        //for second time
-        
+
         try {
             this.#client = new xrpl.Client(this.#rippledServer, xrplClientOptions);
         }
-        catch(e){
-            console.log("why god why : ",e)
+        catch (e) {
+            console.log("Error occurred in Client initiation:", e)
         }
-        
-        console.log("client connected")
-        await new Promise(r =>  setTimeout(r,10000))
 
-        this.#client.on('error', (...err) => {
-            console.log("We are inside the on error rreconnect",err)
+        this.#client.on('error', (errorCode, errorMessage) => {
+            console.log(errorCode + ': ' + errorMessage);
         });
 
-        this.#client.on('reconnect', (context) => {
-            console.log("reconnecting at its best");
+        this.#client.on('reconnect', () => {
+            console.log("Reconnecting....");
         });
-        this.#client.on('close', (code, reason) => {
-            console.log('WebSocket closed with code:', code, 'reason:', reason);
-            // Handle WebSocket closure, if needed
-          });
-        
+
         this.#client.on('disconnected', (code) => {
-            console.log("disconnected called")
-            this.#autoReconnect && console.log("auto reconnection var : ", this.#autoReconnect)
-            // this.#initialConnectCalled = true
-            console.log("ispermanent",this.#isPermanentlyDisconnected)
-            if (this.#autoReconnect && !this.#isPermanentlyDisconnected ) {
-                console.log("We are inside the if")
+            this.#autoReconnect && console.log(" : ", this.#autoReconnect)
+            if (this.#autoReconnect && !this.#isPermanentlyDisconnected) {
                 console.log(`Connection failure for ${this.#rippledServer} (code:${code})`);
-                console.log("Reinitializing xrpl client.");
-                // this.#connectXrplClient(true)
-                try{
+                console.log("Re-initializing xrpl client.");
+                try {
                     this.#initXrplClient().then(() => this.#connectXrplClient(true));
                 }
-                catch(err){
-                    console.log("here we gooooooooooooooooo",err)
+                catch (e) {
+                    console.log("Error occurred while re-initializing", e)
                 }
-                
             }
         });
 
@@ -95,12 +78,6 @@ class XrplApi {
 
         this.#client.on("transaction", async (data) => {
 
-            console.log("on transaction")
-            // if (this.#autoReconnect && this.#maintainConnection) {
-            //     console.log(`Connection failure for ${this.#rippledServer} (code:)`);
-            //     console.log("Reinitializing xrpl client.");
-            //     this.#initXrplClient().then(() => this.#connectXrplClient(true));
-            // }
 
             if (data.validated) {
                 // NFTokenAcceptOffer transactions does not contain a Destination. So we check whether the accepted offer is created by which subscribed account
@@ -143,14 +120,6 @@ class XrplApi {
                 }
             }
 
-            // if (this.#autoReconnect) {
-            //     console.log("BR1")
-            //     if (this.#autoReconnect && this.#maintainConnection) {
-            //         console.log(`Connection failure for ${this.#rippledServer} (code:${"Test"})`);
-            //         console.log("Reinitializing xrpl client.");
-            //         this.#initXrplClient().then(() => this.#connectXrplClient(true));
-            //     }
-            // }
         });
     }
 
@@ -161,20 +130,11 @@ class XrplApi {
             while (!this.#isPermanentlyDisconnected) { // Keep attempting until consumer calls disconnect() manually.
                 console.log(`Reconnection attempt ${++attempts}`);
                 try {
-                    // if(this.#client){
-                    //     console.log("client exists in reconnecting")
-                    //     this.#client.removeAllListeners(); // Remove existing event listeners to avoid them getting called from the old client object.
-                    //     await this.#client.disconnect();
-                    //     this.#client = null;
-                    // }
                     await this.#client.connect();
-                    console.log("*******************************************************")
-                    // this.#maintainConnection = false ??
                     break;
                 }
-                catch(e) {
-                    console.log("going to the catch block")
-                    console.log(e)
+                catch (e) {
+                    console.log("Error occurred while re-connecting", e)
                     if (!this.#isPermanentlyDisconnected) {
                         const delaySec = 2 * attempts; // Retry with backoff delay.
                         console.log(`Attempt ${attempts} failed. Retrying in ${delaySec}s...`);
@@ -239,30 +199,20 @@ class XrplApi {
     }
 
     async connect() {
-        // initial connect called 
-        
-        if(this.#initialConnectCalled){
-            console.log("connect called for the nth time")
+        if (this.#initialConnectCalled) {
             return
         }
-        console.log("connect called for the first time")
         this.#initialConnectCalled = true
         this.#isPermanentlyDisconnected = false
-        // if (this.#maintainConnection)
-        //     return;
-        //remove the maintain connection variable
-        // this.#maintainConnection = true;
         await this.#connectXrplClient();
     }
 
     async disconnect() {
-        // this.#maintainConnection = false;
         this.#initialConnectCalled = false;
         this.#isPermanentlyDisconnected = true
 
         if (this.#client.isConnected()) {
             await this.#client.disconnect().catch(console.error);
-            console.log("===========client disconnected=============")
         }
     }
 
