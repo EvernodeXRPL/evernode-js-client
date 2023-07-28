@@ -29,7 +29,6 @@ class XrplApi {
     #autoReconnect;
 
     constructor(rippledServer = null, options = {}) {
-
         this.#rippledServer = rippledServer || DefaultValues.rippledServer;
         this.#initXrplClient(options.xrplClientOptions);
         this.#autoReconnect = options.autoReconnect ?? true;
@@ -77,8 +76,6 @@ class XrplApi {
         });
 
         this.#client.on("transaction", async (data) => {
-
-
             if (data.validated) {
                 // NFTokenAcceptOffer transactions does not contain a Destination. So we check whether the accepted offer is created by which subscribed account
                 if (data.transaction.TransactionType === 'URITokenBuy') {
