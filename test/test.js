@@ -62,7 +62,7 @@ const clients = [];
 async function app() {
 
     // Use a singleton xrplApi for all tests.
-    const xrplApi = new evernode.XrplApi('wss://hooks-testnet-v3.xrpl-labs.com',options={handleConnectionFailures:false});
+    const xrplApi = new evernode.XrplApi('wss://hooks-testnet-v3.xrpl-labs.com',options={autoReconnect:true});
     console.log("XRPL API SET ON TEST")
     evernode.Defaults.set({
         governorAddress: governorAddress,
@@ -75,8 +75,9 @@ async function app() {
         
         
         await xrplApi.connect();
-        await new Promise(r =>  setTimeout(r,5000))
-        console.log("XRPL API CONNECTED ON TEST")
+        console.log("XRPL API CONNECTED ON TEST`````````````````````````````````````````````````````````````")
+        await new Promise(r =>  setTimeout(r,60000))
+        console.log("XRPL API CONNECTED ON TEST timeout ended")
         
         
 
@@ -185,8 +186,8 @@ async function app() {
             await Promise.all(clients.map(c => c.disconnect())); // Cleanup clients after every test.
         }
 
-        console.log("20 ms Additional wait")
-        await new Promise(r => setTimeout(r, 20000))
+        // console.log("20 ms Additional wait")
+        // await new Promise(r => setTimeout(r, 20000))
 
         // await registerHost();
         // Accepting the sell offer created by registry.
