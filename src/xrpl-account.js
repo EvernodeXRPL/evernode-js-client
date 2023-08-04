@@ -6,7 +6,6 @@ const { XrplConstants, XrplTransactionTypes } = require('./xrpl-common');
 const { TransactionHelper } = require('./transaction-helper');
 const { EventEmitter } = require('./event-emitter');
 const { DefaultValues } = require('./defaults');
-const xrplCodec = require('xrpl-binary-codec');
 
 class XrplAccount {
 
@@ -536,65 +535,6 @@ class XrplAccount {
         this.#subscribed = false;
     }
 
-
-    #submitAndVerifyTransaction(tx, options) {
-
-        if (!this.wallet)
-            throw "no_secret";
-
-        // Returned format.
-        // {
-        //     id: txHash, (if signing success)
-        //     code: final transaction result code.
-        //     details: submission and transaction details, (if signing success)
-        //     error: Any error that prevents submission.
-        // }
-        return new Promise(async (resolve, reject) => {
-
-            // Attach tx options to the transaction.
-            const txOptions = {
-                LastLedgerSequence: options.maxLedgerIndex || (this.xrplApi.ledgerIndex + XrplConstants.MAX_LEDGER_OFFSET),
-                Sequence: options.sequence || await this.getSequence(),
-                SigningPubKey: '', // This field is required for fee calculation.
-                Fee: '0', // This field is required for fee calculation.
-                NetworkID: DefaultValues.networkID
-            }
-            Object.assign(tx, txOptions);
-            const txnBlob = xrplCodec.encode(tx);
-            const fees = await this.xrplApi.getTransactionFee(txnBlob);
-            delete tx['SigningPubKey'];
-            tx.Fee = fees + '';
-
-            try {
-                const submission = await this.xrplApi.submitAndVerify(tx, { wallet: this.wallet });
-                const r = submission?.result;
-                const txResult = {
-                    id: r?.hash,
-                    code: r?.meta?.TransactionResult,
-                    details: r
-                };
-
-                console.log("Transaction result: " + txResult.code);
-                const hookExecRes = txResult.details?.meta?.HookExecutions?.map(o => {
-                    return {
-                        result: o.HookExecution?.HookResult,
-                        returnCode: parseInt(o.HookExecution?.HookReturnCode, 16),
-                        message: TransactionHelper.hexToASCII(o.HookExecution?.HookReturnString).replace(/\x00+$/, '')
-                    }
-                });
-                if (txResult.code === "tesSUCCESS")
-                    resolve({ ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) });
-                else
-                    reject({ ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) });
-            }
-            catch (err) {
-                console.log("Error submitting transaction:", err);
-                reject({ error: err });
-            }
-
-        });
-    }
-
     /**
      * Submit the signed raw transaction.
      * @param txBlob Signed and encoded transacion as a hex string.
@@ -611,7 +551,7 @@ class XrplAccount {
 
         return new Promise(async (resolve, reject) => {
             try {
-                const submission = await this.xrplApi.submitAndVerify(txBlob);
+                const submission = await this.xrplApi.submit(txBlob);
                 const r = submission?.result;
                 const txResult = {
                     id: r?.hash,
@@ -647,7 +587,7 @@ class XrplAccount {
      * @returns {hash: string, tx_blob: string}
      */
     sign(tx, isMultiSign = false) {
-        return this.wallet.sign(tx, isMultiSign);
+        return this.xrplApi.xrplHelper.sign(tx, this.secret, isMultiSign)
     }
 
     // URIToken related methods
@@ -805,7 +745,7 @@ class XrplAccount {
         }
 
         Object.assign(tx, txOptions);
-        const txnBlob = xrplCodec.encode(tx);
+        const txnBlob = this.xrplApi.xrplHelper.encode(tx);
         const fees = options.fee || await this.xrplApi.getTransactionFee(txnBlob);
         delete tx['SigningPubKey'];
         tx.Fee = fees + '';

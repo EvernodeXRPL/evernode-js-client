@@ -1,14 +1,13 @@
 // const evernode = require("evernode-js-client");
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 const codec = require('ripple-address-codec');
-const xrplCodec = require('xrpl-binary-codec');
 
 const evrIssuerAddress = "ra328vuQhL5fKrjqGB3FzVM45a5zuNS2KR";
 const registryAddress = "rDSj7Qhv8qjhnnbvaHPjZQ3Vx7edN3dXNF";
 const governorAddress = 'raVhw4Q8FQr296jdaDLDfZ4JDhh7tFG7SF';
 const heartbeatAddress = 'rKqE7J29TvYtb4MSksRSWRiK3KCVVEuZjA';
-const hostAddress = "rM5HSKpoCgJ1nbsNQCYvgUqXNnEXp5HsjW";
-const hostSecret = "shmjE1wY4fk9cURhJguWc2T8DRiet";
+const hostAddress = "rBWN6Ny726oAch41J3o8kGikewBKVr77qp";
+const hostSecret = "spkyyp2ucQfK18LJgeC2v4s4Kt8hq";
 const foundationAddress = "rhqHz5tuy3NnBTqcpsUVBXhSWCsDTCJmzE";
 const foundationSecret = "sn3nNMSuyXiqVjrhfQr9JxDhgHmds";
 const tenantAddress = "r3vbdktYDxVSe7K1oo2McKeBJhQng3uFeH";
@@ -334,7 +333,7 @@ async function acquire(scenario) {
         const result = await tenant.acquireLease(hostAddress, {
             owner_pubkey: "ed5cb83404120ac759609819591ef839b7d222c84f1f08b3012f490586159d2b50",
             contract_id: "dc411912-bcdd-4f73-af43-32ec45844b9a",
-            image: "evernodedev/sashimono:hp.latest-ubt.20.04-njs.16",
+            image: "evernodedev/sashimono:hp.latest-ubt.20.04-njs.20",
             config: {}
         }, { timeout: timeout });
         console.log('Tenant received instance ', result.instance);
@@ -687,6 +686,9 @@ async function makePayment() {
 async function multiSignedMakePayment() {
     console.log("-----------Multi-Signed payment");
     const multiSig = new evernode.XrplAccount(multiSignerAddress, multiSignerSecret);
+
+    await fundAccount(multiSig, '1');
+
     let transaction = await multiSig.prepareMakePayment(governorAddress, "1", "EVR", evrIssuerAddress,
         [{ type: 'evnTest', format: 'text/plain', data: 'Test Data' }],
         {
@@ -707,10 +709,10 @@ async function multiSignedMakePayment() {
     const signedTx2 = await acc2.sign(transaction, true);
 
     // Appending signatures.
-    let decodedTx = JSON.parse(JSON.stringify(xrplCodec.decode(signedTx1.tx_blob)));
+    let decodedTx = JSON.parse(JSON.stringify(acc1.xrplApi.xrplHelper.decode(signedTx1.tx_blob)));
     let signature1 = decodedTx.Signers[0];
 
-    decodedTx = JSON.parse(JSON.stringify(xrplCodec.decode(signedTx2.tx_blob)));
+    decodedTx = JSON.parse(JSON.stringify(acc2.xrplApi.xrplHelper.decode(signedTx2.tx_blob)));
     let signature2 = decodedTx.Signers[0];
 
     transaction.Signers = [signature1, signature2];

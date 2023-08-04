@@ -5,6 +5,7 @@ const { DefaultValues } = require('./defaults');
 const { TransactionHelper } = require('./transaction-helper');
 const { XrplApiEvents } = require('./xrpl-common');
 const { XrplAccount } = require('./xrpl-account');
+const {XrplHelpers} = require('./xrpl-helpers')
 
 const MAX_PAGE_LIMIT = 400;
 const API_REQ_TYPE = {
@@ -52,12 +53,7 @@ class XrplApi {
             console.log(errorCode + ': ' + errorMessage);
         });
 
-        this.#client.on('reconnect', () => {
-            console.log("Reconnecting....");
-        });
-
         this.#client.on('disconnected', (code) => {
-            this.#autoReconnect && console.log(" : ", this.#autoReconnect)
             if (this.#autoReconnect && !this.#isPermanentlyDisconnected) {
                 console.log(`Connection failure for ${this.#rippledServer} (code:${code})`);
                 console.log("Re-initializing xrpl client.");
@@ -202,6 +198,8 @@ class XrplApi {
         this.#initialConnectCalled = true
         this.#isPermanentlyDisconnected = false
         await this.#connectXrplClient();
+        const definitions = await this.#client.request({ command: 'server_definitions' })
+        this.xrplHelper = new XrplHelpers(definitions.result);
     }
 
     async disconnect() {
@@ -301,10 +299,6 @@ class XrplApi {
     async getTxnInfo(txnHash, options) {
         const resp = (await this.#client.request({ command: 'tx', transaction: txnHash, binary: false, ...options }));
         return resp?.result;
-    }
-
-    async submitAndVerify(tx, options) {
-        return await this.#client.submitAndWait(tx, options);
     }
 
     async subscribeToAddress(address, handler) {
