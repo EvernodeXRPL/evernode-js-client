@@ -758,8 +758,8 @@ class XrplAccount {
      * @returns result of the submitted transaction.
      */
     async signAndSubmit(preparedTransaction) {
-        const signedTxn = this.sign(preparedTransaction);
-        return await this.xrplApi.submit(signedTxn.tx_blob);
+        const signedTxn = this.sign(preparedTransaction, false);
+        return await this.xrplApi.submitAndWait(preparedTransaction, signedTxn.tx_blob);
     }
 
     /**

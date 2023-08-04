@@ -49,7 +49,7 @@ const clients = [];
 async function app() {
 
     // Use a singleton xrplApi for all tests.
-    const xrplApi = new evernode.XrplApi('wss://hooks-testnet-v3.xrpl-labs.com');
+    const xrplApi = new evernode.XrplApi('wss://hooks-testnet-v3.xrpl-labs.com', { autoReconnect: true });
     evernode.Defaults.set({
         governorAddress: governorAddress,
         xrplApi: xrplApi,

@@ -25,34 +25,49 @@ class XrplApi {
     #client;
     #events = new EventEmitter();
     #addressSubscriptions = [];
-    #maintainConnection = false;
-    xrplHelper;
+    #initialConnectCalled = false;
+    #isPermanentlyDisconnected = false;
+    #autoReconnect;
 
     constructor(rippledServer = null, options = {}) {
-
         this.#rippledServer = rippledServer || DefaultValues.rippledServer;
         this.#initXrplClient(options.xrplClientOptions);
+        this.#autoReconnect = options.autoReconnect ?? true;
     }
 
     async #initXrplClient(xrplClientOptions = {}) {
-
         if (this.#client) { // If the client already exists, clean it up.
             this.#client.removeAllListeners(); // Remove existing event listeners to avoid them getting called from the old client object.
             await this.#client.disconnect();
             this.#client = null;
         }
 
-        this.#client = new xrpl.Client(this.#rippledServer, xrplClientOptions);
+        try {
+            this.#client = new xrpl.Client(this.#rippledServer, xrplClientOptions);
+        }
+        catch (e) {
+            console.log("Error occurred in Client initiation:", e)
+        }
 
         this.#client.on('error', (errorCode, errorMessage) => {
             console.log(errorCode + ': ' + errorMessage);
         });
 
+        this.#client.on('reconnect', () => {
+            console.log("Reconnecting....");
+        });
+
         this.#client.on('disconnected', (code) => {
-            if (this.#maintainConnection) {
+            this.#autoReconnect && console.log(" : ", this.#autoReconnect)
+            if (this.#autoReconnect && !this.#isPermanentlyDisconnected) {
                 console.log(`Connection failure for ${this.#rippledServer} (code:${code})`);
-                console.log("Reinitializing xrpl client.");
-                this.#initXrplClient().then(() => this.#connectXrplClient(true));
+                console.log("Re-initializing xrpl client.");
+                try {
+                    this.#initXrplClient().then(() => this.#connectXrplClient(true));
+                }
+                catch (e) {
+                    console.log("Error occurred while re-initializing", e)
+                }
             }
         });
 
@@ -102,6 +117,7 @@ class XrplApi {
                     }
                 }
             }
+
         });
     }
 
@@ -109,14 +125,15 @@ class XrplApi {
 
         if (reconnect) {
             let attempts = 0;
-            while (this.#maintainConnection) { // Keep attempting until consumer calls disconnect() manually.
+            while (!this.#isPermanentlyDisconnected) { // Keep attempting until consumer calls disconnect() manually.
                 console.log(`Reconnection attempt ${++attempts}`);
                 try {
                     await this.#client.connect();
                     break;
                 }
-                catch {
-                    if (this.#maintainConnection) {
+                catch (e) {
+                    console.log("Error occurred while re-connecting", e)
+                    if (!this.#isPermanentlyDisconnected) {
                         const delaySec = 2 * attempts; // Retry with backoff delay.
                         console.log(`Attempt ${attempts} failed. Retrying in ${delaySec}s...`);
                         await new Promise(resolve => setTimeout(resolve, delaySec * 1000));
@@ -131,7 +148,7 @@ class XrplApi {
 
         // After connection established, check again whether maintainConnections has become false.
         // This is in case the consumer has called disconnect() while connection is being established.
-        if (this.#maintainConnection) {
+        if (!this.#isPermanentlyDisconnected) {
             this.ledgerIndex = await this.#client.getLedgerIndex();
             this.#subscribeToStream('ledger');
 
@@ -180,17 +197,19 @@ class XrplApi {
     }
 
     async connect() {
-        if (this.#maintainConnection)
-            return;
-
-        this.#maintainConnection = true;
+        if (this.#initialConnectCalled) {
+            return
+        }
+        this.#initialConnectCalled = true
+        this.#isPermanentlyDisconnected = false
         await this.#connectXrplClient();
         const definitions = await this.#client.request({ command: 'server_definitions' })
         this.xrplHelper = new XrplHelpers(definitions.result);
     }
 
     async disconnect() {
-        this.#maintainConnection = false;
+        this.#initialConnectCalled = false;
+        this.#isPermanentlyDisconnected = true
 
         if (this.#client.isConnected()) {
             await this.#client.disconnect().catch(console.error);
@@ -323,11 +342,11 @@ class XrplApi {
 
         await new Promise(r => setTimeout(r, LEDGER_CLOSE_TIME));
 
-        const latestLedger = this.#client.getLedgerIndex();
+        const latestLedger = await this.#client.getLedgerIndex();
 
         if (lastLedger < latestLedger) {
             throw `The latest ledger sequence ${latestLedger} is greater than the transaction's LastLedgerSequence (${lastLedger}).\n` +
-            `Preliminary result: ${submissionResult}`;
+            `Preliminary result: ${JSON.stringify(submissionResult, null, 2)}`;
         }
 
         const txResponse = await this.getTxnInfo(txHash)
@@ -340,8 +359,7 @@ class XrplApi {
                         submissionResult
                     );
                 }
-                throw `${message} \n Preliminary result: ${submissionResult}.\nFull error details: ${String(
-                    error,)}`;
+                throw `${message} \n Preliminary result: ${JSON.stringify(submissionResult, null, 2)}.\nFull error details: ${JSON.stringify(error, null, 2)}`;
             });
 
         if (txResponse.validated)
@@ -385,25 +403,57 @@ class XrplApi {
     }
 
     /**
-     * Submit a multi-signature transaction.
+     * Submit a multi-signature transaction and wait for validation.
      * @param {object} tx Multi-signed transaction object.
-     * @returns response object of the submitted transaction.
+     * @returns response object of the validated transaction.
      */
-    async submitMultisigned(tx) {
+    async submitMultisignedAndWait(tx) {
         tx.SigningPubKey = "";
         const submissionResult = await this.#client.request({ command: 'submit_multisigned', tx_json: tx });
         return await this.#prepareResponse(tx, submissionResult);
     }
 
     /**
-     * Submit a single-signature transaction using tx_blob.
-     * @param {string} tx_blob 
+     * Only submit a multi-signature transaction.
+     * @param {object} tx Multi-signed transaction object.
+     * @returns response object of the submitted transaction.
+     */
+    async submitMultisigned(tx) {
+        tx.SigningPubKey = "";
+        return await this.#client.request({ command: 'submit_multisigned', tx_json: tx });
+    }
+
+    /**
+     * Submit a single-signature transaction.
+     * @param {string} tx_blob Signed transaction object.
+     * @returns response object of the validated transaction.
+     */
+    async submitAndWait(tx, tx_blob) {
+        const submissionResult = await this.#client.request({ command: 'submit', tx_blob: tx_blob });
+        return await this.#prepareResponse(tx, submissionResult);
+    }
+
+    /**
+     * Only submit a single-signature transaction.
+     * @param {string} tx_blob Signed transaction object.
      * @returns response object of the submitted transaction.
      */
     async submit(tx_blob) {
-        const tx = this.xrplHelper.decode(tx_blob)
-        const submissionResult = await this.#client.request({ command: 'submit', tx_blob: tx_blob });
-        return await this.#prepareResponse(tx, submissionResult);
+        return await this.#client.request({ command: 'submit', tx_blob: tx_blob });
+    }
+
+    /**
+     * Join the given the array of signed transactions into one multi-signed transaction.
+     * For more details: https://js.xrpl.org/functions/multisign.html 
+     * 
+     * @param {(string | Transaction)[]} transactions An array of signed Transactions (in object or blob form) to combine into a single signed Transaction.
+     * @returns A single signed Transaction string which has all Signers from transactions within it.
+     */
+    multiSign(transactions) {
+        if (transactions.length > 0) {
+            return xrpl.multisign(transactions);
+        } else
+            throw ("Transaction list is empty for multi-signing.");
     }
 }
 
