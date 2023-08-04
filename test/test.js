@@ -333,7 +333,7 @@ async function acquire(scenario) {
         const result = await tenant.acquireLease(hostAddress, {
             owner_pubkey: "ed5cb83404120ac759609819591ef839b7d222c84f1f08b3012f490586159d2b50",
             contract_id: "dc411912-bcdd-4f73-af43-32ec45844b9a",
-            image: "evernodedev/sashimono:hp.latest-ubt.20.04-njs.16",
+            image: "evernodedev/sashimono:hp.latest-ubt.20.04-njs.20",
             config: {}
         }, { timeout: timeout });
         console.log('Tenant received instance ', result.instance);
