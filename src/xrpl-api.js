@@ -53,12 +53,7 @@ class XrplApi {
             console.log(errorCode + ': ' + errorMessage);
         });
 
-        this.#client.on('reconnect', () => {
-            console.log("Reconnecting....");
-        });
-
         this.#client.on('disconnected', (code) => {
-            this.#autoReconnect && console.log(" : ", this.#autoReconnect)
             if (this.#autoReconnect && !this.#isPermanentlyDisconnected) {
                 console.log(`Connection failure for ${this.#rippledServer} (code:${code})`);
                 console.log("Re-initializing xrpl client.");
