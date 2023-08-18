@@ -862,9 +862,9 @@ class BaseEvernodeClient {
             const idLedgerEntry = await this.xrplApi.getLedgerEntry(idStateIndex);
             const idStateData = idLedgerEntry?.HookStateData;
             if (idStateData) {
-                const idStateDecoded = StateHelpers.decodeCandidateIdState(Buffer.from(idStateData, 'hex'));
-
-                if (StateHelpers.getCandidateType(candidateId) === EvernodeConstants.CandidateTypes.NewHook) {
+                let idStateDecoded = StateHelpers.decodeCandidateIdState(Buffer.from(idStateData, 'hex'));
+                const candidateType = StateHelpers.getCandidateType(candidateId);
+                if (candidateType === EvernodeConstants.CandidateTypes.NewHook) {
                     const ownerStateKey = StateHelpers.generateCandidateOwnerStateKey(idStateDecoded.ownerAddress);
                     const ownerStateIndex = StateHelpers.getHookStateIndex(this.governorAddress, ownerStateKey);
                     const ownerLedgerEntry = await this.xrplApi.getLedgerEntry(ownerStateIndex);
@@ -874,6 +874,9 @@ class BaseEvernodeClient {
                         const ownerStateDecoded = StateHelpers.decodeCandidateOwnerState(Buffer.from(ownerStateKey, 'hex'), Buffer.from(ownerStateData, 'hex'));
                         return { ...ownerStateDecoded, ...idStateDecoded };
                     }
+                }
+                else if (candidateType === EvernodeConstants.CandidateTypes.DudHost) {
+                    idStateDecoded.dudHostAddress = codec.encodeAccountID(Buffer.from(idStateKey, 'hex').slice(12, 32));
                 }
 
                 return { ...idStateDecoded, uniqueId: candidateId };
