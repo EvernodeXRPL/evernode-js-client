@@ -149,10 +149,10 @@ class XrplApi {
                         console.log(`Error occurred while connecting to fallback server ${server}`, e)
                         if (!this.#isPermanentlyDisconnected) {
                             if(!maxRounds || round < maxRounds)
-                                console.log(`Fallback server ${server} connection attempt ${attempt} failed. Retrying in ${1 * round}s...`);
+                                console.log(`Fallback server ${server} connection attempt ${attempt} failed. Retrying in ${2 * round}s...`);
                             else
                                 console.log(`Fallback server ${server} connection attempt failed.`);
-                            await new Promise(resolve => setTimeout(resolve, 1 * round * 1000));
+                            await new Promise(resolve => setTimeout(resolve, 2 * round * 1000));
                         }
                     }
                 }
@@ -185,7 +185,6 @@ class XrplApi {
     }
 
     async #connectXrplClient(reconnect = false) {
-        console.log("#connectXrplClient hit. reconnect flag:", reconnect);
         if (reconnect) {
             await Promise.all([this.#attemptFallbackServerReconnect(), this.#attemptPrimaryServerReconnect()]);
         }
