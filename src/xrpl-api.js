@@ -5,7 +5,7 @@ const { DefaultValues } = require('./defaults');
 const { TransactionHelper } = require('./transaction-helper');
 const { XrplApiEvents } = require('./xrpl-common');
 const { XrplAccount } = require('./xrpl-account');
-const {XrplHelpers} = require('./xrpl-helpers')
+const { XrplHelpers } = require('./xrpl-helpers')
 
 const MAX_PAGE_LIMIT = 400;
 const API_REQ_TYPE = {
@@ -21,21 +21,27 @@ const LEDGER_CLOSE_TIME = 1000
 
 class XrplApi {
 
-    #rippledServer;
+    #primaryRippledServer;
+    #fallbackRippledServers;
     #client;
     #events = new EventEmitter();
     #addressSubscriptions = [];
     #initialConnectCalled = false;
     #isPermanentlyDisconnected = false;
+    #isPrimaryServerConnected = false;
+    #isFallbackServerConnected = false;
+    #xrplClientOptions;
     #autoReconnect;
 
     constructor(rippledServer = null, options = {}) {
-        this.#rippledServer = rippledServer || DefaultValues.rippledServer;
-        this.#initXrplClient(options.xrplClientOptions);
+        this.#primaryRippledServer = rippledServer || DefaultValues.rippledServer;
+        this.#fallbackRippledServers = options.fallbackRippledServers || ['wss://goitn.com', 'wss://eweoiwjd.com']; //Default fallback server list should be defined here.
+        this.#xrplClientOptions = options.xrplClientOptions;
+        this.#initXrplClient();
         this.#autoReconnect = options.autoReconnect ?? true;
     }
 
-    async #initXrplClient(xrplClientOptions = {}) {
+    async #initXrplClient() {
         if (this.#client) { // If the client already exists, clean it up.
             this.#client.removeAllListeners(); // Remove existing event listeners to avoid them getting called from the old client object.
             await this.#client.disconnect();
@@ -43,7 +49,7 @@ class XrplApi {
         }
 
         try {
-            this.#client = new xrpl.Client(this.#rippledServer, xrplClientOptions);
+            this.#client = new xrpl.Client(this.#primaryRippledServer, this.#xrplClientOptions);
         }
         catch (e) {
             console.log("Error occurred in Client initiation:", e)
@@ -55,7 +61,7 @@ class XrplApi {
 
         this.#client.on('disconnected', (code) => {
             if (this.#autoReconnect && !this.#isPermanentlyDisconnected) {
-                console.log(`Connection failure for ${this.#rippledServer} (code:${code})`);
+                console.log(`Connection failure for ${this.#primaryRippledServer} (code:${code})`);
                 console.log("Re-initializing xrpl client.");
                 try {
                     this.#initXrplClient().then(() => this.#connectXrplClient(true));
@@ -116,29 +122,83 @@ class XrplApi {
         });
     }
 
-    async #connectXrplClient(reconnect = false) {
-
-        if (reconnect) {
-            let attempts = 0;
-            while (!this.#isPermanentlyDisconnected) { // Keep attempting until consumer calls disconnect() manually.
-                console.log(`Reconnection attempt ${++attempts}`);
-                try {
-                    await this.#client.connect();
-                    break;
-                }
-                catch (e) {
-                    console.log("Error occurred while re-connecting", e)
-                    if (!this.#isPermanentlyDisconnected) {
-                        const delaySec = 2 * attempts; // Retry with backoff delay.
-                        console.log(`Attempt ${attempts} failed. Retrying in ${delaySec}s...`);
-                        await new Promise(resolve => setTimeout(resolve, delaySec * 1000));
+    async #attemptFallbackServerReconnect(maxRounds, attemptsPerServer = 3) {
+        const fallbackRippledServers = this.#fallbackRippledServers;
+        let round = 0;
+        while (fallbackRippledServers?.length>0 && !this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected && !this.#isFallbackServerConnected && (!maxRounds || round < maxRounds)) { // Keep attempting until consumer calls disconnect() manually of if the primary server is disconnected.
+            ++round;
+            serverIterator:
+            for (let serverIndex in fallbackRippledServers) {
+                const server = fallbackRippledServers[serverIndex];
+                for (let attempt = 0; attempt < attemptsPerServer;) {
+                    if (this.#isPrimaryServerConnected) {
+                        break serverIterator;
+                    }
+                    console.log(`Fallback server ${server} reconnection attempt ${++attempt}`);
+                    try {
+                        const client = new xrpl.Client(server, this.#xrplClientOptions);
+                        await client.connect();
+                        if (!this.#isPrimaryServerConnected) {
+                            this.#isFallbackServerConnected = true;server
+                            this.#client = client;
+                            console.log(`Successfully connected to the fallback server ${server}`)
+                        }
+                        break serverIterator;
+                    }
+                    catch (e) {
+                        console.log(`Error occurred while connecting to fallback server ${server}`, e)
+                        if (!this.#isPermanentlyDisconnected) {
+                            if(!maxRounds || round < maxRounds)
+                                console.log(`Fallback server ${server} connection attempt ${attempt} failed. Retrying in ${1 * round}s...`);
+                            else
+                                console.log(`Fallback server ${server} connection attempt failed.`);
+                            await new Promise(resolve => setTimeout(resolve, 1 * round * 1000));
+                        }
                     }
                 }
             }
+
+        }
+    }
+
+    async #attemptPrimaryServerReconnect() {
+        let attempt = 0;
+        while (!this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected) { // Keep attempting until consumer calls disconnect() manually.
+            console.log(`Primary server reconnection attempt ${++attempt}`);
+            try {
+                const client = new xrpl.Client(this.#primaryRippledServer, this.#xrplClientOptions);
+                await client.connect();
+                console.log("Successfully connected to the primary server");
+                this.#client = client;
+                this.#isPrimaryServerConnected = true;
+                break;
+            }
+            catch (e) {
+                console.log("Error occurred while re-connecting to the primary server", e)
+                if (!this.#isPermanentlyDisconnected) {
+                    const delaySec = 2 * attempt; // Retry with backoff delay.
+                    console.log(`Attempt ${attempt} failed. Retrying in ${delaySec}s...`);
+                    await new Promise(resolve => setTimeout(resolve, delaySec * 1000));
+                }
+            }
+        }
+    }
+
+    async #connectXrplClient(reconnect = false) {
+        console.log("#connectXrplClient hit. reconnect flag:", reconnect);
+        if (reconnect) {
+            await Promise.all([this.#attemptFallbackServerReconnect(), this.#attemptPrimaryServerReconnect()]);
         }
         else {
             // Single attempt and throw error. Used for initial connect() call.
-            await this.#client.connect();
+            try {
+                await this.#client.connect();
+                this.#isPrimaryServerConnected = true;
+            } catch {
+                await this.#attemptFallbackServerReconnect(1, 1);
+                if (this.#isFallbackServerConnected)
+                    await this.#attemptPrimaryServerReconnect();
+            }
         }
 
         // After connection established, check again whether maintainConnections has become false.
@@ -208,6 +268,7 @@ class XrplApi {
 
         if (this.#client.isConnected()) {
             await this.#client.disconnect().catch(console.error);
+            this.#isPrimaryServerConnected = false;
         }
     }
 
