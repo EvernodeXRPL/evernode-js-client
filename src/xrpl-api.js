@@ -35,7 +35,7 @@ class XrplApi {
 
     constructor(rippledServer = null, options = {}) {
         this.#primaryRippledServer = rippledServer || DefaultValues.rippledServer;
-        this.#fallbackRippledServers = options.fallbackRippledServers || ['wss://goitn.com', 'wss://eweoiwjd.com']; //Default fallback server list should be defined here.
+        this.#fallbackRippledServers = options.fallbackRippledServers || []; //Default fallback server list should be defined here.
         this.#xrplClientOptions = options.xrplClientOptions;
         this.#initXrplClient();
         this.#autoReconnect = options.autoReconnect ?? true;
