@@ -121,17 +121,45 @@ class HostClient extends BaseEvernodeClient {
      * @param {number} leaseIndex Index number for the lease.
      * @param {number} leaseAmount Amount (EVRs) of the lease offer.
      * @param {string} tosHash Hex hash of the Terms Of Service text.
+     * @param {string} assignedIP Assigned IP Address.
      */
-    async offerLease(leaseIndex, leaseAmount, tosHash) {
-        // <prefix><lease index 16)><half of tos hash><lease amount (int64)><identifier (uint32)>
+    async offerLease(leaseIndex, leaseAmount, tosHash, assignedIP = null) {
+        // <prefix><lease index 16)><half of tos hash><lease amount (int64)><identifier (uint32)><ip data>
+
+        // Lengths of sub sections.
         const prefixLen = EvernodeConstants.LEASE_TOKEN_PREFIX_HEX.length / 2;
+        const indexLen = 2;
         const halfToSLen = tosHash.length / 4;
-        const uriBuf = Buffer.allocUnsafe(prefixLen + halfToSLen + 14);
+        const leaseAmountLen = 8;
+        const identifierLen = 4;
+        const ipDataLen = assignedIP ? 16 : 0;
+
+        // Offsets of sub sections
+        const halfTosHashOffset = prefixLen + indexLen;
+        const leaseAmountOffset = prefixLen + indexLen + halfToSLen;
+        const identifierOffset = prefixLen + indexLen + halfToSLen + leaseAmountLen;
+        const ipDataOffset = prefixLen + indexLen + halfToSLen + leaseAmountLen + identifierLen;
+
+        const uriBuf = Buffer.allocUnsafe(prefixLen + indexLen + halfToSLen + leaseAmountLen + identifierLen + ipDataLen);
+
         Buffer.from(EvernodeConstants.LEASE_TOKEN_PREFIX_HEX, 'hex').copy(uriBuf);
         uriBuf.writeUInt16BE(leaseIndex, prefixLen);
-        Buffer.from(tosHash, 'hex').copy(uriBuf, prefixLen + 2, 0, halfToSLen);
-        uriBuf.writeBigInt64BE(XflHelpers.getXfl(leaseAmount.toString()), prefixLen + 2 + halfToSLen);
-        uriBuf.writeUInt32BE((await this.xrplAcc.getSequence()), prefixLen + 10 + halfToSLen);
+        Buffer.from(tosHash, 'hex').copy(uriBuf, halfTosHashOffset, 0, halfToSLen);
+        uriBuf.writeBigInt64BE(XflHelpers.getXfl(leaseAmount.toString()), leaseAmountOffset);
+        uriBuf.writeUInt32BE((await this.xrplAcc.getSequence()), identifierOffset);
+
+        if (assignedIP) {
+            const ipBuf = Buffer.from(assignedIP.split(':').map(v => {
+                const bytes = [];
+                for (let i = 0; i < v.length; i += 2) {
+                    bytes.push(parseInt(v.substr(i, 2), 16));
+                }
+                return bytes;
+            }).flat());
+
+            ipBuf.copy(uriBuf, ipDataOffset, 0, ipDataLen);
+        }
+
         const uri = uriBuf.toString('base64');
 
         try {
