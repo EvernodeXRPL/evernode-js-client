@@ -35,7 +35,7 @@ class XrplApi {
 
     constructor(rippledServer = null, options = {}) {
         this.#primaryRippledServer = rippledServer || DefaultValues.rippledServer;
-        this.#fallbackRippledServers = options.fallbackRippledServers || []; //Default fallback server list should be defined here.
+        this.#fallbackRippledServers = options.fallbackRippledServers || DefaultValues.fallbackRippledServers;
         this.#xrplClientOptions = options.xrplClientOptions;
         this.#initXrplClient();
         this.#autoReconnect = options.autoReconnect ?? true;
@@ -139,7 +139,7 @@ class XrplApi {
                         const client = new xrpl.Client(server, this.#xrplClientOptions);
                         await client.connect();
                         if (!this.#isPrimaryServerConnected) {
-                            this.#isFallbackServerConnected = true;server
+                            this.#isFallbackServerConnected = true;
                             this.#client = client;
                             console.log(`Successfully connected to the fallback server ${server}`)
                         }
