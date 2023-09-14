@@ -124,10 +124,11 @@ class HostClient extends BaseEvernodeClient {
      * @param {string} assignedIP Assigned IP Address.
      */
     async offerLease(leaseIndex, leaseAmount, tosHash, assignedIP = null) {
-        // <prefix><lease index 16)><half of tos hash><lease amount (int64)><identifier (uint32)><ip data>
-
+        // <prefix><version tag 4><lease index 16)><half of tos hash><lease amount (int64)><identifier (uint32)><ip data>
         // Lengths of sub sections.
         const prefixLen = EvernodeConstants.LEASE_TOKEN_PREFIX_HEX.length / 2;
+        const versionPrefixLen = EvernodeConstants.LEASE_TOKEN_VERSION_PREFIX_HEX.length / 2;
+        const versionLen = versionPrefixLen + 1; //(<LTV><Version Number>)
         const indexLen = 2;
         const halfToSLen = tosHash.length / 4;
         const leaseAmountLen = 8;
@@ -135,15 +136,20 @@ class HostClient extends BaseEvernodeClient {
         const ipDataLen = assignedIP ? 16 : 0;
 
         // Offsets of sub sections
-        const halfTosHashOffset = prefixLen + indexLen;
-        const leaseAmountOffset = prefixLen + indexLen + halfToSLen;
-        const identifierOffset = prefixLen + indexLen + halfToSLen + leaseAmountLen;
-        const ipDataOffset = prefixLen + indexLen + halfToSLen + leaseAmountLen + identifierLen;
+        const versionPrefixOffset = prefixLen;
+        const versionOffset = prefixLen + versionPrefixLen;
+        const indexOffset = prefixLen + versionLen;
+        const halfTosHashOffset = prefixLen + versionLen + indexLen;
+        const leaseAmountOffset = prefixLen + versionLen + indexLen + halfToSLen;
+        const identifierOffset = prefixLen + versionLen + indexLen + halfToSLen + leaseAmountLen;
+        const ipDataOffset = prefixLen + versionLen + indexLen + halfToSLen + leaseAmountLen + identifierLen;
 
-        const uriBuf = Buffer.allocUnsafe(prefixLen + indexLen + halfToSLen + leaseAmountLen + identifierLen + ipDataLen);
+        const uriBuf = Buffer.allocUnsafe((prefixLen + versionLen + indexLen + halfToSLen + leaseAmountLen + identifierLen + ipDataLen));
 
         Buffer.from(EvernodeConstants.LEASE_TOKEN_PREFIX_HEX, 'hex').copy(uriBuf);
-        uriBuf.writeUInt16BE(leaseIndex, prefixLen);
+        Buffer.from(EvernodeConstants.LEASE_TOKEN_VERSION_PREFIX_HEX, 'hex').copy(uriBuf, versionPrefixOffset, 0, versionPrefixLen);
+        uriBuf.writeUInt8(EvernodeConstants.LEASE_TOKEN_VERSION, versionOffset);
+        uriBuf.writeUInt16BE(leaseIndex, indexOffset);
         Buffer.from(tosHash, 'hex').copy(uriBuf, halfTosHashOffset, 0, halfToSLen);
         uriBuf.writeBigInt64BE(XflHelpers.getXfl(leaseAmount.toString()), leaseAmountOffset);
         uriBuf.writeUInt32BE((await this.xrplAcc.getSequence()), identifierOffset);

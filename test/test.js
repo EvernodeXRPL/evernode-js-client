@@ -256,8 +256,10 @@ async function registerHost(address = hostAddress, secret = hostSecret) {
     await host.register("AU", 10000, 512, 1024, instanceCount, 'Intel', 10, 10, "Test desctiption", "testemail@gmail.com", 2);
 
     console.log("Lease Offer...");
-    for (let i = 0; i < instanceCount; i++)
-        await host.offerLease(i, 2, tosHash);
+    for (let i = 0; i < instanceCount; i++) {
+        let x = 7000 + i;
+        await host.offerLease(i, 2, tosHash, `2001:0db8:85a3:0000:0000:8a2e:0370:${x}`);
+    }
 
     // Verify the registration.
     return await host.isRegistered();
