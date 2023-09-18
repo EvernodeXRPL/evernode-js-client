@@ -9,6 +9,7 @@ const { XflHelpers } = require('../xfl-helpers');
 const { EvernodeHelpers } = require('../evernode-helpers');
 const { StateHelpers } = require('../state-helpers');
 const { TransactionHelper } = require('../transaction-helper');
+const { UtilHelpers } = require('../util-helpers');
 
 const OFFER_WAIT_TIMEOUT = 60;
 
@@ -121,9 +122,16 @@ class HostClient extends BaseEvernodeClient {
      * @param {number} leaseIndex Index number for the lease.
      * @param {number} leaseAmount Amount (EVRs) of the lease offer.
      * @param {string} tosHash Hex hash of the Terms Of Service text.
-     * @param {string} assignedIP Assigned IP Address.
+     * @param {string} outboundIPAddress Assigned IP Address.
      */
-    async offerLease(leaseIndex, leaseAmount, tosHash, assignedIP = null) {
+    async offerLease(leaseIndex, leaseAmount, tosHash, outboundIPAddress = null) {
+
+        // If Outbound IP address is not specified resolve the IPV4 address of host using domain.
+        if (!outboundIPAddress) {
+            const domain = await this.xrplAcc.getDomain();
+            outboundIPAddress = await UtilHelpers.resolveIP(domain, { family: 4 });
+        }
+
         // <prefix><version tag 4><lease index 16)><half of tos hash><lease amount (int64)><identifier (uint32)><ip data>
         // Lengths of sub sections.
         const prefixLen = EvernodeConstants.LEASE_TOKEN_PREFIX_HEX.length / 2;
@@ -133,7 +141,7 @@ class HostClient extends BaseEvernodeClient {
         const halfToSLen = tosHash.length / 4;
         const leaseAmountLen = 8;
         const identifierLen = 4;
-        const ipDataLen = assignedIP ? 16 : 0;
+        const ipDataLen = outboundIPAddress ? 16 : 0; // (Allocating block for considering both IPV6 and IPV4)
 
         // Offsets of sub sections
         const versionPrefixOffset = prefixLen;
@@ -144,7 +152,7 @@ class HostClient extends BaseEvernodeClient {
         const identifierOffset = prefixLen + versionLen + indexLen + halfToSLen + leaseAmountLen;
         const ipDataOffset = prefixLen + versionLen + indexLen + halfToSLen + leaseAmountLen + identifierLen;
 
-        const uriBuf = Buffer.allocUnsafe((prefixLen + versionLen + indexLen + halfToSLen + leaseAmountLen + identifierLen + ipDataLen));
+        const uriBuf = Buffer.alloc((prefixLen + versionLen + indexLen + halfToSLen + leaseAmountLen + identifierLen + ipDataLen));
 
         Buffer.from(EvernodeConstants.LEASE_TOKEN_PREFIX_HEX, 'hex').copy(uriBuf);
         Buffer.from(EvernodeConstants.LEASE_TOKEN_VERSION_PREFIX_HEX, 'hex').copy(uriBuf, versionPrefixOffset, 0, versionPrefixLen);
@@ -154,16 +162,30 @@ class HostClient extends BaseEvernodeClient {
         uriBuf.writeBigInt64BE(XflHelpers.getXfl(leaseAmount.toString()), leaseAmountOffset);
         uriBuf.writeUInt32BE((await this.xrplAcc.getSequence()), identifierOffset);
 
-        if (assignedIP) {
-            const ipBuf = Buffer.from(assignedIP.split(':').map(v => {
-                const bytes = [];
-                for (let i = 0; i < v.length; i += 2) {
-                    bytes.push(parseInt(v.substr(i, 2), 16));
-                }
-                return bytes;
-            }).flat());
+        if (ipDataLen > 0) {
+            if (outboundIPAddress.includes(":")) {
+                const ipBuf = Buffer.from(outboundIPAddress.split(':').map(v => {
+                    const bytes = [];
+                    for (let i = 0; i < v.length; i += 2) {
+                        bytes.push(parseInt(v.substr(i, 2), 16));
+                    }
+                    return bytes;
+                }).flat());
 
-            ipBuf.copy(uriBuf, ipDataOffset, 0, ipDataLen);
+                ipBuf.copy(uriBuf, ipDataOffset, 0, ipDataLen);
+            } else {
+                const ipBuf = Buffer.from(outboundIPAddress.split('.').map(v => {
+                    const bytes = [];
+                    bytes.push(parseInt(v));
+                    return bytes;
+                }).flat());
+
+                console.log(ipBuf)
+
+                // Last 4 bytes of 16 byte buffer.
+                ipBuf.copy(uriBuf, ipDataOffset + 12, 0, 4);
+
+            }
         }
 
         const uri = uriBuf.toString('base64');

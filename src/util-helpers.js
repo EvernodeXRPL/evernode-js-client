@@ -3,6 +3,7 @@ const { XflHelpers } = require('./xfl-helpers');
 const { EvernodeConstants } = require('./evernode-common');
 const { TransactionHelper } = require('./transaction-helper');
 const { EvernodeHelpers } = require('./evernode-helpers');
+const dns = require('node:dns');
 
 // Utility helper functions.
 class UtilHelpers {
@@ -33,12 +34,16 @@ class UtilHelpers {
         const ipDataOffset = isVersionedURI ? (prefixLen + versionLen + indexLen + halfToSLen + leaseAmountLen + identifierLen) : (prefixLen + indexLen + halfToSLen + leaseAmountLen + identifierLen);
 
         return {
-            version: isVersionedURI ? `${uriBuf.slice(prefixLen, versionPrefixOffset).toString()}-${uriBuf.readUInt8(prefixLen + versionPrefixLen)}` : null,
+            version: isVersionedURI ? `${uriBuf.slice(prefixLen, versionPrefixOffset).toString()}${uriBuf.readUInt8(prefixLen + versionPrefixLen)}` : null,
             leaseIndex: isVersionedURI ? uriBuf.readUint16BE(prefixLen + versionLen) : uriBuf.readUint16BE(prefixLen),
             halfTos: uriBuf.slice(halfTosHashOffset, halfTosHashOffset + halfToSLen),
             leaseAmount: parseFloat(XflHelpers.toString(uriBuf.readBigInt64BE(leaseAmountOffset))),
             identifier: uriBuf.length > identifierOffset ? uriBuf.readUInt32BE(identifierOffset) : null,
-            ipv6Address: uriBuf.length > ipDataOffset ? uriBuf.slice(ipDataOffset, ipDataOffset + ipDataLen).toString('hex').toUpperCase().replace(/(.{4})(?!$)/g, "$1:") : null
+            outboundIP: uriBuf.length > ipDataOffset ?
+                (uriBuf.slice(ipDataOffset, ipDataOffset + 1).toString('hex').startsWith("0"))
+                    ? { family: 4, address: uriBuf.slice((ipDataOffset + 12), (ipDataOffset + 12) + ipDataLen).map(b => b.toString()).join('.') }
+                    : { family: 6, address: uriBuf.slice(ipDataOffset, ipDataOffset + ipDataLen).toString('hex').toUpperCase().replace(/(.{4})(?!$)/g, "$1:") }
+                : null
         }
     }
 
@@ -50,6 +55,18 @@ class UtilHelpers {
             default:
                 return time;
         }
+    }
+
+    static async resolveIP(domain, options) {
+        return new Promise((resolve, reject) => {
+            dns.lookup(domain, options, (err, address) => {
+                if (err) {
+                    reject(null);
+                } else {
+                    resolve(address);
+                }
+            });
+        });
     }
 }
 
