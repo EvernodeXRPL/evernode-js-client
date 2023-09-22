@@ -17,12 +17,12 @@ class UtilHelpers {
         // Lengths of sub sections.
         const prefixLen = EvernodeConstants.LEASE_TOKEN_PREFIX_HEX.length / 2;
         const versionPrefixLen = EvernodeConstants.LEASE_TOKEN_VERSION_PREFIX_HEX.length / 2;
-        const versionLen = versionPrefixLen + 1;
+        const versionLen = versionPrefixLen + 2;
         const indexLen = 2;
         const halfToSLen = 16;
         const leaseAmountLen = 8;
         const identifierLen = 4;
-        const ipDataLen = 16;
+        const ipDataLen = 17;
 
         const isVersionedURI = EvernodeHelpers.isValidURI(hexUri, `${EvernodeConstants.LEASE_TOKEN_PREFIX_HEX}${EvernodeConstants.LEASE_TOKEN_VERSION_PREFIX_HEX}`);
 
@@ -34,15 +34,15 @@ class UtilHelpers {
         const ipDataOffset = isVersionedURI ? (prefixLen + versionLen + indexLen + halfToSLen + leaseAmountLen + identifierLen) : (prefixLen + indexLen + halfToSLen + leaseAmountLen + identifierLen);
 
         return {
-            version: isVersionedURI ? `${uriBuf.slice(prefixLen, versionPrefixOffset).toString()}${uriBuf.readUInt8(prefixLen + versionPrefixLen)}` : null,
+            version: isVersionedURI ? `${uriBuf.slice(prefixLen, versionPrefixOffset).toString()}${uriBuf.readUint16BE(prefixLen + versionPrefixLen)}` : null,
             leaseIndex: isVersionedURI ? uriBuf.readUint16BE(prefixLen + versionLen) : uriBuf.readUint16BE(prefixLen),
             halfTos: uriBuf.slice(halfTosHashOffset, halfTosHashOffset + halfToSLen),
             leaseAmount: parseFloat(XflHelpers.toString(uriBuf.readBigInt64BE(leaseAmountOffset))),
             identifier: uriBuf.length > identifierOffset ? uriBuf.readUInt32BE(identifierOffset) : null,
             outboundIP: uriBuf.length > ipDataOffset ?
-                (uriBuf.slice(ipDataOffset, ipDataOffset + 1).toString('hex').startsWith("0"))
-                    ? { family: 4, address: uriBuf.slice((ipDataOffset + 12), (ipDataOffset + 12) + ipDataLen).map(b => b.toString()).join('.') }
-                    : { family: 6, address: uriBuf.slice(ipDataOffset, ipDataOffset + ipDataLen).toString('hex').toUpperCase().replace(/(.{4})(?!$)/g, "$1:") }
+                (uriBuf.readUint8(ipDataOffset) == 4)
+                    ? { family: 4, address: uriBuf.slice((ipDataOffset + 13), (ipDataOffset + 13) + ipDataLen).map(b => b.toString()).join('.') }
+                    : { family: 6, address: uriBuf.slice(ipDataOffset + 1, ipDataOffset + 1 + ipDataLen).toString('hex').toUpperCase().replace(/(.{4})(?!$)/g, "$1:") }
                 : null
         }
     }

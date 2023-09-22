@@ -44,6 +44,9 @@ const HOST_UPDATE_PARAM_SIZE = 123;
 
 const VOTE_VALIDATION_ERR = "VOTE_VALIDATION_ERR";
 
+const IPV4_FAMILY = 4;
+const IPV6_FAMILY = 6;
+
 class HostClient extends BaseEvernodeClient {
 
     constructor(xrpAddress, xrpSecret, options = {}) {
@@ -136,12 +139,12 @@ class HostClient extends BaseEvernodeClient {
         // Lengths of sub sections.
         const prefixLen = EvernodeConstants.LEASE_TOKEN_PREFIX_HEX.length / 2;
         const versionPrefixLen = EvernodeConstants.LEASE_TOKEN_VERSION_PREFIX_HEX.length / 2;
-        const versionLen = versionPrefixLen + 1; //(<LTV><Version Number>)
+        const versionLen = versionPrefixLen + 2; //(<LTV><Version Number>)
         const indexLen = 2;
         const halfToSLen = tosHash.length / 4;
         const leaseAmountLen = 8;
         const identifierLen = 4;
-        const ipDataLen = outboundIPAddress ? 16 : 0; // (Allocating block for considering both IPV6 and IPV4)
+        const ipDataLen = outboundIPAddress ? 17 : 0; // (Allocating block for considering both IPV6 and IPV4)
 
         // Offsets of sub sections
         const versionPrefixOffset = prefixLen;
@@ -156,7 +159,7 @@ class HostClient extends BaseEvernodeClient {
 
         Buffer.from(EvernodeConstants.LEASE_TOKEN_PREFIX_HEX, 'hex').copy(uriBuf);
         Buffer.from(EvernodeConstants.LEASE_TOKEN_VERSION_PREFIX_HEX, 'hex').copy(uriBuf, versionPrefixOffset, 0, versionPrefixLen);
-        uriBuf.writeUInt8(EvernodeConstants.LEASE_TOKEN_VERSION, versionOffset);
+        uriBuf.writeUInt16BE(EvernodeConstants.LEASE_TOKEN_VERSION, versionOffset);
         uriBuf.writeUInt16BE(leaseIndex, indexOffset);
         Buffer.from(tosHash, 'hex').copy(uriBuf, halfTosHashOffset, 0, halfToSLen);
         uriBuf.writeBigInt64BE(XflHelpers.getXfl(leaseAmount.toString()), leaseAmountOffset);
@@ -164,6 +167,7 @@ class HostClient extends BaseEvernodeClient {
 
         if (ipDataLen > 0) {
             if (outboundIPAddress.includes(":")) {
+                uriBuf.writeUInt8(IPV6_FAMILY, ipDataOffset);
                 const ipBuf = Buffer.from(outboundIPAddress.split(':').map(v => {
                     const bytes = [];
                     for (let i = 0; i < v.length; i += 2) {
@@ -172,19 +176,19 @@ class HostClient extends BaseEvernodeClient {
                     return bytes;
                 }).flat());
 
-                ipBuf.copy(uriBuf, ipDataOffset, 0, ipDataLen);
+                ipBuf.copy(uriBuf, ipDataOffset + 1, 0, ipDataLen);
             } else {
+                uriBuf.writeUInt8(IPV4_FAMILY, ipDataOffset);
+
                 const ipBuf = Buffer.from(outboundIPAddress.split('.').map(v => {
                     const bytes = [];
                     bytes.push(parseInt(v));
                     return bytes;
                 }).flat());
 
-                console.log(ipBuf)
 
-                // Last 4 bytes of 16 byte buffer.
-                ipBuf.copy(uriBuf, ipDataOffset + 12, 0, 4);
-
+                // Last 4 bytes of 17 byte buffer.
+                ipBuf.copy(uriBuf, (ipDataOffset + 1) + 12, 0, 4);
             }
         }
 
