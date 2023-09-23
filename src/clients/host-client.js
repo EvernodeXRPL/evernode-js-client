@@ -135,11 +135,11 @@ class HostClient extends BaseEvernodeClient {
             outboundIPAddress = await UtilHelpers.resolveIP(domain, { family: 4 });
         }
 
-        // <prefix><version tag 4><lease index 16)><half of tos hash><lease amount (int64)><identifier (uint32)><ip data>
+        // <prefix><version tag ("LTV"+uint8)><lease index (uint16)><half of tos hash><lease amount (int64)><identifier (uint32)><ip data>
         // Lengths of sub sections.
         const prefixLen = EvernodeConstants.LEASE_TOKEN_PREFIX_HEX.length / 2;
         const versionPrefixLen = EvernodeConstants.LEASE_TOKEN_VERSION_PREFIX_HEX.length / 2;
-        const versionLen = versionPrefixLen + 2; //(<LTV><Version Number>)
+        const versionLen = versionPrefixLen + 2; // ("LTV"<Version Number>)
         const indexLen = 2;
         const halfToSLen = tosHash.length / 4;
         const leaseAmountLen = 8;
