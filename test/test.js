@@ -319,8 +319,9 @@ async function acquire(scenario) {
                 await host.acquireSuccess(r.acquireRefId, r.tenant, { content: "dummy success" });
             else if (scenario === "error") {
                 const uriToken = (await (new evernode.XrplAccount(r.tenant)).getURITokens())?.find(n => n.index == r.uriTokenId);
-                const leaseIndex = (evernode.UtilHelpers.decodeLeaseTokenUri(uriToken.URI)).leaseIndex;
-                const outboundIP = (evernode.UtilHelpers.decodeLeaseTokenUri(uriToken.URI)).outboundIP;
+                const decodedToken = evernode.UtilHelpers.decodeLeaseTokenUri(uriToken.URI);
+                const leaseIndex = decodedToken.leaseIndex;
+                const outboundIP = decodedToken.outboundIP;
 
                 await host.expireLease(r.nfTokenId, r.tenant);
                 await host.offerLease(leaseIndex, r.leaseAmount, tosHash, outboundIP);
