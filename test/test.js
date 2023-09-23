@@ -320,9 +320,10 @@ async function acquire(scenario) {
             else if (scenario === "error") {
                 const uriToken = (await (new evernode.XrplAccount(r.tenant)).getURITokens())?.find(n => n.index == r.uriTokenId);
                 const leaseIndex = (evernode.UtilHelpers.decodeLeaseTokenUri(uriToken.URI)).leaseIndex;
+                const outboundIP = (evernode.UtilHelpers.decodeLeaseTokenUri(uriToken.URI)).outboundIP;
 
                 await host.expireLease(r.nfTokenId, r.tenant);
-                await host.offerLease(leaseIndex, r.leaseAmount, tosHash);
+                await host.offerLease(leaseIndex, r.leaseAmount, tosHash, outboundIP);
                 await host.acquireError(r.acquireRefId, r.tenant, r.leaseAmount, "dummy_error");
             }
         }
