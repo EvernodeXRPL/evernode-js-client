@@ -3,7 +3,6 @@ const { XflHelpers } = require('./xfl-helpers');
 const { EvernodeConstants } = require('./evernode-common');
 const { TransactionHelper } = require('./transaction-helper');
 const { EvernodeHelpers } = require('./evernode-helpers');
-const dns = require('node:dns');
 
 // Utility helper functions.
 class UtilHelpers {
@@ -39,10 +38,8 @@ class UtilHelpers {
             halfTos: uriBuf.slice(halfTosHashOffset, halfTosHashOffset + halfToSLen),
             leaseAmount: parseFloat(XflHelpers.toString(uriBuf.readBigInt64BE(leaseAmountOffset))),
             identifier: uriBuf.length > identifierOffset ? uriBuf.readUInt32BE(identifierOffset) : null,
-            outboundIP: uriBuf.length > ipDataOffset ?
-                (uriBuf.readUint8(ipDataOffset) == 4)
-                    ? { family: 4, address: uriBuf.slice((ipDataOffset + 13), (ipDataOffset + 13) + ipDataLen).map(b => b.toString()).join('.') }
-                    : { family: 6, address: uriBuf.slice(ipDataOffset + 1, ipDataOffset + 1 + ipDataLen).toString('hex').toUpperCase().replace(/(.{4})(?!$)/g, "$1:") }
+            outboundIP: (uriBuf.length > ipDataOffset && (uriBuf.readUint8(ipDataOffset) == 6))
+                ? { family: 6, address: uriBuf.slice(ipDataOffset + 1, ipDataOffset + 1 + ipDataLen).toString('hex').toUpperCase().replace(/(.{4})(?!$)/g, "$1:") }
                 : null
         }
     }
@@ -57,17 +54,6 @@ class UtilHelpers {
         }
     }
 
-    static async resolveIP(domain, options) {
-        return new Promise((resolve, reject) => {
-            dns.lookup(domain, options, (err, address) => {
-                if (err) {
-                    reject(null);
-                } else {
-                    resolve(address);
-                }
-            });
-        });
-    }
 }
 
 module.exports = {
