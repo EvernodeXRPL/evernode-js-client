@@ -1,6 +1,5 @@
 # Evernode js client
 Javascript client library for Evernode.
-(Only tested on NodeJS)
 
 ## Prerequisites
 ```
