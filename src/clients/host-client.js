@@ -43,6 +43,8 @@ const HOST_UPDATE_PARAM_SIZE = 123;
 
 const VOTE_VALIDATION_ERR = "VOTE_VALIDATION_ERR";
 
+const IPV6_FAMILY = 6;
+
 class HostClient extends BaseEvernodeClient {
 
     constructor(xrpAddress, xrpSecret, options = {}) {
@@ -121,17 +123,57 @@ class HostClient extends BaseEvernodeClient {
      * @param {number} leaseIndex Index number for the lease.
      * @param {number} leaseAmount Amount (EVRs) of the lease offer.
      * @param {string} tosHash Hex hash of the Terms Of Service text.
+     * @param {string} outboundIPAddress Assigned IP Address.
      */
-    async offerLease(leaseIndex, leaseAmount, tosHash) {
-        // <prefix><lease index 16)><half of tos hash><lease amount (int64)><identifier (uint32)>
+    async offerLease(leaseIndex, leaseAmount, tosHash, outboundIPAddress = null) {
+
+        // <prefix><version tag ("LTV"+uint8)><lease index (uint16)><half of tos hash><lease amount (int64)><identifier (uint32)><ip data>
+        // Lengths of sub sections.
         const prefixLen = EvernodeConstants.LEASE_TOKEN_PREFIX_HEX.length / 2;
+        const versionPrefixLen = EvernodeConstants.LEASE_TOKEN_VERSION_PREFIX_HEX.length / 2;
+        const versionLen = versionPrefixLen + 2; // ("LTV"<Version Number>)
+        const indexLen = 2;
         const halfToSLen = tosHash.length / 4;
-        const uriBuf = Buffer.allocUnsafe(prefixLen + halfToSLen + 14);
+        const leaseAmountLen = 8;
+        const identifierLen = 4;
+        const ipDataLen = 17;
+
+        // Offsets of sub sections
+        const versionPrefixOffset = prefixLen;
+        const versionOffset = prefixLen + versionPrefixLen;
+        const indexOffset = prefixLen + versionLen;
+        const halfTosHashOffset = prefixLen + versionLen + indexLen;
+        const leaseAmountOffset = prefixLen + versionLen + indexLen + halfToSLen;
+        const identifierOffset = prefixLen + versionLen + indexLen + halfToSLen + leaseAmountLen;
+        const ipDataOffset = prefixLen + versionLen + indexLen + halfToSLen + leaseAmountLen + identifierLen;
+
+        const uriBuf = Buffer.alloc((prefixLen + versionLen + indexLen + halfToSLen + leaseAmountLen + identifierLen + ipDataLen));
+
         Buffer.from(EvernodeConstants.LEASE_TOKEN_PREFIX_HEX, 'hex').copy(uriBuf);
-        uriBuf.writeUInt16BE(leaseIndex, prefixLen);
-        Buffer.from(tosHash, 'hex').copy(uriBuf, prefixLen + 2, 0, halfToSLen);
-        uriBuf.writeBigInt64BE(XflHelpers.getXfl(leaseAmount.toString()), prefixLen + 2 + halfToSLen);
-        uriBuf.writeUInt32BE((await this.xrplAcc.getSequence()), prefixLen + 10 + halfToSLen);
+        Buffer.from(EvernodeConstants.LEASE_TOKEN_VERSION_PREFIX_HEX, 'hex').copy(uriBuf, versionPrefixOffset, 0, versionPrefixLen);
+        uriBuf.writeUInt16BE(EvernodeConstants.LEASE_TOKEN_VERSION, versionOffset);
+        uriBuf.writeUInt16BE(leaseIndex, indexOffset);
+        Buffer.from(tosHash, 'hex').copy(uriBuf, halfTosHashOffset, 0, halfToSLen);
+        uriBuf.writeBigInt64BE(XflHelpers.getXfl(leaseAmount.toString()), leaseAmountOffset);
+        uriBuf.writeUInt32BE((await this.xrplAcc.getSequence()), identifierOffset);
+
+        if (outboundIPAddress) {
+            if (outboundIPAddress.includes(":")) {
+                uriBuf.writeUInt8(IPV6_FAMILY, ipDataOffset);
+                const ipBuf = Buffer.from(outboundIPAddress.split(':').map(v => {
+                    const bytes = [];
+                    for (let i = 0; i < v.length; i += 2) {
+                        bytes.push(parseInt(v.substr(i, 2), 16));
+                    }
+                    return bytes;
+                }).flat());
+
+                ipBuf.copy(uriBuf, ipDataOffset + 1, 0, ipDataLen);
+            } else {
+                throw "Invalid outbound IP address was provided";
+            }
+        }
+
         const uri = uriBuf.toString('base64');
 
         try {
