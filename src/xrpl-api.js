@@ -35,8 +35,12 @@ class XrplApi {
     #xrplClientOptions;
     #autoReconnect;
 
-    constructor(rippledServer = null, options = {}) {
-        this.#primaryServer = rippledServer;
+    constructor(rippledServer = '-', options = {}) {
+        if (rippledServer == '-') {
+            this.#primaryServer = null;
+        } else {
+            this.#primaryServer = rippledServer || DefaultValues.rippledServer;
+        }
         this.#fallbackServers = options.fallbackRippledServers || DefaultValues.fallbackRippledServers;
         this.#xrplClientOptions = options.xrplClientOptions;
         const initServer = this.#primaryServer || this.#fallbackServers[0];
