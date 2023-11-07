@@ -21,8 +21,8 @@ const LEDGER_CLOSE_TIME = 1000
 
 class XrplApi {
 
-    #primaryRippledServer;
-    #fallbackRippledServers;
+    #primaryServer;
+    #fallbackServers;
     #client;
     #events = new EventEmitter();
     #addressSubscriptions = [];
@@ -36,10 +36,12 @@ class XrplApi {
     #autoReconnect;
 
     constructor(rippledServer = null, options = {}) {
-        this.#primaryRippledServer = rippledServer || DefaultValues.rippledServer;
-        this.#fallbackRippledServers = options.fallbackRippledServers || DefaultValues.fallbackRippledServers;
+        this.#primaryServer = rippledServer;
+        this.#fallbackServers = options.fallbackRippledServers || DefaultValues.fallbackRippledServers;
         this.#xrplClientOptions = options.xrplClientOptions;
-        this.#initXrplClient();
+        const initServer = this.#primaryServer || this.#fallbackServers[0];
+        const client = new xrpl.Client(initServer, this.#xrplClientOptions);
+        this.#initXrplClient(client);
         this.#autoReconnect = options.autoReconnect ?? true;
     }
 
@@ -56,7 +58,7 @@ class XrplApi {
         this.#client = client;
     }
 
-    async #initXrplClient(client = new xrpl.Client(this.#primaryRippledServer, this.#xrplClientOptions)) {
+    async #initXrplClient(client) {
         if (this.#client) { // If the client already exists, clean it up.
             await this.#setClient(null, true);
         }
@@ -136,13 +138,13 @@ class XrplApi {
     }
 
     async #attemptFallbackServerReconnect(maxRounds, attemptsPerServer = 3) {
-        const fallbackRippledServers = this.#fallbackRippledServers;
+        const fallbackServers = this.#fallbackServers;
         let round = 0;
-        while (fallbackRippledServers?.length > 0 && !this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected  && !this.#isFallbackServerConnected && (!maxRounds || round < maxRounds)) { // Keep attempting until consumer calls disconnect() manually or if the primary server is disconnected.
+        while (fallbackServers?.length > 0 && !this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected  && !this.#isFallbackServerConnected && (!maxRounds || round < maxRounds)) { // Keep attempting until consumer calls disconnect() manually or if the primary server is disconnected.
             ++round;
             serverIterator:
-            for (let serverIndex in fallbackRippledServers) {
-                const server = fallbackRippledServers[serverIndex];
+            for (let serverIndex in fallbackServers) {
+                const server = fallbackServers[serverIndex];
                 for (let attempt = 0; attempt < attemptsPerServer;) {
                     if (this.#isPrimaryServerConnected || this.#isPermanentlyDisconnected) {
                         break serverIterator;
@@ -185,7 +187,7 @@ class XrplApi {
         while (!this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected) { // Keep attempting until consumer calls disconnect() manually.
             console.log(`Primary server reconnection attempt ${++attempt}`);
             try {
-                const client = new xrpl.Client(this.#primaryRippledServer, this.#xrplClientOptions);
+                const client = new xrpl.Client(this.#primaryServer, this.#xrplClientOptions);
                 while (this.#isAttemptingConnection) {
                     await new Promise((resolve) => setTimeout(resolve, 100));
                 }
