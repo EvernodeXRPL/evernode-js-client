@@ -218,7 +218,11 @@ class XrplApi {
 
     async #connectXrplClient(reconnect = false) {
         if (reconnect) {
-            Promise.all([this.#attemptFallbackServerReconnect(), this.#attemptPrimaryServerReconnect()]);
+            if(this.#primaryServer){
+                Promise.all([this.#attemptFallbackServerReconnect(), this.#attemptPrimaryServerReconnect()]);
+            }else{
+                this.#attemptFallbackServerReconnect();
+            }
             await this.#waitForReconnection();
         }
         else {
