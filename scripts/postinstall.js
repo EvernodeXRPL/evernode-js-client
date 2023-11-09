@@ -13,6 +13,9 @@ async function main() {
         console.log('  Status Code:', res.statusCode);
         console.log('  Date in header:', headerDate);
 
+        if (res.statusCode != 200)
+            throw `Error: ${res.statusMessage}`;
+
         res.on('data', chunk => {
             data.push(chunk);
         });
