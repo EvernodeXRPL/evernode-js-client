@@ -1,6 +1,7 @@
 const DefaultValues = {
     governorAddress: 'rGVHr1PrfL93UAjyw3DWZoi9adz2sLp2yL',
     rippledServer: 'wss://hooks-testnet-v3.xrpl-labs.com',
+    fallbackRippledServers: [], //Default fallback server list should be defined here.
     xrplApi: null,
     stateIndexId: 'evernodeindex',
     networkID: 21338
