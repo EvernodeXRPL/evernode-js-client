@@ -1,5 +1,3 @@
-const fs = require('fs');
-
 const DefinitionsPath = './resources/definitions.json';
 
 const Definitions = require(DefinitionsPath);
@@ -10,7 +8,6 @@ const DefaultValues = {
 
 const RequiredInfoKeys = [
     "governorAddress",
-    "rippledServer",
     "stateIndexId",
     "networkID"
 ]
@@ -49,6 +46,8 @@ class Defaults {
         var notFound = RequiredInfoKeys.find(k => !DefaultValues[k]);
         if (notFound)
             throw `Value for ${notFound} is not set.`;
+        else if (!DefaultValues.rippledServer && (!DefaultValues.fallbackRippledServers || !DefaultValues.fallbackRippledServers.length))
+            throw 'Either rippledServer or fallbackRippledServers required.';
 
         return { ...DefaultValues };
     }
