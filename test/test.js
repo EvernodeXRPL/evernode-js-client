@@ -48,7 +48,7 @@ const clients = [];
 async function app() {
 
     // Use a singleton xrplApi for all tests.
-    evernode.Defaults.useNetwork('devnet');
+    evernode.Defaults.useNetwork('devnet1');
     const xrplApi = new evernode.XrplApi(null, { autoReconnect: true });
     evernode.Defaults.set({
         xrplApi: xrplApi
@@ -159,7 +159,7 @@ async function app() {
             // () => votePilotedMode(),
             // () => foundationVotePilotedMode(),
             // () => changeGovernanceMode(evernode.EvernodeConstants.GovernanceModes.AutoPiloted),
-            // () => makePayment(),
+            () => makePayment(),
             // () => getDudHostCandidatesByOwner()
             // () => multiSignedMakePayment(),
 

@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
-const DefinitionsUrl = 'https://raw.githubusercontent.com/EvernodeXRPL/evernode-resources/main/definitions.json';
+const DefinitionsUrl = 'https://raw.githubusercontent.com/EvernodeXRPL/evernode-resources/main/definitions/definitions.json';
 const DefinitionsPath = './resources/definitions.json';
 
 async function main() {

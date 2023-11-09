@@ -25,7 +25,7 @@ class Defaults {
      */
     static useNetwork(network) {
         if (!Definitions[network])
-            throw 'Invalid network';
+            throw `Invalid network: ${network}`;
 
         this.set(Definitions[network]);
     }
