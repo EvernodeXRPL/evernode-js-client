@@ -1,5 +1,4 @@
-// const evernode = require("evernode-js-client");
-const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
+const evernode = require("evernode-js-client");
 const codec = require('ripple-address-codec');
 
 let governorAddress;
@@ -160,7 +159,7 @@ async function app() {
             // () => votePilotedMode(),
             // () => foundationVotePilotedMode(),
             // () => changeGovernanceMode(evernode.EvernodeConstants.GovernanceModes.AutoPiloted),
-            () => makePayment(),
+            // () => makePayment(),
             // () => getDudHostCandidatesByOwner()
             // () => multiSignedMakePayment(),
 
