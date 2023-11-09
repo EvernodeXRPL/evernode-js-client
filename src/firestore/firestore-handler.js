@@ -1,5 +1,5 @@
 const https = require('https');
-const { DefaultValues } = require('../defaults');
+const { Defaults } = require('../defaults');
 
 const FirestoreOperations = {
     EQUAL: 'EQUAL',
@@ -11,8 +11,8 @@ class FirestoreHandler {
     #collectionPrefix = null;
 
     constructor(options = {}) {
-        this.#projectId = options.stateIndexId || DefaultValues.stateIndexId;
-        this.#collectionPrefix = options.collectionPrefix || DefaultValues.governorAddress;
+        this.#projectId = options.stateIndexId || Defaults.values.stateIndexId;
+        this.#collectionPrefix = options.collectionPrefix || Defaults.values.governorAddress;
     }
 
     /**

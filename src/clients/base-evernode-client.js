@@ -4,7 +4,7 @@ const { XrplApi } = require('../xrpl-api');
 const { XrplAccount } = require('../xrpl-account');
 const { XrplApiEvents, XrplConstants } = require('../xrpl-common');
 const { EvernodeEvents, EventTypes, MemoFormats, EvernodeConstants, HookStateKeys, HookParamKeys, RegExp } = require('../evernode-common');
-const { DefaultValues } = require('../defaults');
+const { Defaults } = require('../defaults');
 const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
 const { UtilHelpers } = require('../util-helpers');
@@ -33,10 +33,10 @@ class BaseEvernodeClient {
     constructor(xrpAddress, xrpSecret, watchEvents, autoSubscribe = false, options = {}) {
 
         this.connected = false;
-        this.governorAddress = options.governorAddress || DefaultValues.governorAddress;
+        this.governorAddress = options.governorAddress || Defaults.values.governorAddress;
 
-        this.xrplApi = options.xrplApi || DefaultValues.xrplApi || new XrplApi(options.rippledServer);
-        if (!options.xrplApi && !DefaultValues.xrplApi)
+        this.xrplApi = options.xrplApi || Defaults.values.xrplApi || new XrplApi(options.rippledServer);
+        if (!options.xrplApi && !Defaults.values.xrplApi)
             this.#ownsXrplApi = true;
 
         this.xrplAcc = new XrplAccount(xrpAddress, xrpSecret, { xrplApi: this.xrplApi });

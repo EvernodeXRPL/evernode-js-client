@@ -1,7 +1,7 @@
 const xrpl = require('xrpl');
 const kp = require('ripple-keypairs');
 const { EventEmitter } = require('./event-emitter');
-const { DefaultValues } = require('./defaults');
+const { Defaults } = require('./defaults');
 const { TransactionHelper } = require('./transaction-helper');
 const { XrplApiEvents } = require('./xrpl-common');
 const { XrplAccount } = require('./xrpl-account');
@@ -30,7 +30,7 @@ class XrplApi {
     #autoReconnect;
 
     constructor(rippledServer = null, options = {}) {
-        this.#rippledServer = rippledServer || DefaultValues.rippledServer;
+        this.#rippledServer = rippledServer || Defaults.values.rippledServer;
         this.#initXrplClient(options.xrplClientOptions);
         this.#autoReconnect = options.autoReconnect ?? true;
     }

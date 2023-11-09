@@ -1,10 +1,19 @@
+const fs = require('fs');
+
+const DefinitionsPath = './resources/definitions.json';
+
+const Definitions = require(DefinitionsPath);
+
 const DefaultValues = {
-    governorAddress: 'rGVHr1PrfL93UAjyw3DWZoi9adz2sLp2yL',
-    rippledServer: 'wss://hooks-testnet-v3.xrpl-labs.com',
     xrplApi: null,
-    stateIndexId: 'evernodeindex',
-    networkID: 21338
 }
+
+const RequiredInfoKeys = [
+    "governorAddress",
+    "rippledServer",
+    "stateIndexId",
+    "networkID"
+]
 
 const HookTypes = {
     governor: 'GOVERNOR',
@@ -13,6 +22,17 @@ const HookTypes = {
 }
 
 class Defaults {
+    /**
+     * Load defaults from the public definitions json.
+     * @param {string} network Network to choose the info.
+     */
+    static useNetwork(network) {
+        if (!Definitions[network])
+            throw 'Invalid network';
+
+        this.set(Definitions[network]);
+    }
+
     /**
      * Override Evernode default configs.
      * @param {object} newDefaults Configurations to override `{ governorAddress: '{string} governor xrpl address', rippledServer: '{string} rippled server url', xrplApi: '{XrplApi} xrpl instance', stateIndexId: '{string} firestore index', networkID: '{number} rippled network id' }`
@@ -25,13 +45,16 @@ class Defaults {
      * Read Evernode default configs.
      * @returns The Object of Evernode configs
      */
-    static get() {
+    static get values() {
+        var notFound = RequiredInfoKeys.find(k => !DefaultValues[k]);
+        if (notFound)
+            throw `Value for ${notFound} is not set.`;
+
         return { ...DefaultValues };
     }
 }
 
 module.exports = {
-    DefaultValues,
     Defaults,
     HookTypes
 }

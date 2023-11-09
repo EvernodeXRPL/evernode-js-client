@@ -5,7 +5,7 @@ const crypto = require("crypto");
 const { XrplConstants, XrplTransactionTypes } = require('./xrpl-common');
 const { TransactionHelper } = require('./transaction-helper');
 const { EventEmitter } = require('./event-emitter');
-const { DefaultValues } = require('./defaults');
+const { Defaults } = require('./defaults');
 
 class XrplAccount {
 
@@ -19,7 +19,7 @@ class XrplAccount {
 
         this.address = address;
         this.secret = secret;
-        this.xrplApi = options.xrplApi || DefaultValues.xrplApi;
+        this.xrplApi = options.xrplApi || Defaults.values.xrplApi;
 
         if (!this.xrplApi)
             throw "XrplAccount: xrplApi not specified.";
@@ -741,7 +741,7 @@ class XrplAccount {
             Sequence: options.sequence || await this.getSequence(),
             SigningPubKey: '', // This field is required for fee calculation.
             Fee: '0', // This field is required for fee calculation.
-            NetworkID: DefaultValues.networkID
+            NetworkID: Defaults.values.networkID
         }
 
         Object.assign(tx, txOptions);

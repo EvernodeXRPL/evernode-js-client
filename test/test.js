@@ -2,18 +2,18 @@
 const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
 const codec = require('ripple-address-codec');
 
-const evrIssuerAddress = "ra328vuQhL5fKrjqGB3FzVM45a5zuNS2KR";
-const registryAddress = "rDSj7Qhv8qjhnnbvaHPjZQ3Vx7edN3dXNF";
-const governorAddress = 'raVhw4Q8FQr296jdaDLDfZ4JDhh7tFG7SF';
-const heartbeatAddress = 'rKqE7J29TvYtb4MSksRSWRiK3KCVVEuZjA';
-const hostAddress = "rBWN6Ny726oAch41J3o8kGikewBKVr77qp";
-const hostSecret = "spkyyp2ucQfK18LJgeC2v4s4Kt8hq";
-const foundationAddress = "rhqHz5tuy3NnBTqcpsUVBXhSWCsDTCJmzE";
+let governorAddress;
+let evrIssuerAddress;
+let foundationAddress;
+let registryAddress;
+let heartbeatAddress;
 const foundationSecret = "sn3nNMSuyXiqVjrhfQr9JxDhgHmds";
-const tenantAddress = "r3vbdktYDxVSe7K1oo2McKeBJhQng3uFeH";
-const tenantSecret = "shjBr5yFDNzyUkBiFXjexFYiAsPBS";
 const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
 const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
+const hostAddress = "rBWN6Ny726oAch41J3o8kGikewBKVr77qp";
+const hostSecret = "spkyyp2ucQfK18LJgeC2v4s4Kt8hq";
+const tenantAddress = "r3vbdktYDxVSe7K1oo2McKeBJhQng3uFeH";
+const tenantSecret = "shjBr5yFDNzyUkBiFXjexFYiAsPBS";
 const transfereeAddress = 'rsPxbXNo5XnBpnLZ3yu3ZufCZiA22hS5R7';
 const transfereeSecret = 'snXTbrMTJ64MALdMv56b2p7FoBQTw';
 const multiSignerAddress = 'rN7MCSD6xTkdXnD94Q2YJjTmcwVSbkwiDL';
@@ -49,15 +49,22 @@ const clients = [];
 async function app() {
 
     // Use a singleton xrplApi for all tests.
-    const xrplApi = new evernode.XrplApi('wss://hooks-testnet-v3.xrpl-labs.com', { autoReconnect: true });
+    evernode.Defaults.useNetwork('devnet');
+    const xrplApi = new evernode.XrplApi(null, { autoReconnect: true });
     evernode.Defaults.set({
-        governorAddress: governorAddress,
-        xrplApi: xrplApi,
-        networkID: 21338
-    })
+        xrplApi: xrplApi
+    });
+    governorAddress = evernode.Defaults.values.governorAddress;
 
     try {
         await xrplApi.connect();
+
+        const governorClient = await evernode.HookClientFactory.create(evernode.HookTypes.governor);
+        await governorClient.connect();
+        evrIssuerAddress = governorClient.config.evrIssuerAddress;
+        foundationAddress = governorClient.config.foundationAddress;
+        registryAddress = governorClient.config.registryAddress;
+        heartbeatAddress = governorClient.config.heartbeatAddress;
 
         /*
          * Process of minting and selling a NFT - V2.
@@ -153,7 +160,7 @@ async function app() {
             // () => votePilotedMode(),
             // () => foundationVotePilotedMode(),
             // () => changeGovernanceMode(evernode.EvernodeConstants.GovernanceModes.AutoPiloted),
-            // () => makePayment(),
+            () => makePayment(),
             // () => getDudHostCandidatesByOwner()
             // () => multiSignedMakePayment(),
 
@@ -726,4 +733,4 @@ async function multiSignedMakePayment() {
     console.log(res)
 }
 
-app();
+app().catch(console.error);
