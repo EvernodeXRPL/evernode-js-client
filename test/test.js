@@ -6,6 +6,7 @@ let evrIssuerAddress;
 let foundationAddress;
 let registryAddress;
 let heartbeatAddress;
+const overrideGovernorAddress = '';
 const foundationSecret = "sn3nNMSuyXiqVjrhfQr9JxDhgHmds";
 const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
 const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
@@ -24,6 +25,7 @@ const signerOneSecret = "shkEQpH63R9KW8v5EHfibBQ8wACdQ";
 const signerTwoAddress = "rQL7pzkQkdB5jV7Big6QSNZdzeT6zZQXHU";
 const signerTwoSecret = "sptkPWTDoqrnP1LNAHx47wM6ssjY2";
 
+const hostReputationValue = 5;
 
 const signerList = [
     {
@@ -53,6 +55,10 @@ async function app() {
     evernode.Defaults.set({
         xrplApi: xrplApi
     });
+    if (overrideGovernorAddress)
+        evernode.Defaults.set({
+            governorAddress: overrideGovernorAddress
+        });
     governorAddress = evernode.Defaults.values.governorAddress;
 
     try {
@@ -162,6 +168,7 @@ async function app() {
             // () => makePayment(),
             // () => getDudHostCandidatesByOwner()
             // () => multiSignedMakePayment(),
+            // () => updateHostReputation(),
 
         ];
 
@@ -730,6 +737,13 @@ async function multiSignedMakePayment() {
     // Submit transaction.
     const res = await multiSig.submitMultisigned(transaction);
     console.log(res)
+}
+
+async function updateHostReputation(address = hostAddress) {
+    console.log(`-----------Host reputation update`);
+
+    const foundationClient = await getFoundationClient();
+    await foundationClient.updateHostReputation(address, hostReputationValue);
 }
 
 app().catch(console.error);

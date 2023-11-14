@@ -21,6 +21,9 @@ const CANDIDATE_PROPOSE_PARAM_SIZE = 250;
 
 const DUD_HOST_CANDID_ADDRESS_OFFSET = 12;
 
+const REPUTATION_HOST_ADDRESS_PARAM_OFFSET = 0;
+const REPUTATION_VALUE_PARAM_OFFSET = 20;
+
 const MAX_HOOK_PARAM_SIZE = 128;
 
 class BaseEvernodeClient {
@@ -595,6 +598,18 @@ class BaseEvernodeClient {
                     transaction: tx,
                     candidateId: candidateId,
                     host: codec.encodeAccountID(Buffer.from(candidateId, 'hex').slice(DUD_HOST_CANDID_ADDRESS_OFFSET, 32))
+                }
+            }
+        }
+        else if (eventType === EventTypes.HOST_UPDATE_REPUTATION && eventData) {
+            const dataBuf = Buffer.from(eventData, 'hex');
+
+            return {
+                name: EvernodeEvents.HostReputationUpdated,
+                data: {
+                    transaction: tx,
+                    host: codec.encodeAccountID(dataBuf.slice(REPUTATION_HOST_ADDRESS_PARAM_OFFSET, 20)),
+                    reputation: dataBuf.readUInt8(REPUTATION_VALUE_PARAM_OFFSET)
                 }
             }
         }
