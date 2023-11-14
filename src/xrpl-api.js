@@ -35,7 +35,7 @@ class XrplApi {
     #xrplClientOptions;
     #autoReconnect;
 
-    constructor(rippledServer = '-', options = {}) {
+    constructor(rippledServer = null, options = {}) {
         if (rippledServer == '-') {
             this.#primaryServer = null;
         } else {

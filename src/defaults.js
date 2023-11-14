@@ -1,7 +1,5 @@
 const DefinitionsPath = './resources/definitions.json';
 
-const Definitions = require(DefinitionsPath);
-
 const DefaultValues = {
     xrplApi: null,
 }
@@ -24,10 +22,12 @@ class Defaults {
      * @param {string} network Network to choose the info.
      */
     static useNetwork(network) {
-        if (!Definitions[network])
+        const definitions = require(DefinitionsPath);
+
+        if (!definitions[network])
             throw `Invalid network: ${network}`;
 
-        this.set(Definitions[network]);
+        this.set(definitions[network]);
     }
 
     /**

@@ -19,6 +19,7 @@ const FIRST_EPOCH_REWARD_QUOTA_OFFSET = 1;
 const EPOCH_REWARD_AMOUNT_OFFSET = 5;
 const REWARD_START_MOMENT_OFFSET = 9;
 const ACCUMULATED_REWARD_FREQUENCY_OFFSET = 13;
+const HOST_REPUTATION_THRESHOLD_OFFSET = 15;
 
 const TRANSIT_IDX_OFFSET = 0;
 const TRANSIT_MOMENT_SIZE_OFFSET = 8;
@@ -63,6 +64,7 @@ const HOST_TRANSFER_FLAG_OFFSET = 111;
 const HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET = 112;
 const HOST_LAST_VOTE_TIMESTAMP_OFFSET = 116;
 const HOST_SUPPORT_VOTE_FLAG_OFFSET = 124;
+const HOST_REPUTATION_OFFSET = 125;
 
 const HOST_ADDRESS_OFFSET = 0;
 const HOST_CPU_MODEL_NAME_OFFSET = 20;
@@ -160,7 +162,8 @@ class StateHelpers {
             isATransferer: (stateDataBuf.readUInt8(HOST_TRANSFER_FLAG_OFFSET) === PENDING_TRANSFER) ? TRANSFER_STATES.HAS_A_TRANSFER : TRANSFER_STATES.NO_TRANSFER,
             lastVoteCandidateIdx: stateDataBuf.readUInt32LE(HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET),
             lastVoteTimestamp: Number(stateDataBuf.readBigUInt64LE(HOST_LAST_VOTE_TIMESTAMP_OFFSET)),
-            supportVoteSent: stateDataBuf.readUInt8(HOST_SUPPORT_VOTE_FLAG_OFFSET)
+            supportVoteSent: stateDataBuf.readUInt8(HOST_SUPPORT_VOTE_FLAG_OFFSET),
+            hostReputation: stateDataBuf.readUInt8(HOST_REPUTATION_OFFSET)
         }
         if (stateDataBuf.length > HOST_REG_TIMESTAMP_OFFSET)
             data.registrationTimestamp = Number(stateDataBuf.readBigUInt64LE(HOST_REG_TIMESTAMP_OFFSET));
@@ -360,7 +363,8 @@ class StateHelpers {
                     firstEpochRewardQuota: stateData.readUInt32LE(FIRST_EPOCH_REWARD_QUOTA_OFFSET),
                     epochRewardAmount: stateData.readUInt32LE(EPOCH_REWARD_AMOUNT_OFFSET),
                     rewardStartMoment: stateData.readUInt32LE(REWARD_START_MOMENT_OFFSET),
-                    accumulatedRewardFrequency: stateData.readUInt16LE(ACCUMULATED_REWARD_FREQUENCY_OFFSET)
+                    accumulatedRewardFrequency: stateData.readUInt16LE(ACCUMULATED_REWARD_FREQUENCY_OFFSET),
+                    hostReputationThreshold: stateData.readUInt8(HOST_REPUTATION_THRESHOLD_OFFSET)
                 }
             }
         }
