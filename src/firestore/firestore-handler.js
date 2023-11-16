@@ -265,6 +265,10 @@ class FirestoreHandler {
                     val.fields[field.key] = field.value;
                 }
                 break;
+            case 'boolean':
+                type = 'boolean';
+                val = value;
+                break;
             default:
                 type = 'string';
                 val = value;
