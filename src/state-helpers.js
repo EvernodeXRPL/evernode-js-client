@@ -65,6 +65,7 @@ const HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET = 112;
 const HOST_LAST_VOTE_TIMESTAMP_OFFSET = 116;
 const HOST_SUPPORT_VOTE_FLAG_OFFSET = 124;
 const HOST_REPUTATION_OFFSET = 125;
+const HOST_FLAGS_OFFSET = 125;
 
 const HOST_ADDRESS_OFFSET = 0;
 const HOST_CPU_MODEL_NAME_OFFSET = 20;
@@ -116,6 +117,10 @@ const TRANSFER_STATES = {
     HAS_A_TRANSFER: 1
 }
 
+const HOST_FLAGS = {
+    REPUTED_ON_HEARTBEAT: 1
+}
+
 const EVERNODE_PREFIX = 'EVR';
 const HOST_ADDR_KEY_ZERO_COUNT = 8;
 const TRANSFEREE_ADDR_KEY_ZERO_COUNT = 8;
@@ -162,11 +167,16 @@ class StateHelpers {
             isATransferer: (stateDataBuf.readUInt8(HOST_TRANSFER_FLAG_OFFSET) === PENDING_TRANSFER) ? TRANSFER_STATES.HAS_A_TRANSFER : TRANSFER_STATES.NO_TRANSFER,
             lastVoteCandidateIdx: stateDataBuf.readUInt32LE(HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET),
             lastVoteTimestamp: Number(stateDataBuf.readBigUInt64LE(HOST_LAST_VOTE_TIMESTAMP_OFFSET)),
-            supportVoteSent: stateDataBuf.readUInt8(HOST_SUPPORT_VOTE_FLAG_OFFSET),
-            hostReputation: stateDataBuf.readUInt8(HOST_REPUTATION_OFFSET)
+            supportVoteSent: stateDataBuf.readUInt8(HOST_SUPPORT_VOTE_FLAG_OFFSET)
         }
         if (stateDataBuf.length > HOST_REG_TIMESTAMP_OFFSET)
             data.registrationTimestamp = Number(stateDataBuf.readBigUInt64LE(HOST_REG_TIMESTAMP_OFFSET));
+        if (stateDataBuf.length > HOST_REPUTATION_OFFSET)
+            data.hostReputation = stateDataBuf.readUInt8(HOST_REPUTATION_OFFSET);
+        if (stateDataBuf.length > HOST_FLAGS_OFFSET) {
+            const flags = stateDataBuf.readUInt8(HOST_FLAGS_OFFSET);
+            data.reputedOnHeartbeat = !!(flags & HOST_FLAGS.REPUTED_ON_HEARTBEAT);
+        }
         return data;
     }
 
@@ -355,17 +365,20 @@ class StateHelpers {
             }
         }
         else if (Buffer.from(HookStateKeys.REWARD_CONFIGURATION, 'hex').compare(stateKey) === 0) {
+            let value = {
+                epochCount: stateData.readUInt8(EPOCH_COUNT_OFFSET),
+                firstEpochRewardQuota: stateData.readUInt32LE(FIRST_EPOCH_REWARD_QUOTA_OFFSET),
+                epochRewardAmount: stateData.readUInt32LE(EPOCH_REWARD_AMOUNT_OFFSET),
+                rewardStartMoment: stateData.readUInt32LE(REWARD_START_MOMENT_OFFSET),
+                accumulatedRewardFrequency: stateData.readUInt16LE(ACCUMULATED_REWARD_FREQUENCY_OFFSET),
+                hostReputationThreshold: stateData.readUInt8(HOST_REPUTATION_THRESHOLD_OFFSET)
+            };
+            if (stateData.length > HOST_REPUTATION_THRESHOLD_OFFSET)
+                value.hostReputationThreshold = stateData.readUInt8(HOST_REPUTATION_THRESHOLD_OFFSET);
             return {
                 type: this.StateTypes.CONFIGURATION,
                 key: hexKey,
-                value: {
-                    epochCount: stateData.readUInt8(EPOCH_COUNT_OFFSET),
-                    firstEpochRewardQuota: stateData.readUInt32LE(FIRST_EPOCH_REWARD_QUOTA_OFFSET),
-                    epochRewardAmount: stateData.readUInt32LE(EPOCH_REWARD_AMOUNT_OFFSET),
-                    rewardStartMoment: stateData.readUInt32LE(REWARD_START_MOMENT_OFFSET),
-                    accumulatedRewardFrequency: stateData.readUInt16LE(ACCUMULATED_REWARD_FREQUENCY_OFFSET),
-                    hostReputationThreshold: stateData.readUInt8(HOST_REPUTATION_THRESHOLD_OFFSET)
-                }
+                value: value
             }
         }
         else if (Buffer.from(HookStateKeys.REWARD_INFO, 'hex').compare(stateKey) === 0) {
