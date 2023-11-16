@@ -3,10 +3,7 @@ const { Buffer } = require('buffer');
 const { HookStateKeys, EvernodeConstants } = require('./evernode-common');
 const { XflHelpers } = require('./xfl-helpers');
 const crypto = require("crypto");
-const { UtilHelpers } = require('./util-helpers');
 const { sha512Half } = require('xrpl-binary-codec/dist/hashes');
-
-const NFTOKEN_PREFIX = '00000000';
 
 const EPOCH_OFFSET = 0;
 const SAVED_MOMENT_OFFSET = 1;
@@ -65,7 +62,7 @@ const HOST_LAST_VOTE_CANDIDATE_IDX_OFFSET = 112;
 const HOST_LAST_VOTE_TIMESTAMP_OFFSET = 116;
 const HOST_SUPPORT_VOTE_FLAG_OFFSET = 124;
 const HOST_REPUTATION_OFFSET = 125;
-const HOST_FLAGS_OFFSET = 125;
+const HOST_FLAGS_OFFSET = 126;
 
 const HOST_ADDRESS_OFFSET = 0;
 const HOST_CPU_MODEL_NAME_OFFSET = 20;
