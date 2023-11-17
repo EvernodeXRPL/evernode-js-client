@@ -798,8 +798,8 @@ class BaseEvernodeClient {
 
         if (validPrune) {
             await this.xrplAcc.makePayment(this.config.registryAddress,
-                XrplConstants.MIN_XRP_AMOUNT,
-                XrplConstants.XRP,
+                XrplConstants.MIN_DROPS,
+                null,
                 null,
                 null,
                 {
@@ -1018,8 +1018,8 @@ class BaseEvernodeClient {
     async _withdraw(candidateId, options = {}) {
         const candidateIdBuf = Buffer.from(candidateId, 'hex');
         return await this.xrplAcc.makePayment(this.governorAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
+            XrplConstants.MIN_DROPS,
+            null,
             null,
             null,
             {

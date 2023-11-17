@@ -25,7 +25,7 @@ const signerOneSecret = "shkEQpH63R9KW8v5EHfibBQ8wACdQ";
 const signerTwoAddress = "rQL7pzkQkdB5jV7Big6QSNZdzeT6zZQXHU";
 const signerTwoSecret = "sptkPWTDoqrnP1LNAHx47wM6ssjY2";
 
-const hostReputationValue = 5;
+const hostReputationValue = 200;
 
 const signerList = [
     {
@@ -85,7 +85,7 @@ async function app() {
         // const nft = await acc1.getNftByUri(uri);
         // console.log(nft);
         // // Make a sell offer (for free) while restricting it to be only purchased by the specified party.
-        // await acc1.offerSellNft(nft.NFTokenID, '0', 'XRP', null, hostAddress);
+        // await acc1.offerSellNft(nft.NFTokenID, '0', null, null, hostAddress);
 
         // // Account2: Buying party.
         // const acc2 = new evernode.XrplAccount(hostAddress, hostSecret);
@@ -113,7 +113,7 @@ async function app() {
         // let token = await acc1.getURITokenByUri(uri);
         // console.log(token);
         // // Make a sell offer min drops while restricting it to be only purchased by the specified party.
-        // await acc1.sellURIToken(token.index, '1', 'XRP', null, tenantAddress);
+        // await acc1.sellURIToken(token.index, '1', null, null, tenantAddress);
 
         // // Account2: Buying party.
         // token = await acc1.getURITokenByUri(uri);
@@ -233,7 +233,7 @@ async function initializeConfigs() {
     await initAccount.makePayment(
         governorAddress,
         '1',
-        'XRP',
+        null,
         null,
         null,
         {
@@ -387,7 +387,7 @@ async function extendLease(scenario) {
 
     try {
         const timeout = (scenario === "timeout" ? 10000 : 30000);
-        const tokenIDs = (await tenant.xrplAcc.getURITokens()).map(n => n.index);
+        const tokenIDs = (await tenant.xrplAcc.getURITokens()).filter(uriToken => evernode.EvernodeHelpers.isValidURI(uriToken.URI, evernode.EvernodeConstants.LEASE_TOKEN_PREFIX_HEX)).map(n => n.index);
         const result = await tenant.extendLease(hostAddress, 2, tokenIDs[0], { timeout: timeout });
         console.log(`Extend ref id: ${result.extendRefId}, Expiry moments: ${result.expiryMoment}`);
     }

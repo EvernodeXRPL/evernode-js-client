@@ -64,8 +64,8 @@ class FoundationClient extends BaseEvernodeClient {
         voteBuf.writeUInt8(vote, CANDIDATE_VOTE_VALUE_PARAM_OFFSET);
 
         return await this.xrplAcc.makePayment(this.config.heartbeatAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
+            XrplConstants.MIN_DROPS,
+            null,
             null,
             null,
             {
@@ -133,8 +133,8 @@ class FoundationClient extends BaseEvernodeClient {
         modeBuf.writeUInt8(mode);
 
         return await this.xrplAcc.makePayment(this.governorAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
+            XrplConstants.MIN_DROPS,
+            null,
             null,
             null,
             {
@@ -162,8 +162,8 @@ class FoundationClient extends BaseEvernodeClient {
         reputationBuf.writeUInt8(reputation, REPUTATION_VALUE_PARAM_OFFSET)
 
         return await this.xrplAcc.makePayment(this.config.registryAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
+            XrplConstants.MIN_DROPS,
+            null,
             null,
             null,
             {

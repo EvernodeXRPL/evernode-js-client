@@ -1,5 +1,4 @@
 const { EvernodeConstants, URITokenTypes } = require('./evernode-common');
-const { UtilHelpers } = require('./util-helpers');
 const { TransactionHelper } = require('./transaction-helper');
 
 const NFT_PAGE_LEDGER_ENTRY_TYPE_HEX = '0050';

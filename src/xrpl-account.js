@@ -234,12 +234,12 @@ class XrplAccount {
         return await this.#prepareSubmissionTransaction(signerListTx, options);
     }
 
-    async makePayment(toAddr, amount, currency, issuer = null, memos = null, options = {}) {
+    async makePayment(toAddr, amount, currency = null, issuer = null, memos = null, options = {}) {
         const preparedTxn = await this.prepareMakePayment(toAddr, amount, currency, issuer, memos, options);
         return await this.signAndSubmit(preparedTxn);
     }
 
-    async prepareMakePayment(toAddr, amount, currency, issuer = null, memos = null, options = {}) {
+    async prepareMakePayment(toAddr, amount, currency = null, issuer = null, memos = null, options = {}) {
 
         const amountObj = makeAmountObject(amount, currency, issuer);
 
@@ -772,13 +772,11 @@ class XrplAccount {
     }
 }
 
-function makeAmountObject(amount, currency, issuer) {
+function makeAmountObject(amount, currency = null, issuer = null) {
     if (typeof amount !== 'string')
         throw "Amount must be a string.";
-    if (currency !== XrplConstants.XRP && !issuer)
-        throw "Non-XRP currency must have an issuer.";
 
-    const amountObj = (currency == XrplConstants.XRP) ? amount : {
+    const amountObj = !issuer ? amount : {
         currency: currency,
         issuer: issuer,
         value: amount
