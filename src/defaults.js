@@ -1,4 +1,6 @@
-const DefinitionsPath = './resources/definitions.json';
+const https = require('https');
+
+const DefinitionsUrl = 'https://raw.githubusercontent.com/EvernodeXRPL/evernode-resources/main/definitions/definitions.json';
 
 const DefaultValues = {
     xrplApi: null,
@@ -16,13 +18,31 @@ const HookTypes = {
     heartbeat: 'HEARTBEAT'
 }
 
+const getDefinitions = async () => {
+    return new Promise((resolve, reject) => {
+        https.get(DefinitionsUrl, res => {
+            let data = [];
+            if (res.statusCode != 200)
+                reject(`Error: ${res.statusMessage}`);
+            res.on('data', chunk => {
+                data.push(chunk);
+            });
+            res.on('end', () => {
+                resolve(JSON.parse(data));
+            });
+        }).on('error', err => {
+            reject(`Error: ${err.message}`);
+        });
+    });
+}
+
 class Defaults {
     /**
      * Load defaults from the public definitions json.
      * @param {string} network Network to choose the info.
      */
-    static useNetwork(network) {
-        const definitions = require(DefinitionsPath);
+    static async useNetwork(network) {
+        const definitions = await getDefinitions();
 
         if (!definitions[network])
             throw `Invalid network: ${network}`;
