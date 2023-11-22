@@ -258,10 +258,10 @@ async function registerHost(address = hostAddress, secret = hostSecret) {
 
     // Get EVRs from the foundation if needed.
     const lines = await host.xrplAcc.getTrustLines(evernode.EvernodeConstants.EVR, evrIssuerAddress);
-    if (lines.length === 0 || parseInt(lines[0].balance) < 5120) {
+    if (lines.length === 0 || parseInt(lines[0].balance) < 500) {
         console.log("Transfer EVRs...");
         const foundationAcc = new evernode.XrplAccount(foundationAddress, foundationSecret);
-        await foundationAcc.makePayment(address, "5120", evernode.EvernodeConstants.EVR, evrIssuerAddress);
+        await foundationAcc.makePayment(address, "500", evernode.EvernodeConstants.EVR, evrIssuerAddress);
     }
 
     console.log("Register...");
