@@ -6,12 +6,6 @@ const DefaultValues = {
     xrplApi: null,
 }
 
-const RequiredInfoKeys = [
-    "governorAddress",
-    "stateIndexId",
-    "networkID"
-]
-
 const HookTypes = {
     governor: 'GOVERNOR',
     registry: 'REGISTRY',
@@ -63,12 +57,6 @@ class Defaults {
      * @returns The Object of Evernode configs
      */
     static get values() {
-        var notFound = RequiredInfoKeys.find(k => !DefaultValues[k]);
-        if (notFound)
-            throw `Value for ${notFound} is not set.`;
-        else if (!DefaultValues.rippledServer && (!DefaultValues.fallbackRippledServers || !DefaultValues.fallbackRippledServers.length))
-            throw 'Either rippledServer or fallbackRippledServers required.';
-
         return { ...DefaultValues };
     }
 }
