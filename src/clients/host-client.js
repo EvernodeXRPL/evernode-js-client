@@ -378,8 +378,8 @@ class HostClient extends BaseEvernodeClient {
         const regUriToken = await this.getRegistrationUriToken();
 
         await this.xrplAcc.makePayment(this.config.registryAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
+            XrplConstants.MIN_DROPS,
+            null,
             null,
             null,
             {
@@ -439,8 +439,8 @@ class HostClient extends BaseEvernodeClient {
         }
 
         return await this.xrplAcc.makePayment(this.config.registryAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
+            XrplConstants.MIN_DROPS,
+            null,
             null,
             null,
             {
@@ -470,8 +470,8 @@ class HostClient extends BaseEvernodeClient {
 
         try {
             const res = await this.xrplAcc.makePayment(this.config.heartbeatAddress,
-                XrplConstants.MIN_XRP_AMOUNT,
-                XrplConstants.XRP,
+                XrplConstants.MIN_DROPS,
+                null,
                 null,
                 null,
                 {
@@ -534,8 +534,8 @@ class HostClient extends BaseEvernodeClient {
         }
 
         return this.xrplAcc.makePayment(tenantAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
+            XrplConstants.MIN_DROPS,
+            null,
             null,
             [
                 { type: EventTypes.ACQUIRE_SUCCESS, format: MemoFormats.BASE64, data: data }
@@ -589,8 +589,8 @@ class HostClient extends BaseEvernodeClient {
         buf.writeUInt32BE(expiryMoment);
 
         return this.xrplAcc.makePayment(tenantAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
+            XrplConstants.MIN_DROPS,
+            null,
             null,
             [
                 { type: EventTypes.EXTEND_SUCCESS, format: MemoFormats.HEX, data: buf.toString('hex') }
@@ -664,8 +664,8 @@ class HostClient extends BaseEvernodeClient {
      */
     async requestRebate(options = {}) {
         return this.xrplAcc.makePayment(this.config.registryAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
+            XrplConstants.MIN_DROPS,
+            null,
             null,
             [
                 { type: EventTypes.HOST_REBATE, format: "", data: "" }
@@ -701,8 +701,8 @@ class HostClient extends BaseEvernodeClient {
         const regUriToken = await this.getRegistrationUriToken();
 
         await this.xrplAcc.sellURIToken(regUriToken.index,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
+            XrplConstants.MIN_DROPS,
+            null,
             null,
             this.config.registryAddress,
             null,

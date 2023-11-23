@@ -1,10 +1,9 @@
+const https = require('https');
+
+const DefinitionsUrl = 'https://raw.githubusercontent.com/EvernodeXRPL/evernode-resources/main/definitions/definitions.json';
+
 const DefaultValues = {
-    governorAddress: 'rGVHr1PrfL93UAjyw3DWZoi9adz2sLp2yL',
-    rippledServer: 'wss://hooks-testnet-v3.xrpl-labs.com',
-    fallbackRippledServers: [], //Default fallback server list should be defined here.
     xrplApi: null,
-    stateIndexId: 'evernodeindex',
-    networkID: 21338
 }
 
 const HookTypes = {
@@ -13,7 +12,38 @@ const HookTypes = {
     heartbeat: 'HEARTBEAT'
 }
 
+const getDefinitions = async () => {
+    return new Promise((resolve, reject) => {
+        https.get(DefinitionsUrl, res => {
+            let data = [];
+            if (res.statusCode != 200)
+                reject(`Error: ${res.statusMessage}`);
+            res.on('data', chunk => {
+                data.push(chunk);
+            });
+            res.on('end', () => {
+                resolve(JSON.parse(data));
+            });
+        }).on('error', err => {
+            reject(`Error: ${err.message}`);
+        });
+    });
+}
+
 class Defaults {
+    /**
+     * Load defaults from the public definitions json.
+     * @param {string} network Network to choose the info.
+     */
+    static async useNetwork(network) {
+        const definitions = await getDefinitions();
+
+        if (!definitions[network])
+            throw `Invalid network: ${network}`;
+
+        this.set(definitions[network]);
+    }
+
     /**
      * Override Evernode default configs.
      * @param {object} newDefaults Configurations to override `{ governorAddress: '{string} governor xrpl address', rippledServer: '{string} rippled server url', xrplApi: '{XrplApi} xrpl instance', stateIndexId: '{string} firestore index', networkID: '{number} rippled network id' }`
@@ -26,13 +56,12 @@ class Defaults {
      * Read Evernode default configs.
      * @returns The Object of Evernode configs
      */
-    static get() {
+    static get values() {
         return { ...DefaultValues };
     }
 }
 
 module.exports = {
-    DefaultValues,
     Defaults,
     HookTypes
 }

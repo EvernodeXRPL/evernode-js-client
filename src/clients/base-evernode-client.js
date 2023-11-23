@@ -4,7 +4,7 @@ const { XrplApi } = require('../xrpl-api');
 const { XrplAccount } = require('../xrpl-account');
 const { XrplApiEvents, XrplConstants } = require('../xrpl-common');
 const { EvernodeEvents, EventTypes, MemoFormats, EvernodeConstants, HookStateKeys, HookParamKeys, RegExp } = require('../evernode-common');
-const { DefaultValues } = require('../defaults');
+const { Defaults } = require('../defaults');
 const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
 const { UtilHelpers } = require('../util-helpers');
@@ -21,6 +21,9 @@ const CANDIDATE_PROPOSE_PARAM_SIZE = 250;
 
 const DUD_HOST_CANDID_ADDRESS_OFFSET = 12;
 
+const REPUTATION_HOST_ADDRESS_PARAM_OFFSET = 0;
+const REPUTATION_VALUE_PARAM_OFFSET = 20;
+
 const MAX_HOOK_PARAM_SIZE = 128;
 
 class BaseEvernodeClient {
@@ -33,10 +36,10 @@ class BaseEvernodeClient {
     constructor(xrpAddress, xrpSecret, watchEvents, autoSubscribe = false, options = {}) {
 
         this.connected = false;
-        this.governorAddress = options.governorAddress || DefaultValues.governorAddress;
+        this.governorAddress = options.governorAddress || Defaults.values.governorAddress;
 
-        this.xrplApi = options.xrplApi || DefaultValues.xrplApi || new XrplApi(options.rippledServer);
-        if (!options.xrplApi && !DefaultValues.xrplApi)
+        this.xrplApi = options.xrplApi || Defaults.values.xrplApi || new XrplApi(options.rippledServer);
+        if (!options.xrplApi && !Defaults.values.xrplApi)
             this.#ownsXrplApi = true;
 
         this.xrplAcc = new XrplAccount(xrpAddress, xrpSecret, { xrplApi: this.xrplApi });
@@ -598,6 +601,18 @@ class BaseEvernodeClient {
                 }
             }
         }
+        else if (eventType === EventTypes.HOST_UPDATE_REPUTATION && eventData) {
+            const dataBuf = Buffer.from(eventData, 'hex');
+
+            return {
+                name: EvernodeEvents.HostReputationUpdated,
+                data: {
+                    transaction: tx,
+                    host: codec.encodeAccountID(dataBuf.slice(REPUTATION_HOST_ADDRESS_PARAM_OFFSET, 20)),
+                    reputation: dataBuf.readUInt8(REPUTATION_VALUE_PARAM_OFFSET)
+                }
+            }
+        }
 
         return null;
     }
@@ -783,8 +798,8 @@ class BaseEvernodeClient {
 
         if (validPrune) {
             await this.xrplAcc.makePayment(this.config.registryAddress,
-                XrplConstants.MIN_XRP_AMOUNT,
-                XrplConstants.XRP,
+                XrplConstants.MIN_DROPS,
+                null,
                 null,
                 null,
                 {
@@ -1003,8 +1018,8 @@ class BaseEvernodeClient {
     async _withdraw(candidateId, options = {}) {
         const candidateIdBuf = Buffer.from(candidateId, 'hex');
         return await this.xrplAcc.makePayment(this.governorAddress,
-            XrplConstants.MIN_XRP_AMOUNT,
-            XrplConstants.XRP,
+            XrplConstants.MIN_DROPS,
+            null,
             null,
             null,
             {

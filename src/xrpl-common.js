@@ -10,7 +10,9 @@ const XrplApiEvents = {
 const XrplConstants = {
     MAX_LEDGER_OFFSET: 10,
     XRP: 'XRP',
-    MIN_XRP_AMOUNT: '1' // drops
+    XAH: 'XAH',
+    MIN_XRP_AMOUNT: '1', // drops - deprecated
+    MIN_DROPS: '1'
 }
 
 const XrplTransactionTypes = {

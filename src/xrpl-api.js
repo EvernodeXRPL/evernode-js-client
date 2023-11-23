@@ -1,7 +1,7 @@
 const xrpl = require('xrpl');
 const kp = require('ripple-keypairs');
 const { EventEmitter } = require('./event-emitter');
-const { DefaultValues } = require('./defaults');
+const { Defaults } = require('./defaults');
 const { TransactionHelper } = require('./transaction-helper');
 const { XrplApiEvents } = require('./xrpl-common');
 const { XrplAccount } = require('./xrpl-account');
@@ -35,13 +35,17 @@ class XrplApi {
     #xrplClientOptions;
     #autoReconnect;
 
-    constructor(rippledServer = '-', options = {}) {
+    constructor(rippledServer = null, options = {}) {
         if (rippledServer == '-') {
             this.#primaryServer = null;
         } else {
-            this.#primaryServer = rippledServer || DefaultValues.rippledServer;
+            this.#primaryServer = rippledServer || Defaults.values.rippledServer;
         }
-        this.#fallbackServers = options.fallbackRippledServers || DefaultValues.fallbackRippledServers;
+        this.#fallbackServers = options.fallbackRippledServers || Defaults.values.fallbackRippledServers || [];
+
+        if (!this.#primaryServer && (!this.#fallbackServers || !this.#fallbackServers.length))
+            throw 'Either primaryServer or fallbackServers required.';
+
         this.#xrplClientOptions = options.xrplClientOptions;
         const initServer = this.#primaryServer || this.#fallbackServers[0];
         const client = new xrpl.Client(initServer, this.#xrplClientOptions);
@@ -53,7 +57,7 @@ class XrplApi {
         while (this.#isClientLocked) {
             await new Promise((resolve) => setTimeout(resolve, 100));
         }
-        if(removeCurrentClient){
+        if (removeCurrentClient) {
             this.#isClientLocked = true;
             this.#client.removeAllListeners(); // Remove existing event listeners to avoid them getting called from the old client object.
             await this.#client.disconnect();
@@ -144,7 +148,7 @@ class XrplApi {
     async #attemptFallbackServerReconnect(maxRounds, attemptsPerServer = 3) {
         const fallbackServers = this.#fallbackServers;
         let round = 0;
-        while (fallbackServers?.length > 0 && !this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected  && !this.#isFallbackServerConnected && (!maxRounds || round < maxRounds)) { // Keep attempting until consumer calls disconnect() manually or if the primary server is disconnected.
+        while (fallbackServers?.length > 0 && !this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected && !this.#isFallbackServerConnected && (!maxRounds || round < maxRounds)) { // Keep attempting until consumer calls disconnect() manually or if the primary server is disconnected.
             ++round;
             serverIterator:
             for (let serverIndex in fallbackServers) {
@@ -218,9 +222,9 @@ class XrplApi {
 
     async #connectXrplClient(reconnect = false) {
         if (reconnect) {
-            if(this.#primaryServer){
+            if (this.#primaryServer) {
                 Promise.all([this.#attemptFallbackServerReconnect(), this.#attemptPrimaryServerReconnect()]);
-            }else{
+            } else {
                 this.#attemptFallbackServerReconnect();
             }
             await this.#waitForReconnection();

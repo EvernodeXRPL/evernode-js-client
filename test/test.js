@@ -1,19 +1,19 @@
-// const evernode = require("evernode-js-client");
-const evernode = require("../dist");  // Local dist dir. (use 'npm run build' to update)
+const evernode = require("evernode-js-client");
 const codec = require('ripple-address-codec');
 
-const evrIssuerAddress = "ra328vuQhL5fKrjqGB3FzVM45a5zuNS2KR";
-const registryAddress = "rDSj7Qhv8qjhnnbvaHPjZQ3Vx7edN3dXNF";
-const governorAddress = 'raVhw4Q8FQr296jdaDLDfZ4JDhh7tFG7SF';
-const heartbeatAddress = 'rKqE7J29TvYtb4MSksRSWRiK3KCVVEuZjA';
-const hostAddress = "rBWN6Ny726oAch41J3o8kGikewBKVr77qp";
-const hostSecret = "spkyyp2ucQfK18LJgeC2v4s4Kt8hq";
-const foundationAddress = "rhqHz5tuy3NnBTqcpsUVBXhSWCsDTCJmzE";
+let governorAddress;
+let evrIssuerAddress;
+let foundationAddress;
+let registryAddress;
+let heartbeatAddress;
+const overrideGovernorAddress = '';
 const foundationSecret = "sn3nNMSuyXiqVjrhfQr9JxDhgHmds";
-const tenantAddress = "r3vbdktYDxVSe7K1oo2McKeBJhQng3uFeH";
-const tenantSecret = "shjBr5yFDNzyUkBiFXjexFYiAsPBS";
 const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
 const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
+const hostAddress = "r3poDzE7vB1JbYmN1ezpQoxMP4QG4TPHW6";
+const hostSecret = "shmHHZdw8hTPjgVy7eJBDcm7DCnHp";
+const tenantAddress = "r3vbdktYDxVSe7K1oo2McKeBJhQng3uFeH";
+const tenantSecret = "shjBr5yFDNzyUkBiFXjexFYiAsPBS";
 const transfereeAddress = 'rsPxbXNo5XnBpnLZ3yu3ZufCZiA22hS5R7';
 const transfereeSecret = 'snXTbrMTJ64MALdMv56b2p7FoBQTw';
 const multiSignerAddress = 'rN7MCSD6xTkdXnD94Q2YJjTmcwVSbkwiDL';
@@ -25,6 +25,7 @@ const signerOneSecret = "shkEQpH63R9KW8v5EHfibBQ8wACdQ";
 const signerTwoAddress = "rQL7pzkQkdB5jV7Big6QSNZdzeT6zZQXHU";
 const signerTwoSecret = "sptkPWTDoqrnP1LNAHx47wM6ssjY2";
 
+const hostReputationValue = 200;
 
 const signerList = [
     {
@@ -49,15 +50,26 @@ const clients = [];
 async function app() {
 
     // Use a singleton xrplApi for all tests.
-    const xrplApi = new evernode.XrplApi('wss://hooks-testnet-v3.xrpl-labs.com', { autoReconnect: true });
+    await evernode.Defaults.useNetwork('devnet');
+    const xrplApi = new evernode.XrplApi(null, { autoReconnect: true });
     evernode.Defaults.set({
-        governorAddress: governorAddress,
-        xrplApi: xrplApi,
-        networkID: 21338
-    })
+        xrplApi: xrplApi
+    });
+    if (overrideGovernorAddress)
+        evernode.Defaults.set({
+            governorAddress: overrideGovernorAddress
+        });
+    governorAddress = evernode.Defaults.values.governorAddress;
 
     try {
         await xrplApi.connect();
+
+        const governorClient = await evernode.HookClientFactory.create(evernode.HookTypes.governor);
+        await governorClient.connect();
+        evrIssuerAddress = governorClient.config.evrIssuerAddress;
+        foundationAddress = governorClient.config.foundationAddress;
+        registryAddress = governorClient.config.registryAddress;
+        heartbeatAddress = governorClient.config.heartbeatAddress;
 
         /*
          * Process of minting and selling a NFT - V2.
@@ -73,7 +85,7 @@ async function app() {
         // const nft = await acc1.getNftByUri(uri);
         // console.log(nft);
         // // Make a sell offer (for free) while restricting it to be only purchased by the specified party.
-        // await acc1.offerSellNft(nft.NFTokenID, '0', 'XRP', null, hostAddress);
+        // await acc1.offerSellNft(nft.NFTokenID, '0', null, null, hostAddress);
 
         // // Account2: Buying party.
         // const acc2 = new evernode.XrplAccount(hostAddress, hostSecret);
@@ -101,7 +113,7 @@ async function app() {
         // let token = await acc1.getURITokenByUri(uri);
         // console.log(token);
         // // Make a sell offer min drops while restricting it to be only purchased by the specified party.
-        // await acc1.sellURIToken(token.index, '1', 'XRP', null, tenantAddress);
+        // await acc1.sellURIToken(token.index, '1', null, null, tenantAddress);
 
         // // Account2: Buying party.
         // token = await acc1.getURITokenByUri(uri);
@@ -156,6 +168,7 @@ async function app() {
             // () => makePayment(),
             // () => getDudHostCandidatesByOwner()
             // () => multiSignedMakePayment(),
+            // () => updateHostReputation(),
 
         ];
 
@@ -220,7 +233,7 @@ async function initializeConfigs() {
     await initAccount.makePayment(
         governorAddress,
         '1',
-        'XRP',
+        null,
         null,
         null,
         {
@@ -245,10 +258,10 @@ async function registerHost(address = hostAddress, secret = hostSecret) {
 
     // Get EVRs from the foundation if needed.
     const lines = await host.xrplAcc.getTrustLines(evernode.EvernodeConstants.EVR, evrIssuerAddress);
-    if (lines.length === 0 || parseInt(lines[0].balance) < 5120) {
+    if (lines.length === 0 || parseInt(lines[0].balance) < 500) {
         console.log("Transfer EVRs...");
         const foundationAcc = new evernode.XrplAccount(foundationAddress, foundationSecret);
-        await foundationAcc.makePayment(address, "5120", evernode.EvernodeConstants.EVR, evrIssuerAddress);
+        await foundationAcc.makePayment(address, "500", evernode.EvernodeConstants.EVR, evrIssuerAddress);
     }
 
     console.log("Register...");
@@ -374,7 +387,7 @@ async function extendLease(scenario) {
 
     try {
         const timeout = (scenario === "timeout" ? 10000 : 30000);
-        const tokenIDs = (await tenant.xrplAcc.getURITokens()).map(n => n.index);
+        const tokenIDs = (await tenant.xrplAcc.getURITokens()).filter(uriToken => evernode.EvernodeHelpers.isValidURI(uriToken.URI, evernode.EvernodeConstants.LEASE_TOKEN_PREFIX_HEX)).map(n => n.index);
         const result = await tenant.extendLease(hostAddress, 2, tokenIDs[0], { timeout: timeout });
         console.log(`Extend ref id: ${result.extendRefId}, Expiry moments: ${result.expiryMoment}`);
     }
@@ -726,4 +739,11 @@ async function multiSignedMakePayment() {
     console.log(res)
 }
 
-app();
+async function updateHostReputation(address = hostAddress) {
+    console.log(`-----------Host reputation update`);
+
+    const foundationClient = await getFoundationClient();
+    await foundationClient.updateHostReputation(address, hostReputationValue);
+}
+
+app().catch(console.error);

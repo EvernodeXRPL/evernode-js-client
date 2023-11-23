@@ -35,7 +35,7 @@ class TenantClient extends BaseEvernodeClient {
     async getLeaseHost(hostAddress) {
         const host = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
         // Find an owned URI token with matching Evernode host NFT prefix.
-        const uriToken = (await host.getURITokens()).find(n => n.URI.startsWith(EvernodeConstants.TOKEN_PREFIX_HEX));
+        const uriToken = (await host.getURITokens()).find(n => n.URI.startsWith(EvernodeConstants.TOKEN_PREFIX_HEX) && n.Issuer === this.config.registryAddress);
         if (!uriToken)
             throw { reason: ErrorReasons.HOST_INVALID, error: "Host is not registered." };
 
