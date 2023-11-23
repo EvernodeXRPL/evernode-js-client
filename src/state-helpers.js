@@ -367,8 +367,7 @@ class StateHelpers {
                 firstEpochRewardQuota: stateData.readUInt32LE(FIRST_EPOCH_REWARD_QUOTA_OFFSET),
                 epochRewardAmount: stateData.readUInt32LE(EPOCH_REWARD_AMOUNT_OFFSET),
                 rewardStartMoment: stateData.readUInt32LE(REWARD_START_MOMENT_OFFSET),
-                accumulatedRewardFrequency: stateData.readUInt16LE(ACCUMULATED_REWARD_FREQUENCY_OFFSET),
-                hostReputationThreshold: stateData.readUInt8(HOST_REPUTATION_THRESHOLD_OFFSET)
+                accumulatedRewardFrequency: stateData.readUInt16LE(ACCUMULATED_REWARD_FREQUENCY_OFFSET)
             };
             if (stateData.length > HOST_REPUTATION_THRESHOLD_OFFSET)
                 value.hostReputationThreshold = stateData.readUInt8(HOST_REPUTATION_THRESHOLD_OFFSET);
