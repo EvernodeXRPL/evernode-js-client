@@ -185,6 +185,7 @@ class XrplApi {
                     if (this.#isPrimaryServerConnected || this.#isPermanentlyDisconnected) {
                         break serverIterator;
                     }
+                    ++attempt;
                     try {
                         const client = new xrpl.Client(server, this.#xrplClientOptions);
                         if (!this.#isPrimaryServerConnected) {
@@ -212,6 +213,7 @@ class XrplApi {
     async #attemptPrimaryServerReconnect(maxAttempts = null) {
         let attempt = 0;
         while (!this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected) { // Keep attempting until consumer calls disconnect() manually.
+            ++attempt;
             try {
                 const client = new xrpl.Client(this.#primaryServer, this.#xrplClientOptions);
                 await this.#handleClientConnect(client);
