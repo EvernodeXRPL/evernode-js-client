@@ -12,6 +12,7 @@ const { FirestoreHandler } = require('../firestore/firestore-handler');
 const { StateHelpers } = require('../state-helpers');
 const { EvernodeHelpers } = require('../evernode-helpers');
 const { HookHelpers } = require('../hook-helpers');
+const xrpl = require('xrpl');
 
 const CANDIDATE_PROPOSE_HASHES_PARAM_OFFSET = 0;
 const CANDIDATE_PROPOSE_KEYLETS_PARAM_OFFSET = 96;
@@ -391,7 +392,7 @@ class BaseEvernodeClient {
                     extendRefId: tx.hash,
                     tenant: tx.Account,
                     currency: tx.Amount.currency,
-                    payment: parseFloat(tx.Amount.value),
+                    payment: (tx.Flags & xrpl.PaymentFlags.tfPartialPayment) ? parseFloat(tx.DeliveredAmount.value) : parseFloat(tx.Amount.value),
                     uriTokenId: uriTokenId
                 }
             }

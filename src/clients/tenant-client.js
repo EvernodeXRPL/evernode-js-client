@@ -155,6 +155,10 @@ class TenantClient extends BaseEvernodeClient {
                 for (let t of txList) {
                     t.tx.Memos = TransactionHelper.deserializeMemos(t.tx?.Memos);
                     t.tx.HookParameters = TransactionHelper.deserializeHookParams(t.tx?.HookParameters);
+
+                    if (t.meta?.delivered_amount)
+                        t.tx.DeliveredAmount = t.meta.delivered_amount;
+
                     const res = await this.extractEvernodeEvent(t.tx);
                     if ((res?.name === EvernodeEvents.AcquireSuccess || res?.name === EvernodeEvents.AcquireError) && res?.data?.acquireRefId === tx.id) {
                         clearTimeout(failTimeout);
@@ -266,6 +270,10 @@ class TenantClient extends BaseEvernodeClient {
                 for (let t of txList) {
                     t.tx.Memos = TransactionHelper.deserializeMemos(t.tx.Memos);
                     t.tx.HookParameters = TransactionHelper.deserializeHookParams(t.tx?.HookParameters);
+
+                    if (t.meta?.delivered_amount)
+                        t.tx.DeliveredAmount = t.meta.delivered_amount;
+
                     const res = await this.extractEvernodeEvent(t.tx);
                     if ((res?.name === TenantEvents.ExtendSuccess || res?.name === TenantEvents.ExtendError) && res?.data?.extendRefId === tx.id) {
                         clearTimeout(failTimeout);
