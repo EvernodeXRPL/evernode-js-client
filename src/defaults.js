@@ -4,6 +4,7 @@ const DefinitionsUrl = 'https://raw.githubusercontent.com/EvernodeXRPL/evernode-
 
 const DefaultValues = {
     xrplApi: null,
+    useCentralizedRegistry: false,
 }
 
 const HookTypes = {
