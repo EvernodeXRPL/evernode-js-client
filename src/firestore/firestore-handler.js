@@ -12,7 +12,7 @@ class FirestoreHandler {
 
     constructor(options = {}) {
         if (!Defaults.values.useCentralizedRegistry) {
-            console.warn("Please change the useCentralizedRegistry flag to true if you want to use this function!")
+            console.warn("Please change the useCentralizedRegistry flag to true in Defaults if you want to use this function!")
             throw new Error("Centralized function is in use!!")
         }
         this.#projectId = options.stateIndexId || Defaults.values.stateIndexId;
