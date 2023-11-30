@@ -744,6 +744,9 @@ class XrplAccount {
             NetworkID: Defaults.values.networkID
         }
 
+        if (options?.Flags)
+            txOptions.Flags = options.Flags;
+
         Object.assign(tx, txOptions);
         const txnBlob = this.xrplApi.xrplHelper.encode(tx);
         const fees = options.fee || await this.xrplApi.getTransactionFee(txnBlob);

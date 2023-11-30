@@ -157,7 +157,12 @@ class XrplApi {
                         LedgerHash: data.ledger_hash,
                         LedgerIndex: data.ledger_index,
                         ...data.transaction
-                    }; // Create an object copy. Otherwise xrpl client will mutate the transaction object,
+                    };
+
+                    if (data.meta?.delivered_amount)
+                        tx.DeliveredAmount = data.meta.delivered_amount;
+
+                    // Create an object copy. Otherwise xrpl client will mutate the transaction object,
                     const eventName = tx.TransactionType.toLowerCase();
                     // Emit the event only for successful transactions, Otherwise emit error.
                     if (data.engine_result === "tesSUCCESS") {
