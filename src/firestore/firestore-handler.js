@@ -11,10 +11,6 @@ class FirestoreHandler {
     #collectionPrefix = null;
 
     constructor(options = {}) {
-        if (!Defaults.values.useCentralizedRegistry) {
-            console.warn("Please change the useCentralizedRegistry flag to true in Defaults if you want to use this function!")
-            throw new Error("Centralized function is in use!!")
-        }
         this.#projectId = options.stateIndexId || Defaults.values.stateIndexId;
         this.#collectionPrefix = options.collectionPrefix || Defaults.values.governorAddress;
     }
@@ -169,6 +165,11 @@ class FirestoreHandler {
      * @returns Result set.
      */
     async sendRequest(httpMethod, url, params = null, data = null, options = null) {
+        if (!Defaults.values.useCentralizedRegistry) {
+            console.warn("Please change the useCentralizedRegistry flag to true in Defaults if you want to use this function!")
+            throw new Error("Centralized function is in use!!")
+        }
+        
         const urlObj = new URL(url);
         // Populate uri params to the URL object.
         if (params) {
