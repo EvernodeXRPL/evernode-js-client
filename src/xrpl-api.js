@@ -402,6 +402,11 @@ class XrplApi {
         return resp?.result;
     }
 
+    async getServerInfo() {
+        const resp = (await this.#handleClientRequest({ command: 'server_info' }));
+        return resp?.result;
+    }
+
     async getAccountObjects(address, options) {
         return this.#requestWithPaging({ command: 'account_objects', account: address, ...options }, API_REQ_TYPE.ACCOUNT_OBJECTS);
     }
