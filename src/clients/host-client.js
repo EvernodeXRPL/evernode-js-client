@@ -254,7 +254,7 @@ class HostClient extends BaseEvernodeClient {
             throw "Host already registered.";
 
         // Check whether are there lease offers in for the host due to a previous registration.
-        const existingLeaseURITokens = (await this.xrplAcc.getURITokens()).filter(n => EvernodeHelpers.isValidURI(n.URI, EvernodeConstants.LEASE_TOKEN_PREFIX_HEX));
+        const existingLeaseURITokens = (await this.xrplAcc.getURITokens()).filter(n => n.Issuer == this.xrplAcc.address && EvernodeHelpers.isValidURI(n.URI, EvernodeConstants.LEASE_TOKEN_PREFIX_HEX));
         if (existingLeaseURITokens) {
             console.log("Burning unsold URITokens related to the previous leases.");
             for (const uriToken of existingLeaseURITokens) {
