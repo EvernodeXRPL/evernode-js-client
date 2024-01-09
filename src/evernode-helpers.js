@@ -5,7 +5,7 @@ const NFT_PAGE_LEDGER_ENTRY_TYPE_HEX = '0050';
 
 class EvernodeHelpers {
     static async getLeaseOffers(xrplAcc) {
-        const hostUriOffers = (await xrplAcc.getURITokens()).filter(uriToken => this.isValidURI(uriToken.URI, EvernodeConstants.LEASE_TOKEN_PREFIX_HEX) && uriToken.Flags == 1 && uriToken.Amount);
+        const hostUriOffers = (await xrplAcc.getURITokens()).filter(uriToken => uriToken.Issuer == xrplAcc.address && this.isValidURI(uriToken.URI, EvernodeConstants.LEASE_TOKEN_PREFIX_HEX) && uriToken.Flags == 1 && uriToken.Amount);
         return hostUriOffers;
     }
 
