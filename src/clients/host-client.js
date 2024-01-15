@@ -367,15 +367,22 @@ class HostClient extends BaseEvernodeClient {
 
     /**
      * Deregister a host from the Evernode network.
+     * @param {string} error [Optional] Error.
      * @param {*} options [Optional] transaction options.
      * @returns Boolean whether host is registered or not.
      */
-    async deregister(options = {}) {
+    async deregister(error = null, options = {}) {
 
         if (!(await this.isRegistered()))
             throw "Host not registered."
 
         const regUriToken = await this.getRegistrationUriToken();
+        const paramBuf = Buffer.alloc(33, 0);
+        Buffer.from(regUriToken.index, "hex").copy(paramBuf, 0);
+        if (error) {
+            // <token_id(32)><error(1)>
+            paramBuf.writeUInt8(1, 32);
+        }
 
         await this.xrplAcc.makePayment(this.config.registryAddress,
             XrplConstants.MIN_DROPS,
@@ -385,7 +392,7 @@ class HostClient extends BaseEvernodeClient {
             {
                 hookParams: [
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_DEREG },
-                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: regUriToken.index }
+                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramBuf.toString('hex').toUpperCase() }
                 ],
                 ...options.transactionOptions
             });
