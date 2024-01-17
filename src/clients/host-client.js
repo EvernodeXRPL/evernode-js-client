@@ -104,7 +104,7 @@ class HostClient extends BaseEvernodeClient {
             this.xrplAcc.getDomain()]);
 
         let accountSetFields = {};
-        accountSetFields = (!flags.lsfDefaultRipple) ? { ...accountSetFields, Flags: { asfDefaultRipple: true } } : accountSetFields;
+        accountSetFields = (flags.lsfDefaultRipple) ? { ...accountSetFields, Flags: { asfDefaultRipple: false } } : accountSetFields;
         accountSetFields = (!msgKey) ? { ...accountSetFields, MessageKey: this.accKeyPair.publicKey } : accountSetFields;
 
         domain = domain.toLowerCase();
