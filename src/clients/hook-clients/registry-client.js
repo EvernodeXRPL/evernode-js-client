@@ -39,6 +39,16 @@ class RegistryClient extends BaseEvernodeClient {
         // Filter only active hosts.
         return fullHostList.filter(h => h.active);
     }
+
+    /**
+     * Gets all the active hosts registered in ledger.
+     * @returns The list of active hosts.
+     */
+    async getActiveHostsFromLedger() {
+        const hosts = await this.getAllHostsFromLedger();
+        // Filter only active hosts.
+        return hosts.filter(h => h.active);
+    }
 }
 
 module.exports = {

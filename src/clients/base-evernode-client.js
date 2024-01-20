@@ -683,6 +683,40 @@ class BaseEvernodeClient {
     }
 
     /**
+     * Get the hosts registered in Evernode.
+     * @returns The list of hosts. 
+     */
+    async getAllHostsFromLedger() {
+        const states = await this.getHookStates();
+        let hosts = {};
+
+        for (const state of states) {
+            const stateKey = Buffer.from(state.key, 'hex');
+            if (state.data) {
+                const stateData = Buffer.from(state.data, 'hex');
+                const decoded = StateHelpers.decodeStateData(stateKey, stateData);
+                if (decoded.type == StateHelpers.StateTypes.HOST_ADDR || decoded.type == StateHelpers.StateTypes.TOKEN_ID) {
+                    hosts[decoded.address] = { ...(hosts[decoded.address] ?? {}), ...decoded };
+                }
+            }
+        }
+
+        const hostList = Object.values(hosts);
+
+        const curMomentStartIdx = await this.getMomentStartIndex();
+        await Promise.all((hostList).map(async host => {
+            const hostAcc = new XrplAccount(host.address, null, { xrplApi: this.xrplApi });
+            host.domain = await hostAcc.getDomain();
+            host.active = (host.lastHeartbeatIndex > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
+                (host.lastHeartbeatIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
+                (host.lastHeartbeatIndex > 0));
+            return host;
+        }));
+
+        return hostList;
+    }
+
+    /**
      * Get the candidates proposed in Evernode. The result's are paginated. Default page size is 20. _Note: Specifying both filter and pagination does not supported._
      * @param {object} filters [Optional] Filter criteria to filter the candidates. The filter key can be a either property of the candidate.
      * @param {number} pageSize [Optional] Page size for the results.

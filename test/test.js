@@ -131,7 +131,9 @@ async function app() {
             // () => getHostInfo(),
             // () => updateInfo(),
             // () => getAllHosts(),
+            // () => getAllHostsFromLedger(),
             // () => getActiveHosts(),
+            // () => getActiveHostsFromLedger(),
             // () => heartbeatHost(), // If not opted in for voting
             // () => heartbeatHost(evernode.EvernodeConstants.CandidateVote.Support),
             // () => heartbeatHost(evernode.EvernodeConstants.CandidateVote.Reject),
@@ -218,6 +220,15 @@ async function getActiveHosts() {
 
     const regClient = await getRegistryClient();
     const hosts = await regClient.getActiveHosts();
+
+    console.log("Hosts", hosts || "No active hosts");
+}
+
+async function getActiveHostsFromLedger() {
+    console.log(`-----------Getting active hosts from ledger`);
+
+    const regClient = await getRegistryClient();
+    const hosts = await regClient.getActiveHostsFromLedger();
 
     console.log("Hosts", hosts || "No active hosts");
 }
@@ -456,6 +467,13 @@ async function getAllHosts() {
     console.log(hosts.length, hosts);
 }
 
+async function getAllHostsFromLedger() {
+    console.log(`-----------Getting all hosts from ledger (including inactive)`);
+    const registryClient = await evernode.HookClientFactory.create(evernode.HookTypes.registry);
+    await registryClient.connect();
+    const hosts = await registryClient.getAllHostsFromLedger();
+    console.log(hosts.length, hosts);
+}
 
 async function getAllConfigs() {
     console.log(`-----------Getting all configs`);
