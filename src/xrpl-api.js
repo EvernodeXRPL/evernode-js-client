@@ -61,7 +61,7 @@ class XrplApi {
     }
 
     async #acquireConnection() {
-        while (this.#isClientAcquired) {
+        while (this.#isConnectionAcquired) {
             await new Promise((resolve) => setTimeout(resolve, 100));
         }
         this.#isConnectionAcquired = true;
@@ -191,8 +191,8 @@ class XrplApi {
                         break serverIterator;
                     }
                     ++attempt;
+                    const client = new xrpl.Client(server, this.#xrplClientOptions);
                     try {
-                        const client = new xrpl.Client(server, this.#xrplClientOptions);
                         if (!this.#isPrimaryServerConnected) {
                             await this.#handleClientConnect(client);
                             this.#isFallbackServerConnected = true;
@@ -200,7 +200,13 @@ class XrplApi {
                         break serverIterator;
                     }
                     catch (e) {
-                        console.log(`Error occurred while connecting to fallback server ${server}`, e)
+                        console.log(`Error occurred while connecting to fallback server ${server}`, e);
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        if (client.isConnected()) {
+                            console.log('Connection closure already handled');
+                            await client.disconnect();
+                        }
+
                         if (!this.#isPermanentlyDisconnected) {
                             if (!maxRounds || round < maxRounds)
                                 console.log(`Fallback server ${server} connection attempt ${attempt} failed. Retrying in ${2 * round}s...`);
@@ -219,8 +225,8 @@ class XrplApi {
         let attempt = 0;
         while (!this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected) { // Keep attempting until consumer calls disconnect() manually.
             ++attempt;
+            const client = new xrpl.Client(this.#primaryServer, this.#xrplClientOptions);
             try {
-                const client = new xrpl.Client(this.#primaryServer, this.#xrplClientOptions);
                 await this.#handleClientConnect(client);
                 this.#isFallbackServerConnected = false;
                 this.#isPrimaryServerConnected = true;
@@ -228,6 +234,12 @@ class XrplApi {
             }
             catch (e) {
                 console.log("Error occurred while re-connecting to the primary server", e)
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                if (client.isConnected()) {
+                    console.log('Connection closure already handled');
+                    await client.disconnect();
+                }
+
                 if (!this.#isPermanentlyDisconnected) {
                     const delaySec = 2 * attempt; // Retry with backoff delay.
                     if (!maxAttempts || attempt < maxAttempts)
@@ -531,31 +543,25 @@ class XrplApi {
      * @returns prepared response of the transaction result.
      */
     async #prepareResponse(tx, submissionResult) {
-        const resultCode = submissionResult?.result?.engine_result;
-        if (resultCode === "tesSUCCESS" || resultCode === "tefPAST_SEQ" || resultCode === "tefALREADY") {
-            const result = await this.#waitForFinalTransactionOutcome(submissionResult.result.tx_json.hash, tx.LastLedgerSequence, submissionResult);
-            const txResult = {
-                id: result?.hash,
-                code: result?.meta?.TransactionResult,
-                details: result
-            };
+        const result = await this.#waitForFinalTransactionOutcome(submissionResult.result.tx_json.hash, tx.LastLedgerSequence, submissionResult);
+        const txResult = {
+            id: result?.hash,
+            code: result?.meta?.TransactionResult,
+            details: result
+        };
 
-            console.log("Transaction result: " + txResult.code);
-            const hookExecRes = txResult.details?.meta?.HookExecutions?.map(o => {
-                return {
-                    result: o.HookExecution?.HookResult,
-                    returnCode: parseInt(o.HookExecution?.HookReturnCode, 16),
-                    message: TransactionHelper.hexToASCII(o.HookExecution?.HookReturnString).replace(/\x00+$/, '')
-                }
-            });
-            if (txResult.code === "tesSUCCESS")
-                return { ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) };
-            else
-                throw { ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) };
-        }
+        console.log("Transaction result: " + txResult.code);
+        const hookExecRes = txResult.details?.meta?.HookExecutions?.map(o => {
+            return {
+                result: o.HookExecution?.HookResult,
+                returnCode: parseInt(o.HookExecution?.HookReturnCode, 16),
+                message: TransactionHelper.hexToASCII(o.HookExecution?.HookReturnString).replace(/\x00+$/, '')
+            }
+        });
+        if (txResult.code === "tesSUCCESS")
+            return { ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) };
         else
-            throw resultCode ? `Transaction failed with error ${resultCode}` : 'Transaction failed';
-
+            throw { ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) };
     }
 
     /**
