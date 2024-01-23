@@ -476,9 +476,7 @@ class HostClient extends BaseEvernodeClient {
         }
 
         try {
-            const res = await this.xrplAcc.makePayment(this.config.heartbeatAddress,
-                XrplConstants.MIN_DROPS,
-                null,
+            const res = await this.xrplAcc.invokeHook(this.config.heartbeatAddress,
                 null,
                 null,
                 {

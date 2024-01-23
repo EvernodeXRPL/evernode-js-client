@@ -32,7 +32,8 @@ const XrplTransactionTypes = {
     NF_TOKEN_MINT: 'NFTokenMint',
     NF_TOKEN_CREATE_OFFER: 'NFTokenCreateOffer',
     NF_TOKEN_ACCEPT_OFFER: 'NFTokenAcceptOffer',
-    NF_TOKEN_BURN: 'NFTokenBurn'
+    NF_TOKEN_BURN: 'NFTokenBurn',
+    INVOKE: 'Invoke'
 }
 
 module.exports = {

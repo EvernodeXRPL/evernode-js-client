@@ -687,6 +687,26 @@ class XrplAccount {
         }, options);
     }
 
+    async invokeHook(hookAddress, blobData = null, memos = null, options = {}) {
+        const preparedTxn = await this.prepareInvokeHook(hookAddress, blobData, memos, options);
+        return await this.signAndSubmit(preparedTxn);
+    }
+
+    async prepareInvokeHook(hookAddress, blobData = null, memos = null, options = {}) {
+        const tx = {
+            Account: this.address,
+            TransactionType: XrplTransactionTypes.INVOKE,
+            Destination: hookAddress,
+            Memos: TransactionHelper.formatMemos(memos),
+            HookParameters: TransactionHelper.formatHookParams(options.hookParams)
+        }
+
+        if (blobData)
+            tx.Blob = Buffer.from(blobData).toString('hex');
+
+        return await this.#prepareSubmissionTransaction(tx, options);
+    }
+
     async getURITokens(options) {
         const obj = await this.getAccountObjects(options);
         return obj.filter(t => t.LedgerEntryType == 'URIToken');
