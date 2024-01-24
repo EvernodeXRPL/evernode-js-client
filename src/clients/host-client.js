@@ -45,10 +45,20 @@ const VOTE_VALIDATION_ERR = "VOTE_VALIDATION_ERR";
 
 const IPV6_FAMILY = 6;
 
+const MAX_HOST_LEDGER_OFFSET = 30;
+
 class HostClient extends BaseEvernodeClient {
 
     constructor(xrpAddress, xrpSecret, options = {}) {
         super(xrpAddress, xrpSecret, Object.values(HostEvents), true, options);
+    }
+
+    /**
+     * Get max ledger sequence for host client.
+     * @returns Max ledger sequence number.
+     */
+    #getMaxLedgerSequence() {
+        return (this.xrplApi.ledgerIndex + MAX_HOST_LEDGER_OFFSET);
     }
 
     /**
@@ -112,10 +122,10 @@ class HostClient extends BaseEvernodeClient {
             { ...accountSetFields, Domain: domain } : accountSetFields;
 
         if (Object.keys(accountSetFields).length !== 0)
-            await this.xrplAcc.setAccountFields(accountSetFields);
+            await this.xrplAcc.setAccountFields(accountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence() });
 
         if (trustLines.length === 0)
-            await this.xrplAcc.setTrustLine(EvernodeConstants.EVR, this.config.evrIssuerAddress, "99999999999999");
+            await this.xrplAcc.setTrustLine(EvernodeConstants.EVR, this.config.evrIssuerAddress, "99999999999999", null, null, { maxLedgerIndex: this.#getMaxLedgerSequence() });
     }
 
     /**
@@ -177,15 +187,15 @@ class HostClient extends BaseEvernodeClient {
         const uri = uriBuf.toString('base64');
 
         try {
-            await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: false });
+            await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: false }, { maxLedgerIndex: this.#getMaxLedgerSequence() });
         } catch (e) {
             // Re-minting the URIToken after burning that sold URIToken.
             if (e.code === "tecDUPLICATE") {
                 const uriTokenId = this.xrplAcc.generateIssuedURITokenId(uri);
                 console.log(`Burning URIToken related to a previously sold lease.`);
-                await this.xrplAcc.burnURIToken(uriTokenId);
+                await this.xrplAcc.burnURIToken(uriTokenId, { maxLedgerIndex: this.#getMaxLedgerSequence() });
                 console.log("Re-mint the URIToken for the new lease offer.")
-                await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: false });
+                await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: false }, { maxLedgerIndex: this.#getMaxLedgerSequence() });
             }
         }
 
@@ -196,7 +206,7 @@ class HostClient extends BaseEvernodeClient {
         await this.xrplAcc.sellURIToken(uriToken.index,
             leaseAmount.toString(),
             EvernodeConstants.EVR,
-            this.config.evrIssuerAddress);
+            this.config.evrIssuerAddress, null, null, { maxLedgerIndex: this.#getMaxLedgerSequence() });
     }
 
     /**
@@ -204,7 +214,7 @@ class HostClient extends BaseEvernodeClient {
      * @param {string} uriTokenId Hex URI token id of the lease.
      */
     async expireLease(uriTokenId) {
-        await this.xrplAcc.burnURIToken(uriTokenId);
+        await this.xrplAcc.burnURIToken(uriTokenId, { maxLedgerIndex: this.#getMaxLedgerSequence() });
     }
 
     /**
@@ -258,7 +268,7 @@ class HostClient extends BaseEvernodeClient {
         if (existingLeaseURITokens) {
             console.log("Burning unsold URITokens related to the previous leases.");
             for (const uriToken of existingLeaseURITokens) {
-                await this.xrplAcc.burnURIToken(uriToken.index);
+                await this.xrplAcc.burnURIToken(uriToken.index, { maxLedgerIndex: this.#getMaxLedgerSequence() });
             }
         }
 
@@ -273,7 +283,7 @@ class HostClient extends BaseEvernodeClient {
                 const sellOffer = (await registryAcc.getURITokens()).find(o => o.index == regInfo.uriTokenId && o.Amount);
                 console.log('sell offer')
                 if (sellOffer) {
-                    await this.xrplAcc.buyURIToken(sellOffer);
+                    await this.xrplAcc.buyURIToken(sellOffer, null, { maxLedgerIndex: this.#getMaxLedgerSequence() });
                     console.log("Registration was successfully completed after acquiring the NFT.");
                     return await this.isRegistered();
                 }
@@ -323,6 +333,7 @@ class HostClient extends BaseEvernodeClient {
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_REG },
                     { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramBuf.toString('hex').toUpperCase() }
                 ],
+                maxLedgerIndex: this.#getMaxLedgerSequence(),
                 ...options.transactionOptions
             });
 
@@ -361,7 +372,7 @@ class HostClient extends BaseEvernodeClient {
             resolve();
         });
 
-        await this.xrplAcc.buyURIToken(sellOffer);
+        await this.xrplAcc.buyURIToken(sellOffer, null, { maxLedgerIndex: this.#getMaxLedgerSequence() });
         return await this.isRegistered();
     }
 
@@ -394,6 +405,7 @@ class HostClient extends BaseEvernodeClient {
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_DEREG },
                     { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramBuf.toString('hex').toUpperCase() }
                 ],
+                maxLedgerIndex: this.#getMaxLedgerSequence(),
                 ...options.transactionOptions
             });
 
@@ -455,6 +467,7 @@ class HostClient extends BaseEvernodeClient {
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_UPDATE_INFO },
                     { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramBuf.toString('hex') }
                 ],
+                maxLedgerIndex: this.#getMaxLedgerSequence(),
                 ...options.transactionOptions
             });
     }
@@ -486,6 +499,7 @@ class HostClient extends BaseEvernodeClient {
                         { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HEARTBEAT },
                         ...(data ? [{ name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: data }] : [])
                     ],
+                    maxLedgerIndex: this.#getMaxLedgerSequence(),
                     ...options.transactionOptions
                 });
             return res;
@@ -552,6 +566,7 @@ class HostClient extends BaseEvernodeClient {
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.ACQUIRE_SUCCESS },
                     { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: txHash }
                 ],
+                maxLedgerIndex: this.#getMaxLedgerSequence(),
                 ...options.transactionOptions
             });
     }
@@ -579,6 +594,7 @@ class HostClient extends BaseEvernodeClient {
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.ACQUIRE_ERROR },
                     { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: txHash }
                 ],
+                maxLedgerIndex: this.#getMaxLedgerSequence(),
                 ...options.transactionOptions
             });
     }
@@ -607,6 +623,7 @@ class HostClient extends BaseEvernodeClient {
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.EXTEND_SUCCESS },
                     { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: txHash }
                 ],
+                maxLedgerIndex: this.#getMaxLedgerSequence(),
                 ...options.transactionOptions
             });
     }
@@ -635,6 +652,7 @@ class HostClient extends BaseEvernodeClient {
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.EXTEND_ERROR },
                     { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: txHash }
                 ],
+                maxLedgerIndex: this.#getMaxLedgerSequence(),
                 ...options.transactionOptions
             });
     }
@@ -660,6 +678,7 @@ class HostClient extends BaseEvernodeClient {
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.REFUND },
                     { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: txHash }
                 ],
+                maxLedgerIndex: this.#getMaxLedgerSequence(),
                 ...options.transactionOptions
             });
     }
@@ -681,6 +700,7 @@ class HostClient extends BaseEvernodeClient {
                 hookParams: [
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_REBATE }
                 ],
+                maxLedgerIndex: this.#getMaxLedgerSequence(),
                 ...options.transactionOptions
             });
     }
@@ -718,6 +738,7 @@ class HostClient extends BaseEvernodeClient {
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_TRANSFER },
                     { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramData.toString('hex') }
                 ],
+                maxLedgerIndex: this.#getMaxLedgerSequence(),
                 ...options.transactionOptions
             });
 
@@ -764,6 +785,7 @@ class HostClient extends BaseEvernodeClient {
         if (!(await this.isRegistered()))
             throw 'Host should be registered to propose candidates.';
 
+        options.transactionOptions = { maxLedgerIndex: this.#getMaxLedgerSequence(), ...(options.transactionOptions || {}) }
         return await super._propose(hashes, shortName, options);
     }
 
@@ -777,6 +799,7 @@ class HostClient extends BaseEvernodeClient {
         if (!(await this.isRegistered()))
             throw 'Host should be registered to withdraw candidates.';
 
+        options.transactionOptions = { maxLedgerIndex: this.#getMaxLedgerSequence(), ...(options.transactionOptions || {}) }
         return await super._withdraw(candidateId, options);
     }
 
@@ -790,6 +813,7 @@ class HostClient extends BaseEvernodeClient {
         if (!(await this.isRegistered()))
             throw 'Host should be registered to report dud hosts.';
 
+        options.transactionOptions = { maxLedgerIndex: this.#getMaxLedgerSequence(), ...(options.transactionOptions || {}) }
         return await this._reportDudHost(hostAddress, options);
     }
 }
