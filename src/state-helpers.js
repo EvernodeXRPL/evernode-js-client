@@ -63,6 +63,7 @@ const HOST_LAST_VOTE_TIMESTAMP_OFFSET = 116;
 const HOST_SUPPORT_VOTE_FLAG_OFFSET = 124;
 const HOST_REPUTATION_OFFSET = 125;
 const HOST_FLAGS_OFFSET = 126;
+const HOST_TRANSFER_TIMESTAMP_OFFSET = 127;
 
 const HOST_ADDRESS_OFFSET = 0;
 const HOST_CPU_MODEL_NAME_OFFSET = 20;
@@ -173,6 +174,9 @@ class StateHelpers {
         if (stateDataBuf.length > HOST_FLAGS_OFFSET) {
             const flags = stateDataBuf.readUInt8(HOST_FLAGS_OFFSET);
             data.reputedOnHeartbeat = !!(flags & HOST_FLAGS.REPUTED_ON_HEARTBEAT);
+        }
+        if (stateDataBuf.length > HOST_TRANSFER_TIMESTAMP_OFFSET) {
+            data.transferTimestamp = Number(stateDataBuf.readBigUInt64LE(HOST_TRANSFER_TIMESTAMP_OFFSET));
         }
         return data;
     }

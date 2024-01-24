@@ -109,6 +109,8 @@ class XrplApi {
         });
 
         client.on('disconnected', async (code) => {
+            this.#events.emit(XrplApiEvents.DISCONNECTED, code);
+
             this.#isPrimaryServerConnected = false;
             this.#isFallbackServerConnected = false;
 
@@ -531,30 +533,25 @@ class XrplApi {
      * @returns prepared response of the transaction result.
      */
     async #prepareResponse(tx, submissionResult) {
-        const resultCode = submissionResult?.result?.engine_result;
-        if (resultCode === "tesSUCCESS" || resultCode === "tefPAST_SEQ" || resultCode === "tefALREADY") {
-            const result = await this.#waitForFinalTransactionOutcome(submissionResult.result.tx_json.hash, tx.LastLedgerSequence, submissionResult);
-            const txResult = {
-                id: result?.hash,
-                code: result?.meta?.TransactionResult,
-                details: result
-            };
+        const result = await this.#waitForFinalTransactionOutcome(submissionResult.result.tx_json.hash, tx.LastLedgerSequence, submissionResult);
+        const txResult = {
+            id: result?.hash,
+            code: result?.meta?.TransactionResult,
+            details: result
+        };
 
-            console.log("Transaction result: " + txResult.code);
-            const hookExecRes = txResult.details?.meta?.HookExecutions?.map(o => {
-                return {
-                    result: o.HookExecution?.HookResult,
-                    returnCode: parseInt(o.HookExecution?.HookReturnCode, 16),
-                    message: TransactionHelper.hexToASCII(o.HookExecution?.HookReturnString).replace(/\x00+$/, '')
-                }
-            });
-            if (txResult.code === "tesSUCCESS")
-                return { ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) };
-            else
-                throw { ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) };
-        }
+        console.log("Transaction result: " + txResult.code);
+        const hookExecRes = txResult.details?.meta?.HookExecutions?.map(o => {
+            return {
+                result: o.HookExecution?.HookResult,
+                returnCode: parseInt(o.HookExecution?.HookReturnCode, 16),
+                message: TransactionHelper.hexToASCII(o.HookExecution?.HookReturnString).replace(/\x00+$/, '')
+            }
+        });
+        if (txResult.code === "tesSUCCESS")
+            return { ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) };
         else
-            throw resultCode ? `Transaction failed with error ${resultCode}` : 'Transaction failed';
+            throw { ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) };
 
     }
 
