@@ -115,10 +115,10 @@ class HostClient extends BaseEvernodeClient {
             catch (e) {
                 if (attempt == maxAttempts || e.code === "tecDUPLICATE" || e.code === "tefPAST_SEQ" || e.code === "tefALREADY")
                     throw e;
-                else if (typeof e === 'string' && e.includes('tefMAX_LEDGER')) {
+                else if (e.status === "TOOK_LONG") {
                     feeUplift += (options?.feeUplift || 0);
                 }
-                console.error(`Submission attempt ${attempt} failed with ${e}. Retrying...`);
+                console.error(`Submission attempt ${attempt} failed with ${JSON.stringify(e, null, 2)}. Retrying...`);
                 await new Promise(resolve => setTimeout(resolve, TX_RETRY_INTERVAL));
             }
         }
