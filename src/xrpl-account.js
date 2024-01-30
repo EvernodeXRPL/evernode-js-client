@@ -749,7 +749,7 @@ class XrplAccount {
 
         Object.assign(tx, txOptions);
         const txnBlob = this.xrplApi.xrplHelper.encode(tx);
-        const fees = options.fee || await this.xrplApi.getTransactionFee(txnBlob);
+        const fees = options.fee || (options.feeUplift ? (`${options.feeUplift + Number(await this.xrplApi.getTransactionFee(txnBlob))}`) : await this.xrplApi.getTransactionFee(txnBlob));
         delete tx['SigningPubKey'];
         tx.Fee = fees + '';
         return tx;
