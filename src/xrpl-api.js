@@ -211,19 +211,20 @@ class XrplApi {
                             if (!maxRounds || round < maxRounds)
                                 console.log(`Fallback server ${server} connection attempt ${attempt} failed. Retrying in ${2 * round}s...`);
                             else
-                                throw `Fallback server ${server} connection max attempts failed.`;
+                                return { error: `Fallback server ${server} connection max attempts failed.` };
                             await new Promise(resolve => setTimeout(resolve, 2 * round * 1000));
                         }
                     }
                 }
             }
-
         }
+
+        return {};
     }
 
     async #attemptPrimaryServerReconnect(maxAttempts = null) {
         let attempt = 0;
-        while (!this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected) { // Keep attempting until consumer calls disconnect() manually.
+        while (!this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected && !this.#isFallbackServerConnected) { // Keep attempting until consumer calls disconnect() manually.
             ++attempt;
             const client = new xrpl.Client(this.#primaryServer, this.#xrplClientOptions);
             try {
@@ -245,27 +246,35 @@ class XrplApi {
                     if (!maxAttempts || attempt < maxAttempts)
                         console.log(`Primary server ${this.#primaryServer} attempt ${attempt} failed. Retrying in ${delaySec}s...`);
                     else
-                        throw `Primary server ${this.#primaryServer} connection max attempts failed.`;
+                        return { error: `Primary server ${this.#primaryServer} connection max attempts failed.` };
                     await new Promise(resolve => setTimeout(resolve, delaySec * 1000));
                 }
             }
         }
+
+        return {};
     }
 
     async #connectXrplClient(reconnect = false) {
+        let res = [];
         if (reconnect) {
             if (this.#primaryServer) {
-                Promise.all([this.#attemptFallbackServerReconnect(), this.#attemptPrimaryServerReconnect()]);
+                res = await Promise.all([this.#attemptFallbackServerReconnect(), this.#attemptPrimaryServerReconnect()]);
             } else {
-                this.#attemptFallbackServerReconnect();
+                res = [await this.#attemptFallbackServerReconnect()];
             }
         }
         else {
             if (this.#primaryServer) {
-                Promise.all([this.#attemptFallbackServerReconnect(1, 1), this.#attemptPrimaryServerReconnect(1)]);
+                res = await Promise.all([this.#attemptFallbackServerReconnect(1, 1), this.#attemptPrimaryServerReconnect(1)]);
             } else {
-                this.#attemptFallbackServerReconnect(1, 1);
+                res = [await this.#attemptFallbackServerReconnect(1, 1)];
             }
+        }
+
+        const errors = res.filter(r => r.error).map(r => r.error);
+        if (errors.length === res.length) {
+            throw errors;
         }
 
         await this.#waitForConnection();
