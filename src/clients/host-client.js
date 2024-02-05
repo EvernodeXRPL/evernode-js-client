@@ -355,6 +355,35 @@ class HostClient extends BaseEvernodeClient {
     }
 
     /**
+     * Accepts if there's an available reg token.
+     * @param {*} options [Optional] transaction options.
+     * @returns True if there were reg token and it's accepted, Otherwise false.
+     */
+    async acceptRegToken(options = {}) {
+        // Check whether is there any missed NFT sell offer that needs to be accepted
+        // from the client-side in order to complete the registration.
+        const registryAcc = new XrplAccount(this.config.registryAddress, null, { xrplApi: this.xrplApi });
+        const regUriToken = await this.getRegistrationUriToken();
+
+        if (!regUriToken) {
+            const regInfo = await this.getHostInfo(this.xrplAcc.address);
+            if (regInfo) {
+                const sellOffer = (await registryAcc.getURITokens()).find(o => o.index == regInfo.uriTokenId && o.Amount);
+                console.log('Pending sell offer found.')
+                if (sellOffer) {
+                    await this.#submitWithRetry(async (feeUplift) => {
+                        await this.xrplAcc.buyURIToken(sellOffer, null, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift });
+                    }, options.retryOptions);
+                    console.log("Registration was successfully completed after acquiring the NFT.");
+                    return await this.isRegistered();
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Register the host in the Evernode network.
      * @param {string} countryCode Upper case country code with two letters.
      * @param {number} cpuMicroSec CPU cycle in micro seconds of the host.
@@ -411,25 +440,8 @@ class HostClient extends BaseEvernodeClient {
             }
         }
 
-        // Check whether is there any missed NFT sell offer that needs to be accepted
-        // from the client-side in order to complete the registration.
-        const registryAcc = new XrplAccount(this.config.registryAddress, null, { xrplApi: this.xrplApi });
-        const regUriToken = await this.getRegistrationUriToken();
-
-        if (!regUriToken) {
-            const regInfo = await this.getHostInfo(this.xrplAcc.address);
-            if (regInfo) {
-                const sellOffer = (await registryAcc.getURITokens()).find(o => o.index == regInfo.uriTokenId && o.Amount);
-                console.log('sell offer')
-                if (sellOffer) {
-                    await this.#submitWithRetry(async (feeUplift) => {
-                        await this.xrplAcc.buyURIToken(sellOffer, null, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift });
-                    }, options.retryOptions);
-                    console.log("Registration was successfully completed after acquiring the NFT.");
-                    return await this.isRegistered();
-                }
-            }
-        }
+        if (await this.acceptRegToken())
+            return true;
 
         // Check the availability of an initiated transfer.
         // Need to modify the amount accordingly.
@@ -482,6 +494,7 @@ class HostClient extends BaseEvernodeClient {
         }, options.retryOptions);
 
         console.log('Waiting for the sell offer', tx.id)
+        const registryAcc = new XrplAccount(this.config.registryAddress, null, { xrplApi: this.xrplApi });
         let sellOffer = null;
         let attempts = 0;
         let offerLedgerIndex = 0;
