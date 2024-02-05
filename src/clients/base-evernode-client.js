@@ -247,7 +247,7 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Extracts the transaction info from a given transaction.
+     * Extracts the transaction info from a given transaction..
      * @param {object} tx Transaction to be deserialized and extracted.
      * @returns The event object in the format {name: '', data: {}}. Returns null if not handled. Note: You need to deserialize HookParameters before passing the transaction to this function.
      */
