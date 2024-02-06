@@ -4,9 +4,19 @@ const { TransactionHelper } = require('./transaction-helper');
 const NFT_PAGE_LEDGER_ENTRY_TYPE_HEX = '0050';
 
 class EvernodeHelpers {
-    static async getLeaseOffers(xrplAcc) {
-        const hostUriOffers = (await xrplAcc.getURITokens()).filter(uriToken => uriToken.Issuer == xrplAcc.address && this.isValidURI(uriToken.URI, EvernodeConstants.LEASE_TOKEN_PREFIX_HEX) && uriToken.Flags == 1 && uriToken.Amount);
+    static async getLeases(xrplAcc) {
+        const hostUriOffers = (await xrplAcc.getURITokens()).filter(uriToken => uriToken.Issuer == xrplAcc.address && this.isValidURI(uriToken.URI, EvernodeConstants.LEASE_TOKEN_PREFIX_HEX) && uriToken.Flags == 1);
         return hostUriOffers;
+    }
+
+    static async getLeaseOffers(xrplAcc) {
+        const hostUriOffers = (await this.getLeases(xrplAcc)).filter(uriToken => uriToken.Amount);
+        return hostUriOffers;
+    }
+
+    static async getUnofferedLeases(xrplAcc) {
+        const hostUriTokens = (await this.getLeases(xrplAcc)).filter(uriToken => !uriToken.Amount);
+        return hostUriTokens
     }
 
     static async getNFTPageAndLocation(nfTokenId, xrplAcc, xrplApi, buffer = true) {
