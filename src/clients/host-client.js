@@ -134,7 +134,8 @@ class HostClient extends BaseEvernodeClient {
                 else if (e.status === "TOOK_LONG") {
                     feeUplift += (options?.feeUplift || 0);
                 }
-                console.error(`Submission attempt ${attempt} failed with ${e}. Retrying...`);
+                console.error(e);
+                console.error(`Submission attempt ${attempt} failed. Retrying...`);
                 await new Promise(resolve => setTimeout(resolve, TX_RETRY_INTERVAL));
             }
         }
