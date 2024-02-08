@@ -8,7 +8,6 @@ const { Defaults } = require('../defaults');
 const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
 const { UtilHelpers } = require('../util-helpers');
-const { FirestoreHandler } = require('../firestore/firestore-handler');
 const { StateHelpers } = require('../state-helpers');
 const { EvernodeHelpers } = require('../evernode-helpers');
 const { HookHelpers } = require('../hook-helpers');
@@ -32,7 +31,6 @@ class BaseEvernodeClient {
     #watchEvents;
     #autoSubscribe;
     #ownsXrplApi = false;
-    #firestoreHandler;
 
     constructor(xrpAddress, xrpSecret, watchEvents, autoSubscribe = false, options = {}) {
 
@@ -51,7 +49,6 @@ class BaseEvernodeClient {
         this.#watchEvents = watchEvents;
         this.#autoSubscribe = autoSubscribe;
         this.events = new EventEmitter();
-        this.#firestoreHandler = new FirestoreHandler()
 
         this.xrplAcc.on(XrplApiEvents.PAYMENT, (tx, error) => this.#handleEvernodeEvent(tx, error));
         this.xrplAcc.on(XrplApiEvents.URI_TOKEN_BUY, (tx, error) => this.#handleEvernodeEvent(tx, error));
@@ -660,29 +657,6 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get the hosts registered in Evernode. The result's are paginated. Default page size is 20. _Note: Specifying both filter and pagination does not supported._
-     * @param {object} filters [Optional] Filter criteria to filter the hosts. The filter key can be a either property of the host.
-     * @param {number} pageSize [Optional] Page size for the results.
-     * @param {string} nextPageToken [Optional] Next page's token, If received by the previous result set.
-     * @returns The list of active hosts. The response will be in '{data: [], nextPageToken: ''}' only if there are more pages. Otherwise the response will only contain the host list. 
-     */
-    async getHosts(filters = null, pageSize = null, nextPageToken = null) {
-        const hosts = await this.#firestoreHandler.getHosts(filters, pageSize, nextPageToken);
-        const curMomentStartIdx = await this.getMomentStartIndex();
-        const res = await Promise.all((hosts.nextPageToken ? hosts.data : hosts).map(async host => {
-            const hostAcc = new XrplAccount(host.address, null, { xrplApi: this.xrplApi });
-            host.domain = await hostAcc.getDomain();
-
-            host.active = (host.lastHeartbeatIndex > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
-                (host.lastHeartbeatIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
-                (host.lastHeartbeatIndex > 0));
-            return host;
-        }));
-
-        return (hosts.nextPageToken ? { ...hosts, data: res } : res);
-    }
-
-    /**
      * Get the hosts registered in Evernode.
      * @returns The list of hosts. 
      */
@@ -717,94 +691,25 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get the candidates proposed in Evernode. The result's are paginated. Default page size is 20. _Note: Specifying both filter and pagination does not supported._
-     * @param {object} filters [Optional] Filter criteria to filter the candidates. The filter key can be a either property of the candidate.
-     * @param {number} pageSize [Optional] Page size for the results.
-     * @param {string} nextPageToken [Optional] Next page's token, If received by the previous result set.
-     * @returns The list of candidates. The response will be in '{data: [], nextPageToken: ''}' only if there are more pages. Otherwise the response will only contain the host list. 
+     * Get the governor in Evernode.
+     * @returns The list of candidates. 
      */
-    async getCandidates(filters = null, pageSize = null, nextPageToken = null) {
-        const candidates = await this.#firestoreHandler.getCandidates(filters, pageSize, nextPageToken);
+    async getAllCandidatesFromLedger() {
+        const states = await this.getHookStates();
+        let candidates = [];
+
+        for (const state of states) {
+            const stateKey = Buffer.from(state.key, 'hex');
+            if (state.data) {
+                const stateData = Buffer.from(state.data, 'hex');
+                const decoded = StateHelpers.decodeStateData(stateKey, stateData);
+                if (decoded.type == StateHelpers.StateTypes.CANDIDATE_ID) {
+                    candidates.push(decoded);
+                }
+            }
+        }
+
         return candidates;
-    }
-
-    /**
-     * Get all Evernode configuration without paginating.
-     * @returns The list of configuration.
-     */
-    async getAllConfigs() {
-        let fullConfigList = [];
-        const configs = await this.#firestoreHandler.getConfigs();
-        if (configs.nextPageToken) {
-            let currentPageToken = configs.nextPageToken;
-            let nextConfigs = null;
-            fullConfigList = fullConfigList.concat(configs.data);
-            while (currentPageToken) {
-                nextConfigs = await this.#firestoreHandler.getConfigs(null, 50, currentPageToken);
-                fullConfigList = fullConfigList.concat(nextConfigs.nextPageToken ? nextConfigs.data : nextConfigs);
-                currentPageToken = nextConfigs.nextPageToken;
-            }
-        } else {
-            fullConfigList = fullConfigList.concat(configs);
-        }
-
-        return fullConfigList;
-    }
-
-    /**
-     * Get all the hosts without paginating.
-     * @returns The list of hosts.
-     */
-    async getAllHosts() {
-        let fullHostList = [];
-        const hosts = await this.#firestoreHandler.getHosts();
-        if (hosts.nextPageToken) {
-            let currentPageToken = hosts.nextPageToken;
-            let nextHosts = null;
-            fullHostList = fullHostList.concat(hosts.data);
-            while (currentPageToken) {
-                nextHosts = await this.#firestoreHandler.getHosts(null, 50, currentPageToken);
-                fullHostList = fullHostList.concat(nextHosts.nextPageToken ? nextHosts.data : nextHosts);
-                currentPageToken = nextHosts.nextPageToken;
-            }
-        } else {
-            fullHostList = fullHostList.concat(hosts);
-        }
-
-        const curMomentStartIdx = await this.getMomentStartIndex();
-        await Promise.all((fullHostList).map(async host => {
-            const hostAcc = new XrplAccount(host.address, null, { xrplApi: this.xrplApi });
-            host.domain = await hostAcc.getDomain();
-            host.active = (host.lastHeartbeatIndex > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
-                (host.lastHeartbeatIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
-                (host.lastHeartbeatIndex > 0));
-            return host;
-        }));
-
-        return fullHostList;
-    }
-
-    /**
-     * Get all the candidates without paginating.
-     * @returns The list of candidates.
-     */
-    async getAllCandidates() {
-        let fullCandidateList = [];
-        const candidates = await this.#firestoreHandler.getCandidates();
-        if (candidates.nextPageToken) {
-            let currentPageToken = candidates.nextPageToken;
-            let nextCandidates = null;
-            fullCandidateList = fullCandidateList.concat(candidates.data);
-            while (currentPageToken) {
-                nextCandidates = await this.#firestoreHandler.getCandidates(null, 50, currentPageToken);
-                fullCandidateList = fullCandidateList.concat(nextCandidates.nextPageToken ? nextCandidates.data : nextCandidates);
-                currentPageToken = nextCandidates.nextPageToken;
-            }
-        } else {
-            fullCandidateList = fullCandidateList.concat(candidates);
-        }
-
-        return fullCandidateList;
     }
 
     /**
@@ -889,10 +794,11 @@ class BaseEvernodeClient {
      */
     async getDudHostCandidatesByOwner(ownerAddress = this.xrplAcc.address) {
         try {
-            let candidates = await this.#firestoreHandler.getCandidates({ ownerAddress: ownerAddress });
-            if (candidates && candidates.length > 0) {
-                candidates = candidates.filter(c => StateHelpers.getCandidateType(c.uniqueId) == EvernodeConstants.CandidateTypes.DudHost);
-                return candidates;
+            const candidates = await this.getAllCandidatesFromLedger();
+            let filteredCandidates = candidates.filter(c => c.ownerAddress === ownerAddress);
+            if (filteredCandidates && filteredCandidates.length > 0) {
+                filteredCandidates = filteredCandidates.filter(c => StateHelpers.getCandidateType(c.uniqueId) == EvernodeConstants.CandidateTypes.DudHost);
+                return filteredCandidates;
             }
         } catch (error) {
             console.log(error)
