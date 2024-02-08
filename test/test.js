@@ -53,8 +53,7 @@ async function app() {
     await evernode.Defaults.useNetwork('devnet');
     const xrplApi = new evernode.XrplApi(null, { autoReconnect: true });
     evernode.Defaults.set({
-        xrplApi: xrplApi,
-        useCentralizedRegistry: true // Concent to use centralized registry functions.
+        xrplApi: xrplApi
     });
     if (overrideGovernorAddress)
         evernode.Defaults.set({

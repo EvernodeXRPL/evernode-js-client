@@ -3,8 +3,7 @@ const https = require('https');
 const DefinitionsUrl = 'https://raw.githubusercontent.com/EvernodeXRPL/evernode-resources/main/definitions/definitions.json';
 
 const DefaultValues = {
-    xrplApi: null,
-    useCentralizedRegistry: false,
+    xrplApi: null
 }
 
 const HookTypes = {
