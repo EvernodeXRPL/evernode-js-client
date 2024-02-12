@@ -180,11 +180,14 @@ class XrplApi {
     }
 
     async #attemptFallbackServerReconnect(maxRounds, attemptsPerServer = 3) {
+        if (!this.#fallbackServers || this.#fallbackServers?.length == 0)
+            return;
+
         await this.#acquireClient();
 
         const fallbackServers = this.#fallbackServers;
         let round = 0;
-        while (fallbackServers?.length > 0 && !this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected && !this.#isFallbackServerConnected && (!maxRounds || round < maxRounds)) { // Keep attempting until consumer calls disconnect() manually or if the primary server is disconnected.
+        while (!this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected && !this.#isFallbackServerConnected && (!maxRounds || round < maxRounds)) { // Keep attempting until consumer calls disconnect() manually or if the primary server is disconnected.
             ++round;
             serverIterator:
             for (let serverIndex in fallbackServers) {
@@ -278,10 +281,8 @@ class XrplApi {
             }
         }
 
-        const errors = res.filter(r => r.error).map(r => r.error);
-        if (errors.length === res.length) {
-            throw errors;
-        }
+        if (res.filter(r => r && !r.error).length == 0)
+            throw res.filter(r => r && r.error).map(r => r.error);
 
         await this.#waitForConnection();
         this.#releaseClient();
@@ -373,7 +374,7 @@ class XrplApi {
         try {
             this.#isPermanentlyDisconnected = true;
 
-            if (this.#client.isConnected()) {
+            if (this.#client && this.#client.isConnected()) {
                 await this.#client.disconnect().catch(console.error);
             }
             this.#releaseConnection();
