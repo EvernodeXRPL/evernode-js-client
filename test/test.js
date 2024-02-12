@@ -130,7 +130,6 @@ async function app() {
             // () => getHostInfo(),
             // () => updateInfo(),
             // () => getAllHostsFromLedger(),
-            // () => getActiveHosts(),
             // () => getActiveHostsFromLedger(),
             // () => heartbeatHost(), // If not opted in for voting
             // () => heartbeatHost(evernode.EvernodeConstants.CandidateVote.Support),
@@ -210,15 +209,6 @@ async function updateInfo() {
 
     const client = await getHostClient();
     await client.updateRegInfo(10);
-}
-
-async function getActiveHosts() {
-    console.log(`-----------Getting active hosts`);
-
-    const regClient = await getRegistryClient();
-    const hosts = await regClient.getActiveHosts();
-
-    console.log("Hosts", hosts || "No active hosts");
 }
 
 async function getActiveHostsFromLedger() {
