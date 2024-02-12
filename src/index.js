@@ -11,7 +11,6 @@ const { XrplApiEvents, XrplConstants } = require('./xrpl-common');
 const { XrplAccount } = require('./xrpl-account');
 const { EvernodeConstants, HookStateKeys, HookParamKeys, EventTypes } = require('./evernode-common');
 const { XflHelpers } = require('./xfl-helpers');
-const { FirestoreHandler } = require('./firestore/firestore-handler');
 const { StateHelpers } = require('./state-helpers');
 const { UtilHelpers } = require('./util-helpers');
 const { TransactionHelper } = require('./transaction-helper');
@@ -40,7 +39,6 @@ module.exports = {
     Defaults,
     XflHelpers,
     StateHelpers,
-    FirestoreHandler,
     UtilHelpers,
     TransactionHelper,
     EncryptionHelper,

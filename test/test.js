@@ -53,8 +53,7 @@ async function app() {
     await evernode.Defaults.useNetwork('devnet');
     const xrplApi = new evernode.XrplApi(null, { autoReconnect: true });
     evernode.Defaults.set({
-        xrplApi: xrplApi,
-        useCentralizedRegistry: true // Concent to use centralized registry functions.
+        xrplApi: xrplApi
     });
     if (overrideGovernorAddress)
         evernode.Defaults.set({
@@ -130,9 +129,7 @@ async function app() {
             // () => registerHost(),
             // () => getHostInfo(),
             // () => updateInfo(),
-            // () => getAllHosts(),
             // () => getAllHostsFromLedger(),
-            // () => getActiveHosts(),
             // () => getActiveHostsFromLedger(),
             // () => heartbeatHost(), // If not opted in for voting
             // () => heartbeatHost(evernode.EvernodeConstants.CandidateVote.Support),
@@ -144,7 +141,6 @@ async function app() {
             // () => extendLease("error"),
             // () => extendLease("timeout"),
             // () => deregisterHost(),
-            // () => getAllConfigs(),
             // () => pruneDeadHost(),
             // () => transferHost(),
             // () => requestRebate(),
@@ -169,7 +165,7 @@ async function app() {
             // () => foundationVotePilotedMode(),
             // () => changeGovernanceMode(evernode.EvernodeConstants.GovernanceModes.AutoPiloted),
             // () => makePayment(),
-            // () => getDudHostCandidatesByOwner()
+            // () => getDudHostCandidatesByOwner(),
             // () => multiSignedMakePayment(),
             // () => updateHostReputation(),
 
@@ -213,15 +209,6 @@ async function updateInfo() {
 
     const client = await getHostClient();
     await client.updateRegInfo(10);
-}
-
-async function getActiveHosts() {
-    console.log(`-----------Getting active hosts`);
-
-    const regClient = await getRegistryClient();
-    const hosts = await regClient.getActiveHosts();
-
-    console.log("Hosts", hosts || "No active hosts");
 }
 
 async function getActiveHostsFromLedger() {
@@ -459,28 +446,12 @@ async function getHookStates() {
     console.log(states.length, states);
 }
 
-async function getAllHosts() {
-    console.log(`-----------Getting all hosts (including inactive)`);
-    const registryClient = await evernode.HookClientFactory.create(evernode.HookTypes.registry);
-    await registryClient.connect();
-    const hosts = await registryClient.getAllHosts();
-    console.log(hosts.length, hosts);
-}
-
 async function getAllHostsFromLedger() {
     console.log(`-----------Getting all hosts from ledger (including inactive)`);
     const registryClient = await evernode.HookClientFactory.create(evernode.HookTypes.registry);
     await registryClient.connect();
     const hosts = await registryClient.getAllHostsFromLedger();
     console.log(hosts.length, hosts);
-}
-
-async function getAllConfigs() {
-    console.log(`-----------Getting all configs`);
-    const governorClient = await evernode.HookClientFactory.create(evernode.HookTypes.governor);
-    await governorClient.connect();
-    const configs = await governorClient.getAllConfigs();
-    console.log(configs.length, configs);
 }
 
 async function getHostInfo() {

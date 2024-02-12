@@ -109,6 +109,8 @@ class XrplApi {
         });
 
         client.on('disconnected', async (code) => {
+            this.#events.emit(XrplApiEvents.DISCONNECTED, code);
+
             this.#isPrimaryServerConnected = false;
             this.#isFallbackServerConnected = false;
 
@@ -522,8 +524,11 @@ class XrplApi {
         const latestLedger = await this.#getLedgerIndex();
 
         if (lastLedger < latestLedger) {
-            throw `The latest ledger sequence ${latestLedger} is greater than the transaction's LastLedgerSequence (${lastLedger}).\n` +
-            `Preliminary result: ${JSON.stringify(submissionResult, null, 2)}`;
+            throw {
+                status: 'TOOK_LONG',
+                error: `The latest ledger sequence ${latestLedger} is greater than the transaction's LastLedgerSequence (${lastLedger})`,
+                ...submissionResult
+            };
         }
 
         const txResponse = await this.getTxnInfo(txHash)
