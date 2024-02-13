@@ -646,6 +646,12 @@ class HostClient extends BaseEvernodeClient {
      * @returns Transaction result.
      */
     async heartbeat(voteInfo = {}, options = {}) {
+        let unofferedLeases = await this.getUnofferedLeases();
+        if (unofferedLeases.length > 0) {
+            console.log("Unoffered leases detected. Heartbeat was not sent.");
+            return;
+        }
+
         let data;
         // Prepare voteInfo
         if (Object.keys(voteInfo).length > 1) {
