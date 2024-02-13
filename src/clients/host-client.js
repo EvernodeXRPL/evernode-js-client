@@ -42,7 +42,6 @@ const HOST_UPDATE_EMAIL_ADDRESS_PARAM_OFFSET = 83;
 const HOST_UPDATE_PARAM_SIZE = 123;
 
 const VOTE_VALIDATION_ERR = "VOTE_VALIDATION_ERR";
-const UNOFFERED_LEASE_DETECTED_ERR = "UNOFFERED_LEASE_DETECTED_ERR";
 
 const IPV6_FAMILY = 6;
 
@@ -649,10 +648,8 @@ class HostClient extends BaseEvernodeClient {
     async heartbeat(voteInfo = {}, options = {}) {
         let unofferedLeases = await this.getUnofferedLeases();
         if (unofferedLeases.length > 0) {
-            throw {
-                code: UNOFFERED_LEASE_DETECTED_ERR,
-                error: 'Unoffered leases detected'
-            }
+            console.log("Unoffered leases detected. Heartbeat was not sent.");
+            return;
         }
 
         let data;
