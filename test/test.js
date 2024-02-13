@@ -1,4 +1,4 @@
-const evernode = require("evernode-js-client");
+const evernode = require("../dist");
 const codec = require('ripple-address-codec');
 
 let governorAddress;
@@ -7,11 +7,11 @@ let foundationAddress;
 let registryAddress;
 let heartbeatAddress;
 const overrideGovernorAddress = '';
-const foundationSecret = "sn3nNMSuyXiqVjrhfQr9JxDhgHmds";
+const foundationSecret = "shsWtx4RAu4PArSAHHBGSg4w7gMzk";
 const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
 const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
-const hostAddress = "r3poDzE7vB1JbYmN1ezpQoxMP4QG4TPHW6";
-const hostSecret = "shmHHZdw8hTPjgVy7eJBDcm7DCnHp";
+const hostAddress = "rBd1hzdmpmESSgZshYqH3SDqQz32hX1ccv";
+const hostSecret = "snSNsJAPZxUtdMD4cz6uMNaZuhKRq";
 const tenantAddress = "r3vbdktYDxVSe7K1oo2McKeBJhQng3uFeH";
 const tenantSecret = "shjBr5yFDNzyUkBiFXjexFYiAsPBS";
 const transfereeAddress = 'rsPxbXNo5XnBpnLZ3yu3ZufCZiA22hS5R7';
@@ -131,7 +131,8 @@ async function app() {
             // () => updateInfo(),
             // () => getAllHostsFromLedger(),
             // () => getActiveHostsFromLedger(),
-            // () => heartbeatHost(), // If not opted in for voting
+             () => heartbeatHost(), // If not opted in for voting
+             () => getHostInfo(),
             // () => heartbeatHost(evernode.EvernodeConstants.CandidateVote.Support),
             // () => heartbeatHost(evernode.EvernodeConstants.CandidateVote.Reject),
             // () => acquire("success"),
@@ -303,8 +304,8 @@ async function deregisterHost(address = hostAddress, secret = hostSecret) {
 async function heartbeatHost(vote = null, address = hostAddress, secret = hostSecret) {
     const host = await getHostClient(address, secret);
 
-    if (!await host.isRegistered())
-        return true;
+    // if (!await host.isRegistered())
+    //     return true;
 
     console.log(`-----------Heartbeat host`);
     (vote !== null) ? await host.heartbeat({ vote: vote, candidate: evernode.StateHelpers.getNewHookCandidateId(Buffer.from(hookCandidates, 'hex')) })
