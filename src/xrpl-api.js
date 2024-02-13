@@ -50,7 +50,7 @@ class XrplApi {
     }
 
     async #acquireClient() {
-        while (this.#isClientAcquired || this.#isConnectionAcquired) {
+        while (!(this.#isPrimaryServerConnected || this.#isFallbackServerConnected) && this.#isClientAcquired) {
             await new Promise((resolve) => setTimeout(resolve, 100));
         }
         this.#isClientAcquired = true;
@@ -61,7 +61,7 @@ class XrplApi {
     }
 
     async #acquireConnection() {
-        while (this.#isClientAcquired) {
+        while (this.#isConnectionAcquired) {
             await new Promise((resolve) => setTimeout(resolve, 100));
         }
         this.#isConnectionAcquired = true;
@@ -72,16 +72,15 @@ class XrplApi {
     }
 
     async #setXrplClient(client) {
-        await this.#acquireClient();
         try {
-            if (this.#client) // Clear all listeners if there's an already created client.
+            if (this.#client) { // Clear all listeners if there's an already created client.
                 await this.#client.removeAllListeners();
+                await this.#client.disconnect();
+            }
 
             this.#client = client;
-            this.#releaseClient();
         }
         catch (e) {
-            this.#releaseClient();
             console.log("Error occurred in Client initiation:", e)
         }
     }
@@ -181,9 +180,14 @@ class XrplApi {
     }
 
     async #attemptFallbackServerReconnect(maxRounds, attemptsPerServer = 3) {
+        if (!this.#fallbackServers || this.#fallbackServers?.length == 0)
+            return;
+
+        await this.#acquireClient();
+
         const fallbackServers = this.#fallbackServers;
         let round = 0;
-        while (fallbackServers?.length > 0 && !this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected && !this.#isFallbackServerConnected && (!maxRounds || round < maxRounds)) { // Keep attempting until consumer calls disconnect() manually or if the primary server is disconnected.
+        while (!this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected && !this.#isFallbackServerConnected && (!maxRounds || round < maxRounds)) { // Keep attempting until consumer calls disconnect() manually or if the primary server is disconnected.
             ++round;
             serverIterator:
             for (let serverIndex in fallbackServers) {
@@ -193,8 +197,8 @@ class XrplApi {
                         break serverIterator;
                     }
                     ++attempt;
+                    const client = new xrpl.Client(server, this.#xrplClientOptions);
                     try {
-                        const client = new xrpl.Client(server, this.#xrplClientOptions);
                         if (!this.#isPrimaryServerConnected) {
                             await this.#handleClientConnect(client);
                             this.#isFallbackServerConnected = true;
@@ -202,63 +206,86 @@ class XrplApi {
                         break serverIterator;
                     }
                     catch (e) {
-                        console.log(`Error occurred while connecting to fallback server ${server}`, e)
+                        this.#releaseClient();
+                        console.log(`Error occurred while connecting to fallback server ${server}`);
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        if (client.isConnected()) {
+                            console.log('Connection closure already handled');
+                            await client.disconnect();
+                        }
+
                         if (!this.#isPermanentlyDisconnected) {
                             if (!maxRounds || round < maxRounds)
                                 console.log(`Fallback server ${server} connection attempt ${attempt} failed. Retrying in ${2 * round}s...`);
                             else
-                                throw `Fallback server ${server} connection max attempts failed.`;
+                                return { error: `Fallback server ${server} connection max attempts failed.`, exception: e };
                             await new Promise(resolve => setTimeout(resolve, 2 * round * 1000));
                         }
                     }
                 }
             }
-
         }
+
+        return {};
     }
 
     async #attemptPrimaryServerReconnect(maxAttempts = null) {
+        await this.#acquireClient();
+
         let attempt = 0;
-        while (!this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected) { // Keep attempting until consumer calls disconnect() manually.
+        while (!this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected && !this.#isFallbackServerConnected) { // Keep attempting until consumer calls disconnect() manually.
             ++attempt;
+            const client = new xrpl.Client(this.#primaryServer, this.#xrplClientOptions);
             try {
-                const client = new xrpl.Client(this.#primaryServer, this.#xrplClientOptions);
                 await this.#handleClientConnect(client);
-                this.#isFallbackServerConnected = false;
                 this.#isPrimaryServerConnected = true;
                 break;
             }
             catch (e) {
-                console.log("Error occurred while re-connecting to the primary server", e)
+                this.#releaseClient();
+                console.log("Error occurred while re-connecting to the primary server")
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                if (client.isConnected()) {
+                    console.log('Connection closure already handled');
+                    await client.disconnect();
+                }
+
                 if (!this.#isPermanentlyDisconnected) {
                     const delaySec = 2 * attempt; // Retry with backoff delay.
                     if (!maxAttempts || attempt < maxAttempts)
                         console.log(`Primary server ${this.#primaryServer} attempt ${attempt} failed. Retrying in ${delaySec}s...`);
                     else
-                        throw `Primary server ${this.#primaryServer} connection max attempts failed.`;
+                        return { error: `Primary server ${this.#primaryServer} connection max attempts failed.`, exception: e };
                     await new Promise(resolve => setTimeout(resolve, delaySec * 1000));
                 }
             }
         }
+
+        return {};
     }
 
     async #connectXrplClient(reconnect = false) {
+        let res = [];
         if (reconnect) {
             if (this.#primaryServer) {
-                Promise.all([this.#attemptFallbackServerReconnect(), this.#attemptPrimaryServerReconnect()]);
+                res = await Promise.all([this.#attemptPrimaryServerReconnect(), this.#attemptFallbackServerReconnect()]);
             } else {
-                this.#attemptFallbackServerReconnect();
+                res = [await this.#attemptFallbackServerReconnect()];
             }
         }
         else {
             if (this.#primaryServer) {
-                Promise.all([this.#attemptFallbackServerReconnect(1, 1), this.#attemptPrimaryServerReconnect(1)]);
+                res = await Promise.all([this.#attemptPrimaryServerReconnect(1), this.#attemptFallbackServerReconnect(1, 1)]);
             } else {
-                this.#attemptFallbackServerReconnect(1, 1);
+                res = [await this.#attemptFallbackServerReconnect(1, 1)];
             }
         }
 
+        if (res.filter(r => r && !r.error).length == 0)
+            throw res.filter(r => r && r.error).map(r => r.error);
+
         await this.#waitForConnection();
+        this.#releaseClient();
 
         // After connection established, check again whether maintainConnections has become false.
         // This is in case the consumer has called disconnect() while connection is being established.
@@ -333,24 +360,27 @@ class XrplApi {
 
     async connect() {
         this.#isPermanentlyDisconnected = false;
-        await this.#connectXrplClient();
+
+        if (!this.#client || !this.#client.isConnected()) {
+            await this.#connectXrplClient();
+        }
         const definitions = await this.#handleClientRequest({ command: 'server_definitions' })
         this.xrplHelper = new XrplHelpers(definitions.result);
     }
 
     async disconnect() {
-        await this.#acquireClient();
+        await this.#acquireConnection();
 
         try {
             this.#isPermanentlyDisconnected = true;
 
-            if (this.#client.isConnected()) {
+            if (this.#client && this.#client.isConnected()) {
                 await this.#client.disconnect().catch(console.error);
             }
-            this.#releaseClient();
+            this.#releaseConnection();
         }
         catch (e) {
-            this.#releaseClient();
+            this.#releaseConnection();
             throw e;
         }
     }
@@ -555,7 +585,6 @@ class XrplApi {
             return { ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) };
         else
             throw { ...txResult, ...(hookExecRes ? { hookExecutionResult: hookExecRes } : {}) };
-
     }
 
     /**
