@@ -123,10 +123,11 @@ class HostClient extends BaseEvernodeClient {
         let attempt = 0;
         let feeUplift = 0;
         const maxAttempts = (options?.maxRetryAttempts || 1);
+        let submissionRef = {};
         while (attempt <= maxAttempts) {
             attempt++;
             try {
-                return await callback(feeUplift);
+                return await callback(feeUplift, submissionRef);
             }
             catch (e) {
                 if (attempt == maxAttempts || e.code === "tecDUPLICATE" || e.code === "tefPAST_SEQ" || e.code === "tefALREADY")
@@ -137,6 +138,16 @@ class HostClient extends BaseEvernodeClient {
                 console.error(e);
                 console.error(`Submission attempt ${attempt} failed. Retrying...`);
                 await new Promise(resolve => setTimeout(resolve, TX_RETRY_INTERVAL));
+
+                // Check again wether the transaction is validated before retry.
+                const txHash = submissionRef?.submissionResult?.result?.tx_json?.hash;
+                if (txHash) {
+                    const txResponse = await this.xrplApi.getTransactionValidatedResults(txHash);
+                    if (txResponse && txResponse.code === "tesSUCCESS") {
+                        console.log('Transaction is validated and success, Retry skipped!')
+                        return txResponse;
+                    }
+                }
             }
         }
     }
@@ -161,14 +172,14 @@ class HostClient extends BaseEvernodeClient {
             { ...accountSetFields, Domain: domain } : accountSetFields;
 
         if (Object.keys(accountSetFields).length !== 0) {
-            await this.#submitWithRetry(async (feeUplift) => {
-                await this.xrplAcc.setAccountFields(accountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift });
+            await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+                await this.xrplAcc.setAccountFields(accountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
             }, options.retryOptions);
         }
 
         if (trustLines.length === 0) {
-            await this.#submitWithRetry(async (feeUplift) => {
-                await this.xrplAcc.setTrustLine(EvernodeConstants.EVR, this.config.evrIssuerAddress, "99999999999999", null, null, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift });
+            await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+                await this.xrplAcc.setTrustLine(EvernodeConstants.EVR, this.config.evrIssuerAddress, "99999999999999", null, null, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
             }, options.retryOptions);
         }
     }
@@ -232,8 +243,8 @@ class HostClient extends BaseEvernodeClient {
         const uri = uriBuf.toString('base64');
 
         try {
-            await this.#submitWithRetry(async (feeUplift) => {
-                await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: false }, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift });
+            await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+                await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: false }, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
             }, options.retryOptions);
         } catch (e) {
             // Re-minting the URIToken after burning that sold URIToken.
@@ -250,11 +261,11 @@ class HostClient extends BaseEvernodeClient {
         if (!uriToken)
             throw "Offer lease NFT creation error.";
 
-        await this.#submitWithRetry(async (feeUplift) => {
+        await this.#submitWithRetry(async (feeUplift, submissionRef) => {
             await this.xrplAcc.sellURIToken(uriToken.index,
                 leaseAmount.toString(),
                 EvernodeConstants.EVR,
-                this.config.evrIssuerAddress, null, null, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift });
+                this.config.evrIssuerAddress, null, null, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
         }, options.retryOptions);
     }
 
@@ -317,8 +328,8 @@ class HostClient extends BaseEvernodeClient {
         const uri = uriBuf.toString('base64');
 
         try {
-            await this.#submitWithRetry(async (feeUplift) => {
-                await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: false }, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift });
+            await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+                await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: false }, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
             }, options.retryOptions);
         } catch (e) {
             // Re-minting the URIToken after burning that sold URIToken.
@@ -338,10 +349,10 @@ class HostClient extends BaseEvernodeClient {
      * @param {number} leaseAmount Amount (EVRs) of the lease offer.
      */
     async offerMintedLease(uriTokenId, leaseAmount, options = {}) {
-        await this.#submitWithRetry(async (feeUplift) => {
+        await this.#submitWithRetry(async (feeUplift, submissionRef) => {
             await this.xrplAcc.sellURIToken(uriTokenId, leaseAmount.toString(),
                 EvernodeConstants.EVR,
-                this.config.evrIssuerAddress, null, null, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift });
+                this.config.evrIssuerAddress, null, null, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
         }, options.retryOptions);
     }
 
@@ -350,8 +361,8 @@ class HostClient extends BaseEvernodeClient {
      * @param {string} uriTokenId Hex URI token id of the lease.
      */
     async expireLease(uriTokenId, options = {}) {
-        await this.#submitWithRetry(async (feeUplift) => {
-            await this.xrplAcc.burnURIToken(uriTokenId, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift });
+        await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+            await this.xrplAcc.burnURIToken(uriTokenId, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
         }, options.retryOptions);
     }
 
@@ -372,8 +383,8 @@ class HostClient extends BaseEvernodeClient {
                 const sellOffer = (await registryAcc.getURITokens()).find(o => o.index == regInfo.uriTokenId && o.Amount);
                 console.log('Pending sell offer found.')
                 if (sellOffer) {
-                    await this.#submitWithRetry(async (feeUplift) => {
-                        await this.xrplAcc.buyURIToken(sellOffer, null, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift });
+                    await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+                        await this.xrplAcc.buyURIToken(sellOffer, null, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
                     }, options.retryOptions);
                     console.log("Registration was successfully completed after acquiring the NFT.");
                     return await this.isRegistered();
@@ -435,8 +446,8 @@ class HostClient extends BaseEvernodeClient {
         if (existingLeaseURITokens) {
             console.log("Burning unsold URITokens related to the previous leases.");
             for (const uriToken of existingLeaseURITokens) {
-                await this.#submitWithRetry(async (feeUplift) => {
-                    await this.xrplAcc.burnURIToken(uriToken.index, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift });
+                await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+                    await this.xrplAcc.burnURIToken(uriToken.index, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
                 }, options.retryOptions);
             }
         }
@@ -477,7 +488,7 @@ class HostClient extends BaseEvernodeClient {
         Buffer.from(description.substr(0, 26), "utf-8").copy(paramBuf, HOST_DESCRIPTION_PARAM_OFFSET);
         Buffer.from(emailAddress.substr(0, 40), "utf-8").copy(paramBuf, HOST_EMAIL_ADDRESS_PARAM_OFFSET);
 
-        const tx = await this.#submitWithRetry(async (feeUplift) => {
+        const tx = await this.#submitWithRetry(async (feeUplift, submissionRef) => {
             return await this.xrplAcc.makePayment(this.config.registryAddress,
                 (transferredNFTokenId) ? EvernodeConstants.NOW_IN_EVRS : this.config.hostRegFee.toString(),
                 EvernodeConstants.EVR,
@@ -489,7 +500,7 @@ class HostClient extends BaseEvernodeClient {
                         { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramBuf.toString('hex').toUpperCase() }
                     ],
                     maxLedgerIndex: this.#getMaxLedgerSequence(),
-                    feeUplift: feeUplift,
+                    feeUplift: feeUplift, submissionRef: submissionRef,
                     ...options.transactionOptions
                 });
         }, options.retryOptions);
@@ -530,8 +541,8 @@ class HostClient extends BaseEvernodeClient {
             resolve();
         });
 
-        await this.#submitWithRetry(async (feeUplift) => {
-            await this.xrplAcc.buyURIToken(sellOffer, null, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift });
+        await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+            await this.xrplAcc.buyURIToken(sellOffer, null, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
         }, options.retryOptions);
         return await this.isRegistered();
     }
@@ -555,7 +566,7 @@ class HostClient extends BaseEvernodeClient {
             paramBuf.writeUInt8(1, 32);
         }
 
-        await this.#submitWithRetry(async (feeUplift) => {
+        await this.#submitWithRetry(async (feeUplift, submissionRef) => {
             await this.xrplAcc.makePayment(this.config.registryAddress,
                 XrplConstants.MIN_DROPS,
                 null,
@@ -567,7 +578,7 @@ class HostClient extends BaseEvernodeClient {
                         { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramBuf.toString('hex').toUpperCase() }
                     ],
                     maxLedgerIndex: this.#getMaxLedgerSequence(),
-                    feeUplift: feeUplift,
+                    feeUplift: feeUplift, submissionRef: submissionRef,
                     ...options.transactionOptions
                 });
         }, options.retryOptions);
@@ -620,7 +631,7 @@ class HostClient extends BaseEvernodeClient {
             paramBuf.writeUInt8(components[2], HOST_UPDATE_VERSION_PARAM_OFFSET + 2);
         }
 
-        return await this.#submitWithRetry(async (feeUplift) => {
+        return await this.#submitWithRetry(async (feeUplift, submissionRef) => {
             return await this.xrplAcc.makePayment(this.config.registryAddress,
                 XrplConstants.MIN_DROPS,
                 null,
@@ -632,7 +643,7 @@ class HostClient extends BaseEvernodeClient {
                         { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramBuf.toString('hex') }
                     ],
                     maxLedgerIndex: this.#getMaxLedgerSequence(),
-                    feeUplift: feeUplift,
+                    feeUplift: feeUplift, submissionRef: submissionRef,
                     ...options.transactionOptions
                 });
         }, options.retryOptions);
@@ -900,7 +911,7 @@ class HostClient extends BaseEvernodeClient {
 
         const regUriToken = await this.getRegistrationUriToken();
 
-        await this.#submitWithRetry(async (feeUplift) => {
+        await this.#submitWithRetry(async (feeUplift, submissionRef) => {
             await this.xrplAcc.sellURIToken(regUriToken.index,
                 XrplConstants.MIN_DROPS,
                 null,
@@ -913,7 +924,7 @@ class HostClient extends BaseEvernodeClient {
                         { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramData.toString('hex') }
                     ],
                     maxLedgerIndex: this.#getMaxLedgerSequence(),
-                    feeUplift: feeUplift,
+                    feeUplift: feeUplift, submissionRef: submissionRef,
                     ...options.transactionOptions
                 });
         }, options.retryOptions);
