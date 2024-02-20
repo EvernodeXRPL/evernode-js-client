@@ -6,7 +6,7 @@ Override Evernode default configs.
 ### Parameters
 | Name        | Type   | Description                                                                                                                                                                                                                                               |
 | ----------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| newDefaults | object | Configurations to override  `{ governorAddress: '{string} governor xrpl address', rippledServer: '{string} rippled server url', xrplApi: '{XrplApi} xrpl instance', stateIndexId: '{string} firestore index', networkID: '{number} rippled network id' }` |
+| newDefaults | object | Configurations to override  `{ governorAddress: '{string} governor xahau address', rippledServer: '{string} rippled server url', xrplApi: '{XrplApi} xahau instance', stateIndexId: '{string} firestore index', networkID: '{number} rippled network id' }` |
 
 ### Response format
 This is a void function.
@@ -40,7 +40,7 @@ There are three hook clients and a tenant client in the Evernode library.
 - [Tenant Client](reference-api-tenant.md)
 
 ## Connect to the client - `async connect()`
-Connects the client to XRPL server and do the config loading and subscriptions.
+Connects the client to Xahau server and do the config loading and subscriptions.
 - [subscribe](#subscribe-to-the-events---async-subscribe) is called inside this.
 
 ### Response format
@@ -52,7 +52,7 @@ Returns boolean. `true` if success.
 ```
 
 ## Terminate the client - `async disconnect()`
-Disconnects the client to XRPL server and do the un-subscriptions.
+Disconnects the client to Xahau server and do the un-subscriptions.
 - [unsubscribe](#unsubscribe-from-the-events---async-unsubscribe) is called inside this.
 
 ### Response format
@@ -132,7 +132,7 @@ Returns the available EVR amount as a `string`.
 <br>
 
 ## Get hook states - `async getHookStates()`
-Gets XRPL all hook states in the registry account.
+Gets all Xahau hook states in the registry account.
 
 ### Response format
 Returns the list of hook states including Evernode configuration and hosts.
@@ -195,7 +195,7 @@ Returns The index (timestamp) of the moment as a 'number'. Returns the current m
 <br>
 
 ## Refresh the evernode config - `async refreshConfig()`
-Loads the configs from XRPL hook and updates the in memory config.
+Loads the configs from Xahau hook and updates the in memory config.
 
 ### Response format
 This is a void function.
@@ -206,7 +206,7 @@ This is a void function.
 ```
 <br>
 
-## Extract the event details from a XRPL transaction - `async extractEvernodeEvent(tx)`
+## Extract the event details from a Xahau transaction - `async extractEvernodeEvent(tx)`
 Extracts the transaction info from a given transaction.
 
 ### Parameters
@@ -246,7 +246,7 @@ Returns the event object in the format `{name: '', data: {}}`. Returns null if n
 | Name        | Type   | Description                                   |
 | ----------- | ------ | --------------------------------------------- |
 | name        | string | [Event name](#events).                        |
-| transaction | object | The original transaction from the XRP ledger. |
+| transaction | object | The original transaction from the Xahau ledger. |
 - There will be more properties in the response which are according to the event type.
 
 ### Example
@@ -298,11 +298,11 @@ Returns the registered host information object. Returns null is not registered.
 ```
 | Name                    | Type    | Description                                                           |
 | ----------------------- | ------- | --------------------------------------------------------------------- |
-| address                 | string  | XRPL account address of the host.                                     |
+| address                 | string  | Xahau account address of the host.                                     |
 | uriTokenId              | string  | Registration URI Token ID of the host.                                |
 | countryCode             | string  | Host machine's origin country code.                                   |
 | description             | string  | IP address or the DNS of the host.                                    |
-| registrationLedger      | number  | Host machine registered XRP ledger.                                   |
+| registrationLedger      | number  | Host machine registered Xahau ledger.                                   |
 | registrationFee         | number  | Registration fee paid by the host when it's registered.               |
 | maxInstances            | number  | Max number of instances that can be created in the host.              |
 | activeInstances         | number  | Currently allocated instance count in the host machine.               |
@@ -336,7 +336,7 @@ Remove a host which is inactive for a long period. The inactivity is checked by 
 ### Parameters
 | Name        | Type   | Description                            |
 | ----------- | ------ | -------------------------------------- |
-| hostAddress | string | XRPL address of the host to be pruned. |
+| hostAddress | string | Xahau address of the host to be pruned. |
 
 ### Response format
 This is a void function.
@@ -347,249 +347,3 @@ This is a void function.
 ```
 
 <br>
-
-## Get owned new hook candidate - `async getCandidateByOwner(ownerAddress = clientAddress)`
-Get proposed new hook candidate info.
-
-### Parameters
-| Name                    | Type   | Description           |
-| ----------------------- | ------ | --------------------- |
-| ownerAddress (optional) | string | Address of the owner. |
-
-### Response format
-The candidate information. Returns null if no candidate.
-```
-{
-    ownerAddress: 'rM5HSKpoCgJ1nbsNQCYvgUqXNnEXp5HsjW',
-    uniqueId: '0000000001A4D4078AE696203161B568D06641F7C9299AEC447357A4253F8AAB',
-    governorHookHash: 'E2F7D833DF05EE69C6F4244F2E6C9B9D2745EAD1EC7503FA2B5102E24DA2C6F9',
-    registryHookHash: '1ADCDEF05B87BC22565647A2676B9961DD75C20212BE9E98E7A7EBC8A9BCF72B',
-    heartbeatHookHash: '33BDC163ACFFE34EDE3C607DDF295B239A0A3C0506372072B370DB3786359938',
-    index: 4,
-    shortName: 'testProposal',
-    createdTimestamp: 1685329691,
-    proposalFee: '2560',
-    positiveVoteCount: 0,
-    lastVoteTimestamp: 0,
-    status: 'rejected',
-    statusChangeTimestamp: 1685329691,
-    foundationVoteStatus: 'rejected'
-}
-```
-| Name                  | Type   | Description                                                              |
-| --------------------- | ------ | ------------------------------------------------------------------------ |
-| ownerAddress          | string | XRPL address of the candidate owner.                                     |
-| uniqueId              | string | Unique identifier of the candidate.                                      |
-| governorHookHash      | string | Proposed hook hash of the governor hook.                                 |
-| registryHookHash      | string | Proposed hook hash of the registry hook.                                 |
-| heartbeatHookHash     | string | Proposed hook hash of the heartbeat hook.                                |
-| index                 | number | Index of the candidate.                                                  |
-| shortName             | string | Short name for the candidate given by the owner.                         |
-| id                    | string | Identifier of the candidate. This is used for internal use in Evernode.  |
-| createdTimestamp      | number | Timestamp when the candidate was created.                                |
-| proposalFee           | string | Amount of the proposal fee paid by the owner when creating the proposal. |
-| positiveVoteCount     | number | Number of positive votes received to the candidate.                      |
-| lastVoteTimestamp     | number | Timestamp when the last was received for the candidate.                  |
-| status                | string | Current election status of the candidate.                                |
-| statusChangeTimestamp | number | Timestamp when the proposal election status is last changed.             |
-| foundationVoteStatus  | string | Vote given by the foundation.                                            |
-
-### Example
-```javascript
-    const candidate = await client.getCandidateByOwner();
-```
-
-<br>
-
-## Get owned dud host candidates - `async getDudHostCandidatesByOwner(ownerAddress = clientAddress)`
-Get proposed dud host candidates.
-
-### Parameters
-| Name                    | Type   | Description           |
-| ----------------------- | ------ | --------------------- |
-| ownerAddress (optional) | string | Address of the owner. |
-
-### Response format
-An array of candidate information. Returns empty array if no candidates.
-```
-[
-    {
-        id: '455652060300000000000000A9816179A627AA805A2393022766D5474CEFEED8',
-        createTime: 2023-06-02T14:12:46.545Z,
-        updateTime: 2023-06-02T14:12:46.545Z,
-        lastVoteTimestamp: 0,
-        uniqueId: '000000000300000000000000A9816179A627AA805A2393022766D5474CEFEED8',
-        dudHostAddress: 'rGTGBxN2ABeLjxveHXFCU5V8uqfoDEUJLB',
-        index: 3,
-        createdTimestamp: 1685329352,
-        ownerAddress: 'rhqHz5tuy3NnBTqcpsUVBXhSWCsDTCJmzE',
-        foundationVoteStatus: 'rejected',
-        statusChangeTimestamp: 1685329352,
-        positiveVoteCount: 0,
-        proposalFee: '640',
-        shortName: 'dud_host',
-        key: '455652060300000000000000A9816179A627AA805A2393022766D5474CEFEED8',
-        status: 'rejected'
-    },
-    ...
-]
-```
-| Name                  | Type     | Description                                                              |
-| --------------------- | -------- | ------------------------------------------------------------------------ |
-| id                    | string   | Identifier of the candidate. This is used for internal use in Evernode.  |
-| createTime            | datetime | Candidate record created date and time in the index db.                  |
-| updateTime            | datetime | Candidate record updated date and time in the index db.                  |
-| lastVoteTimestamp     | number   | Timestamp when the last was received for the candidate.                  |
-| uniqueId              | string   | Unique identifier of the candidate.                                      |
-| dudHostAddress        | string   | Address of the dud host.                                                 |
-| index                 | number   | Index of the candidate.                                                  |
-| createdTimestamp      | number   | Timestamp when the candidate was created.                                |
-| ownerAddress          | string   | XRPL address of the candidate owner.                                     |
-| foundationVoteStatus  | string   | Vote given by the foundation.                                            |
-| statusChangeTimestamp | number   | Timestamp when the proposal election status is last changed.             |
-| positiveVoteCount     | number   | Number of positive votes received to the candidate.                      |
-| proposalFee           | string   | Amount of the proposal fee paid by the owner when creating the proposal. |
-| shortName             | string   | Short name for the candidate given by the owner.                         |
-| key                   | string   | Same as the `id`. Used for internal use.                                 |
-| status                | string   | Current election status of the candidate.                                |
-
-### Example
-```javascript
-    const candidates = await client.getDudHostCandidatesByOwner();
-```
-
-<br>
-
-## Get candidate by Id - `async getCandidateById(candidateId)`
-Get candidate info.
-
-### Parameters
-| Name        | Type   | Description          |
-| ----------- | ------ | -------------------- |
-| candidateId | string | Id of the candidate. |
-
-### Response format
-The candidate information. Returns null if no candidate.
-```
-{
-  ownerAddress: 'rM5HSKpoCgJ1nbsNQCYvgUqXNnEXp5HsjW',
-  uniqueId: '0000000001A4D4078AE696203161B568D06641F7C9299AEC447357A4253F8AAB',
-  governorHookHash: 'E2F7D833DF05EE69C6F4244F2E6C9B9D2745EAD1EC7503FA2B5102E24DA2C6F9',
-  registryHookHash: '1ADCDEF05B87BC22565647A2676B9961DD75C20212BE9E98E7A7EBC8A9BCF72B',
-  heartbeatHookHash: '33BDC163ACFFE34EDE3C607DDF295B239A0A3C0506372072B370DB3786359938',
-  index: 4,
-  shortName: 'testProposal',
-  createdTimestamp: 1685329691,
-  proposalFee: '2560',
-  positiveVoteCount: 0,
-  lastVoteTimestamp: 0,
-  status: 'rejected',
-  statusChangeTimestamp: 1685329691,
-  foundationVoteStatus: 'rejected'
-}
-```
-| Name                  | Type   | Description                                                              |
-| --------------------- | ------ | ------------------------------------------------------------------------ |
-| ownerAddress          | string | XRPL address of the candidate owner.                                     |
-| uniqueId              | string | Unique identifier of the candidate.                                      |
-| index                 | number | Index of the candidate.                                                  |
-| shortName             | string | Short name for the candidate given by the owner.                         |
-| createdTimestamp      | number | Timestamp when the candidate was created.                                |
-| proposalFee           | string | Amount of the proposal fee paid by the owner when creating the proposal. |
-| positiveVoteCount     | number | Number of positive votes received to the candidate.                      |
-| lastVoteTimestamp     | number | Timestamp when the last was received for the candidate.                  |
-| status                | string | Current election status of the candidate.                                |
-| statusChangeTimestamp | number | Timestamp when the proposal election status is last changed.             |
-| foundationVoteStatus  | string | Vote given by the foundation.                                            |
-_Following properties are only shown in `New Hook` candidate type._
-| governorHookHash      | string | Proposed hook hash of the governor hook.                                 |
-| registryHookHash      | string | Proposed hook hash of the registry hook.                                 |
-| heartbeatHookHash     | string | Proposed hook hash of the heartbeat hook.                                |
-_Following properties are only shown in `Dud Host` candidate type._
-| dudHostAddress        | string | Address of the dud host.                                                 |
-
-### Example
-```javascript
-    const candidate = await client.getCandidateById('0000000001A4D4078AE696203161B568D06641F7C9299AEC447357A4253F8AAB');
-```
-
-<br>
-
-## Get dud host candidate info - `async getDudHostVoteInfo(hostAddress = clientAddress)`
-Get reported dud host info.
-
-### Parameters
-| Name                   | Type   | Description              |
-| ---------------------- | ------ | ------------------------ |
-| hostAddress (optional) | string | Address of the dud host. |
-
-### Response format
-The dud host candidate information. Returns null if no candidate.
-```
-{
-    ownerAddress: 'rhqHz5tuy3NnBTqcpsUVBXhSWCsDTCJmzE',
-    index: 3,
-    shortName: 'dud_host',
-    createdTimestamp: 1685329352,
-    proposalFee: '640',
-    positiveVoteCount: 0,
-    lastVoteTimestamp: 0,
-    status: 'rejected',
-    statusChangeTimestamp: 1685329352,
-    foundationVoteStatus: 'rejected'
-}
-```
-| Name                  | Type   | Description                                                              |
-| --------------------- | ------ | ------------------------------------------------------------------------ |
-| ownerAddress          | string | XRPL address of the candidate owner.                                     |
-| index                 | number | Index of the candidate.                                                  |
-| shortName             | string | Short name for the candidate given by the owner.                         |
-| createdTimestamp      | number | Timestamp when the candidate was created.                                |
-| proposalFee           | string | Amount of the proposal fee paid by the owner when creating the proposal. |
-| positiveVoteCount     | number | Number of positive votes received to the candidate.                      |
-| lastVoteTimestamp     | number | Timestamp when the last was received for the candidate.                  |
-| status                | string | Current election status of the candidate.                                |
-| statusChangeTimestamp | number | Timestamp when the proposal election status is last changed.             |
-| foundationVoteStatus  | string | Vote given by the foundation.                                            |
-
-### Example
-```javascript
-    const candidate = await client.getDudHostVoteInfo('rGTGBxN2ABeLjxveHXFCU5V8uqfoDEUJLB');
-```
-
-## Get piloted mode info - `async getPilotedModeVoteInfo()`
-Get piloted mode vote info.
-
-### Response format
-The piloted mode candidate information. Returns null if no candidate.
-```
-{
-    ownerAddress: 'rH2nhMjXt9tnFh3dyHqK4xS93LKRDMiYMK',
-    index: 0,
-    shortName: 'piloted_mode',
-    createdTimestamp: 1686561512,
-    proposalFee: '0',
-    positiveVoteCount: 0,
-    lastVoteTimestamp: 0,
-    status: 'rejected',
-    statusChangeTimestamp: 1686561512,
-    foundationVoteStatus: 'rejected'
-}
-```
-| Name                  | Type   | Description                                                              |
-| --------------------- | ------ | ------------------------------------------------------------------------ |
-| ownerAddress          | string | XRPL address of the candidate owner.                                     |
-| index                 | number | Index of the candidate.                                                  |
-| shortName             | string | Short name for the candidate given by the owner.                         |
-| createdTimestamp      | number | Timestamp when the candidate was created.                                |
-| proposalFee           | string | Amount of the proposal fee paid by the owner when creating the proposal. |
-| positiveVoteCount     | number | Number of positive votes received to the candidate.                      |
-| lastVoteTimestamp     | number | Timestamp when the last was received for the candidate.                  |
-| status                | string | Current election status of the candidate.                                |
-| statusChangeTimestamp | number | Timestamp when the proposal election status is last changed.             |
-| foundationVoteStatus  | string | Vote given by the foundation.                                            |
-
-### Example
-```javascript
-    const candidate = await client.getPilotedModeVoteInfo();
-```
