@@ -660,7 +660,7 @@ class BaseEvernodeClient {
      * Get the hosts registered in Evernode.
      * @returns The list of hosts. 
      */
-    async getAllHostsFromLedger() {
+    async getAllHostsFromLedger(skipGetDomain = false) {
         const states = await this.getHookStates();
         let hosts = {};
 
@@ -680,7 +680,9 @@ class BaseEvernodeClient {
         const curMomentStartIdx = await this.getMomentStartIndex();
         await Promise.all((hostList).map(async host => {
             const hostAcc = new XrplAccount(host.address, null, { xrplApi: this.xrplApi });
-            host.domain = await hostAcc.getDomain();
+            if (!skipGetDomain) {
+                host.domain = await hostAcc.getDomain();
+            }
             host.active = (host.lastHeartbeatIndex > (this.config.hostHeartbeatFreq * this.config.momentSize) ?
                 (host.lastHeartbeatIndex >= (curMomentStartIdx - (this.config.hostHeartbeatFreq * this.config.momentSize))) :
                 (host.lastHeartbeatIndex > 0));
