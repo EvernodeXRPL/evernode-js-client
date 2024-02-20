@@ -284,12 +284,12 @@ class XrplApi {
         if (res.filter(r => r && !r.error).length == 0)
             throw res.filter(r => r && r.error).map(r => r.error);
 
-        await this.#waitForConnection();
-        this.#releaseClient();
-
         // After connection established, check again whether maintainConnections has become false.
         // This is in case the consumer has called disconnect() while connection is being established.
         if (!this.#isPermanentlyDisconnected) {
+            await this.#waitForConnection();
+            this.#releaseClient();
+
             this.ledgerIndex = await this.#getLedgerIndex();
 
             this.#subscribeToStream('ledger');
@@ -299,6 +299,7 @@ class XrplApi {
                 await this.#handleClientRequest({ command: 'subscribe', accounts: this.#addressSubscriptions.map(s => s.address) });
         }
         else {
+            this.#releaseClient();
             await this.disconnect();
         }
     }
@@ -518,6 +519,28 @@ class XrplApi {
     }
 
     /**
+     * Get the transaction results if validated.
+     * @param {string} txHash Hash of the transaction to check.
+     * @returns Validated results of the transaction.
+     */
+    async getTransactionValidatedResults(txHash) {
+        const txResponse = await this.getTxnInfo(txHash)
+            .catch((e) => {
+                return null;
+            });
+
+        if (txResponse?.validated) {
+            return {
+                id: txResponse?.hash,
+                code: txResponse?.meta?.TransactionResult,
+                details: txResponse
+            };
+        }
+
+        return null;
+    }
+
+    /**
      * Watching to acquire the transaction submission. (Waits until txn. is applied to the ledger.)
      * @param {string} txHash Transaction Hash
      * @param {number} lastLedger Last ledger sequence of the transaction.
@@ -590,12 +613,13 @@ class XrplApi {
     /**
      * Submit a multi-signature transaction and wait for validation.
      * @param {object} tx Multi-signed transaction object.
+     * @param {object} submissionRef [Optional] Reference object to take submission references.
      * @returns response object of the validated transaction.
      */
-    async submitMultisignedAndWait(tx) {
+    async submitMultisignedAndWait(tx, submissionRef = {}) {
         tx.SigningPubKey = "";
-        const submissionResult = await this.#handleClientRequest({ command: 'submit_multisigned', tx_json: tx });
-        return await this.#prepareResponse(tx, submissionResult);
+        submissionRef.submissionResult = await this.#handleClientRequest({ command: 'submit_multisigned', tx_json: tx });
+        return await this.#prepareResponse(tx, submissionRef.submissionResult);
     }
 
     /**
@@ -611,11 +635,12 @@ class XrplApi {
     /**
      * Submit a single-signature transaction.
      * @param {string} tx_blob Signed transaction object.
+     * @param {object} submissionRef [Optional] Reference object to take submission references.
      * @returns response object of the validated transaction.
      */
-    async submitAndWait(tx, tx_blob) {
-        const submissionResult = await this.#handleClientRequest({ command: 'submit', tx_blob: tx_blob });
-        return await this.#prepareResponse(tx, submissionResult);
+    async submitAndWait(tx, tx_blob, submissionRef = {}) {
+        submissionRef.submissionResult = await this.#handleClientRequest({ command: 'submit', tx_blob: tx_blob });
+        return await this.#prepareResponse(tx, submissionRef.submissionResult);
     }
 
     /**
