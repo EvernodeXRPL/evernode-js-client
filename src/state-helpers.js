@@ -560,7 +560,7 @@ class StateHelpers {
 
     static generateTokenIdStateKey(uriToken) {
         // 1 byte - Key Type.
-        let buf = Buffer.allocUnsafe(1);
+        let buf = Buffer.alloc(1, 0);
         buf.writeUInt8(STATE_KEY_TYPES.TOKEN_ID);
 
         const uriTokenBuf = Buffer.from(uriToken, "hex");
@@ -571,7 +571,7 @@ class StateHelpers {
     static generateHostAddrStateKey(address) {
         // 1 byte - Key Type.
         // 8 bytes - Zeros.
-        let buf = Buffer.allocUnsafe(9);
+        let buf = Buffer.alloc(9, 0);
         buf.writeUInt8(STATE_KEY_TYPES.HOST_ADDR);
         for (let i = 0; i < HOST_ADDR_KEY_ZERO_COUNT; i++) {
             buf.writeUInt8(0, i + 1);
@@ -585,7 +585,7 @@ class StateHelpers {
     static generateTransfereeAddrStateKey(address) {
         // 1 byte - Key Type.
         // 8 bytes - Zeros.
-        let buf = Buffer.allocUnsafe(9);
+        let buf = Buffer.alloc(9, 0);
         buf.writeUInt8(STATE_KEY_TYPES.TRANSFEREE_ADDR);
         for (let i = 0; i < TRANSFEREE_ADDR_KEY_ZERO_COUNT; i++) {
             buf.writeUInt8(0, i + 1);
@@ -598,7 +598,7 @@ class StateHelpers {
 
     static generateCandidateIdStateKey(uniqueId) {
         // 1 byte - Key Type.
-        let buf = Buffer.allocUnsafe(1);
+        let buf = Buffer.alloc(1, 0);
         buf.writeUInt8(STATE_KEY_TYPES.CANDIDATE_ID);
 
         const idBuf = Buffer.from(uniqueId, "hex");
@@ -609,7 +609,7 @@ class StateHelpers {
     static generateCandidateOwnerStateKey(owner) {
         // 1 byte - Key Type.
         // 8 bytes - Zeros.
-        let buf = Buffer.allocUnsafe(9);
+        let buf = Buffer.alloc(9, 0);
         buf.writeUInt8(STATE_KEY_TYPES.CANDIDATE_OWNER);
         for (let i = 0; i < CANDIDATE_OWNER_KEY_ZERO_COUNT; i++) {
             buf.writeUInt8(0, i + 1);
@@ -621,7 +621,7 @@ class StateHelpers {
     }
 
     static getHookStateIndex(hookAccount, stateKey, hookNamespace = EvernodeConstants.HOOK_NAMESPACE) {
-        const typeBuf = Buffer.allocUnsafe(2);
+        const typeBuf = Buffer.alloc(2, 0);
         typeBuf.writeInt16BE(HOOK_STATE_LEDGER_TYPE_PREFIX);
 
         const accIdBuf = codec.decodeAccountID(hookAccount);

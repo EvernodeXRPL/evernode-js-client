@@ -722,7 +722,7 @@ class BaseEvernodeClient {
         if (this.xrplAcc.address === this.config.registryAddress)
             throw 'Invalid function call';
 
-        let paramData = Buffer.allocUnsafe(20);
+        let paramData = Buffer.alloc(20, 0);
         codec.decodeAccountID(hostAddress).copy(paramData);
 
         const hostInfo = await this.getHostInfo(hostAddress);
