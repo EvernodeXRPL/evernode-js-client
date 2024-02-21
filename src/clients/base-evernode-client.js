@@ -24,8 +24,6 @@ const DUD_HOST_CANDID_ADDRESS_OFFSET = 12;
 const REPUTATION_HOST_ADDRESS_PARAM_OFFSET = 0;
 const REPUTATION_VALUE_PARAM_OFFSET = 20;
 
-const MAX_HOOK_PARAM_SIZE = 128;
-
 class BaseEvernodeClient {
 
     #watchEvents;
@@ -253,8 +251,7 @@ class BaseEvernodeClient {
         let eventData;
         if (tx.HookParameters.length) {
             eventType = tx.HookParameters.find(p => p.name === HookParamKeys.PARAM_EVENT_TYPE_KEY)?.value;
-            eventData = tx.HookParameters.find(p => p.name === HookParamKeys.PARAM_EVENT_DATA1_KEY)?.value ?? '';
-            eventData += tx.HookParameters.find(p => p.name === HookParamKeys.PARAM_EVENT_DATA2_KEY)?.value ?? '';
+            eventData = tx.HookParameters.find(p => p.name === HookParamKeys.PARAM_EVENT_DATA_KEY)?.value ?? '';
         }
         if (tx.TransactionType === 'URITokenBuy' && eventType === EventTypes.ACQUIRE_LEASE && tx.Memos.length &&
             tx.Memos[0].type === EventTypes.ACQUIRE_LEASE && tx.Memos[0].format === MemoFormats.BASE64 && tx.Memos[0].data) {
@@ -747,7 +744,7 @@ class BaseEvernodeClient {
                 {
                     hookParams: [
                         { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.DEAD_HOST_PRUNE },
-                        { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramData.toString('hex') }
+                        { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: paramData.toString('hex') }
                     ]
                 });
         } else
@@ -943,8 +940,7 @@ class BaseEvernodeClient {
             {
                 hookParams: [
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.CANDIDATE_PROPOSE },
-                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramBuf.slice(0, MAX_HOOK_PARAM_SIZE).toString('hex').toUpperCase() },
-                    { name: HookParamKeys.PARAM_EVENT_DATA2_KEY, value: paramBuf.slice(MAX_HOOK_PARAM_SIZE).toString('hex').toUpperCase() }
+                    { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: paramBuf.toString('hex').toUpperCase() }
                 ],
                 ...options.transactionOptions
             });
@@ -968,7 +964,7 @@ class BaseEvernodeClient {
             {
                 hookParams: [
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.CANDIDATE_WITHDRAW },
-                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: candidateIdBuf.toString('hex').toUpperCase() }
+                    { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: candidateIdBuf.toString('hex').toUpperCase() }
                 ],
                 ...options.transactionOptions
             });
@@ -994,7 +990,7 @@ class BaseEvernodeClient {
             {
                 hookParams: [
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.DUD_HOST_REPORT },
-                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: candidateId }
+                    { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: candidateId }
                 ],
                 ...options.transactionOptions
             });

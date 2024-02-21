@@ -27,7 +27,8 @@ const HOST_CPU_COUNT_PARAM_OFFSET = 58;
 const HOST_CPU_SPEED_PARAM_OFFSET = 60;
 const HOST_DESCRIPTION_PARAM_OFFSET = 62;
 const HOST_EMAIL_ADDRESS_PARAM_OFFSET = 88;
-const HOST_REG_PARAM_SIZE = 128;
+const HOST_LEASE_AMOUNT_PARAM_OFFSET = 128;
+const HOST_REG_PARAM_SIZE = 136;
 
 const HOST_UPDATE_TOKEN_ID_PARAM_OFFSET = 0;
 const HOST_UPDATE_COUNTRY_CODE_PARAM_OFFSET = 32;
@@ -39,7 +40,8 @@ const HOST_UPDATE_ACT_INS_COUNT_PARAM_OFFSET = 50;
 const HOST_UPDATE_DESCRIPTION_PARAM_OFFSET = 54;
 const HOST_UPDATE_VERSION_PARAM_OFFSET = 80;
 const HOST_UPDATE_EMAIL_ADDRESS_PARAM_OFFSET = 83;
-const HOST_UPDATE_PARAM_SIZE = 123;
+const HOST_UPDATE_LEASE_AMOUNT_PARAM_OFFSET = 123;
+const HOST_UPDATE_PARAM_SIZE = 131;
 
 const VOTE_VALIDATION_ERR = "VOTE_VALIDATION_ERR";
 
@@ -122,7 +124,7 @@ class HostClient extends BaseEvernodeClient {
     async #submitWithRetry(callback, options = {}) {
         let attempt = 0;
         let feeUplift = 0;
-        const maxAttempts = (options?.maxRetryAttempts || 1);
+        const maxAttempts = (options?.maxRetryAttempts || 10);
         let submissionRef = options.submissionRef || {};
         while (attempt <= maxAttempts) {
             attempt++;
@@ -407,10 +409,11 @@ class HostClient extends BaseEvernodeClient {
      * @param {number} cpuSpeed CPU MHz.
      * @param {string} description Description about the host.
      * @param {string} emailAddress Email address of the host.
+     * @param {number} leaseAmount Lease fee of the host.
      * @param {*} options [Optional] transaction options.
      * @returns Transaction result.
      */
-    async register(countryCode, cpuMicroSec, ramMb, diskMb, totalInstanceCount, cpuModel, cpuCount, cpuSpeed, description, emailAddress, options = {}) {
+    async register(countryCode, cpuMicroSec, ramMb, diskMb, totalInstanceCount, cpuModel, cpuCount, cpuSpeed, description, emailAddress, leaseAmount, options = {}) {
         if (!/^([A-Z]{2})$/.test(countryCode))
             throw "countryCode should consist of 2 uppercase alphabetical characters";
         else if (!cpuMicroSec || isNaN(cpuMicroSec) || cpuMicroSec % 1 != 0 || cpuMicroSec < 0)
@@ -420,13 +423,15 @@ class HostClient extends BaseEvernodeClient {
         else if (!diskMb || isNaN(diskMb) || diskMb % 1 != 0 || diskMb < 0)
             throw "diskMb should be a positive integer";
         else if (!totalInstanceCount || isNaN(totalInstanceCount) || totalInstanceCount % 1 != 0 || totalInstanceCount < 0)
-            throw "totalInstanceCount should be a positive intiger";
+            throw "totalInstanceCount should be a positive integer";
         else if (!cpuCount || isNaN(cpuCount) || cpuCount % 1 != 0 || cpuCount < 0)
             throw "CPU count should be a positive integer";
         else if (!cpuSpeed || isNaN(cpuSpeed) || cpuSpeed % 1 != 0 || cpuSpeed < 0)
             throw "CPU speed should be a positive integer";
         else if (!cpuModel)
             throw "cpu model cannot be empty";
+        else if (!leaseAmount || isNaN(leaseAmount) || diskMb < 0)
+            throw "leaseAmount should be a positive float";
 
         // Need to use control characters inside this regex to match ascii characters.
         // Here we allow all the characters in ascii range except ";" for the description.
@@ -475,7 +480,7 @@ class HostClient extends BaseEvernodeClient {
             console.log("No initiated transfers were found.");
         }
 
-        // <country_code(2)><cpu_microsec(4)><ram_mb(4)><disk_mb(4)><no_of_total_instances(4)><cpu_model(40)><cpu_count(2)><cpu_speed(2)><description(26)><email_address(40)>
+        // <country_code(2)><cpu_microsec(4)><ram_mb(4)><disk_mb(4)><no_of_total_instances(4)><cpu_model(40)><cpu_count(2)><cpu_speed(2)><description(26)><email_address(40)><host_lease_amount(8,xfl)>
         const paramBuf = Buffer.alloc(HOST_REG_PARAM_SIZE, 0);
         Buffer.from(countryCode.substr(0, 2), "utf-8").copy(paramBuf, HOST_COUNTRY_CODE_PARAM_OFFSET);
         paramBuf.writeUInt32LE(cpuMicroSec, HOST_CPU_MICROSEC_PARAM_OFFSET);
@@ -487,6 +492,7 @@ class HostClient extends BaseEvernodeClient {
         paramBuf.writeUInt16LE(cpuSpeed, HOST_CPU_SPEED_PARAM_OFFSET);
         Buffer.from(description.substr(0, 26), "utf-8").copy(paramBuf, HOST_DESCRIPTION_PARAM_OFFSET);
         Buffer.from(emailAddress.substr(0, 40), "utf-8").copy(paramBuf, HOST_EMAIL_ADDRESS_PARAM_OFFSET);
+        paramBuf.writeBigInt64LE(XflHelpers.getXfl(leaseAmount.toString()), HOST_LEASE_AMOUNT_PARAM_OFFSET);
 
         const tx = await this.#submitWithRetry(async (feeUplift, submissionRef) => {
             return await this.xrplAcc.makePayment(this.config.registryAddress,
@@ -497,7 +503,7 @@ class HostClient extends BaseEvernodeClient {
                 {
                     hookParams: [
                         { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_REG },
-                        { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramBuf.toString('hex').toUpperCase() }
+                        { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: paramBuf.toString('hex').toUpperCase() }
                     ],
                     maxLedgerIndex: this.#getMaxLedgerSequence(),
                     feeUplift: feeUplift, submissionRef: submissionRef,
@@ -575,7 +581,7 @@ class HostClient extends BaseEvernodeClient {
                 {
                     hookParams: [
                         { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_DEREG },
-                        { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramBuf.toString('hex').toUpperCase() }
+                        { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: paramBuf.toString('hex').toUpperCase() }
                     ],
                     maxLedgerIndex: this.#getMaxLedgerSequence(),
                     feeUplift: feeUplift, submissionRef: submissionRef,
@@ -598,10 +604,11 @@ class HostClient extends BaseEvernodeClient {
      * @param {number} diskMb Disk size in mega bytes.
      * @param {string} description Description about the host.
      * @param {string} emailAddress Email address of the host.
+     * @param {number} leaseAmount Lease fee of the host.
      * @param {*} options [Optional] transaction options.
      * @returns Transaction result.
      */
-    async updateRegInfo(activeInstanceCount = null, version = null, totalInstanceCount = null, tokenID = null, countryCode = null, cpuMicroSec = null, ramMb = null, diskMb = null, description = null, emailAddress = null, options = {}) {
+    async updateRegInfo(activeInstanceCount = null, version = null, totalInstanceCount = null, tokenID = null, countryCode = null, cpuMicroSec = null, ramMb = null, diskMb = null, description = null, emailAddress = null, leaseAmount = null, options = {}) {
         // <token_id(32)><country_code(2)><cpu_microsec(4)><ram_mb(4)><disk_mb(4)><total_instance_count(4)><active_instances(4)><description(26)><version(3)><email(40)>
         const paramBuf = Buffer.alloc(HOST_UPDATE_PARAM_SIZE, 0);
         if (tokenID)
@@ -630,6 +637,8 @@ class HostClient extends BaseEvernodeClient {
             paramBuf.writeUInt8(components[1], HOST_UPDATE_VERSION_PARAM_OFFSET + 1);
             paramBuf.writeUInt8(components[2], HOST_UPDATE_VERSION_PARAM_OFFSET + 2);
         }
+        if (leaseAmount)
+            paramBuf.writeBigInt64LE(XflHelpers.getXfl(leaseAmount.toString()), HOST_UPDATE_LEASE_AMOUNT_PARAM_OFFSET);
 
         return await this.#submitWithRetry(async (feeUplift, submissionRef) => {
             return await this.xrplAcc.makePayment(this.config.registryAddress,
@@ -640,7 +649,7 @@ class HostClient extends BaseEvernodeClient {
                 {
                     hookParams: [
                         { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_UPDATE_INFO },
-                        { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramBuf.toString('hex') }
+                        { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: paramBuf.toString('hex') }
                     ],
                     maxLedgerIndex: this.#getMaxLedgerSequence(),
                     feeUplift: feeUplift, submissionRef: submissionRef,
@@ -681,7 +690,7 @@ class HostClient extends BaseEvernodeClient {
                 {
                     hookParams: [
                         { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HEARTBEAT },
-                        ...(data ? [{ name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: data }] : [])
+                        ...(data ? [{ name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: data }] : [])
                     ],
                     maxLedgerIndex: this.#getMaxLedgerSequence(),
                     ...options.transactionOptions,
@@ -749,7 +758,7 @@ class HostClient extends BaseEvernodeClient {
             {
                 hookParams: [
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.ACQUIRE_SUCCESS },
-                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: txHash }
+                    { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: txHash }
                 ],
                 maxLedgerIndex: this.#getMaxLedgerSequence(),
                 ...options.transactionOptions,
@@ -778,7 +787,7 @@ class HostClient extends BaseEvernodeClient {
             {
                 hookParams: [
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.ACQUIRE_ERROR },
-                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: txHash }
+                    { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: txHash }
                 ],
                 maxLedgerIndex: this.#getMaxLedgerSequence(),
                 ...options.transactionOptions,
@@ -808,7 +817,7 @@ class HostClient extends BaseEvernodeClient {
             {
                 hookParams: [
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.EXTEND_SUCCESS },
-                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: txHash }
+                    { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: txHash }
                 ],
                 maxLedgerIndex: this.#getMaxLedgerSequence(),
                 ...options.transactionOptions,
@@ -838,7 +847,7 @@ class HostClient extends BaseEvernodeClient {
             {
                 hookParams: [
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.EXTEND_ERROR },
-                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: txHash }
+                    { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: txHash }
                 ],
                 maxLedgerIndex: this.#getMaxLedgerSequence(),
                 ...options.transactionOptions,
@@ -865,7 +874,7 @@ class HostClient extends BaseEvernodeClient {
             {
                 hookParams: [
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.REFUND },
-                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: txHash }
+                    { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: txHash }
                 ],
                 maxLedgerIndex: this.#getMaxLedgerSequence(),
                 ...options.transactionOptions,
@@ -928,7 +937,7 @@ class HostClient extends BaseEvernodeClient {
                 {
                     hookParams: [
                         { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_TRANSFER },
-                        { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramData.toString('hex') }
+                        { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: paramData.toString('hex') }
                     ],
                     maxLedgerIndex: this.#getMaxLedgerSequence(),
                     feeUplift: feeUplift, submissionRef: submissionRef,

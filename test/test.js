@@ -208,7 +208,7 @@ async function updateInfo() {
     console.log(`-----------Update host`);
 
     const client = await getHostClient();
-    await client.updateRegInfo(10);
+    await client.updateRegInfo(10, null, 3, null, null, null, null, null, null, null, 0.001);
 }
 
 async function getActiveHostsFromLedger() {
@@ -238,7 +238,7 @@ async function initializeConfigs() {
         {
             hookParams: [
                 { name: evernode.HookParamKeys.PARAM_EVENT_TYPE_KEY, value: 'evnInitialize' },
-                { name: evernode.HookParamKeys.PARAM_EVENT_DATA1_KEY, value: paramData.toString('hex') }
+                { name: evernode.HookParamKeys.PARAM_EVENT_DATA_KEY, value: paramData.toString('hex') }
             ]
         });
 }
@@ -263,14 +263,16 @@ async function registerHost(address = hostAddress, secret = hostSecret) {
         await foundationAcc.makePayment(address, "500", evernode.EvernodeConstants.EVR, evrIssuerAddress);
     }
 
+    const leaseAmount = 0.000001;
+
     console.log("Register...");
     const instanceCount = 1;
-    await host.register("AU", 10000, 512, 1024, instanceCount, 'Intel', 10, 10, "Test desctiption", "testemail@gmail.com", 2);
+    await host.register("AU", 10000, 512, 1024, instanceCount, 'Intel', 10, 10, "Test desctiption", "testemail@gmail.com", leaseAmount);
 
     console.log("Lease Offer...");
     for (let i = 0; i < instanceCount; i++) {
         let x = 7000 + i;
-        await host.offerLease(i, 2, tosHash, `2001:0db8:85a3:0000:0000:8a2e:0370:${x}`);
+        await host.offerLease(i, leaseAmount, tosHash, `2001:0db8:85a3:0000:0000:8a2e:0370:${x}`);
     }
 
     // Verify the registration.
