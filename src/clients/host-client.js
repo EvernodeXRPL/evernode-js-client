@@ -795,7 +795,7 @@ class HostClient extends BaseEvernodeClient {
      * @returns Transaction result.
      */
     async extendSuccess(txHash, tenantAddress, expiryMoment, options = {}) {
-        let buf = Buffer.allocUnsafe(4);
+        let buf = Buffer.alloc(4, 0);
         buf.writeUInt32BE(expiryMoment);
 
         return this.xrplAcc.makePayment(tenantAddress,

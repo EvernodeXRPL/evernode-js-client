@@ -4,7 +4,7 @@ const HOOK_DEFINITION_LEDGER_TYPE_PREFIX = 68; // Decimal value of ASCII 'D'
 
 class HookHelpers {
     static getHookDefinitionIndex(hookHash) {
-        const typeBuf = Buffer.allocUnsafe(2);
+        const typeBuf = Buffer.alloc(2, 0);
         typeBuf.writeInt16BE(HOOK_DEFINITION_LEDGER_TYPE_PREFIX);
 
         const hookHashBuf = Buffer.from(hookHash, 'hex');
@@ -20,7 +20,7 @@ class HookHelpers {
     }
 
     static getHookDefinitionKeylet(index) {
-        const keyletBuf = Buffer.allocUnsafe(34);
+        const keyletBuf = Buffer.alloc(34, 0);
         keyletBuf.writeInt16BE(HOOK_DEFINITION_LEDGER_TYPE_PREFIX);
         Buffer.from(index, 'hex').copy(keyletBuf, 2);
 

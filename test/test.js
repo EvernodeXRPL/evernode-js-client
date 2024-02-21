@@ -222,7 +222,7 @@ async function getActiveHostsFromLedger() {
 
 async function initializeConfigs() {
     console.log(`-----------Initialize configs`);
-    let paramData = Buffer.allocUnsafe(80);
+    let paramData = Buffer.alloc(80, 0);
     codec.decodeAccountID(evrIssuerAddress).copy(paramData);
     codec.decodeAccountID(foundationAddress).copy(paramData, 20);
     codec.decodeAccountID(registryAddress).copy(paramData, 40);

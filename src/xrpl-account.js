@@ -713,7 +713,7 @@ class XrplAccount {
 
         let hash = crypto.createHash('sha512');
 
-        const typeBuf = Buffer.allocUnsafe(2);
+        const typeBuf = Buffer.alloc(2, 0);
         typeBuf.writeInt16BE(URITOKEN_LEDGER_TYPE_PREFIX);
 
         const dataBuf = Buffer.from(`${accIdHex}${uriHex}`, 'hex');
