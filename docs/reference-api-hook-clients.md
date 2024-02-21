@@ -5,7 +5,7 @@ In `Evernode`, there are three distinct types of hooks:
 - Registry Hook
 - Heartbeat Hook.
 
-Each of these hooks is associated with a separate XRPL account. Therefore, in various scenarios, it becomes necessary to create client instances to engage with these hooks.
+Each of these hooks is associated with a separate Xahau account. Therefore, in various scenarios, it becomes necessary to create client instances to engage with these hooks.
 
 This section aims to enhance your comprehension of the available hook clients in `Evernode`. It will provide you with detailed specifications and guidance on how to utilize them effectively within `Evernode`.
 
@@ -57,8 +57,8 @@ Takes one parameter `options` which is a JSON object of options that is passed t
 }
 ```
 | Name                       | Type   | Description                         |
-| -------------------------- | ------ | ----------------------------------- |
-| governorAddress (optional) | string | Governor Hook Account XRPL address. |
+| -------------------------- | ------ | ------------------------------------ |
+| governorAddress (optional) | string | Governor Hook Account Xahau address. |
 
 ### Example
 ```javascript
@@ -84,7 +84,7 @@ Takes one parameter `options` which is a JSON object of options that is passed t
 ```
 | Name                     | Type   | Description                         |
 | ------------------------ | ------ | ----------------------------------- |
-| registryAddress          | string | Registry Hook Account XRPL address. |
+| registryAddress          | string | Registry Hook Account Xahau address. |
 | rippledServer (optional) | string | Rippled server URL.                 |
 
 ### Example
@@ -110,7 +110,7 @@ Takes one parameter `options` which is a JSON object of options that is passed t
 ```
 | Name                     | Type   | Description                          |
 | ------------------------ | ------ | ------------------------------------ |
-| heartbeatAddress         | string | Heartbeat Hook Account XRPL address. |
+| heartbeatAddress         | string | Heartbeat Hook Account Xahau address. |
 | rippledServer (optional) | string | Rippled server URL.                  |
 
 ### Example

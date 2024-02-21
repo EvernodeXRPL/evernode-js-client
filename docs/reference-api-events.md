@@ -18,14 +18,15 @@ Following events can be subscribed from Evernode client instances.
 | LinkedDudHostCandidateRemoved | Triggered when a host related to dud host candidate is removed by de-registration/transfer or prune. |
 
 ## Registry client events
-| Name             | Description                                                            |
-| ---------------- | ---------------------------------------------------------------------- |
-| HostRegistered   | Triggered when host registration event is received to the registry.    |
-| HostDeregistered | Triggered when host de-registration event is received to the registry. |
-| HostRegUpdated   | Triggered when host sends an update info request.                      |
-| DeadHostPrune    | Triggered when dead host prune request is received to the registry.    |
-| HostTransfer     | Triggered when host transfer is requested by the host.                 |
-| HostRebate       | Triggered when host rebate is requested by the host.                   |
+| Name                  | Description                                                            |
+| --------------------- | ---------------------------------------------------------------------- |
+| HostRegistered        | Triggered when host registration event is received to the registry.    |
+| HostDeregistered      | Triggered when host de-registration event is received to the registry. |
+| HostRegUpdated        | Triggered when host sends an update info request.                      |
+| DeadHostPrune         | Triggered when dead host prune request is received to the registry.    |
+| HostTransfer          | Triggered when host transfer is requested by the host.                 |
+| HostRebate            | Triggered when host rebate is requested by the host.                   |
+| HostReputationUpdated | Triggered when host reputation is updated.                             |
 
 ## Heartbeat client events
 | Name            | Description                                                 |
