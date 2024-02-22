@@ -391,17 +391,19 @@ class StateHelpers {
             }
         }
         else if (Buffer.from(HookStateKeys.REWARD_INFO, 'hex').compare(stateKey) === 0) {
+            let value = {
+                epoch: stateData.readUInt8(EPOCH_OFFSET),
+                savedMoment: stateData.readUInt32LE(SAVED_MOMENT_OFFSET),
+                prevMomentActiveHostCount: stateData.readUInt32LE(PREV_MOMENT_ACTIVE_HOST_COUNT_OFFSET),
+                curMomentActiveHostCount: stateData.readUInt32LE(CUR_MOMENT_ACTIVE_HOST_COUNT_OFFSET),
+                epochPool: XflHelpers.toString(stateData.readBigInt64LE(EPOCH_POOL_OFFSET)),
+            };
+            if (stateData.length > HOST_MAX_LEASE_AMOUNT_OFFSET)
+                value.hostMaxLeaseAmount = XflHelpers.toString(stateData.readBigInt64LE(HOST_MAX_LEASE_AMOUNT_OFFSET));
             return {
                 type: this.StateTypes.SIGLETON,
                 key: hexKey,
-                value: {
-                    epoch: stateData.readUInt8(EPOCH_OFFSET),
-                    savedMoment: stateData.readUInt32LE(SAVED_MOMENT_OFFSET),
-                    prevMomentActiveHostCount: stateData.readUInt32LE(PREV_MOMENT_ACTIVE_HOST_COUNT_OFFSET),
-                    curMomentActiveHostCount: stateData.readUInt32LE(CUR_MOMENT_ACTIVE_HOST_COUNT_OFFSET),
-                    epochPool: XflHelpers.toString(stateData.readBigInt64LE(EPOCH_POOL_OFFSET)),
-                    hostMaxLeaseAmount: XflHelpers.toString(stateData.readBigInt64LE(HOST_MAX_LEASE_AMOUNT_OFFSET))
-                }
+                value: value
             }
         }
         else if (Buffer.from(HookStateKeys.MAX_TOLERABLE_DOWNTIME, 'hex').compare(stateKey) === 0) {
