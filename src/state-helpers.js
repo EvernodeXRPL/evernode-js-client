@@ -10,6 +10,7 @@ const SAVED_MOMENT_OFFSET = 1;
 const PREV_MOMENT_ACTIVE_HOST_COUNT_OFFSET = 5;
 const CUR_MOMENT_ACTIVE_HOST_COUNT_OFFSET = 9;
 const EPOCH_POOL_OFFSET = 13;
+const HOST_MAX_LEASE_AMOUNT_OFFSET = 21;
 
 const EPOCH_COUNT_OFFSET = 0;
 const FIRST_EPOCH_REWARD_QUOTA_OFFSET = 1;
@@ -17,6 +18,7 @@ const EPOCH_REWARD_AMOUNT_OFFSET = 5;
 const REWARD_START_MOMENT_OFFSET = 9;
 const ACCUMULATED_REWARD_FREQUENCY_OFFSET = 13;
 const HOST_REPUTATION_THRESHOLD_OFFSET = 15;
+const HOST_MIN_INSTANCE_COUNT_OFFSET = 16;
 
 const TRANSIT_IDX_OFFSET = 0;
 const TRANSIT_MOMENT_SIZE_OFFSET = 8;
@@ -64,6 +66,7 @@ const HOST_SUPPORT_VOTE_FLAG_OFFSET = 124;
 const HOST_REPUTATION_OFFSET = 125;
 const HOST_FLAGS_OFFSET = 126;
 const HOST_TRANSFER_TIMESTAMP_OFFSET = 127;
+const HOST_LEASE_AMOUNT_OFFSET = 135;
 
 const HOST_ADDRESS_OFFSET = 0;
 const HOST_CPU_MODEL_NAME_OFFSET = 20;
@@ -177,6 +180,10 @@ class StateHelpers {
         }
         if (stateDataBuf.length > HOST_TRANSFER_TIMESTAMP_OFFSET) {
             data.transferTimestamp = Number(stateDataBuf.readBigUInt64LE(HOST_TRANSFER_TIMESTAMP_OFFSET));
+        }
+        if (stateDataBuf.length > HOST_LEASE_AMOUNT_OFFSET) {
+            data.leaseAmount = XflHelpers.toString(stateDataBuf.readBigInt64LE(HOST_LEASE_AMOUNT_OFFSET));
+
         }
         return data;
     }
@@ -375,6 +382,8 @@ class StateHelpers {
             };
             if (stateData.length > HOST_REPUTATION_THRESHOLD_OFFSET)
                 value.hostReputationThreshold = stateData.readUInt8(HOST_REPUTATION_THRESHOLD_OFFSET);
+            if (stateData.length > HOST_MIN_INSTANCE_COUNT_OFFSET)
+                value.hostMinInstanceCount = stateData.readUInt32LE(HOST_MIN_INSTANCE_COUNT_OFFSET);
             return {
                 type: this.StateTypes.CONFIGURATION,
                 key: hexKey,
@@ -390,7 +399,8 @@ class StateHelpers {
                     savedMoment: stateData.readUInt32LE(SAVED_MOMENT_OFFSET),
                     prevMomentActiveHostCount: stateData.readUInt32LE(PREV_MOMENT_ACTIVE_HOST_COUNT_OFFSET),
                     curMomentActiveHostCount: stateData.readUInt32LE(CUR_MOMENT_ACTIVE_HOST_COUNT_OFFSET),
-                    epochPool: XflHelpers.toString(stateData.readBigInt64LE(EPOCH_POOL_OFFSET))
+                    epochPool: XflHelpers.toString(stateData.readBigInt64LE(EPOCH_POOL_OFFSET)),
+                    hostMaxLeaseAmount: XflHelpers.toString(stateData.readBigInt64LE(HOST_MAX_LEASE_AMOUNT_OFFSET))
                 }
             }
         }

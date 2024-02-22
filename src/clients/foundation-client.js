@@ -71,7 +71,7 @@ class FoundationClient extends BaseEvernodeClient {
             {
                 hookParams: [
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.CANDIDATE_VOTE },
-                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: voteBuf.toString('hex').toUpperCase() }
+                    { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: voteBuf.toString('hex').toUpperCase() }
                 ],
                 ...options.transactionOptions
             });
@@ -140,7 +140,7 @@ class FoundationClient extends BaseEvernodeClient {
             {
                 hookParams: [
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.GOVERNANCE_MODE_CHANGE },
-                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: modeBuf.toString('hex').toUpperCase() }
+                    { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: modeBuf.toString('hex').toUpperCase() }
                 ],
                 ...options.transactionOptions
             });
@@ -169,7 +169,7 @@ class FoundationClient extends BaseEvernodeClient {
             {
                 hookParams: [
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_UPDATE_REPUTATION },
-                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: reputationBuf.toString('hex').toUpperCase() }
+                    { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: reputationBuf.toString('hex').toUpperCase() }
                 ],
                 ...options.transactionOptions
             });

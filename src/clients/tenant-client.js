@@ -242,7 +242,7 @@ class TenantClient extends BaseEvernodeClient {
             {
                 hookParams: [
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.EXTEND_LEASE },
-                    { name: HookParamKeys.PARAM_EVENT_DATA1_KEY, value: tokenID }
+                    { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: tokenID }
                 ],
                 ...options.transactionOptions
             });
