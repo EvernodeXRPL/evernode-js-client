@@ -213,6 +213,8 @@ class XrplApi {
                             const serverState = await this.getServerState();
                             if (FUNCTIONING_SERVER_STATES.includes(serverState)) {
                                 this.#isFallbackServerConnected = true;
+                            } else {
+                                throw "Fallback server is not synced."
                             }
                         }
                         break serverIterator;
@@ -251,10 +253,11 @@ class XrplApi {
             try {
                 await this.#handleClientConnect(client);
                 const serverState = await this.getServerState();
-                console.log(serverState)
                 if (FUNCTIONING_SERVER_STATES.includes(serverState)) {
                     this.#isPrimaryServerConnected = true;
                     break;
+                } else {
+                    throw "Primary server is not synced."
                 }
             }
             catch (e) {
