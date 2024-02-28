@@ -18,6 +18,11 @@ const API_REQ_TYPE = {
 }
 
 const LEDGER_CLOSE_TIME = 1000
+const NETWORK_MODES = {
+    INSUFFICIENT_NETWORK_MODE: 'InsufficientNetworkMode'
+}
+
+const FUNCTIONING_SERVER_STATES = ['full', 'validating', 'proposing']
 
 class XrplApi {
 
@@ -178,7 +183,7 @@ class XrplApi {
                     }
                 }
             } catch (e) {
-                console.log("Error occurred while listening to transaction.", e)
+                console.log("Error occurred while listening to transactions.", e)
             }
         });
     }
@@ -205,7 +210,10 @@ class XrplApi {
                     try {
                         if (!this.#isPrimaryServerConnected) {
                             await this.#handleClientConnect(client);
-                            this.#isFallbackServerConnected = true;
+                            const serverState = await this.getServerState();
+                            if (FUNCTIONING_SERVER_STATES.includes(serverState)) {
+                                this.#isFallbackServerConnected = true;
+                            }
                         }
                         break serverIterator;
                     }
@@ -242,8 +250,12 @@ class XrplApi {
             const client = new xrpl.Client(this.#primaryServer, this.#xrplClientOptions);
             try {
                 await this.#handleClientConnect(client);
-                this.#isPrimaryServerConnected = true;
-                break;
+                const serverState = await this.getServerState();
+                console.log(serverState)
+                if (FUNCTIONING_SERVER_STATES.includes(serverState)) {
+                    this.#isPrimaryServerConnected = true;
+                    break;
+                }
             }
             catch (e) {
                 this.#releaseClient();
@@ -340,6 +352,9 @@ class XrplApi {
         }
         catch (e) {
             this.#releaseConnection();
+            if (e?.data?.error_message === NETWORK_MODES.INSUFFICIENT_NETWORK_MODE) {
+                this.#events.emit(XrplApiEvents.SERVER_DESYNCED, e);
+            }
             throw e;
         }
     }
@@ -427,6 +442,11 @@ class XrplApi {
             if (e.data.error === 'actNotFound') return false;
             else throw e;
         }
+    }
+
+    async getServerState(ledgerIdx = "current") {
+        const resp = (await this.#handleClientRequest({ command: 'server_state', ledger_index: ledgerIdx }));
+        return resp?.result?.state?.server_state;
     }
 
     async getAccountInfo(address) {
