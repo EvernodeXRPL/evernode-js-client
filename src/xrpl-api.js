@@ -18,6 +18,7 @@ const API_REQ_TYPE = {
 }
 
 const LEDGER_CLOSE_TIME = 1000
+const LEDGER_DESYNC_TIME = 20000
 
 class XrplApi {
 
@@ -125,7 +126,22 @@ class XrplApi {
             }
         });
 
+        let ledgerTimeout;
+
         client.on('ledgerClosed', (ledger) => {
+            if (ledgerTimeout) {
+                clearTimeout(ledgerTimeout);
+            }
+
+            ledgerTimeout = setTimeout(async () => {
+                let server_state_resp = await this.#handleClientRequest({ command: 'server_state' });
+                let server_state = server_state_resp?.result?.state?.server_state;
+                if (server_state === "connected" || server_state === "syncing" || server_state === "tracking") {
+                    this.#events.emit(XrplApiEvents.DESYNCHRONIZED, { "server_state": server_state });
+                }
+                ledgerTimeout = undefined;
+            }, LEDGER_DESYNC_TIME);
+
             this.ledgerIndex = ledger.ledger_index;
             this.#events.emit(XrplApiEvents.LEDGER, ledger);
         });
