@@ -196,6 +196,7 @@ class XrplApi {
 
         const fallbackServers = this.#fallbackServers;
         let round = 0;
+        let serverState = null;
         while (!this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected && !this.#isFallbackServerConnected && (!maxRounds || round < maxRounds)) { // Keep attempting until consumer calls disconnect() manually or if the primary server is disconnected.
             ++round;
             serverIterator:
@@ -210,11 +211,12 @@ class XrplApi {
                     try {
                         if (!this.#isPrimaryServerConnected) {
                             await this.#handleClientConnect(client);
-                            const serverState = await this.getServerState();
-                            if (FUNCTIONING_SERVER_STATES.includes(serverState)) {
-                                this.#isFallbackServerConnected = true;
-                            } else {
-                                throw "Fallback server is not synced."
+                            while (!FUNCTIONING_SERVER_STATES.includes(serverState)) {
+                                serverState = await this.getServerState();
+                                if (FUNCTIONING_SERVER_STATES.includes(serverState)) {
+                                    this.#isFallbackServerConnected = true;
+                                    break;
+                                }
                             }
                         }
                         break serverIterator;
@@ -247,17 +249,20 @@ class XrplApi {
         await this.#acquireClient();
 
         let attempt = 0;
+        let serverState = null;
         while (!this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected && !this.#isFallbackServerConnected) { // Keep attempting until consumer calls disconnect() manually.
             ++attempt;
             const client = new xrpl.Client(this.#primaryServer, this.#xrplClientOptions);
             try {
                 await this.#handleClientConnect(client);
-                const serverState = await this.getServerState();
-                if (FUNCTIONING_SERVER_STATES.includes(serverState)) {
-                    this.#isPrimaryServerConnected = true;
-                    break;
-                } else {
-                    throw "Primary server is not synced."
+                while (!FUNCTIONING_SERVER_STATES.includes(serverState)) {
+                    serverState = await this.getServerState();
+                    if (FUNCTIONING_SERVER_STATES.includes(serverState)) {
+                        this.#isPrimaryServerConnected = true;
+                        break;
+                    } else if (this.#fallbackServers.length > 0) {
+                        throw "Primary server fallbacks."
+                    }
                 }
             }
             catch (e) {
