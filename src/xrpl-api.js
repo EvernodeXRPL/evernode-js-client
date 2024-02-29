@@ -361,7 +361,7 @@ class XrplApi {
         catch (e) {
             this.#releaseConnection();
             if (e?.data?.error_message === NETWORK_MODES.INSUFFICIENT_NETWORK_MODE) {
-                this.#events.emit(XrplApiEvents.SERVER_DESYNCED, e);
+                this.#events.emit(XrplApiEvents.SERVER_DESYNCED, e?.data?.error_code);
             }
             throw e;
         }
