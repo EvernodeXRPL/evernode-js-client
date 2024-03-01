@@ -5,7 +5,8 @@ const XrplApiEvents = {
     NFT_OFFER_CREATE: 'nftokencreateoffer',
     NFT_OFFER_ACCEPT: 'nftokenacceptoffer',
     URI_TOKEN_CREATE_SELL_OFFER: 'uritokencreateselloffer', // For Transfers
-    URI_TOKEN_BUY: 'uritokenbuy' // For Acquires
+    URI_TOKEN_BUY: 'uritokenbuy', // For Acquires
+    SERVER_DESYNCED: 'desynced'
 }
 
 const XrplConstants = {

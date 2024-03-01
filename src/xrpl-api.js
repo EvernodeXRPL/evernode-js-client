@@ -18,6 +18,11 @@ const API_REQ_TYPE = {
 }
 
 const LEDGER_CLOSE_TIME = 1000
+const NETWORK_MODES = {
+    INSUFFICIENT_NETWORK_MODE: 'InsufficientNetworkMode'
+}
+
+const FUNCTIONING_SERVER_STATES = ['full', 'validating', 'proposing']
 
 class XrplApi {
 
@@ -90,6 +95,10 @@ class XrplApi {
 
         if (!client.isConnected())
             await client.connect();
+
+        const serverState = await client.request({ command: 'server_state', ledger_index: "current" });
+        if (!FUNCTIONING_SERVER_STATES.includes(serverState))
+            throw "Client might have functioning issues."
     }
 
     async #initEventListeners(client) {
@@ -131,50 +140,54 @@ class XrplApi {
         });
 
         client.on("transaction", async (data) => {
-            if (data.validated) {
-                // NFTokenAcceptOffer transactions does not contain a Destination. So we check whether the accepted offer is created by which subscribed account
-                if (data.transaction.TransactionType === 'URITokenBuy') {
-                    // We take all the offers created by subscribed accounts in previous ledger until we get the respective offer.
-                    for (const subscription of this.#addressSubscriptions) {
-                        const acc = new XrplAccount(subscription.address, null, { xrplApi: this });
-                        // Here we access the offers that were there in this account based on the given ledger index.
-                        const offers = await acc.getURITokens({ ledger_index: data.ledger_index - 1 });
-                        // Filter out the matching URI token offer for the scenario.
-                        const offer = offers.find(o => o.index === data.transaction.URITokenID && o.Amount);
-                        // When we find the respective offer. We populate the destination and offer info and then we break the loop.
-                        if (offer) {
-                            // We populate some sell offer properties to the transaction to be sent with the event.
-                            data.transaction.Destination = subscription.address;
-                            // Replace the offer with the found offer object.
-                            data.transaction.URITokenSellOffer = offer;
-                            break;
+            try {
+                if (data.validated) {
+                    // NFTokenAcceptOffer transactions does not contain a Destination. So we check whether the accepted offer is created by which subscribed account
+                    if (data.transaction.TransactionType === 'URITokenBuy') {
+                        // We take all the offers created by subscribed accounts in previous ledger until we get the respective offer.
+                        for (const subscription of this.#addressSubscriptions) {
+                            const acc = new XrplAccount(subscription.address, null, { xrplApi: this });
+                            // Here we access the offers that were there in this account based on the given ledger index.
+                            const offers = await acc.getURITokens({ ledger_index: data.ledger_index - 1 });
+                            // Filter out the matching URI token offer for the scenario.
+                            const offer = offers.find(o => o.index === data.transaction.URITokenID && o.Amount);
+                            // When we find the respective offer. We populate the destination and offer info and then we break the loop.
+                            if (offer) {
+                                // We populate some sell offer properties to the transaction to be sent with the event.
+                                data.transaction.Destination = subscription.address;
+                                // Replace the offer with the found offer object.
+                                data.transaction.URITokenSellOffer = offer;
+                                break;
+                            }
+                        }
+                    }
+
+                    const matches = this.#addressSubscriptions.filter(s => s.address === data.transaction.Destination); // Only incoming transactions.
+                    if (matches.length > 0) {
+                        const tx = {
+                            LedgerHash: data.ledger_hash,
+                            LedgerIndex: data.ledger_index,
+                            ...data.transaction
+                        };
+
+                        if (data.meta?.delivered_amount)
+                            tx.DeliveredAmount = data.meta.delivered_amount;
+
+                        // Create an object copy. Otherwise xrpl client will mutate the transaction object,
+                        const eventName = tx.TransactionType.toLowerCase();
+                        // Emit the event only for successful transactions, Otherwise emit error.
+                        if (data.engine_result === "tesSUCCESS") {
+                            tx.Memos = TransactionHelper.deserializeMemos(tx.Memos);
+                            tx.HookParameters = TransactionHelper.deserializeHookParams(tx.HookParameters);
+                            matches.forEach(s => s.handler(eventName, tx));
+                        }
+                        else {
+                            matches.forEach(s => s.handler(eventName, null, data.engine_result_message));
                         }
                     }
                 }
-
-                const matches = this.#addressSubscriptions.filter(s => s.address === data.transaction.Destination); // Only incoming transactions.
-                if (matches.length > 0) {
-                    const tx = {
-                        LedgerHash: data.ledger_hash,
-                        LedgerIndex: data.ledger_index,
-                        ...data.transaction
-                    };
-
-                    if (data.meta?.delivered_amount)
-                        tx.DeliveredAmount = data.meta.delivered_amount;
-
-                    // Create an object copy. Otherwise xrpl client will mutate the transaction object,
-                    const eventName = tx.TransactionType.toLowerCase();
-                    // Emit the event only for successful transactions, Otherwise emit error.
-                    if (data.engine_result === "tesSUCCESS") {
-                        tx.Memos = TransactionHelper.deserializeMemos(tx.Memos);
-                        tx.HookParameters = TransactionHelper.deserializeHookParams(tx.HookParameters);
-                        matches.forEach(s => s.handler(eventName, tx));
-                    }
-                    else {
-                        matches.forEach(s => s.handler(eventName, null, data.engine_result_message));
-                    }
-                }
+            } catch (e) {
+                console.log("Error occurred while listening to transactions.", e)
             }
         });
     }
@@ -336,6 +349,9 @@ class XrplApi {
         }
         catch (e) {
             this.#releaseConnection();
+            if (e?.data?.error_message === NETWORK_MODES.INSUFFICIENT_NETWORK_MODE) {
+                this.#events.emit(XrplApiEvents.SERVER_DESYNCED, e?.data?.error_code);
+            }
             throw e;
         }
     }
@@ -423,6 +439,11 @@ class XrplApi {
             if (e.data.error === 'actNotFound') return false;
             else throw e;
         }
+    }
+
+    async getServerState(ledgerIdx = "current") {
+        const resp = (await this.#handleClientRequest({ command: 'server_state', ledger_index: ledgerIdx }));
+        return resp?.result?.state?.server_state;
     }
 
     async getAccountInfo(address) {
