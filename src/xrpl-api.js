@@ -95,6 +95,10 @@ class XrplApi {
 
         if (!client.isConnected())
             await client.connect();
+
+        const serverState = await this.getServerState();
+        if (!FUNCTIONING_SERVER_STATES.includes(serverState))
+            throw "Client might have functioning issues."
     }
 
     async #initEventListeners(client) {
@@ -196,7 +200,6 @@ class XrplApi {
 
         const fallbackServers = this.#fallbackServers;
         let round = 0;
-        let serverState = null;
         while (!this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected && !this.#isFallbackServerConnected && (!maxRounds || round < maxRounds)) { // Keep attempting until consumer calls disconnect() manually or if the primary server is disconnected.
             ++round;
             serverIterator:
@@ -211,15 +214,8 @@ class XrplApi {
                     try {
                         if (!this.#isPrimaryServerConnected) {
                             await this.#handleClientConnect(client);
-                            while (!FUNCTIONING_SERVER_STATES.includes(serverState)) {
-                                serverState = await this.getServerState();
-                                if (FUNCTIONING_SERVER_STATES.includes(serverState)) {
-                                    this.#isFallbackServerConnected = true;
-                                    break;
-                                }
-
-                                await new Promise(resolve => setTimeout(resolve, 2000));
-                            }
+                            this.#isFallbackServerConnected = true;
+                            break;
                         }
                         break serverIterator;
                     }
@@ -251,23 +247,13 @@ class XrplApi {
         await this.#acquireClient();
 
         let attempt = 0;
-        let serverState = null;
         while (!this.#isPermanentlyDisconnected && !this.#isPrimaryServerConnected && !this.#isFallbackServerConnected) { // Keep attempting until consumer calls disconnect() manually.
             ++attempt;
             const client = new xrpl.Client(this.#primaryServer, this.#xrplClientOptions);
             try {
                 await this.#handleClientConnect(client);
-                while (!FUNCTIONING_SERVER_STATES.includes(serverState)) {
-                    serverState = await this.getServerState();
-                    if (FUNCTIONING_SERVER_STATES.includes(serverState)) {
-                        this.#isPrimaryServerConnected = true;
-                        break;
-                    } else if (this.#fallbackServers.length > 0) {
-                        throw "Primary server fallbacks."
-                    }
-
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                }
+                this.#isPrimaryServerConnected = true;
+                break;
             }
             catch (e) {
                 this.#releaseClient();
