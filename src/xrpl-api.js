@@ -17,6 +17,7 @@ const API_REQ_TYPE = {
     TRANSACTIONS: 'transactions'
 }
 
+
 const RESPONSE_WATCH_TIMEOUT = 1000
 const NETWORK_MODES = {
     INSUFFICIENT_NETWORK_MODE: 'InsufficientNetworkMode'
@@ -24,6 +25,7 @@ const NETWORK_MODES = {
 
 const FUNCTIONING_SERVER_STATES = ['full', 'validating', 'proposing']
 const LEDGER_DESYNC_TIME = 20000
+
 
 class XrplApi {
 
@@ -96,9 +98,10 @@ class XrplApi {
 
         if (!client.isConnected())
             await client.connect();
+
         const resp = await client.request({ command: 'server_state', ledger_index: "current" });
         const serverState = resp?.result?.state?.server_state;
-        
+
         if (!FUNCTIONING_SERVER_STATES.includes(serverState))
             throw "Client might have functioning issues."
     }
