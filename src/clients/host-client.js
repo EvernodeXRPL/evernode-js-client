@@ -48,7 +48,7 @@ const VOTE_VALIDATION_ERR = "VOTE_VALIDATION_ERR";
 const IPV6_FAMILY = 6;
 
 const MAX_HOST_LEDGER_OFFSET = 30;
-const TX_RETRY_INTERVAL = 3000;
+const TX_RETRY_INTERVAL = 10000;
 
 class HostClient extends BaseEvernodeClient {
 

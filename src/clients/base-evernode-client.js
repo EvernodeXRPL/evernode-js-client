@@ -235,9 +235,13 @@ class BaseEvernodeClient {
         else if (!tx)
             console.log('handleEvernodeEvent: Invalid transaction.');
         else {
-            const ev = await this.extractEvernodeEvent(tx);
-            if (ev && this.#watchEvents.find(e => e === ev.name))
-                this.events.emit(ev.name, ev.data);
+            try {
+                const ev = await this.extractEvernodeEvent(tx);
+                if (ev && this.#watchEvents.find(e => e === ev.name))
+                    this.events.emit(ev.name, ev.data);
+            } catch (e) {
+                console.log("Error occurred while handling Evernode events", e)
+            }
         }
     }
 
