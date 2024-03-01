@@ -147,12 +147,16 @@ class XrplApi {
             }
 
             ledgerTimeout = setTimeout(async () => {
-                let serverState = await this.getServerState();
-
-                if (!FUNCTIONING_SERVER_STATES.includes(serverState)) {
-                    this.#events.emit(XrplApiEvents.SERVER_DESYNCED, { "event_type": "on_alert", "server_state": serverState });
+                try {
+                    let serverState = await this.getServerState();
+                    if (!FUNCTIONING_SERVER_STATES.includes(serverState)) {
+                        this.#events.emit(XrplApiEvents.SERVER_DESYNCED, { "event_type": "on_alert", "server_state": serverState });
+                    }
+                } catch (e) {
+                    console.log("Error occurred while listening to server de-syncs.", e)
+                } finally {
+                    clearTimeout(ledgerTimeout);
                 }
-                clearTimeout(ledgerTimeout);
             }, LEDGER_DESYNC_TIME);
 
             this.ledgerIndex = ledger.ledger_index;
