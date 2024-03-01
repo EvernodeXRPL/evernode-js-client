@@ -148,7 +148,7 @@ class XrplApi {
                 let serverState = await this.getServerState();
 
                 if (!FUNCTIONING_SERVER_STATES.includes(serverState)) {
-                    this.#events.emit(XrplApiEvents.SERVER_DESYNCED, { "server_state": serverState });
+                    this.#events.emit(XrplApiEvents.SERVER_DESYNCED, { "event_type": "on_alert", "server_state": serverState });
                 }
                 clearTimeout(ledgerTimeout);
             }, LEDGER_DESYNC_TIME);
@@ -368,7 +368,7 @@ class XrplApi {
         catch (e) {
             this.#releaseConnection();
             if (e?.data?.error_message === NETWORK_MODES.INSUFFICIENT_NETWORK_MODE) {
-                this.#events.emit(XrplApiEvents.SERVER_DESYNCED, e?.data?.error_code);
+                this.#events.emit(XrplApiEvents.SERVER_DESYNCED, { "event_type": "on_error", "error_code": e.data?.error_code, "error_message": e.data.error_message });
             }
             throw e;
         }
