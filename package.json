@@ -6,7 +6,7 @@
   ],
   "homepage": "https://github.com/HotPocketDev/evernode-js-client",
   "license": "SEE LICENSE IN https://raw.githubusercontent.com/EvernodeXRPL/evernode-resources/main/license/evernode-license.pdf",
-  "version": "0.6.41",
+  "version": "0.6.42",
   "scripts": {
     "lint": "./node_modules/.bin/eslint src/**/*.js",
     "build": "npm run lint && ncc build src/index.js -e elliptic -e xrpl -e ripple-address-codec -e ripple-binary-codec -e ripple-keypairs -o dist/ && cp evernode-license.pdf dist/",

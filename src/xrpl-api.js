@@ -106,6 +106,7 @@ class XrplApi {
 
     async #initEventListeners(client) {
         // First remove all the listeners.
+        let ledgerTimeout;
         try {
             await client.removeAllListeners();
         }
@@ -135,9 +136,10 @@ class XrplApi {
                     console.log("Error occurred while re-initializing", e)
                 }
             }
+            if (ledgerTimeout)
+                clearTimeout(ledgerTimeout);
         });
 
-        let ledgerTimeout;
 
         client.on('ledgerClosed', (ledger) => {
             if (ledgerTimeout) {
