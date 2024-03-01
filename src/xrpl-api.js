@@ -215,7 +215,6 @@ class XrplApi {
                         if (!this.#isPrimaryServerConnected) {
                             await this.#handleClientConnect(client);
                             this.#isFallbackServerConnected = true;
-                            break;
                         }
                         break serverIterator;
                     }
