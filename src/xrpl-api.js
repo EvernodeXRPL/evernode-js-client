@@ -96,7 +96,7 @@ class XrplApi {
         if (!client.isConnected())
             await client.connect();
 
-        const serverState = await this.getServerState();
+        const serverState = await client.request({ command: 'server_state', ledger_index: "current" });
         if (!FUNCTIONING_SERVER_STATES.includes(serverState))
             throw "Client might have functioning issues."
     }
