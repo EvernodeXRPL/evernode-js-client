@@ -217,6 +217,8 @@ class XrplApi {
                                     this.#isFallbackServerConnected = true;
                                     break;
                                 }
+
+                                await new Promise(resolve => setTimeout(resolve, 2000));
                             }
                         }
                         break serverIterator;
@@ -263,6 +265,8 @@ class XrplApi {
                     } else if (this.#fallbackServers.length > 0) {
                         throw "Primary server fallbacks."
                     }
+
+                    await new Promise(resolve => setTimeout(resolve, 2000));
                 }
             }
             catch (e) {
