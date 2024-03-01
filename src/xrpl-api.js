@@ -17,12 +17,13 @@ const API_REQ_TYPE = {
     TRANSACTIONS: 'transactions'
 }
 
-const LEDGER_CLOSE_TIME = 1000
+const RESPONSE_WATCH_TIMEOUT = 1000
 const NETWORK_MODES = {
     INSUFFICIENT_NETWORK_MODE: 'InsufficientNetworkMode'
 }
 
 const FUNCTIONING_SERVER_STATES = ['full', 'validating', 'proposing']
+const LEDGER_DESYNC_TIME = 20000
 
 class XrplApi {
 
@@ -96,7 +97,9 @@ class XrplApi {
         if (!client.isConnected())
             await client.connect();
 
-        const serverState = await client.request({ command: 'server_state', ledger_index: "current" });
+        const resp = await client.request({ command: 'server_state', ledger_index: "current" });
+        const serverState = resp?.result?.state?.server_state;
+
         if (!FUNCTIONING_SERVER_STATES.includes(serverState))
             throw "Client might have functioning issues."
     }
@@ -134,7 +137,22 @@ class XrplApi {
             }
         });
 
+        let ledgerTimeout;
+
         client.on('ledgerClosed', (ledger) => {
+            if (ledgerTimeout) {
+                clearTimeout(ledgerTimeout);
+            }
+
+            ledgerTimeout = setTimeout(async () => {
+                let serverState = await this.getServerState();
+
+                if (!FUNCTIONING_SERVER_STATES.includes(serverState)) {
+                    this.#events.emit(XrplApiEvents.SERVER_DESYNCED, { "event_type": "on_alert", "server_state": serverState });
+                }
+                clearTimeout(ledgerTimeout);
+            }, LEDGER_DESYNC_TIME);
+
             this.ledgerIndex = ledger.ledger_index;
             this.#events.emit(XrplApiEvents.LEDGER, ledger);
         });
@@ -350,7 +368,7 @@ class XrplApi {
         catch (e) {
             this.#releaseConnection();
             if (e?.data?.error_message === NETWORK_MODES.INSUFFICIENT_NETWORK_MODE) {
-                this.#events.emit(XrplApiEvents.SERVER_DESYNCED, e?.data?.error_code);
+                this.#events.emit(XrplApiEvents.SERVER_DESYNCED, { "event_type": "on_error", "error_code": e.data?.error_code, "error_message": e.data.error_message });
             }
             throw e;
         }
@@ -572,7 +590,7 @@ class XrplApi {
         if (lastLedger == null)
             throw 'Transaction must contain a LastLedgerSequence value for reliable submission.';
 
-        await new Promise(r => setTimeout(r, LEDGER_CLOSE_TIME));
+        await new Promise(r => setTimeout(r, RESPONSE_WATCH_TIMEOUT));
 
         const latestLedger = await this.#getLedgerIndex();
 
