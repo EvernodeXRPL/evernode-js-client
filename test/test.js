@@ -452,7 +452,7 @@ async function getAllHostsFromLedger() {
     console.log(`-----------Getting all hosts from ledger (including inactive)`);
     const registryClient = await evernode.HookClientFactory.create(evernode.HookTypes.registry);
     await registryClient.connect();
-    const hosts = await registryClient.getAllHostsFromLedger();
+    const hosts = await registryClient.getAllHostsFromLedger(true);
     console.log(hosts.length, hosts);
 }
 
