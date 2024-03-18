@@ -7,7 +7,7 @@ const { UtilHelpers } = require('../util-helpers');
 const { EvernodeHelpers } = require('../evernode-helpers');
 const { TransactionHelper } = require('../transaction-helper');
 
-const DEFAULT_WAIT_TIMEOUT = 60000;
+const DEFAULT_WAIT_TIMEOUT = 300000;
 
 const TenantEvents = {
     AcquireSuccess: EvernodeEvents.AcquireSuccess,
