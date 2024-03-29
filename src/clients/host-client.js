@@ -9,6 +9,7 @@ const { XflHelpers } = require('../xfl-helpers');
 const { EvernodeHelpers } = require('../evernode-helpers');
 const { StateHelpers } = require('../state-helpers');
 const { TransactionHelper } = require('../transaction-helper');
+const { UtilHelpers } = require('../util-helpers');
 
 const OFFER_WAIT_TIMEOUT = 60;
 
@@ -54,6 +55,22 @@ class HostClient extends BaseEvernodeClient {
 
     constructor(xrpAddress, xrpSecret, options = {}) {
         super(xrpAddress, xrpSecret, Object.values(HostEvents), true, options);
+    }
+
+    async connect() {
+        await this.connect();
+        await this.#setReputationAcc();
+    }
+
+    async #setReputationAcc(reputationAddress = null) {
+        if (!reputationAddress) {
+            const messageKey = this.xrplAcc.getMessageKey();
+            if (messageKey && this.accKeyPair.publicKey !== messageKey)
+                reputationAddress = UtilHelpers.deriveAddress(messageKey);
+        }
+
+        if (reputationAddress)
+            this.reputationAcc = new XrplAccount(reputationAddress, null, { xrplApi: this.xrplApi });
     }
 
     /**
@@ -184,6 +201,46 @@ class HostClient extends BaseEvernodeClient {
                 await this.xrplAcc.setTrustLine(EvernodeConstants.EVR, this.config.evrIssuerAddress, "99999999999999", null, null, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
             }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
         }
+    }
+
+    /**
+     * Prepare the reputation account with account fields and trust lines.
+     * @param {string} reputationSecret Secret of the reputation account.
+     */
+    async prepareReputationAccount(reputationSecret, options = {}) {
+        const repAcc = new XrplAccount(null, reputationSecret, { xrplApi: this.xrplApi });
+        const [trustLines, msgKey, hostAccMsgKey] = await Promise.all([
+            repAcc.getTrustLines(EvernodeConstants.EVR, this.config.evrIssuerAddress),
+            repAcc.getMessageKey(),
+            this.xrplAcc.getMessageKey()]);
+
+        const repKeyPair = repAcc.deriveKeypair();
+
+        let accountSetFields = {};
+        accountSetFields = (!msgKey || msgKey != this.accKeyPair.publicKey) ? { ...accountSetFields, MessageKey: this.accKeyPair.publicKey } : accountSetFields;
+
+        if (Object.keys(accountSetFields).length !== 0) {
+            await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+                await repAcc.setAccountFields(accountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
+            }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
+        }
+
+        if (trustLines.length === 0) {
+            await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+                await repAcc.setTrustLine(EvernodeConstants.EVR, this.config.evrIssuerAddress, "99999999999999", null, null, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
+            }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
+        }
+
+        let hostAccountSetFields = {};
+        hostAccountSetFields = (!hostAccMsgKey || hostAccMsgKey != repKeyPair.publicKey) ? { ...hostAccountSetFields, MessageKey: repKeyPair.publicKey } : hostAccountSetFields;
+
+        if (Object.keys(hostAccountSetFields).length !== 0) {
+            await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+                await this.xrplAcc.setAccountFields(accountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
+            }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
+        }
+
+        await this.#setReputationAcc(UtilHelpers.deriveAddress(repKeyPair.publicKey));
     }
 
     /**

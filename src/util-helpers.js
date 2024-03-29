@@ -1,3 +1,4 @@
+const kp = require('ripple-keypairs');
 const { Buffer } = require('buffer');
 const { XflHelpers } = require('./xfl-helpers');
 const { EvernodeConstants } = require('./evernode-common');
@@ -54,6 +55,13 @@ class UtilHelpers {
         }
     }
 
+    static deriveKeypair(secret) {
+        return kp.deriveKeypair(secret);
+    }
+
+    static deriveAddress(publicKey) {
+        return kp.deriveAddress(publicKey);
+    }
 }
 
 module.exports = {

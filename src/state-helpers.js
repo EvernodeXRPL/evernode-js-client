@@ -349,7 +349,8 @@ class StateHelpers {
         else if (Buffer.from(HookStateKeys.REGISTRY_ADDR, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.HEARTBEAT_ADDR, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.EVR_ISSUER_ADDR, 'hex').compare(stateKey) === 0 ||
-            Buffer.from(HookStateKeys.FOUNDATION_ADDR, 'hex').compare(stateKey) === 0) {
+            Buffer.from(HookStateKeys.FOUNDATION_ADDR, 'hex').compare(stateKey) === 0 ||
+            Buffer.from(HookStateKeys.REPUTATION_ADDR, 'hex').compare(stateKey) === 0) {
             return {
                 type: this.StateTypes.CONFIGURATION,
                 key: hexKey,
@@ -560,7 +561,8 @@ class StateHelpers {
             Buffer.from(HookStateKeys.REGISTRY_ADDR, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.HEARTBEAT_ADDR, 'hex').compare(stateKey) === 0 ||
             Buffer.from(HookStateKeys.GOVERNANCE_CONFIGURATION, 'hex').compare(stateKey) === 0 ||
-            Buffer.from(HookStateKeys.NETWORK_CONFIGURATION, 'hex').compare(stateKey) === 0) {
+            Buffer.from(HookStateKeys.NETWORK_CONFIGURATION, 'hex').compare(stateKey) === 0 ||
+            Buffer.from(HookStateKeys.REPUTATION_ADDR, 'hex').compare(stateKey) === 0) {
             return {
                 key: hexKey,
                 type: this.StateTypes.CONFIGURATION

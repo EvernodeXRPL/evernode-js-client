@@ -1,11 +1,11 @@
 const xrpl = require('xrpl');
-const kp = require('ripple-keypairs');
 const codec = require('ripple-address-codec');
 const crypto = require("crypto");
 const { XrplConstants, XrplTransactionTypes } = require('./xrpl-common');
 const { TransactionHelper } = require('./transaction-helper');
 const { EventEmitter } = require('./event-emitter');
 const { Defaults } = require('./defaults');
+const { UtilHelpers } = require('../dist');
 
 class XrplAccount {
 
@@ -28,8 +28,8 @@ class XrplAccount {
             this.wallet = xrpl.Wallet.fromSeed(this.secret);
             this.address = this.wallet.classicAddress;
         } else if (this.secret) {
-            const keypair = kp.deriveKeypair(this.secret);
-            const derivedPubKeyAddress = kp.deriveAddress(keypair.publicKey);
+            const keypair = UtilHelpers.deriveKeypair(this.secret);
+            const derivedPubKeyAddress = UtilHelpers.deriveAddress(keypair.publicKey);
             if (this.address == derivedPubKeyAddress)
                 this.wallet = xrpl.Wallet.fromSeed(this.secret);
             else
@@ -57,7 +57,7 @@ class XrplAccount {
         if (!this.secret)
             throw 'Cannot derive key pair: Account secret is empty.';
 
-        return kp.deriveKeypair(this.secret);
+        return UtilHelpers.deriveKeypair(this.secret);
     }
 
     async exists() {

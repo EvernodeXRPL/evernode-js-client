@@ -5,7 +5,8 @@ const { Defaults } = require('./defaults');
 const { TransactionHelper } = require('./transaction-helper');
 const { XrplApiEvents } = require('./xrpl-common');
 const { XrplAccount } = require('./xrpl-account');
-const { XrplHelpers } = require('./xrpl-helpers')
+const { XrplHelpers } = require('./xrpl-helpers');
+const { UtilHelpers } = require('../dist');
 
 const MAX_PAGE_LIMIT = 400;
 const API_REQ_TYPE = {
@@ -441,7 +442,7 @@ class XrplApi {
         const info = await this.getAccountInfo(address);
         const accountFlags = xrpl.parseAccountRootFlags(info.Flags);
         const regularKey = info.RegularKey;
-        const derivedPubKeyAddress = kp.deriveAddress(publicKey);
+        const derivedPubKeyAddress = UtilHelpers.deriveAddress(publicKey);
 
         // If the master key is disabled the derived pubkey address should be the regular key.
         // Otherwise it could be account address or the regular key
