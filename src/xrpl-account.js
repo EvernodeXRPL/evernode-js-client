@@ -234,6 +234,21 @@ class XrplAccount {
         return await this.#prepareSubmissionTransaction(signerListTx, options);
     }
 
+    async invoke(toAddr, blobObj = {}, options = {}) {
+        const preparedTxn = await this.prepareInvoke(toAddr, blobObj, options);
+        return await this.signAndSubmit(preparedTxn, options.submissionRef);
+    }
+
+    async prepareInvoke(toAddr, blobObj = {}, options = {}) {
+
+        return await this.#prepareSubmissionTransaction({
+            TransactionType: XrplTransactionTypes.INVOKE,
+            Account: this.address,
+            Destination: toAddr,
+            Blob: blobObj.isHex ? blobObj.data : TransactionHelper.asciiToHex(blobObj.data)
+        }, options);
+    }
+
     async makePayment(toAddr, amount, currency = null, issuer = null, memos = null, options = {}) {
         const preparedTxn = await this.prepareMakePayment(toAddr, amount, currency, issuer, memos, options);
         return await this.signAndSubmit(preparedTxn, options.submissionRef);

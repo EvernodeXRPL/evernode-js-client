@@ -59,18 +59,25 @@ class HostClient extends BaseEvernodeClient {
 
     async connect() {
         await this.connect();
-        await this.#setReputationAcc();
+        await this.setReputationAcc();
     }
 
-    async #setReputationAcc(reputationAddress = null) {
-        if (!reputationAddress) {
-            const messageKey = this.xrplAcc.getMessageKey();
-            if (messageKey && this.accKeyPair.publicKey !== messageKey)
+    async setReputationAcc(reputationAddress = null, reputationSecret = null) {
+        let validate = true;
+        if (!reputationAddress && !reputationSecret) {
+            const messageKey = await this.xrplAcc.getMessageKey();
+            if (messageKey && this.accKeyPair.publicKey !== messageKey) {
                 reputationAddress = UtilHelpers.deriveAddress(messageKey);
+                validate = false;
+            }
         }
 
-        if (reputationAddress)
-            this.reputationAcc = new XrplAccount(reputationAddress, null, { xrplApi: this.xrplApi });
+        if (reputationAddress || reputationSecret) {
+            this.reputationAcc = new XrplAccount(reputationAddress, reputationSecret, { xrplApi: this.xrplApi });
+
+            if (validate && this.reputationAcc.address !== UtilHelpers.deriveAddress(await this.xrplAcc.getMessageKey()))
+                throw 'Reputation address mismatch with configured.';
+        }
     }
 
     /**
@@ -240,7 +247,31 @@ class HostClient extends BaseEvernodeClient {
             }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
         }
 
-        await this.#setReputationAcc(UtilHelpers.deriveAddress(repKeyPair.publicKey));
+        await this.setReputationAcc(UtilHelpers.deriveAddress(repKeyPair.publicKey), reputationSecret);
+    }
+
+    /**
+     * Send reputation scores to the reputation hook.
+     * @param {object} scores Score object in { host: score } format.
+     */
+    async sendReputations(scores, options = {}) {
+        let buffer = Buffer.alloc(64, 0);
+        let i = 0;
+        for (const [key, value] of Object.entries(scores)) {
+            buffer.writeUIntLE(Number(value), i);
+            i++;
+        }
+
+        await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+            await this.xrplAcc.invoke(this.config.reputationAddress,
+                XrplConstants.MIN_DROPS,
+                { isHex: true, data: buffer.toString('hex') },
+                {
+                    maxLedgerIndex: this.#getMaxLedgerSequence(),
+                    feeUplift: feeUplift, submissionRef: submissionRef,
+                    ...options.transactionOptions
+                });
+        }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
     }
 
     /**
