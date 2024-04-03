@@ -78,6 +78,10 @@ const HOST_DISK_MB_OFFSET = 72;
 const HOST_EMAIL_ADDRESS_OFFSET = 76;
 const HOST_ACCUMULATED_REWARD_OFFSET = 116;
 
+const HOST_REP_LAST_REG_MOMENT_OFFSET = 0;
+const HOST_REP_SCORE_NUMERATOR_OFFSET = 8;
+const HOST_REP_SCORE_DENOMINATOR_OFFSET = 16;
+
 const PREV_HOST_ADDRESS_OFFSET = 0;
 const TRANSFER_LEDGER_IDX_OFFSET = 20;
 const TRANSFERRED_NFT_ID_OFFSET = 28;
@@ -151,6 +155,16 @@ class StateHelpers {
             return null;
 
         return state.data;
+    }
+
+    static decodeHostReputationAddressState(stateKeyBuf, stateDataBuf) {
+        const data = {
+            address: codec.encodeAccountID(stateKeyBuf),
+            lastRegisteredMoment: stateDataBuf.readUInt64LE(HOST_REP_LAST_REG_MOMENT_OFFSET),
+            scoreNumerator: stateDataBuf.readUInt64LE(HOST_REP_SCORE_NUMERATOR_OFFSET),
+            scoreDenominator: stateDataBuf.readUInt64LE(HOST_REP_SCORE_DENOMINATOR_OFFSET)
+        }
+        return data;
     }
 
     static decodeHostAddressState(stateKeyBuf, stateDataBuf) {
@@ -594,6 +608,11 @@ class StateHelpers {
         const addrBuf = Buffer.from(codec.decodeAccountID(address), "hex");
         const stateKeyBuf = Buffer.concat([Buffer.from(EVERNODE_PREFIX, "utf-8"), buf, addrBuf]);
         return stateKeyBuf.toString('hex').toUpperCase();
+    }
+
+    static generateHostReputationAddrStateKey(address) {
+        const addrBuf = Buffer.from(codec.decodeAccountID(address), "hex");
+        return addrBuf.toString('hex').toUpperCase();
     }
 
     static generateTransfereeAddrStateKey(address) {

@@ -89,6 +89,12 @@ const ErrorReasons = {
     NO_STATE_KEY: 'NO_STATE_KEY'
 }
 
+const ReputationConstants = {
+    REP_INFO_BUFFER_SIZE: 35,
+    REP_INFO_PUBKEY_OFFSET: 0,
+    REP_INFO_PORT_OFFSET: 33
+}
+
 // All keys are prefixed with 'EVR' (0x455652)
 // Config keys sub-prefix: 0x01
 const HookStateKeys = {
@@ -183,5 +189,6 @@ module.exports = {
     EvernodeEvents,
     URITokenTypes,
     HookParamKeys,
-    RegExp
+    RegExp,
+    ReputationConstants
 }

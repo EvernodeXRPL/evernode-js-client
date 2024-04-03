@@ -1,6 +1,6 @@
 const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { EvernodeEvents, EvernodeConstants, MemoFormats, EventTypes, ErrorCodes, HookParamKeys, RegExp } = require('../evernode-common');
+const { EvernodeEvents, EvernodeConstants, MemoFormats, EventTypes, ErrorCodes, HookParamKeys, RegExp, ReputationConstants } = require('../evernode-common');
 const { XrplAccount } = require('../xrpl-account');
 const { EncryptionHelper } = require('../encryption-helper');
 const { Buffer } = require('buffer');
@@ -248,6 +248,72 @@ class HostClient extends BaseEvernodeClient {
         }
 
         await this.setReputationAcc(UtilHelpers.deriveAddress(repKeyPair.publicKey), reputationSecret);
+    }
+
+    /**
+     * Set the reputation contract info.
+     * @param {number} port Port of the reputation contract instance.
+     * @param {string} publicKey Public key of the reputation contract instance.
+     */
+    async setReputationContractInfo(port, publicKey, options = {}) {
+        var buffer = Buffer.alloc(ReputationConstants.REP_INFO_BUFFER_SIZE, 0);
+        Buffer.from(publicKey.toUpperCase(), "hex").copy(buffer, ReputationConstants.REP_INFO_PUBKEY_OFFSET);
+        buffer.writeUInt16LE(port, ReputationConstants.REP_INFO_PORT_OFFSET);
+
+        let accountSetFields = {};
+        accountSetFields = { ...accountSetFields, Domain: buffer.toString('hex') };
+
+        if (Object.keys(accountSetFields).length !== 0) {
+            await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+                await this.reputationAcc.setAccountFields(accountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
+            }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
+        }
+    }
+
+    /**
+     * Get the reputation contract info.
+     */
+    async getReputationContractInfo() {
+        const domain = await this.xrplAcc.getDomain();
+        const repBuf = await this.reputationAcc.getDomain();
+
+        if (!repBuf)
+        throw 'No reputation info set.';
+
+        const publicKey = repBuf.slice(0, ReputationConstants.REP_INFO_PORT_OFFSET).toString().toLocaleLowerCase();
+        const port = repBuf.readUInt16LE(ReputationConstants.REP_INFO_PORT_OFFSET);
+
+        return {
+            domain: domain,
+            pubkey: publicKey,
+            port: port
+        }
+    }
+
+    /**
+     * Get reputation info of this host.
+     */
+    async getReputationInfo() {
+        if (!this.reputationAcc)
+            return null;
+
+        try {
+            const addrStateKey = StateHelpers.generateHostReputationAddrStateKey(this.reputationAcc.address);
+            const addrStateIndex = StateHelpers.getHookStateIndex(this.config.reputationAddress, addrStateKey);
+            const addrLedgerEntry = await this.xrplApi.getLedgerEntry(addrStateIndex);
+            const addrStateData = addrLedgerEntry?.HookStateData;
+            if (addrStateData) {
+                const addrStateDecoded = StateHelpers.decodeHostReputationAddressState(Buffer.from(addrStateKey, 'hex'), Buffer.from(addrStateData, 'hex'));
+                return addrStateDecoded;
+            }
+        }
+        catch (e) {
+            // If the exception is entryNotFound from Rippled there's no entry for the host, So return null.
+            if (e?.data?.error !== 'entryNotFound')
+                throw e;
+        }
+
+        return null;
     }
 
     /**
