@@ -252,20 +252,22 @@ class HostClient extends BaseEvernodeClient {
 
     /**
      * Send reputation scores to the reputation hook.
-     * @param {object} scores Score object in { host: score } format.
+     * @param {object} scores [Optional] Score object in { host: score } format.
      */
-    async sendReputations(scores, options = {}) {
+    async sendReputations(scores = null, options = {}) {
         let buffer = Buffer.alloc(64, 0);
-        let i = 0;
-        for (const [key, value] of Object.entries(scores)) {
-            buffer.writeUIntLE(Number(value), i);
-            i++;
+        if (scores) {
+            let i = 0;
+            for (const [key, value] of Object.entries(scores)) {
+                buffer.writeUIntLE(Number(value), i);
+                i++;
+            }
         }
 
         await this.#submitWithRetry(async (feeUplift, submissionRef) => {
             await this.xrplAcc.invoke(this.config.reputationAddress,
                 XrplConstants.MIN_DROPS,
-                { isHex: true, data: buffer.toString('hex') },
+                scores ? { isHex: true, data: buffer.toString('hex') } : null,
                 {
                     maxLedgerIndex: this.#getMaxLedgerSequence(),
                     feeUplift: feeUplift, submissionRef: submissionRef,
