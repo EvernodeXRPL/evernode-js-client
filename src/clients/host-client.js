@@ -271,26 +271,6 @@ class HostClient extends BaseEvernodeClient {
     }
 
     /**
-     * Get the reputation contract info.
-     */
-    async getReputationContractInfo() {
-        const domain = await this.xrplAcc.getDomain();
-        const repBuf = await this.reputationAcc.getDomain();
-
-        if (!repBuf)
-        throw 'No reputation info set.';
-
-        const publicKey = repBuf.slice(0, ReputationConstants.REP_INFO_PORT_OFFSET).toString().toLocaleLowerCase();
-        const port = repBuf.readUInt16LE(ReputationConstants.REP_INFO_PORT_OFFSET);
-
-        return {
-            domain: domain,
-            pubkey: publicKey,
-            port: port
-        }
-    }
-
-    /**
      * Get reputation info of this host.
      */
     async getReputationInfo() {

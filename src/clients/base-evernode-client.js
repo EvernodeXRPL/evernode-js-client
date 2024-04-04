@@ -931,6 +931,29 @@ class BaseEvernodeClient {
                 data = { ...data, ...orderedAddrStateDecoded };
             }
 
+            const hostRepAcc = new XrplAccount(hostReputationAddress, null, { xrplApi: this.xrplApi });
+            const [msgKey, repBuf] = await Promise.all([
+                hostRepAcc.getMessageKey(),
+                hostRepAcc.getDomain()]);
+
+            if (msgKey && repBuf) {
+                const hostAddress = UtilHelpers.deriveAddress(msgKey);
+                const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
+
+                const publicKey = repBuf.slice(0, ReputationConstants.REP_INFO_PORT_OFFSET).toString().toLocaleLowerCase();
+                const port = repBuf.readUInt16LE(ReputationConstants.REP_INFO_PORT_OFFSET);
+                const domain = await hostAcc.getDomain();
+
+                data = {
+                    ...data,
+                    contract: {
+                        domain: domain,
+                        pubkey: publicKey,
+                        port: port
+                    }
+                }
+            }
+
             return data;
         }
         catch (e) {
