@@ -297,23 +297,7 @@ class HostClient extends BaseEvernodeClient {
         if (!this.reputationAcc)
             return null;
 
-        try {
-            const addrStateKey = StateHelpers.generateHostReputationAddrStateKey(this.reputationAcc.address);
-            const addrStateIndex = StateHelpers.getHookStateIndex(this.config.reputationAddress, addrStateKey);
-            const addrLedgerEntry = await this.xrplApi.getLedgerEntry(addrStateIndex);
-            const addrStateData = addrLedgerEntry?.HookStateData;
-            if (addrStateData) {
-                const addrStateDecoded = StateHelpers.decodeHostReputationAddressState(Buffer.from(addrStateKey, 'hex'), Buffer.from(addrStateData, 'hex'));
-                return addrStateDecoded;
-            }
-        }
-        catch (e) {
-            // If the exception is entryNotFound from Rippled there's no entry for the host, So return null.
-            if (e?.data?.error !== 'entryNotFound')
-                throw e;
-        }
-
-        return null;
+        return await this._getReputationInfoByAddress(this.reputationAcc.address);
     }
 
     /**
@@ -331,7 +315,7 @@ class HostClient extends BaseEvernodeClient {
         }
 
         await this.#submitWithRetry(async (feeUplift, submissionRef) => {
-            await this.xrplAcc.invoke(this.config.reputationAddress,
+            await this.reputationAcc.invoke(this.config.reputationAddress,
                 XrplConstants.MIN_DROPS,
                 scores ? { isHex: true, data: buffer.toString('hex') } : null,
                 {

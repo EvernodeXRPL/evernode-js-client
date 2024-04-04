@@ -160,9 +160,35 @@ class StateHelpers {
     static decodeHostReputationAddressState(stateKeyBuf, stateDataBuf) {
         const data = {
             address: codec.encodeAccountID(stateKeyBuf),
-            lastRegisteredMoment: stateDataBuf.readUInt64LE(HOST_REP_LAST_REG_MOMENT_OFFSET),
-            scoreNumerator: stateDataBuf.readUInt64LE(HOST_REP_SCORE_NUMERATOR_OFFSET),
-            scoreDenominator: stateDataBuf.readUInt64LE(HOST_REP_SCORE_DENOMINATOR_OFFSET)
+            lastRegisteredMoment: Number(stateDataBuf.readBigUInt64LE(HOST_REP_LAST_REG_MOMENT_OFFSET)),
+            scoreNumerator: Number(stateDataBuf.readBigUInt64LE(HOST_REP_SCORE_NUMERATOR_OFFSET)),
+            scoreDenominator: Number(stateDataBuf.readBigUInt64LE(HOST_REP_SCORE_DENOMINATOR_OFFSET))
+        }
+        return data;
+    }
+
+    static decodeHostReputationOrderAddressState(stateKeyBuf, stateDataBuf) {
+        const data = {
+            moment: Number(stateKeyBuf.readBigUInt64LE(0)),
+            address: codec.encodeAccountID(stateKeyBuf.slice(8)),
+            orderedId: Number(stateDataBuf.readBigUInt64LE(0))
+        }
+        return data;
+    }
+
+    static decodeHostReputationOrderedIdState(stateKeyBuf, stateDataBuf) {
+        const data = {
+            moment: Number(stateKeyBuf.readBigUInt64LE(0)),
+            orderedId: Number(stateKeyBuf.readBigUInt64LE(8)),
+            address: codec.encodeAccountID(stateDataBuf.slice(0))
+        }
+        return data;
+    }
+
+    static decodeReputationHostCountState(stateKeyBuf, stateDataBuf) {
+        const data = {
+            moment: Number(stateKeyBuf.readBigUInt64LE(0)),
+            count: Number(stateDataBuf.readBigUInt64LE(8))
         }
         return data;
     }
@@ -613,6 +639,29 @@ class StateHelpers {
     static generateHostReputationAddrStateKey(address) {
         const addrBuf = Buffer.from(codec.decodeAccountID(address), "hex");
         return addrBuf.toString('hex').toUpperCase();
+    }
+
+    static generateHostReputationOrderAddressStateKey(address, moment) {
+        let buf = Buffer.alloc(28, 0);
+        buf.writeBigUInt64LE(BigInt(moment));
+        Buffer.from(codec.decodeAccountID(address), "hex").copy(buf, 8);
+
+        return buf.toString('hex').toUpperCase();
+    }
+
+    static generateHostReputationOrderedIdStateKey(orderedId, moment) {
+        let buf = Buffer.alloc(16, 0);
+        buf.writeBigUInt64LE(BigInt(moment));
+        buf.writeBigUInt64LE(BigInt(orderedId), 8);
+
+        return buf.toString('hex').toUpperCase();
+    }
+
+    static generateReputationHostCountStateKey(moment) {
+        let buf = Buffer.alloc(8, 0);
+        buf.writeBigUInt64LE(BigInt(moment));
+
+        return buf.toString('hex').toUpperCase();
     }
 
     static generateTransfereeAddrStateKey(address) {

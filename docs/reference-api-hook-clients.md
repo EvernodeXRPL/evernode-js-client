@@ -3,7 +3,8 @@
 In `Evernode`, there are three distinct types of hooks:
 - Governor Hook
 - Registry Hook
-- Heartbeat Hook.
+- Heartbeat Hook
+- Reputation Hook
 
 Each of these hooks is associated with a separate Xahau account. Therefore, in various scenarios, it becomes necessary to create client instances to engage with these hooks.
 
@@ -20,9 +21,9 @@ The Hook Client Factory provides a common interface for creating hook clients. D
 Creates a hook client from given type.
 
 ### Parameters
-| Name     | Type   | Description                                                                              |
-| -------- | ------ | ---------------------------------------------------------------------------------------- |
-| hookType | string | Type of the Required Hook. (Supported Hook types 'GOVERNOR', 'REGISTRY' and 'HEARTBEAT') |
+| Name     | Type   | Description                                                                                            |
+| -------- | ------ | ------------------------------------------------------------------------------------------------------ |
+| hookType | string | Type of the Required Hook. (Supported Hook types 'GOVERNOR', 'REGISTRY', 'HEARTBEAT' and 'REPUTATION') |
 
 ### Response format
 Instance of requested HookClient type.
@@ -35,13 +36,16 @@ Defaults.set({
 });
 
 // Instantiate a Governor client for the provided Governor Address via HookClientFactory.
-const governorClient = await HookClientFactory.create('GOVERNOR');
+const governorClient = await HookClientFactory.create(HookTypes.governor);
 
 // Instantiate a Registry client that is associated with the provided Governor Address via HookClientFactory.
-const registryClient = await HookClientFactory.create('REGISTRY');
+const registryClient = await HookClientFactory.create(HookTypes.registry);
 
 // Instantiate a Heartbeat client that is associated with the provided Governor Address via HookClientFactory.
-const heartbeatClient = await HookClientFactory.create('HEARTBEAT');
+const heartbeatClient = await HookClientFactory.create(HookTypes.heartbeat);
+
+// Instantiate a Reputation client that is associated with the provided Governor Address via HookClientFactory.
+const reputationClient = await HookClientFactory.create(HookTypes.reputation);
 ```
 <br/>
 
@@ -56,7 +60,7 @@ Takes one parameter `options` which is a JSON object of options that is passed t
     governorAddress: "rGVHr1PrfL93UAjyw3DWZoi9adz2sLp2yL",
 }
 ```
-| Name                       | Type   | Description                         |
+| Name                       | Type   | Description                          |
 | -------------------------- | ------ | ------------------------------------ |
 | governorAddress (optional) | string | Governor Hook Account Xahau address. |
 
@@ -82,10 +86,10 @@ Takes one parameter `options` which is a JSON object of options that is passed t
     rippledServer: 'wss://hooks-testnet-v3.xrpl-labs.com'
 }
 ```
-| Name                     | Type   | Description                         |
-| ------------------------ | ------ | ----------------------------------- |
+| Name                     | Type   | Description                          |
+| ------------------------ | ------ | ------------------------------------ |
 | registryAddress          | string | Registry Hook Account Xahau address. |
-| rippledServer (optional) | string | Rippled server URL.                 |
+| rippledServer (optional) | string | Rippled server URL.                  |
 
 ### Example
 ```javascript
@@ -108,10 +112,10 @@ Takes one parameter `options` which is a JSON object of options that is passed t
     rippledServer: 'wss://hooks-testnet-v3.xrpl-labs.com'
 }
 ```
-| Name                     | Type   | Description                          |
-| ------------------------ | ------ | ------------------------------------ |
+| Name                     | Type   | Description                           |
+| ------------------------ | ------ | ------------------------------------- |
 | heartbeatAddress         | string | Heartbeat Hook Account Xahau address. |
-| rippledServer (optional) | string | Rippled server URL.                  |
+| rippledServer (optional) | string | Rippled server URL.                   |
 
 ### Example
 ```javascript

@@ -9,7 +9,8 @@ const DefaultValues = {
 const HookTypes = {
     governor: 'GOVERNOR',
     registry: 'REGISTRY',
-    heartbeat: 'HEARTBEAT'
+    heartbeat: 'HEARTBEAT',
+    reputation: 'REPUTATION'
 }
 
 const getDefinitions = async () => {

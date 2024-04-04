@@ -905,6 +905,44 @@ class BaseEvernodeClient {
     }
 
     /**
+     * Get reputation info of given host.
+     */
+    async _getReputationInfoByAddress(hostReputationAddress) {
+        try {
+            const addrStateKey = StateHelpers.generateHostReputationAddrStateKey(hostReputationAddress);
+            const addrStateIndex = StateHelpers.getHookStateIndex(this.config.reputationAddress, addrStateKey);
+            const addrLedgerEntry = await this.xrplApi.getLedgerEntry(addrStateIndex);
+            const addrStateData = addrLedgerEntry?.HookStateData;
+            let data = {};
+
+            if (addrStateData) {
+                const addrStateDecoded = StateHelpers.decodeHostReputationAddressState(Buffer.from(addrStateKey, 'hex'), Buffer.from(addrStateData, 'hex'));
+                data = addrStateDecoded;
+            }
+
+            const moment = await this.getMoment();
+            const orderedAddrStateKey = StateHelpers.generateHostReputationOrderAddressStateKey(hostReputationAddress, moment);
+            const orderedAddrStateIndex = StateHelpers.getHookStateIndex(this.config.reputationAddress, orderedAddrStateKey);
+            const orderedAddrLedgerEntry = await this.xrplApi.getLedgerEntry(orderedAddrStateIndex);
+            const orderedAddrStateData = orderedAddrLedgerEntry?.HookStateData;
+
+            if (orderedAddrStateData) {
+                const orderedAddrStateDecoded = StateHelpers.decodeHostReputationOrderedIdState(Buffer.from(orderedAddrStateKey, 'hex'), Buffer.from(orderedAddrStateData, 'hex'));
+                data = { ...data, ...orderedAddrStateDecoded };
+            }
+
+            return data;
+        }
+        catch (e) {
+            // If the exception is entryNotFound from Rippled there's no entry for the host, So return null.
+            if (e?.data?.error !== 'entryNotFound')
+                throw e;
+        }
+
+        return null;
+    }
+
+    /**
      * Propose a new hook candidate.
      * @param {string} hashes Hook candidate hashes in hex format, <GOVERNOR_HASH(32)><REGISTRY_HASH(32)><HEARTBEAT_HASH(32)>.
      * @param {string} shortName Short name for the proposal candidate.

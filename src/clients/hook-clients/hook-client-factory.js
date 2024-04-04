@@ -2,6 +2,7 @@ const { HookTypes } = require("../../defaults");
 const { RegistryClient } = require("./registry-client");
 const { GovernorClient } = require("./governor-client");
 const { HeartbeatClient } = require("./heartbeat-client");
+const { ReputationClient } = require("./reputation-client");
 
 class HookClientFactory {
     /**
@@ -24,6 +25,11 @@ class HookClientFactory {
             case HookTypes.heartbeat: {
                 const heartbeatAddress = await HookClientFactory.#getAccountAddress(hookType);
                 hookClient = new HeartbeatClient({ heartbeatAddress: heartbeatAddress });
+                break;
+            }
+            case HookTypes.reputation: {
+                const reputationAddress = await HookClientFactory.#getAccountAddress(hookType);
+                hookClient = new ReputationClient({ reputationAddress: reputationAddress });
                 break;
             }
             default: {
