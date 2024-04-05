@@ -954,7 +954,7 @@ class BaseEvernodeClient {
                 }
             }
 
-            return data;
+            return Object.keys(data).length > 0 ? data : null;
         }
         catch (e) {
             // If the exception is entryNotFound from Rippled there's no entry for the host, So return null.
