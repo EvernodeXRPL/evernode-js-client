@@ -130,6 +130,7 @@ async function app() {
             // () => getHookStates(),
             // () => registerHost(),
             // () => prepareHostReputation(),
+            // () => getReputationInfo(),
             // () => getHostInfo(),
             // () => updateInfo(),
             // () => getAllHostsFromLedger(),
@@ -475,6 +476,13 @@ async function getHostInfo() {
     const hostInfo = await host.getHostInfo();
     console.log(hostInfo);
     return hostInfo;
+}
+
+async function getReputationInfo() {
+    const host = await getHostClient();
+    const reputationInfo = await host.getReputationInfo();
+    console.log(reputationInfo);
+    return reputationInfo;
 }
 
 async function pruneDeadHost(address = hostAddress) {

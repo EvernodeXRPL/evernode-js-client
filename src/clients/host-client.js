@@ -295,7 +295,6 @@ class HostClient extends BaseEvernodeClient {
 
         await this.#submitWithRetry(async (feeUplift, submissionRef) => {
             await this.reputationAcc.invoke(this.config.reputationAddress,
-                XrplConstants.MIN_DROPS,
                 scores ? { isHex: true, data: buffer.toString('hex') } : null,
                 {
                     maxLedgerIndex: this.#getMaxLedgerSequence(),
