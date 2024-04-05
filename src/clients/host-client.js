@@ -58,8 +58,9 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async connect() {
-        await super.connect();
+        const res = await super.connect();
         await this.setReputationAcc();
+        return res;
     }
 
     async setReputationAcc(reputationAddress = null, reputationSecret = null) {
@@ -73,10 +74,8 @@ class HostClient extends BaseEvernodeClient {
         if (reputationAddress || reputationSecret)
             this.reputationAcc = new XrplAccount(reputationAddress, reputationSecret, { xrplApi: this.xrplApi });
 
-        if (!this.reputationAcc || this.reputationAcc.address === this.xrplAcc.address)
-            throw 'Reputation is not configured.';
-        else if (this.reputationAcc.address !== UtilHelpers.deriveAddress(hostMessageKey ?? await this.xrplAcc.getMessageKey()))
-            throw 'Reputation address mismatch with configured.';
+        if (!this.reputationAcc || this.reputationAcc.address === this.xrplAcc.address || this.reputationAcc.address !== (UtilHelpers.deriveAddress(hostMessageKey ?? await this.xrplAcc.getMessageKey())))
+            this.reputationAcc = null;
     }
 
     /**
@@ -211,10 +210,11 @@ class HostClient extends BaseEvernodeClient {
 
     /**
      * Prepare the reputation account with account fields and trust lines.
+     * @param {string} reputationAddress Address of the reputation account.
      * @param {string} reputationSecret Secret of the reputation account.
      */
-    async prepareReputationAccount(reputationSecret, options = {}) {
-        const repAcc = new XrplAccount(null, reputationSecret, { xrplApi: this.xrplApi });
+    async prepareReputationAccount(reputationAddress, reputationSecret, options = {}) {
+        const repAcc = new XrplAccount(reputationAddress, reputationSecret, { xrplApi: this.xrplApi });
         const [trustLines, msgKey, hostAccMsgKey] = await Promise.all([
             repAcc.getTrustLines(EvernodeConstants.EVR, this.config.evrIssuerAddress),
             repAcc.getMessageKey(),
@@ -242,11 +242,11 @@ class HostClient extends BaseEvernodeClient {
 
         if (Object.keys(hostAccountSetFields).length !== 0) {
             await this.#submitWithRetry(async (feeUplift, submissionRef) => {
-                await this.xrplAcc.setAccountFields(accountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
+                await this.xrplAcc.setAccountFields(hostAccountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
             }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
         }
 
-        await this.setReputationAcc(UtilHelpers.deriveAddress(repKeyPair.publicKey), reputationSecret);
+        await this.setReputationAcc(reputationAddress, reputationSecret);
     }
 
     /**

@@ -58,7 +58,8 @@ class HookClientFactory {
             return configs.registryAddress;
         else if (hookType == HookTypes.heartbeat)
             return configs.heartbeatAddress;
-
+        else if (hookType == HookTypes.reputation)
+            return configs.reputationAddress;
     }
 }
 
