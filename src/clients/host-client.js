@@ -288,8 +288,8 @@ class HostClient extends BaseEvernodeClient {
         let buffer = Buffer.alloc(64, 0);
         if (scores) {
             let i = 0;
-            for (const [key, value] of Object.entries(scores)) {
-                buffer.writeUIntLE(Number(value), i);
+            for (const e of Object.entries(scores)) {
+                buffer.writeUIntLE(Number(e.value), i);
                 i++;
             }
         }
