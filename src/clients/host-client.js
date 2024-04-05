@@ -58,26 +58,25 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async connect() {
-        await this.connect();
+        await super.connect();
         await this.setReputationAcc();
     }
 
     async setReputationAcc(reputationAddress = null, reputationSecret = null) {
-        let validate = true;
+        var hostMessageKey;
         if (!reputationAddress && !reputationSecret) {
-            const messageKey = await this.xrplAcc.getMessageKey();
-            if (messageKey && this.accKeyPair.publicKey !== messageKey) {
-                reputationAddress = UtilHelpers.deriveAddress(messageKey);
-                validate = false;
-            }
+            hostMessageKey = await this.xrplAcc.getMessageKey();
+            if (hostMessageKey)
+                reputationAddress = UtilHelpers.deriveAddress(hostMessageKey);
         }
 
-        if (reputationAddress || reputationSecret) {
+        if (reputationAddress || reputationSecret)
             this.reputationAcc = new XrplAccount(reputationAddress, reputationSecret, { xrplApi: this.xrplApi });
 
-            if (validate && this.reputationAcc.address !== UtilHelpers.deriveAddress(await this.xrplAcc.getMessageKey()))
-                throw 'Reputation address mismatch with configured.';
-        }
+        if (!this.reputationAcc || this.reputationAcc.address === this.xrplAcc.address)
+            throw 'Reputation is not configured.';
+        else if (this.reputationAcc.address !== UtilHelpers.deriveAddress(hostMessageKey ?? await this.xrplAcc.getMessageKey()))
+            throw 'Reputation address mismatch with configured.';
     }
 
     /**
