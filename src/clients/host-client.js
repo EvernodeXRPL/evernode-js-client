@@ -280,6 +280,11 @@ class HostClient extends BaseEvernodeClient {
         return await this._getReputationInfoByAddress(this.reputationAcc.address);
     }
 
+    /**
+     * Prepare host reputation score to a common format for submission.
+     * @param {object} collectedScores 
+     * @returns Unified reputation score array.
+     */
     async prepareHostReputationScores(collectedScores = {}) {
         const moment = this.getMoment();
         const myReputationInfo = await this.getReputationInfo();
