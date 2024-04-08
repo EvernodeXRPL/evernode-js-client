@@ -303,7 +303,7 @@ class HostClient extends BaseEvernodeClient {
                 const orderedIdMomentLedgerEntry = await this.xrplApi.getLedgerEntry(orderedIdMomentStateIndex);
                 const orderedMomentStateData = orderedIdMomentLedgerEntry?.HookStateData;
                 const hostReputationAddr = StateHelpers.decodeHostReputationOrderedIdState(Buffer.from(orderedIdMomentStateKey, 'hex'), Buffer.from(orderedMomentStateData, 'hex'));
-                const hostReputationInfo = await this._getReputationInfoByAddress(hostReputationAddr);
+                const hostReputationInfo = await this._getReputationInfoByAddress(hostReputationAddr.address);
 
                 universeDetails.push({
                     publicKey: hostReputationInfo.publicKey,
