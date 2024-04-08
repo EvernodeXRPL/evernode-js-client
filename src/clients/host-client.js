@@ -280,6 +280,46 @@ class HostClient extends BaseEvernodeClient {
         return await this._getReputationInfoByAddress(this.reputationAcc.address);
     }
 
+    async prepareHostReputationScores(collectedScores = {}) {
+        const moment = this.getMoment();
+        const myReputationInfo = await this.getReputationInfo();
+        const myOrderId = myReputationInfo.orderedId;
+
+        // Deciding universe.
+        const universeStartIndex = Math.floor(myOrderId / 64) * 64;
+        const universeEndIndex = Math.min(universeStartIndex + 64, 256);
+
+        const universeDetails = new Array(64);
+
+        for (let i = universeStartIndex; i < universeEndIndex; i++) {
+            const orderedIdMomentStateKey = StateHelpers.generateHostReputationOrderedIdStateKey(i, moment);
+            const orderedIdMomentStateIndex = StateHelpers.getHookStateIndex(this.config.reputationAddress, orderedIdMomentStateKey);
+
+            try {
+                const orderedIdMomentLedgerEntry = await this.xrplApi.getLedgerEntry(orderedIdMomentStateIndex);
+                const orderedMomentStateData = orderedIdMomentLedgerEntry?.HookStateData;
+                const hostReputationAddr = StateHelpers.decodeHostReputationOrderedIdState(Buffer.from(orderedIdMomentStateKey, 'hex'), Buffer.from(orderedMomentStateData, 'hex'));
+                const hostReputationInfo = await this._getReputationInfoByAddress(hostReputationAddr);
+
+                universeDetails.push({
+                    publicKey: hostReputationInfo.publicKey,
+                    reputationAddress: hostReputationInfo.address,
+                    orderId: i
+                });
+            } catch (error) {
+                console.error("Error fetching data for index:", i, error); // Handle errors, maybe log them
+                universeDetails.push({ publicKey: "-1", orderId: i });
+            }
+        }
+
+        return universeDetails.map(n => ({
+            ...n,
+            score: collectedScores[n?.publicKey] || 0
+        }));
+    }
+
+
+
     /**
      * Send reputation scores to the reputation hook.
      * @param {object} scores [Optional] Score object in { host: score } format.
@@ -287,12 +327,14 @@ class HostClient extends BaseEvernodeClient {
     async sendReputations(scores = null, options = {}) {
         let buffer = Buffer.alloc(64, 0);
         if (scores) {
+            const preparedScores = this.prepareHostReputationScores(scores);
             let i = 0;
-            for (const [key, value] of Object.entries(scores)) {
-                buffer.writeUIntLE(Number(value), i);
+            for (const reputationScore of preparedScores) {
+                buffer.writeUIntLE(Number(reputationScore.score), i);
                 i++;
             }
         }
+
 
         await this.#submitWithRetry(async (feeUplift, submissionRef) => {
             await this.reputationAcc.invoke(this.config.reputationAddress,
