@@ -927,7 +927,7 @@ class BaseEvernodeClient {
             const orderedAddrStateData = orderedAddrLedgerEntry?.HookStateData;
 
             if (orderedAddrStateData) {
-                const orderedAddrStateDecoded = StateHelpers.decodeHostReputationOrderedIdState(Buffer.from(orderedAddrStateKey, 'hex'), Buffer.from(orderedAddrStateData, 'hex'));
+                const orderedAddrStateDecoded = StateHelpers.decodeHostReputationOrderAddressState(Buffer.from(orderedAddrStateKey, 'hex'), Buffer.from(orderedAddrStateData, 'hex'));
                 data = { ...data, ...orderedAddrStateDecoded };
             }
 
