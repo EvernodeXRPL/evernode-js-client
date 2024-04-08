@@ -1,5 +1,7 @@
 const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
+const { HookClientFactory } = require("../clients/hook-clients/hook-client-factory");
+const { HookTypes } = require("../defaults");
 const { EvernodeEvents, EvernodeConstants, MemoFormats, EventTypes, ErrorCodes, HookParamKeys, RegExp, ReputationConstants } = require('../evernode-common');
 const { XrplAccount } = require('../xrpl-account');
 const { EncryptionHelper } = require('../encryption-helper');
@@ -285,7 +287,6 @@ class HostClient extends BaseEvernodeClient {
      * @returns Unified reputation score array.
      */
     async prepareHostReputationScores(collectedScores = {}) {
-        const moment = this.getMoment();
         const myReputationInfo = await this.getReputationInfo();
         const myOrderId = myReputationInfo.orderedId;
 
@@ -294,27 +295,33 @@ class HostClient extends BaseEvernodeClient {
         const universeEndIndex = Math.min(universeStartIndex + 64, 256);
 
         const universeDetails = new Array(64);
+        const reputationClient = await HookClientFactory.create(HookTypes.reputation);
+        let hadIssue = false;
 
-        for (let i = universeStartIndex; i < universeEndIndex; i++) {
-            const orderedIdMomentStateKey = StateHelpers.generateHostReputationOrderedIdStateKey(i, moment);
-            const orderedIdMomentStateIndex = StateHelpers.getHookStateIndex(this.config.reputationAddress, orderedIdMomentStateKey);
-
-            try {
-                const orderedIdMomentLedgerEntry = await this.xrplApi.getLedgerEntry(orderedIdMomentStateIndex);
-                const orderedMomentStateData = orderedIdMomentLedgerEntry?.HookStateData;
-                const hostReputationAddr = StateHelpers.decodeHostReputationOrderedIdState(Buffer.from(orderedIdMomentStateKey, 'hex'), Buffer.from(orderedMomentStateData, 'hex'));
-                const hostReputationInfo = await this._getReputationInfoByAddress(hostReputationAddr.address);
-
-                universeDetails.push({
-                    publicKey: hostReputationInfo.publicKey,
-                    reputationAddress: hostReputationInfo.address,
-                    orderId: i
-                });
-            } catch (error) {
-                console.error("Error fetching data for index:", i, error); // Handle errors, maybe log them
-                universeDetails.push({ publicKey: "-1", orderId: i });
+        try {
+            await reputationClient.connect();
+            for (let i = universeStartIndex; i < universeEndIndex; i++) {
+                try {
+                    const hostReputationInfo = await reputationClient.getReputationInfoByOrderedId(i);
+                    universeDetails.push({
+                        publicKey: hostReputationInfo.publicKey,
+                        reputationAddress: hostReputationInfo.address,
+                        orderId: i
+                    });
+                } catch (error) {
+                    console.log("Error fetching data for index:", i, error); // Handle errors, maybe log them
+                    universeDetails.push({ publicKey: "-1", orderId: i });
+                }
             }
+        } catch (e) {
+            hadIssue = true;
+            console.log(e);
+        } finally {
+            await reputationClient.disconnect();
         }
+
+        if (hadIssue)
+            throw "Issue in score preparation."
 
         return universeDetails.map(n => ({
             ...n,
@@ -331,11 +338,22 @@ class HostClient extends BaseEvernodeClient {
     async sendReputations(scores = null, options = {}) {
         let buffer = Buffer.alloc(64, 0);
         if (scores) {
-            const preparedScores = await this.prepareHostReputationScores(scores);
-            let i = 0;
-            for (const reputationScore of preparedScores) {
-                buffer.writeUIntLE(Number(reputationScore.scoreValue), i);
-                i++;
+            let attempts = 1;
+            while (attempts <= 5) {
+                console.log("Preparing scores...")
+                try {
+                    const preparedScores = await this.prepareHostReputationScores(scores);
+                    let i = 0;
+                    for (const reputationScore of preparedScores) {
+                        buffer.writeUIntLE(Number(reputationScore.scoreValue), i);
+                        i++;
+                    }
+                    break;
+                }
+                catch (e) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    attempts++;
+                }
             }
         }
 
