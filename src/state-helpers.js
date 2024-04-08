@@ -89,6 +89,7 @@ const TRANSFERRED_NFT_ID_OFFSET = 28;
 const CANDIDATE_GOVERNOR_HOOK_HASH_OFFSET = 0;
 const CANDIDATE_REGISTRY_HOOK_HASH_OFFSET = 32;
 const CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET = 64;
+const CANDIDATE_REPUTATION_HOOK_HASH_OFFSET = 96;
 
 const CANDIDATE_OWNER_ADDRESS_OFFSET = 0;
 const CANDIDATE_IDX_OFFSET = 20;
@@ -266,6 +267,8 @@ class StateHelpers {
             governorHookHash: stateDataBuf.slice(CANDIDATE_GOVERNOR_HOOK_HASH_OFFSET, CANDIDATE_REGISTRY_HOOK_HASH_OFFSET).toString('hex').toUpperCase(),
             registryHookHash: stateDataBuf.slice(CANDIDATE_REGISTRY_HOOK_HASH_OFFSET, CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET).toString('hex').toUpperCase(),
             heartbeatHookHash: stateDataBuf.slice(CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET, CANDIDATE_HEARTBEAT_HOOK_HASH_OFFSET + 32).toString('hex').toUpperCase(),
+            reputationHookHash: stateDataBuf.slice(CANDIDATE_REPUTATION_HOOK_HASH_OFFSET, CANDIDATE_REPUTATION_HOOK_HASH_OFFSET + 32).toString('hex').toUpperCase(),
+
         }
         return data;
     }
