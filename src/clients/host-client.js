@@ -58,26 +58,24 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async connect() {
-        await this.connect();
+        const res = await super.connect();
         await this.setReputationAcc();
+        return res;
     }
 
     async setReputationAcc(reputationAddress = null, reputationSecret = null) {
-        let validate = true;
+        var hostMessageKey;
         if (!reputationAddress && !reputationSecret) {
-            const messageKey = await this.xrplAcc.getMessageKey();
-            if (messageKey && this.accKeyPair.publicKey !== messageKey) {
-                reputationAddress = UtilHelpers.deriveAddress(messageKey);
-                validate = false;
-            }
+            hostMessageKey = await this.xrplAcc.getMessageKey();
+            if (hostMessageKey)
+                reputationAddress = UtilHelpers.deriveAddress(hostMessageKey);
         }
 
-        if (reputationAddress || reputationSecret) {
+        if (reputationAddress || reputationSecret)
             this.reputationAcc = new XrplAccount(reputationAddress, reputationSecret, { xrplApi: this.xrplApi });
 
-            if (validate && this.reputationAcc.address !== UtilHelpers.deriveAddress(await this.xrplAcc.getMessageKey()))
-                throw 'Reputation address mismatch with configured.';
-        }
+        if (!this.reputationAcc || this.reputationAcc.address === this.xrplAcc.address || this.reputationAcc.address !== (UtilHelpers.deriveAddress(hostMessageKey ?? await this.xrplAcc.getMessageKey())))
+            this.reputationAcc = null;
     }
 
     /**
@@ -212,10 +210,11 @@ class HostClient extends BaseEvernodeClient {
 
     /**
      * Prepare the reputation account with account fields and trust lines.
+     * @param {string} reputationAddress Address of the reputation account.
      * @param {string} reputationSecret Secret of the reputation account.
      */
-    async prepareReputationAccount(reputationSecret, options = {}) {
-        const repAcc = new XrplAccount(null, reputationSecret, { xrplApi: this.xrplApi });
+    async prepareReputationAccount(reputationAddress, reputationSecret, options = {}) {
+        const repAcc = new XrplAccount(reputationAddress, reputationSecret, { xrplApi: this.xrplApi });
         const [trustLines, msgKey, hostAccMsgKey] = await Promise.all([
             repAcc.getTrustLines(EvernodeConstants.EVR, this.config.evrIssuerAddress),
             repAcc.getMessageKey(),
@@ -243,11 +242,11 @@ class HostClient extends BaseEvernodeClient {
 
         if (Object.keys(hostAccountSetFields).length !== 0) {
             await this.#submitWithRetry(async (feeUplift, submissionRef) => {
-                await this.xrplAcc.setAccountFields(accountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
+                await this.xrplAcc.setAccountFields(hostAccountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
             }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
         }
 
-        await this.setReputationAcc(UtilHelpers.deriveAddress(repKeyPair.publicKey), reputationSecret);
+        await this.setReputationAcc(reputationAddress, reputationSecret);
     }
 
     /**
@@ -319,7 +318,7 @@ class HostClient extends BaseEvernodeClient {
 
         return universeDetails.map(n => ({
             ...n,
-            score: collectedScores[n?.publicKey] || 0
+            scoreValue: collectedScores[n?.publicKey] || 0
         }));
     }
 
@@ -335,7 +334,7 @@ class HostClient extends BaseEvernodeClient {
             const preparedScores = this.prepareHostReputationScores(scores);
             let i = 0;
             for (const reputationScore of preparedScores) {
-                buffer.writeUIntLE(Number(reputationScore.score), i);
+                buffer.writeUIntLE(Number(reputationScore.scoreValue), i);
                 i++;
             }
         }
@@ -343,7 +342,6 @@ class HostClient extends BaseEvernodeClient {
 
         await this.#submitWithRetry(async (feeUplift, submissionRef) => {
             await this.reputationAcc.invoke(this.config.reputationAddress,
-                XrplConstants.MIN_DROPS,
                 scores ? { isHex: true, data: buffer.toString('hex') } : null,
                 {
                     maxLedgerIndex: this.#getMaxLedgerSequence(),

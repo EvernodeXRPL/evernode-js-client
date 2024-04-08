@@ -5,7 +5,7 @@ const { XrplConstants, XrplTransactionTypes } = require('./xrpl-common');
 const { TransactionHelper } = require('./transaction-helper');
 const { EventEmitter } = require('./event-emitter');
 const { Defaults } = require('./defaults');
-const { UtilHelpers } = require('../dist');
+const { UtilHelpers } = require('./util-helpers');
 
 class XrplAccount {
 

@@ -6,7 +6,7 @@ const { TransactionHelper } = require('./transaction-helper');
 const { XrplApiEvents } = require('./xrpl-common');
 const { XrplAccount } = require('./xrpl-account');
 const { XrplHelpers } = require('./xrpl-helpers');
-const { UtilHelpers } = require('../dist');
+const { UtilHelpers } = require('./util-helpers');
 
 const MAX_PAGE_LIMIT = 400;
 const API_REQ_TYPE = {

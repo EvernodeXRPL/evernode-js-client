@@ -10,8 +10,10 @@ const overrideGovernorAddress = '';
 const foundationSecret = "sn3nNMSuyXiqVjrhfQr9JxDhgHmds";
 const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
 const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
-const hostAddress = "r3poDzE7vB1JbYmN1ezpQoxMP4QG4TPHW6";
-const hostSecret = "shmHHZdw8hTPjgVy7eJBDcm7DCnHp";
+const hostAddress = "rpRcrjaM3bMc7KM3qVkMTMsLTpV8LhHhTq";
+const hostSecret = "snGKAK7wMqXf47pxnh2hZ56k3nx6q";
+const hostReputationAddress = "r3kDibZG3xoKFLPGU3hL116TjVhjEmcnsp";
+const hostReputationSecret = "ssMmi4o2wHR76f23b1eiCePoauecH";
 const tenantAddress = "r3vbdktYDxVSe7K1oo2McKeBJhQng3uFeH";
 const tenantSecret = "shjBr5yFDNzyUkBiFXjexFYiAsPBS";
 const transfereeAddress = 'rsPxbXNo5XnBpnLZ3yu3ZufCZiA22hS5R7';
@@ -127,6 +129,8 @@ async function app() {
             // () => initializeConfigs(),
             // () => getHookStates(),
             // () => registerHost(),
+            // () => prepareHostReputation(),
+            // () => getReputationInfo(),
             // () => getHostInfo(),
             // () => updateInfo(),
             // () => getAllHostsFromLedger(),
@@ -277,6 +281,17 @@ async function registerHost(address = hostAddress, secret = hostSecret) {
 
     // Verify the registration.
     return await host.isRegistered();
+}
+
+async function prepareHostReputation(address = hostAddress, secret = hostSecret, reputationAddress = hostReputationAddress, reputationSecret = hostReputationSecret) {
+    const host = await getHostClient(address, secret);
+
+    if (!await host.isRegistered())
+        return;
+
+    console.log(`-----------Prepare host reputation`);
+    await host.prepareReputationAccount(reputationAddress, reputationSecret);
+    return;
 }
 
 async function deregisterHost(address = hostAddress, secret = hostSecret) {
@@ -461,6 +476,13 @@ async function getHostInfo() {
     const hostInfo = await host.getHostInfo();
     console.log(hostInfo);
     return hostInfo;
+}
+
+async function getReputationInfo() {
+    const host = await getHostClient();
+    const reputationInfo = await host.getReputationInfo();
+    console.log(reputationInfo);
+    return reputationInfo;
 }
 
 async function pruneDeadHost(address = hostAddress) {

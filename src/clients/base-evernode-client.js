@@ -3,7 +3,7 @@ const { Buffer } = require('buffer');
 const { XrplApi } = require('../xrpl-api');
 const { XrplAccount } = require('../xrpl-account');
 const { XrplApiEvents, XrplConstants } = require('../xrpl-common');
-const { EvernodeEvents, EventTypes, MemoFormats, EvernodeConstants, HookStateKeys, HookParamKeys, RegExp } = require('../evernode-common');
+const { EvernodeEvents, EventTypes, MemoFormats, EvernodeConstants, HookStateKeys, HookParamKeys, RegExp, ReputationConstants } = require('../evernode-common');
 const { Defaults } = require('../defaults');
 const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
@@ -954,7 +954,7 @@ class BaseEvernodeClient {
                 }
             }
 
-            return data;
+            return Object.keys(data).length > 0 ? data : null;
         }
         catch (e) {
             // If the exception is entryNotFound from Rippled there's no entry for the host, So return null.

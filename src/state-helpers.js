@@ -133,6 +133,8 @@ const CANDIDATE_OWNER_KEY_ZERO_COUNT = 8;
 const HOOK_STATE_LEDGER_TYPE_PREFIX = 118; // Decimal value of ASCII 'v'
 const PENDING_TRANSFER = 1;
 const HOST_EMAIL_ADDRESS_LEN = 40;
+const STATE_KEY_SIZE = 32;
+const ACCOUNT_ID_SIZE = 20;
 
 class StateHelpers {
     static StateTypes = {
@@ -158,8 +160,9 @@ class StateHelpers {
     }
 
     static decodeHostReputationAddressState(stateKeyBuf, stateDataBuf) {
+        const keyOffset = STATE_KEY_SIZE - ACCOUNT_ID_SIZE;
         const data = {
-            address: codec.encodeAccountID(stateKeyBuf),
+            address: codec.encodeAccountID(stateKeyBuf.slice(keyOffset)),
             lastRegisteredMoment: Number(stateDataBuf.readBigUInt64LE(HOST_REP_LAST_REG_MOMENT_OFFSET)),
             scoreNumerator: Number(stateDataBuf.readBigUInt64LE(HOST_REP_SCORE_NUMERATOR_OFFSET)),
             scoreDenominator: Number(stateDataBuf.readBigUInt64LE(HOST_REP_SCORE_DENOMINATOR_OFFSET))
@@ -168,26 +171,29 @@ class StateHelpers {
     }
 
     static decodeHostReputationOrderAddressState(stateKeyBuf, stateDataBuf) {
+        const keyOffset = STATE_KEY_SIZE - ACCOUNT_ID_SIZE - 8;
         const data = {
-            moment: Number(stateKeyBuf.readBigUInt64LE(0)),
-            address: codec.encodeAccountID(stateKeyBuf.slice(8)),
+            moment: Number(stateKeyBuf.readBigUInt64LE(keyOffset)),
+            address: codec.encodeAccountID(stateKeyBuf.slice(keyOffset + 8)),
             orderedId: Number(stateDataBuf.readBigUInt64LE(0))
         }
         return data;
     }
 
     static decodeHostReputationOrderedIdState(stateKeyBuf, stateDataBuf) {
+        const keyOffset = STATE_KEY_SIZE - 16;
         const data = {
-            moment: Number(stateKeyBuf.readBigUInt64LE(0)),
-            orderedId: Number(stateKeyBuf.readBigUInt64LE(8)),
+            moment: Number(stateKeyBuf.readBigUInt64LE(keyOffset)),
+            orderedId: Number(stateKeyBuf.readBigUInt64LE(keyOffset + 8)),
             address: codec.encodeAccountID(stateDataBuf.slice(0))
         }
         return data;
     }
 
     static decodeReputationHostCountState(stateKeyBuf, stateDataBuf) {
+        const keyOffset = STATE_KEY_SIZE - 8;
         const data = {
-            moment: Number(stateKeyBuf.readBigUInt64LE(0)),
+            moment: Number(stateKeyBuf.readBigUInt64LE(keyOffset)),
             count: Number(stateDataBuf.readBigUInt64LE(8))
         }
         return data;
@@ -637,29 +643,34 @@ class StateHelpers {
     }
 
     static generateHostReputationAddrStateKey(address) {
-        const addrBuf = Buffer.from(codec.decodeAccountID(address), "hex");
-        return addrBuf.toString('hex').toUpperCase();
+        const buf = Buffer.alloc(STATE_KEY_SIZE, 0);
+        Buffer.from(codec.decodeAccountID(address), "hex").copy(buf, buf.length - ACCOUNT_ID_SIZE);
+
+        return buf.toString('hex').toUpperCase();
     }
 
     static generateHostReputationOrderAddressStateKey(address, moment) {
-        let buf = Buffer.alloc(28, 0);
-        buf.writeBigUInt64LE(BigInt(moment));
-        Buffer.from(codec.decodeAccountID(address), "hex").copy(buf, 8);
+        const buf = Buffer.alloc(STATE_KEY_SIZE, 0);
+        const offset = buf.length - ACCOUNT_ID_SIZE - 8;
+        buf.writeBigUInt64LE(BigInt(moment), offset);
+        Buffer.from(codec.decodeAccountID(address), "hex").copy(buf, offset + 8);
 
         return buf.toString('hex').toUpperCase();
     }
 
     static generateHostReputationOrderedIdStateKey(orderedId, moment) {
-        let buf = Buffer.alloc(16, 0);
-        buf.writeBigUInt64LE(BigInt(moment));
-        buf.writeBigUInt64LE(BigInt(orderedId), 8);
+        let buf = Buffer.alloc(STATE_KEY_SIZE, 0);
+        const offset = buf.length - 16;
+        buf.writeBigUInt64LE(BigInt(moment, offset));
+        buf.writeBigUInt64LE(BigInt(orderedId), offset + 8);
 
         return buf.toString('hex').toUpperCase();
     }
 
     static generateReputationHostCountStateKey(moment) {
-        let buf = Buffer.alloc(8, 0);
-        buf.writeBigUInt64LE(BigInt(moment));
+        let buf = Buffer.alloc(STATE_KEY_SIZE, 0);
+        const offset = buf.length - 8;
+        buf.writeBigUInt64LE(BigInt(moment), offset);
 
         return buf.toString('hex').toUpperCase();
     }
