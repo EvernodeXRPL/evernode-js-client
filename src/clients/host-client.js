@@ -331,7 +331,7 @@ class HostClient extends BaseEvernodeClient {
     async sendReputations(scores = null, options = {}) {
         let buffer = Buffer.alloc(64, 0);
         if (scores) {
-            const preparedScores = this.prepareHostReputationScores(scores);
+            const preparedScores = await this.prepareHostReputationScores(scores);
             let i = 0;
             for (const reputationScore of preparedScores) {
                 buffer.writeUIntLE(Number(reputationScore.scoreValue), i);
