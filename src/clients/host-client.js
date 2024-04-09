@@ -329,8 +329,6 @@ class HostClient extends BaseEvernodeClient {
         }));
     }
 
-
-
     /**
      * Send reputation scores to the reputation hook.
      * @param {object} scores [Optional] Score object in { host: score } format.
@@ -356,7 +354,6 @@ class HostClient extends BaseEvernodeClient {
                 }
             }
         }
-
 
         await this.#submitWithRetry(async (feeUplift, submissionRef) => {
             await this.reputationAcc.invoke(this.config.reputationAddress,
