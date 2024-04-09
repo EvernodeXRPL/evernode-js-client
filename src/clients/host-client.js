@@ -57,9 +57,9 @@ class HostClient extends BaseEvernodeClient {
         super(xrpAddress, xrpSecret, Object.values(HostEvents), true, options);
     }
 
-    async connect() {
+    async connect(options = {}) {
         const res = await super.connect();
-        await this.setReputationAcc();
+        await this.setReputationAcc(options.reputationAddress, options.reputationSecret);
         return res;
     }
 
@@ -76,6 +76,8 @@ class HostClient extends BaseEvernodeClient {
 
         if (!this.reputationAcc || this.reputationAcc.address === this.xrplAcc.address || this.reputationAcc.address !== (UtilHelpers.deriveAddress(hostMessageKey ?? await this.xrplAcc.getMessageKey())))
             this.reputationAcc = null;
+        else if (this.reputationAcc.address.secret)
+            this.messagePrivateKey = this.reputationAcc.deriveKeypair().privateKey;
     }
 
     /**
