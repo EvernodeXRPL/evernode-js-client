@@ -1,5 +1,7 @@
 const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
+const { HookClientFactory } = require("../clients/hook-clients/hook-client-factory");
+const { HookTypes } = require("../defaults");
 const { EvernodeEvents, EvernodeConstants, MemoFormats, EventTypes, ErrorCodes, HookParamKeys, RegExp, ReputationConstants } = require('../evernode-common');
 const { XrplAccount } = require('../xrpl-account');
 const { EncryptionHelper } = require('../encryption-helper');
@@ -282,16 +284,76 @@ class HostClient extends BaseEvernodeClient {
     }
 
     /**
+     * Prepare host reputation score to a common format for submission.
+     * @param {object} collectedScores 
+     * @returns Unified reputation score array.
+     */
+    async prepareHostReputationScores(collectedScores = {}) {
+        const myReputationInfo = await this.getReputationInfo();
+        const myOrderId = myReputationInfo.orderedId;
+
+        // Deciding universe.
+        const universeStartIndex = Math.floor(myOrderId / 64) * 64;
+        const universeEndIndex = Math.min(universeStartIndex + 64, 256);
+
+        const universeDetails = new Array(64);
+        const reputationClient = await HookClientFactory.create(HookTypes.reputation);
+        let hadIssue = false;
+
+        try {
+            await reputationClient.connect();
+            for (let i = universeStartIndex; i < universeEndIndex; i++) {
+                try {
+                    const hostReputationInfo = await reputationClient.getReputationInfoByOrderedId(i);
+                    universeDetails.push({
+                        publicKey: hostReputationInfo.publicKey,
+                        reputationAddress: hostReputationInfo.address,
+                        orderId: i
+                    });
+                } catch (error) {
+                    console.log("Error fetching data for index:", i, error); // Handle errors, maybe log them
+                    universeDetails.push({ publicKey: "-1", orderId: i });
+                }
+            }
+        } catch (e) {
+            hadIssue = true;
+            console.log(e);
+        } finally {
+            await reputationClient.disconnect();
+        }
+
+        if (hadIssue)
+            throw "Issue in score preparation."
+
+        return universeDetails.map(n => ({
+            ...n,
+            scoreValue: collectedScores[n?.publicKey] || 0
+        }));
+    }
+
+    /**
      * Send reputation scores to the reputation hook.
      * @param {object} scores [Optional] Score object in { host: score } format.
      */
     async sendReputations(scores = null, options = {}) {
         let buffer = Buffer.alloc(64, 0);
         if (scores) {
-            let i = 0;
-            for (const e of Object.entries(scores)) {
-                buffer.writeUIntLE(Number(e.value), i);
-                i++;
+            let attempts = 1;
+            while (attempts <= 5) {
+                console.log("Preparing scores...")
+                try {
+                    const preparedScores = await this.prepareHostReputationScores(scores);
+                    let i = 0;
+                    for (const reputationScore of preparedScores) {
+                        buffer.writeUIntLE(Number(reputationScore.scoreValue), i);
+                        i++;
+                    }
+                    break;
+                }
+                catch (e) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    attempts++;
+                }
             }
         }
 
