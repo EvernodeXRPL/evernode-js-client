@@ -76,7 +76,7 @@ class HostClient extends BaseEvernodeClient {
 
         if (!this.reputationAcc || this.reputationAcc.address === this.xrplAcc.address || this.reputationAcc.address !== (UtilHelpers.deriveAddress(hostMessageKey ?? await this.xrplAcc.getMessageKey())))
             this.reputationAcc = null;
-        else if (this.reputationAcc.address.secret)
+        else if (this.reputationAcc.secret)
             this.messagePrivateKey = this.reputationAcc.deriveKeypair().privateKey;
     }
 
