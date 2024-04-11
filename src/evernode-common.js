@@ -92,7 +92,7 @@ const ErrorReasons = {
 const ReputationConstants = {
     REP_INFO_BUFFER_SIZE: 35,
     REP_INFO_PUBKEY_OFFSET: 0,
-    REP_INFO_PORT_OFFSET: 33
+    REP_INFO_PEER_PORT_OFFSET: 33
 }
 
 // All keys are prefixed with 'EVR' (0x455652)

@@ -661,7 +661,7 @@ class StateHelpers {
     static generateHostReputationOrderedIdStateKey(orderedId, moment) {
         let buf = Buffer.alloc(STATE_KEY_SIZE, 0);
         const offset = buf.length - 16;
-        buf.writeBigUInt64LE(BigInt(moment, offset));
+        buf.writeBigUInt64LE(BigInt(moment), offset);
         buf.writeBigUInt64LE(BigInt(orderedId), offset + 8);
 
         return buf.toString('hex').toUpperCase();

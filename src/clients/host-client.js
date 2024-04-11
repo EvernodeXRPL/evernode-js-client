@@ -255,13 +255,13 @@ class HostClient extends BaseEvernodeClient {
 
     /**
      * Set the reputation contract info.
-     * @param {number} port Port of the reputation contract instance.
+     * @param {number} peerPort Peer port of the reputation contract instance.
      * @param {string} publicKey Public key of the reputation contract instance.
      */
-    async setReputationContractInfo(port, publicKey, options = {}) {
+    async setReputationContractInfo(peerPort, publicKey, options = {}) {
         var buffer = Buffer.alloc(ReputationConstants.REP_INFO_BUFFER_SIZE, 0);
         Buffer.from(publicKey.toUpperCase(), "hex").copy(buffer, ReputationConstants.REP_INFO_PUBKEY_OFFSET);
-        buffer.writeUInt16LE(port, ReputationConstants.REP_INFO_PORT_OFFSET);
+        buffer.writeUInt16LE(peerPort, ReputationConstants.REP_INFO_PEER_PORT_OFFSET);
 
         let accountSetFields = {};
         accountSetFields = { ...accountSetFields, Domain: buffer.toString('hex') };

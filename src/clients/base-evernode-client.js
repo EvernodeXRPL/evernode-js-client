@@ -941,8 +941,8 @@ class BaseEvernodeClient {
                 const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
 
                 const repBuf = Buffer.from(rep, 'hex');
-                const publicKey = repBuf.slice(0, ReputationConstants.REP_INFO_PORT_OFFSET).toString().toLocaleLowerCase();
-                const port = repBuf.readUInt16LE(ReputationConstants.REP_INFO_PORT_OFFSET);
+                const publicKey = repBuf.slice(0, ReputationConstants.REP_INFO_PEER_PORT_OFFSET).toString('hex').toLocaleLowerCase();
+                const peerPort = repBuf.readUInt16LE(ReputationConstants.REP_INFO_PEER_PORT_OFFSET);
                 const domain = await hostAcc.getDomain();
 
                 data = {
@@ -950,7 +950,7 @@ class BaseEvernodeClient {
                     contract: {
                         domain: domain,
                         pubkey: publicKey,
-                        port: port
+                        peerPort: peerPort
                     }
                 }
             }
