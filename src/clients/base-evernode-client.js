@@ -906,8 +906,11 @@ class BaseEvernodeClient {
 
     /**
      * Get reputation info of given host.
+     * @param {string} hostReputationAddress Host's reputation address.
+     * @param {number} moment (optional) Moment to get reputation info for.
+     * @returns Reputation info object.
      */
-    async _getReputationInfoByAddress(hostReputationAddress) {
+    async _getReputationInfoByAddress(hostReputationAddress, moment = null) {
         try {
             const addrStateKey = StateHelpers.generateHostReputationAddrStateKey(hostReputationAddress);
             const addrStateIndex = StateHelpers.getHookStateIndex(this.config.reputationAddress, addrStateKey);
@@ -920,8 +923,8 @@ class BaseEvernodeClient {
                 data = addrStateDecoded;
             }
 
-            const moment = await this.getMoment();
-            const orderedAddrStateKey = StateHelpers.generateHostReputationOrderAddressStateKey(hostReputationAddress, moment);
+            const repMoment = moment ?? await this.getMoment();
+            const orderedAddrStateKey = StateHelpers.generateHostReputationOrderAddressStateKey(hostReputationAddress, repMoment);
             const orderedAddrStateIndex = StateHelpers.getHookStateIndex(this.config.reputationAddress, orderedAddrStateKey);
             const orderedAddrLedgerEntry = await this.xrplApi.getLedgerEntry(orderedAddrStateIndex);
             const orderedAddrStateData = orderedAddrLedgerEntry?.HookStateData;

@@ -275,12 +275,14 @@ class HostClient extends BaseEvernodeClient {
 
     /**
      * Get reputation info of this host.
+     * @param {number} moment (optional) Moment to get reputation info for.
+     * @returns Reputation info object.
      */
-    async getReputationInfo() {
+    async getReputationInfo(moment = null) {
         if (!this.reputationAcc)
             return null;
 
-        return await this._getReputationInfoByAddress(this.reputationAcc.address);
+        return await this._getReputationInfoByAddress(this.reputationAcc.address, moment);
     }
 
     /**
