@@ -296,40 +296,29 @@ class HostClient extends BaseEvernodeClient {
 
         // Deciding universe.
         const universeStartIndex = Math.floor(myOrderId / 64) * 64;
-        const universeEndIndex = Math.min(universeStartIndex + 64, 256);
 
-        const universeDetails = new Array(64);
         const reputationClient = await HookClientFactory.create(HookTypes.reputation);
-        let hadIssue = false;
-
-        try {
-            await reputationClient.connect();
-            for (let i = universeStartIndex; i < universeEndIndex; i++) {
-                try {
-                    const hostReputationInfo = await reputationClient.getReputationInfoByOrderedId(i);
-                    universeDetails.push({
-                        publicKey: hostReputationInfo.publicKey,
-                        reputationAddress: hostReputationInfo.address,
-                        orderId: i
-                    });
-                } catch (error) {
-                    console.log("Error fetching data for index:", i, error); // Handle errors, maybe log them
-                    universeDetails.push({ publicKey: "-1", orderId: i });
-                }
+        await reputationClient.connect();
+        let data = {};
+        await Promise.all(Array.from({ length: 64 }, (_, i) => i + universeStartIndex).map(async (i) => {
+            try {
+                const hostReputationInfo = await reputationClient.getReputationInfoByOrderedId(i);
+                if (!hostReputationInfo)
+                    throw 'No reputation info for this order id';
+                data[i.toString()] = {
+                    publicKey: hostReputationInfo.publicKey,
+                    reputationAddress: hostReputationInfo.address,
+                    orderId: i
+                };
+            } catch (error) {
+                data[i.toString()] = { publicKey: "-1", orderId: i };
             }
-        } catch (e) {
-            hadIssue = true;
-            console.log(e);
-        } finally {
-            await reputationClient.disconnect();
-        }
+        }));
+        await reputationClient.disconnect();
 
-        if (hadIssue)
-            throw "Issue in score preparation."
-
-        return universeDetails.map(n => ({
-            ...n,
-            scoreValue: collectedScores[n?.publicKey] || 0
+        return Object.entries(data).map(e => ({
+            ...e[1],
+            scoreValue: collectedScores[e[1]?.publicKey] || 0
         }));
     }
 
@@ -340,34 +329,21 @@ class HostClient extends BaseEvernodeClient {
     async sendReputations(scores = null, options = {}) {
         let buffer = Buffer.alloc(64, 0);
         if (scores) {
-            let attempts = 1;
-            while (attempts <= 5) {
-                console.log("Preparing scores...")
-                try {
-                    const preparedScores = await this.prepareHostReputationScores(scores);
-                    let i = 0;
-                    for (const reputationScore of preparedScores) {
-                        buffer.writeUIntLE(Number(reputationScore.scoreValue), i);
-                        i++;
-                    }
-                    break;
-                }
-                catch (e) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    attempts++;
-                }
+            const preparedScores = await this.prepareHostReputationScores(scores);
+            let i = 0;
+            for (const reputationScore of preparedScores) {
+                buffer.writeUIntLE(Number(reputationScore.scoreValue), i, 1);
+                i++;
             }
         }
 
-        await this.#submitWithRetry(async (feeUplift, submissionRef) => {
-            await this.reputationAcc.invoke(this.config.reputationAddress,
-                scores ? { isHex: true, data: buffer.toString('hex') } : null,
-                {
-                    maxLedgerIndex: this.#getMaxLedgerSequence(),
-                    feeUplift: feeUplift, submissionRef: submissionRef,
-                    ...options.transactionOptions
-                });
-        }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
+        await this.reputationAcc.invoke(this.config.reputationAddress,
+            scores ? { isHex: true, data: buffer.toString('hex') } : null,
+            {
+                maxLedgerIndex: this.#getMaxLedgerSequence(),
+                ...options.transactionOptions,
+                submissionRef: options.submissionRef
+            });
     }
 
     /**
