@@ -25,7 +25,7 @@ class ReputationClient extends BaseEvernodeClient {
 
             if (orderedIdStateData) {
                 const orderedIdStateDecoded = StateHelpers.decodeHostReputationOrderedIdState(Buffer.from(orderedIdStateKey, 'hex'), Buffer.from(orderedIdStateData, 'hex'));
-                return await this._getReputationInfoByAddress(orderedIdStateDecoded.address);
+                return await this._getReputationInfoByAddress(orderedIdStateDecoded.address, moment);
             }
         }
         catch (e) {
