@@ -131,6 +131,7 @@ async function app() {
             // () => registerHost(),
             // () => prepareHostReputation(),
             // () => getReputationInfo(),
+            // () => sendReputation(),
             // () => getHostInfo(),
             // () => updateInfo(),
             // () => getAllHostsFromLedger(),
@@ -270,7 +271,7 @@ async function registerHost(address = hostAddress, secret = hostSecret) {
     const leaseAmount = 0.000001;
 
     console.log("Register...");
-    const instanceCount = 1;
+    const instanceCount = 3;
     await host.register("AU", 10000, 512, 1024, instanceCount, 'Intel', 10, 10, "Test desctiption", "testemail@gmail.com", leaseAmount);
 
     console.log("Lease Offer...");
@@ -483,6 +484,14 @@ async function getReputationInfo() {
     const reputationInfo = await host.getReputationInfo();
     console.log(reputationInfo);
     return reputationInfo;
+}
+
+async function sendReputation() {
+    const host = await getHostClient(hostAddress, hostSecret, hostReputationAddress, hostReputationSecret);
+
+    console.log(`Sending reputation`);
+
+    await host.sendReputations({});
 }
 
 async function pruneDeadHost(address = hostAddress) {
