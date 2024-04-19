@@ -989,7 +989,7 @@ class BaseEvernodeClient {
             if (!ledgerEntry)
                 throw `No hook exists with the specified ${hook} hook hash.`;
             else
-                keylets.push(HookHelpers.getHookDefinitionKeylet(index));
+                keylets.push(HookHelpers.getKeylet('HOOK_DEFINITION',index));
         }
 
         const uniqueId = StateHelpers.getNewHookCandidateId(hashesBuf);
