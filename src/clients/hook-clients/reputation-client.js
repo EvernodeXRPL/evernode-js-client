@@ -11,18 +11,21 @@ class ReputationClient extends BaseEvernodeClient {
 
     /**
      * Get reputation info of given host reputation orderId.
+     * @param {number} hostReputationOrderedId Reputation order id of the host.
+     * @param {number} moment (optional) Moment to get reputation info for.
+     * @returns Reputation info object.
      */
-    async getReputationInfoByOrderedId(hostReputationOrderedId) {
+    async getReputationInfoByOrderedId(hostReputationOrderedId, moment = null) {
         try {
-            const moment = await this.getMoment();
-            const orderedIdStateKey = StateHelpers.generateHostReputationOrderedIdStateKey(hostReputationOrderedId, moment);
+            const repMoment = moment ?? await this.getMoment();
+            const orderedIdStateKey = StateHelpers.generateHostReputationOrderedIdStateKey(hostReputationOrderedId, repMoment);
             const orderedIdStateIndex = StateHelpers.getHookStateIndex(this.xrplAcc.address, orderedIdStateKey);
             const orderedIdLedgerEntry = await this.xrplApi.getLedgerEntry(orderedIdStateIndex);
             const orderedIdStateData = orderedIdLedgerEntry?.HookStateData;
 
             if (orderedIdStateData) {
                 const orderedIdStateDecoded = StateHelpers.decodeHostReputationOrderedIdState(Buffer.from(orderedIdStateKey, 'hex'), Buffer.from(orderedIdStateData, 'hex'));
-                return await this._getReputationInfoByAddress(orderedIdStateDecoded.address);
+                return await this._getReputationInfoByAddress(orderedIdStateDecoded.address, moment);
             }
         }
         catch (e) {
@@ -36,11 +39,13 @@ class ReputationClient extends BaseEvernodeClient {
 
     /**
      * Get reputation info of the moment.
+     * @param {number} moment (optional) Moment to get reputation info for.
+     * @returns Reputation info object.
      */
-    async getReputationInfo() {
+    async getReputationInfo(moment = null) {
         try {
-            const moment = await this.getMoment();
-            const hostCountStateKey = StateHelpers.generateReputationHostCountStateKey(moment);
+            const repMoment = moment ?? await this.getMoment();
+            const hostCountStateKey = StateHelpers.generateReputationHostCountStateKey(repMoment);
             const hostCountStateIndex = StateHelpers.getHookStateIndex(this.xrplAcc.address, hostCountStateKey);
             const hostCountLedgerEntry = await this.xrplApi.getLedgerEntry(hostCountStateIndex);
             const hostCountStateData = hostCountLedgerEntry?.HookStateData;

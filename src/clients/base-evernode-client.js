@@ -908,8 +908,11 @@ class BaseEvernodeClient {
 
     /**
      * Get reputation info of given host.
+     * @param {string} hostReputationAddress Host's reputation address.
+     * @param {number} moment (optional) Moment to get reputation info for.
+     * @returns Reputation info object.
      */
-    async _getReputationInfoByAddress(hostReputationAddress) {
+    async _getReputationInfoByAddress(hostReputationAddress, moment = null) {
         try {
             const addrStateKey = StateHelpers.generateHostReputationAddrStateKey(hostReputationAddress);
             const addrStateIndex = StateHelpers.getHookStateIndex(this.config.reputationAddress, addrStateKey);
@@ -922,28 +925,29 @@ class BaseEvernodeClient {
                 data = addrStateDecoded;
             }
 
-            const moment = await this.getMoment();
-            const orderedAddrStateKey = StateHelpers.generateHostReputationOrderAddressStateKey(hostReputationAddress, moment);
+            const repMoment = moment ?? await this.getMoment();
+            const orderedAddrStateKey = StateHelpers.generateHostReputationOrderAddressStateKey(hostReputationAddress, repMoment);
             const orderedAddrStateIndex = StateHelpers.getHookStateIndex(this.config.reputationAddress, orderedAddrStateKey);
             const orderedAddrLedgerEntry = await this.xrplApi.getLedgerEntry(orderedAddrStateIndex);
             const orderedAddrStateData = orderedAddrLedgerEntry?.HookStateData;
 
             if (orderedAddrStateData) {
-                const orderedAddrStateDecoded = StateHelpers.decodeHostReputationOrderedIdState(Buffer.from(orderedAddrStateKey, 'hex'), Buffer.from(orderedAddrStateData, 'hex'));
+                const orderedAddrStateDecoded = StateHelpers.decodeHostReputationOrderAddressState(Buffer.from(orderedAddrStateKey, 'hex'), Buffer.from(orderedAddrStateData, 'hex'));
                 data = { ...data, ...orderedAddrStateDecoded };
             }
 
             const hostRepAcc = new XrplAccount(hostReputationAddress, null, { xrplApi: this.xrplApi });
-            const [msgKey, repBuf] = await Promise.all([
+            const [msgKey, rep] = await Promise.all([
                 hostRepAcc.getMessageKey(),
                 hostRepAcc.getDomain()]);
 
-            if (msgKey && repBuf) {
+            if (msgKey && rep) {
                 const hostAddress = UtilHelpers.deriveAddress(msgKey);
                 const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
 
-                const publicKey = repBuf.slice(0, ReputationConstants.REP_INFO_PORT_OFFSET).toString().toLocaleLowerCase();
-                const port = repBuf.readUInt16LE(ReputationConstants.REP_INFO_PORT_OFFSET);
+                const repBuf = Buffer.from(rep, 'hex');
+                const publicKey = repBuf.slice(0, ReputationConstants.REP_INFO_PEER_PORT_OFFSET).toString('hex').toLocaleLowerCase();
+                const peerPort = repBuf.readUInt16LE(ReputationConstants.REP_INFO_PEER_PORT_OFFSET);
                 const domain = await hostAcc.getDomain();
 
                 data = {
@@ -951,7 +955,7 @@ class BaseEvernodeClient {
                     contract: {
                         domain: domain,
                         pubkey: publicKey,
-                        port: port
+                        peerPort: peerPort
                     }
                 }
             }
