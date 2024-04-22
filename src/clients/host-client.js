@@ -306,7 +306,7 @@ class HostClient extends BaseEvernodeClient {
                 if (!hostReputationInfo)
                     throw 'No reputation info for this order id';
                 data[i.toString()] = {
-                    publicKey: hostReputationInfo.publicKey,
+                    publicKey: hostReputationInfo.contract.pubkey,
                     reputationAddress: hostReputationInfo.address,
                     orderId: i
                 };
