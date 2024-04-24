@@ -194,7 +194,7 @@ class StateHelpers {
         const keyOffset = STATE_KEY_SIZE - 8;
         const data = {
             moment: Number(stateKeyBuf.readBigUInt64LE(keyOffset)),
-            count: Number(stateDataBuf.readBigUInt64LE(8))
+            count: Number(stateDataBuf.readBigUInt64LE())
         }
         return data;
     }
