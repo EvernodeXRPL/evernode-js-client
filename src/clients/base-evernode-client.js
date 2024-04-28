@@ -946,7 +946,7 @@ class BaseEvernodeClient {
                 const repBuf = Buffer.from(rep, 'hex');
                 const publicKey = repBuf.slice(0, ReputationConstants.REP_INFO_PEER_PORT_OFFSET).toString('hex').toLocaleLowerCase();
                 const peerPort = repBuf.readUInt16LE(ReputationConstants.REP_INFO_PEER_PORT_OFFSET);
-                const instanceMoment = repBuf.readUInt16LE(ReputationConstants.REP_INFO_MOMENT_OFFSET);
+                const instanceMoment = (repBuf.length > ReputationConstants.REP_INFO_MOMENT_OFFSET) ? Number(repBuf.readBigUInt64LE(ReputationConstants.REP_INFO_MOMENT_OFFSET)) : null;
                 const domain = await hostAcc.getDomain();
 
                 if (instanceMoment === repMoment) {
