@@ -939,21 +939,24 @@ class BaseEvernodeClient {
                 hostRepAcc.getMessageKey(),
                 hostRepAcc.getDomain()]);
 
-            if (msgKey && rep) {
+            if (msgKey && rep && rep.length > 0) {
                 const hostAddress = UtilHelpers.deriveAddress(msgKey);
                 const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
 
                 const repBuf = Buffer.from(rep, 'hex');
                 const publicKey = repBuf.slice(0, ReputationConstants.REP_INFO_PEER_PORT_OFFSET).toString('hex').toLocaleLowerCase();
                 const peerPort = repBuf.readUInt16LE(ReputationConstants.REP_INFO_PEER_PORT_OFFSET);
+                const instanceMoment = repBuf.readUInt16LE(ReputationConstants.REP_INFO_MOMENT_OFFSET);
                 const domain = await hostAcc.getDomain();
 
-                data = {
-                    ...data,
-                    contract: {
-                        domain: domain,
-                        pubkey: publicKey,
-                        peerPort: peerPort
+                if (instanceMoment === repMoment) {
+                    data = {
+                        ...data,
+                        contract: {
+                            domain: domain,
+                            pubkey: publicKey,
+                            peerPort: peerPort
+                        }
                     }
                 }
             }
