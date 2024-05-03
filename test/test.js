@@ -6,6 +6,7 @@ let evrIssuerAddress;
 let foundationAddress;
 let registryAddress;
 let heartbeatAddress;
+let reputationAddress;
 const overrideGovernorAddress = '';
 const foundationSecret = "sn3nNMSuyXiqVjrhfQr9JxDhgHmds";
 const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
@@ -72,6 +73,7 @@ async function app() {
         foundationAddress = governorClient.config.foundationAddress;
         registryAddress = governorClient.config.registryAddress;
         heartbeatAddress = governorClient.config.heartbeatAddress;
+        reputationAddress = governorClient.config.reputationAddress;
 
         /*
          * Process of minting and selling a NFT - V2.
@@ -227,11 +229,12 @@ async function getActiveHostsFromLedger() {
 
 async function initializeConfigs() {
     console.log(`-----------Initialize configs`);
-    let paramData = Buffer.alloc(80, 0);
+    let paramData = Buffer.alloc(100, 0);
     codec.decodeAccountID(evrIssuerAddress).copy(paramData);
     codec.decodeAccountID(foundationAddress).copy(paramData, 20);
     codec.decodeAccountID(registryAddress).copy(paramData, 40);
     codec.decodeAccountID(heartbeatAddress).copy(paramData, 60);
+    codec.decodeAccountID(reputationAddress).copy(paramData, 80);
 
     const initAccount = new evernode.XrplAccount(initializerAddress, initializerSecret);
     await initAccount.makePayment(
