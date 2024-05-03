@@ -338,9 +338,6 @@ class HostClient extends BaseEvernodeClient {
             }
         }
 
-        const index = HookHelpers.getAccountIndex(this.xrplAcc.address);
-        const paramBuf = HookHelpers.getKeylet('ACCOUNT', index);
-
         await this.reputationAcc.invoke(this.config.reputationAddress,
             scores ? { isHex: true, data: buffer.toString('hex') } : null,
             {
