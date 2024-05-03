@@ -84,6 +84,10 @@ class XrplAccount {
         return (await this.getInfo())?.MessageKey;
     }
 
+    async getWalletLocator() {
+        return (await this.getInfo())?.WalletLocator;
+    }
+
     async getDomain() {
         const domain = (await this.getInfo())?.Domain;
         return domain ? TransactionHelper.hexToASCII(domain) : null;
@@ -244,7 +248,8 @@ class XrplAccount {
         var txObj = {
             TransactionType: XrplTransactionTypes.INVOKE,
             Account: this.address,
-            Destination: toAddr
+            Destination: toAddr,
+            HookParameters: TransactionHelper.formatHookParams(options.hookParams)
         };
 
         if (blobObj) {
