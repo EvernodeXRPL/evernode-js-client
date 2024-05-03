@@ -244,7 +244,8 @@ class XrplAccount {
         var txObj = {
             TransactionType: XrplTransactionTypes.INVOKE,
             Account: this.address,
-            Destination: toAddr
+            Destination: toAddr,
+            HookParameters: TransactionHelper.formatHookParams(options.hookParams)
         };
 
         if (blobObj) {

@@ -12,6 +12,8 @@ const { EvernodeHelpers } = require('../evernode-helpers');
 const { StateHelpers } = require('../state-helpers');
 const { TransactionHelper } = require('../transaction-helper');
 const { UtilHelpers } = require('../util-helpers');
+const { HookHelpers } = require('../hook-helpers');
+
 
 const OFFER_WAIT_TIMEOUT = 60;
 
@@ -337,9 +339,16 @@ class HostClient extends BaseEvernodeClient {
             }
         }
 
+        const index = HookHelpers.getAccountIndex(this.xrplAcc.address);
+        const paramBuf = HookHelpers.getKeylet('ACCOUNT', index);
+
         await this.reputationAcc.invoke(this.config.reputationAddress,
             scores ? { isHex: true, data: buffer.toString('hex') } : null,
             {
+                hookParams: [
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_UPDATE_REPUTATION },
+                    { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: paramBuf.toString('hex').toUpperCase() }
+                ],
                 maxLedgerIndex: this.#getMaxLedgerSequence(),
                 ...options.transactionOptions,
                 submissionRef: options.submissionRef
