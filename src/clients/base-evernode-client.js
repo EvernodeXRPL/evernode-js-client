@@ -14,10 +14,12 @@ const { HookHelpers } = require('../hook-helpers');
 const xrpl = require('xrpl');
 
 const CANDIDATE_PROPOSE_HASHES_PARAM_OFFSET = 0;
-const CANDIDATE_PROPOSE_KEYLETS_PARAM_OFFSET = 96;
-const CANDIDATE_PROPOSE_UNIQUE_ID_PARAM_OFFSET = 198;
-const CANDIDATE_PROPOSE_SHORT_NAME_PARAM_OFFSET = 230;
-const CANDIDATE_PROPOSE_PARAM_SIZE = 250;
+const CANDIDATE_PROPOSE_KEYLETS_PARAM_OFFSET = 128;
+const CANDIDATE_PROPOSE_UNIQUE_ID_PARAM_OFFSET = 264;
+const CANDIDATE_PROPOSE_SHORT_NAME_PARAM_OFFSET = 296;
+const CANDIDATE_PROPOSE_PARAM_SIZE = 316;
+
+const MAX_HOOK_PARAM_SIZE = 256;
 
 const DUD_HOST_CANDID_ADDRESS_OFFSET = 12;
 
@@ -939,21 +941,24 @@ class BaseEvernodeClient {
                 hostRepAcc.getMessageKey(),
                 hostRepAcc.getDomain()]);
 
-            if (msgKey && rep) {
+            if (msgKey && rep && rep.length > 0) {
                 const hostAddress = UtilHelpers.deriveAddress(msgKey);
                 const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
 
                 const repBuf = Buffer.from(rep, 'hex');
                 const publicKey = repBuf.slice(0, ReputationConstants.REP_INFO_PEER_PORT_OFFSET).toString('hex').toLocaleLowerCase();
                 const peerPort = repBuf.readUInt16LE(ReputationConstants.REP_INFO_PEER_PORT_OFFSET);
+                const instanceMoment = (repBuf.length > ReputationConstants.REP_INFO_MOMENT_OFFSET) ? Number(repBuf.readBigUInt64LE(ReputationConstants.REP_INFO_MOMENT_OFFSET)) : null;
                 const domain = await hostAcc.getDomain();
 
-                data = {
-                    ...data,
-                    contract: {
-                        domain: domain,
-                        pubkey: publicKey,
-                        peerPort: peerPort
+                if (instanceMoment === repMoment) {
+                    data = {
+                        ...data,
+                        contract: {
+                            domain: domain,
+                            pubkey: publicKey,
+                            peerPort: peerPort
+                        }
                     }
                 }
             }
@@ -978,8 +983,8 @@ class BaseEvernodeClient {
      */
     async _propose(hashes, shortName, options = {}) {
         const hashesBuf = Buffer.from(hashes, 'hex');
-        if (!hashesBuf || hashesBuf.length != 96)
-            throw 'Invalid hashes: Hashes should contain all three Governor, Registry, Heartbeat hook hashes.';
+        if (!hashesBuf || hashesBuf.length != 128)
+            throw 'Invalid hashes: Hashes should contain all three Governor, Registry, Heartbeat, Reputation hook hashes.';
 
         // Check whether hook hashes exist in the definition.
         let keylets = [];
@@ -989,7 +994,7 @@ class BaseEvernodeClient {
             if (!ledgerEntry)
                 throw `No hook exists with the specified ${hook} hook hash.`;
             else
-                keylets.push(HookHelpers.getHookDefinitionKeylet(index));
+                keylets.push(HookHelpers.getKeylet('HOOK_DEFINITION',index));
         }
 
         const uniqueId = StateHelpers.getNewHookCandidateId(hashesBuf);
@@ -1010,7 +1015,9 @@ class BaseEvernodeClient {
             {
                 hookParams: [
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.CANDIDATE_PROPOSE },
-                    { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: paramBuf.toString('hex').toUpperCase() }
+                    { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: paramBuf.slice(0, MAX_HOOK_PARAM_SIZE).toString('hex').toUpperCase() },
+                    { name: HookParamKeys.PARAM_EVENT_DATA2_KEY, value: paramBuf.slice(MAX_HOOK_PARAM_SIZE).toString('hex').toUpperCase() }
+
                 ],
                 ...options.transactionOptions
             });

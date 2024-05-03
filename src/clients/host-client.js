@@ -255,13 +255,17 @@ class HostClient extends BaseEvernodeClient {
      * @param {number} peerPort Peer port of the reputation contract instance.
      * @param {string} publicKey Public key of the reputation contract instance.
      */
-    async setReputationContractInfo(peerPort, publicKey, options = {}) {
+    async setReputationContractInfo(peerPort, publicKey, moment = null, options = {}) {
+        const repMoment = moment ?? await this.getMoment();
+
         var buffer = Buffer.alloc(ReputationConstants.REP_INFO_BUFFER_SIZE, 0);
         Buffer.from(publicKey.toUpperCase(), "hex").copy(buffer, ReputationConstants.REP_INFO_PUBKEY_OFFSET);
         buffer.writeUInt16LE(peerPort, ReputationConstants.REP_INFO_PEER_PORT_OFFSET);
+        buffer.writeBigUInt64LE(BigInt(repMoment), ReputationConstants.REP_INFO_MOMENT_OFFSET);
+        const domain = buffer.toString('hex');
 
         let accountSetFields = {};
-        accountSetFields = { ...accountSetFields, Domain: buffer.toString('hex') };
+        accountSetFields = { ...accountSetFields, Domain: domain };
 
         if (Object.keys(accountSetFields).length !== 0) {
             await this.#submitWithRetry(async (feeUplift, submissionRef) => {
@@ -333,6 +337,9 @@ class HostClient extends BaseEvernodeClient {
                 i++;
             }
         }
+
+        const index = HookHelpers.getAccountIndex(this.xrplAcc.address);
+        const paramBuf = HookHelpers.getKeylet('ACCOUNT', index);
 
         await this.reputationAcc.invoke(this.config.reputationAddress,
             scores ? { isHex: true, data: buffer.toString('hex') } : null,
