@@ -63,7 +63,8 @@ const EventTypes = {
     HOOK_UPDATE_RES: 'evnHookUpdateRes',
     GOVERNANCE_MODE_CHANGE: 'evnGovernanceModeChange',
     LINKED_CANDIDATE_REMOVE: 'evnRemoveLinkedCandidate',
-    HOST_UPDATE_REPUTATION: 'evnHostUpdateReputation'
+    HOST_UPDATE_REPUTATION: 'evnHostUpdateReputation',
+    HOST_SEND_REPUTATION: 'evnHostSendReputation'
 }
 
 const MemoFormats = {

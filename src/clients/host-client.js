@@ -11,9 +11,6 @@ const { XflHelpers } = require('../xfl-helpers');
 const { EvernodeHelpers } = require('../evernode-helpers');
 const { StateHelpers } = require('../state-helpers');
 const { TransactionHelper } = require('../transaction-helper');
-const { UtilHelpers } = require('../util-helpers');
-const { HookHelpers } = require('../hook-helpers');
-
 
 const OFFER_WAIT_TIMEOUT = 60;
 
@@ -68,20 +65,18 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async setReputationAcc(reputationAddress = null, reputationSecret = null) {
-        var hostMessageKey;
+        let hostReputationAccId;
         if (!reputationAddress && !reputationSecret) {
-            hostMessageKey = await this.xrplAcc.getMessageKey();
-            if (hostMessageKey)
-                reputationAddress = UtilHelpers.deriveAddress(hostMessageKey);
+            hostReputationAccId = (await this.xrplAcc.getWalletLocator()).slice(0, 20);
+            if (hostReputationAccId)
+                reputationAddress = codec.encodeAccountID(Buffer.from(hostReputationAccId, 'hex'));
         }
 
         if (reputationAddress || reputationSecret)
             this.reputationAcc = new XrplAccount(reputationAddress, reputationSecret, { xrplApi: this.xrplApi });
 
-        if (!this.reputationAcc || this.reputationAcc.address === this.xrplAcc.address || this.reputationAcc.address !== (UtilHelpers.deriveAddress(hostMessageKey ?? await this.xrplAcc.getMessageKey())))
+        if (!this.reputationAcc || this.reputationAcc.address === this.xrplAcc.address || this.reputationAcc.address !== reputationAddress)
             this.reputationAcc = null;
-        else if (this.reputationAcc.secret)
-            this.messagePrivateKey = this.reputationAcc.deriveKeypair().privateKey;
     }
 
     /**
@@ -221,15 +216,16 @@ class HostClient extends BaseEvernodeClient {
      */
     async prepareReputationAccount(reputationAddress, reputationSecret, options = {}) {
         const repAcc = new XrplAccount(reputationAddress, reputationSecret, { xrplApi: this.xrplApi });
-        const [trustLines, msgKey, hostAccMsgKey] = await Promise.all([
+        const [trustLines, walletLocator, hostWalletLocator] = await Promise.all([
             repAcc.getTrustLines(EvernodeConstants.EVR, this.config.evrIssuerAddress),
-            repAcc.getMessageKey(),
-            this.xrplAcc.getMessageKey()]);
+            repAcc.getWalletLocator(),
+            this.xrplAcc.getWalletLocator()]);
 
-        const repKeyPair = repAcc.deriveKeypair();
+        const hostRegAccId = (codec.decodeAccountID(this.xrplAcc.address).toString('hex').toUpperCase()).padEnd(64, '0');
+        const hostReputationAccId = (codec.decodeAccountID(repAcc.address).toString('hex').toUpperCase()).padEnd(64, '0');
 
         let accountSetFields = {};
-        accountSetFields = (!msgKey || msgKey != this.accKeyPair.publicKey) ? { ...accountSetFields, MessageKey: this.accKeyPair.publicKey } : accountSetFields;
+        accountSetFields = (!walletLocator || walletLocator != hostRegAccId) ? { ...accountSetFields, WalletLocator: hostRegAccId } : accountSetFields;
 
         if (Object.keys(accountSetFields).length !== 0) {
             await this.#submitWithRetry(async (feeUplift, submissionRef) => {
@@ -244,8 +240,7 @@ class HostClient extends BaseEvernodeClient {
         }
 
         let hostAccountSetFields = {};
-        hostAccountSetFields = (!hostAccMsgKey || hostAccMsgKey != repKeyPair.publicKey) ? { ...hostAccountSetFields, MessageKey: repKeyPair.publicKey } : hostAccountSetFields;
-
+        hostAccountSetFields = (!hostWalletLocator || hostWalletLocator != hostReputationAccId) ? { ...hostAccountSetFields, WalletLocator: hostReputationAccId } : hostAccountSetFields;
         if (Object.keys(hostAccountSetFields).length !== 0) {
             await this.#submitWithRetry(async (feeUplift, submissionRef) => {
                 await this.xrplAcc.setAccountFields(hostAccountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
@@ -343,15 +338,11 @@ class HostClient extends BaseEvernodeClient {
             }
         }
 
-        const index = HookHelpers.getAccountIndex(this.xrplAcc.address);
-        const paramBuf = HookHelpers.getKeylet('ACCOUNT', index);
-
         await this.reputationAcc.invoke(this.config.reputationAddress,
             scores ? { isHex: true, data: buffer.toString('hex') } : null,
             {
                 hookParams: [
-                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_UPDATE_REPUTATION },
-                    { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: paramBuf.toString('hex').toUpperCase() }
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_SEND_REPUTATION }
                 ],
                 maxLedgerIndex: this.#getMaxLedgerSequence(),
                 ...options.transactionOptions,

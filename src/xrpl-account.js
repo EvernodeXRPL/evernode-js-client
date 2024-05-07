@@ -84,6 +84,10 @@ class XrplAccount {
         return (await this.getInfo())?.MessageKey;
     }
 
+    async getWalletLocator() {
+        return (await this.getInfo())?.WalletLocator;
+    }
+
     async getDomain() {
         const domain = (await this.getInfo())?.Domain;
         return domain ? TransactionHelper.hexToASCII(domain) : null;
