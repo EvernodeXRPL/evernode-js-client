@@ -9,6 +9,13 @@ class EvernodeHelpers {
         return hostUriOffers;
     }
 
+    static async getLeaseByIndex(xrplApi, index) {
+        const entry = await xrplApi.getLedgerEntry(index);
+        if (!entry || entry.LedgerEntryType !== 'URIToken' || !(this.isValidURI(entry.URI, EvernodeConstants.LEASE_TOKEN_PREFIX_HEX) && entry.Flags == 1))
+            return null;
+        return entry;
+    }
+
     static async getLeaseOffers(xrplAcc) {
         const hostUriOffers = (await this.getLeases(xrplAcc)).filter(uriToken => uriToken.Amount);
         return hostUriOffers;
@@ -40,7 +47,7 @@ class EvernodeHelpers {
 
         const nftPageInfo = page.NFTokens.map((n, loc) => { return { NFTPage: NFT_PAGE_LEDGER_ENTRY_TYPE_HEX + page.index, NFTokenID: n.NFToken.NFTokenID, location: loc } }).find(n => n.NFTokenID == nfTokenId);
         if (buffer) {
-            let locBuf = Buffer.alloc(2,0);
+            let locBuf = Buffer.alloc(2, 0);
             locBuf.writeUInt16BE(nftPageInfo.location);
             // <NFT_PAGE_KEYLET(34 bytes)><LOCATION(2 bytes)>
             return Buffer.concat([Buffer.from(nftPageInfo.NFTPage, "hex"), locBuf]);
