@@ -18,6 +18,7 @@ const XrplConstants = {
 }
 
 const XrplTransactionTypes = {
+    INVOKE: 'Invoke',
     PAYMENT: 'Payment',
     SIGNER_LIST_SET: 'SignerListSet',
     TRUST_SET: 'TrustSet',

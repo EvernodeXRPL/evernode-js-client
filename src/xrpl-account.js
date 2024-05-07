@@ -1,11 +1,11 @@
 const xrpl = require('xrpl');
-const kp = require('ripple-keypairs');
 const codec = require('ripple-address-codec');
 const crypto = require("crypto");
 const { XrplConstants, XrplTransactionTypes } = require('./xrpl-common');
 const { TransactionHelper } = require('./transaction-helper');
 const { EventEmitter } = require('./event-emitter');
 const { Defaults } = require('./defaults');
+const { UtilHelpers } = require('./util-helpers');
 
 class XrplAccount {
 
@@ -28,8 +28,8 @@ class XrplAccount {
             this.wallet = xrpl.Wallet.fromSeed(this.secret);
             this.address = this.wallet.classicAddress;
         } else if (this.secret) {
-            const keypair = kp.deriveKeypair(this.secret);
-            const derivedPubKeyAddress = kp.deriveAddress(keypair.publicKey);
+            const keypair = UtilHelpers.deriveKeypair(this.secret);
+            const derivedPubKeyAddress = UtilHelpers.deriveAddress(keypair.publicKey);
             if (this.address == derivedPubKeyAddress)
                 this.wallet = xrpl.Wallet.fromSeed(this.secret);
             else
@@ -57,7 +57,7 @@ class XrplAccount {
         if (!this.secret)
             throw 'Cannot derive key pair: Account secret is empty.';
 
-        return kp.deriveKeypair(this.secret);
+        return UtilHelpers.deriveKeypair(this.secret);
     }
 
     async exists() {
@@ -82,6 +82,10 @@ class XrplAccount {
 
     async getMessageKey() {
         return (await this.getInfo())?.MessageKey;
+    }
+
+    async getWalletLocator() {
+        return (await this.getInfo())?.WalletLocator;
     }
 
     async getDomain() {
@@ -232,6 +236,30 @@ class XrplAccount {
             ]
         };
         return await this.#prepareSubmissionTransaction(signerListTx, options);
+    }
+
+    async invoke(toAddr, blobObj = null, options = {}) {
+        const preparedTxn = await this.prepareInvoke(toAddr, blobObj, options);
+        return await this.signAndSubmit(preparedTxn, options.submissionRef);
+    }
+
+    async prepareInvoke(toAddr, blobObj = null, options = {}) {
+
+        var txObj = {
+            TransactionType: XrplTransactionTypes.INVOKE,
+            Account: this.address,
+            Destination: toAddr,
+            HookParameters: TransactionHelper.formatHookParams(options.hookParams)
+        };
+
+        if (blobObj) {
+            txObj = {
+                ...txObj,
+                Blob: blobObj.isHex ? blobObj.data : TransactionHelper.asciiToHex(blobObj.data)
+            }
+        }
+
+        return await this.#prepareSubmissionTransaction(txObj, options);
     }
 
     async makePayment(toAddr, amount, currency = null, issuer = null, memos = null, options = {}) {

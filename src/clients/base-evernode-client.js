@@ -3,7 +3,7 @@ const { Buffer } = require('buffer');
 const { XrplApi } = require('../xrpl-api');
 const { XrplAccount } = require('../xrpl-account');
 const { XrplApiEvents, XrplConstants } = require('../xrpl-common');
-const { EvernodeEvents, EventTypes, MemoFormats, EvernodeConstants, HookStateKeys, HookParamKeys, RegExp } = require('../evernode-common');
+const { EvernodeEvents, EventTypes, MemoFormats, EvernodeConstants, HookStateKeys, HookParamKeys, RegExp, ReputationConstants } = require('../evernode-common');
 const { Defaults } = require('../defaults');
 const { EncryptionHelper } = require('../encryption-helper');
 const { EventEmitter } = require('../event-emitter');
@@ -14,10 +14,12 @@ const { HookHelpers } = require('../hook-helpers');
 const xrpl = require('xrpl');
 
 const CANDIDATE_PROPOSE_HASHES_PARAM_OFFSET = 0;
-const CANDIDATE_PROPOSE_KEYLETS_PARAM_OFFSET = 96;
-const CANDIDATE_PROPOSE_UNIQUE_ID_PARAM_OFFSET = 198;
-const CANDIDATE_PROPOSE_SHORT_NAME_PARAM_OFFSET = 230;
-const CANDIDATE_PROPOSE_PARAM_SIZE = 250;
+const CANDIDATE_PROPOSE_KEYLETS_PARAM_OFFSET = 128;
+const CANDIDATE_PROPOSE_UNIQUE_ID_PARAM_OFFSET = 264;
+const CANDIDATE_PROPOSE_SHORT_NAME_PARAM_OFFSET = 296;
+const CANDIDATE_PROPOSE_PARAM_SIZE = 316;
+
+const MAX_HOOK_PARAM_SIZE = 256;
 
 const DUD_HOST_CANDID_ADDRESS_OFFSET = 12;
 
@@ -187,6 +189,7 @@ class BaseEvernodeClient {
         const configStateKeys = {
             registryAddress: HookStateKeys.REGISTRY_ADDR,
             heartbeatAddress: HookStateKeys.HEARTBEAT_ADDR,
+            reputationAddress: HookStateKeys.REPUTATION_ADDR,
             evrIssuerAddress: HookStateKeys.EVR_ISSUER_ADDR,
             foundationAddress: HookStateKeys.FOUNDATION_ADDR,
             hostRegFee: HookStateKeys.HOST_REG_FEE,
@@ -904,6 +907,74 @@ class BaseEvernodeClient {
     }
 
     /**
+     * Get reputation info of given host.
+     * @param {string} hostReputationAddress Host's reputation address.
+     * @param {number} moment (optional) Moment to get reputation info for.
+     * @returns Reputation info object.
+     */
+    async _getReputationInfoByAddress(hostReputationAddress, moment = null) {
+        try {
+            const addrStateKey = StateHelpers.generateHostReputationAddrStateKey(hostReputationAddress);
+            const addrStateIndex = StateHelpers.getHookStateIndex(this.config.reputationAddress, addrStateKey);
+            const addrLedgerEntry = await this.xrplApi.getLedgerEntry(addrStateIndex);
+            const addrStateData = addrLedgerEntry?.HookStateData;
+            let data = {};
+
+            if (addrStateData) {
+                const addrStateDecoded = StateHelpers.decodeHostReputationAddressState(Buffer.from(addrStateKey, 'hex'), Buffer.from(addrStateData, 'hex'));
+                data = addrStateDecoded;
+            }
+
+            const repMoment = moment ?? await this.getMoment();
+            const orderedAddrStateKey = StateHelpers.generateHostReputationOrderAddressStateKey(hostReputationAddress, repMoment);
+            const orderedAddrStateIndex = StateHelpers.getHookStateIndex(this.config.reputationAddress, orderedAddrStateKey);
+            const orderedAddrLedgerEntry = await this.xrplApi.getLedgerEntry(orderedAddrStateIndex);
+            const orderedAddrStateData = orderedAddrLedgerEntry?.HookStateData;
+
+            if (orderedAddrStateData) {
+                const orderedAddrStateDecoded = StateHelpers.decodeHostReputationOrderAddressState(Buffer.from(orderedAddrStateKey, 'hex'), Buffer.from(orderedAddrStateData, 'hex'));
+                data = { ...data, ...orderedAddrStateDecoded };
+            }
+
+            const hostRepAcc = new XrplAccount(hostReputationAddress, null, { xrplApi: this.xrplApi });
+            const [msgKey, rep] = await Promise.all([
+                hostRepAcc.getMessageKey(),
+                hostRepAcc.getDomain()]);
+
+            if (msgKey && rep && rep.length > 0) {
+                const hostAddress = UtilHelpers.deriveAddress(msgKey);
+                const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
+
+                const repBuf = Buffer.from(rep, 'hex');
+                const publicKey = repBuf.slice(0, ReputationConstants.REP_INFO_PEER_PORT_OFFSET).toString('hex').toLocaleLowerCase();
+                const peerPort = repBuf.readUInt16LE(ReputationConstants.REP_INFO_PEER_PORT_OFFSET);
+                const instanceMoment = (repBuf.length > ReputationConstants.REP_INFO_MOMENT_OFFSET) ? Number(repBuf.readBigUInt64LE(ReputationConstants.REP_INFO_MOMENT_OFFSET)) : null;
+                const domain = await hostAcc.getDomain();
+
+                if (instanceMoment === repMoment) {
+                    data = {
+                        ...data,
+                        contract: {
+                            domain: domain,
+                            pubkey: publicKey,
+                            peerPort: peerPort
+                        }
+                    }
+                }
+            }
+
+            return Object.keys(data).length > 0 ? data : null;
+        }
+        catch (e) {
+            // If the exception is entryNotFound from Rippled there's no entry for the host, So return null.
+            if (e?.data?.error !== 'entryNotFound')
+                throw e;
+        }
+
+        return null;
+    }
+
+    /**
      * Propose a new hook candidate.
      * @param {string} hashes Hook candidate hashes in hex format, <GOVERNOR_HASH(32)><REGISTRY_HASH(32)><HEARTBEAT_HASH(32)>.
      * @param {string} shortName Short name for the proposal candidate.
@@ -912,8 +983,8 @@ class BaseEvernodeClient {
      */
     async _propose(hashes, shortName, options = {}) {
         const hashesBuf = Buffer.from(hashes, 'hex');
-        if (!hashesBuf || hashesBuf.length != 96)
-            throw 'Invalid hashes: Hashes should contain all three Governor, Registry, Heartbeat hook hashes.';
+        if (!hashesBuf || hashesBuf.length != 128)
+            throw 'Invalid hashes: Hashes should contain all three Governor, Registry, Heartbeat, Reputation hook hashes.';
 
         // Check whether hook hashes exist in the definition.
         let keylets = [];
@@ -923,7 +994,7 @@ class BaseEvernodeClient {
             if (!ledgerEntry)
                 throw `No hook exists with the specified ${hook} hook hash.`;
             else
-                keylets.push(HookHelpers.getHookDefinitionKeylet(index));
+                keylets.push(HookHelpers.getKeylet('HOOK_DEFINITION',index));
         }
 
         const uniqueId = StateHelpers.getNewHookCandidateId(hashesBuf);
@@ -944,7 +1015,9 @@ class BaseEvernodeClient {
             {
                 hookParams: [
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.CANDIDATE_PROPOSE },
-                    { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: paramBuf.toString('hex').toUpperCase() }
+                    { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: paramBuf.slice(0, MAX_HOOK_PARAM_SIZE).toString('hex').toUpperCase() },
+                    { name: HookParamKeys.PARAM_EVENT_DATA2_KEY, value: paramBuf.slice(MAX_HOOK_PARAM_SIZE).toString('hex').toUpperCase() }
+
                 ],
                 ...options.transactionOptions
             });

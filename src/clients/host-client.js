@@ -1,6 +1,8 @@
 const { XrplConstants } = require('../xrpl-common');
 const { BaseEvernodeClient } = require('./base-evernode-client');
-const { EvernodeEvents, EvernodeConstants, MemoFormats, EventTypes, ErrorCodes, HookParamKeys, RegExp } = require('../evernode-common');
+const { HookClientFactory } = require("../clients/hook-clients/hook-client-factory");
+const { HookTypes } = require("../defaults");
+const { EvernodeEvents, EvernodeConstants, MemoFormats, EventTypes, ErrorCodes, HookParamKeys, RegExp, ReputationConstants } = require('../evernode-common');
 const { XrplAccount } = require('../xrpl-account');
 const { EncryptionHelper } = require('../encryption-helper');
 const { Buffer } = require('buffer');
@@ -54,6 +56,27 @@ class HostClient extends BaseEvernodeClient {
 
     constructor(xrpAddress, xrpSecret, options = {}) {
         super(xrpAddress, xrpSecret, Object.values(HostEvents), true, options);
+    }
+
+    async connect(options = {}) {
+        const res = await super.connect();
+        await this.setReputationAcc(options.reputationAddress, options.reputationSecret);
+        return res;
+    }
+
+    async setReputationAcc(reputationAddress = null, reputationSecret = null) {
+        let hostReputationAccId;
+        if (!reputationAddress && !reputationSecret) {
+            hostReputationAccId = (await this.xrplAcc.getWalletLocator()).slice(0, 20);
+            if (hostReputationAccId)
+                reputationAddress = codec.encodeAccountID(Buffer.from(hostReputationAccId, 'hex'));
+        }
+
+        if (reputationAddress || reputationSecret)
+            this.reputationAcc = new XrplAccount(reputationAddress, reputationSecret, { xrplApi: this.xrplApi });
+
+        if (!this.reputationAcc || this.reputationAcc.address === this.xrplAcc.address || this.reputationAcc.address !== reputationAddress)
+            this.reputationAcc = null;
     }
 
     /**
@@ -184,6 +207,147 @@ class HostClient extends BaseEvernodeClient {
                 await this.xrplAcc.setTrustLine(EvernodeConstants.EVR, this.config.evrIssuerAddress, "99999999999999", null, null, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
             }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
         }
+    }
+
+    /**
+     * Prepare the reputation account with account fields and trust lines.
+     * @param {string} reputationAddress Address of the reputation account.
+     * @param {string} reputationSecret Secret of the reputation account.
+     */
+    async prepareReputationAccount(reputationAddress, reputationSecret, options = {}) {
+        const repAcc = new XrplAccount(reputationAddress, reputationSecret, { xrplApi: this.xrplApi });
+        const [trustLines, walletLocator, hostWalletLocator] = await Promise.all([
+            repAcc.getTrustLines(EvernodeConstants.EVR, this.config.evrIssuerAddress),
+            repAcc.getWalletLocator(),
+            this.xrplAcc.getWalletLocator()]);
+
+        const hostRegAccId = (codec.decodeAccountID(this.xrplAcc.address).toString('hex').toUpperCase()).padEnd(64, '0');
+        const hostReputationAccId = (codec.decodeAccountID(repAcc.address).toString('hex').toUpperCase()).padEnd(64, '0');
+
+        let accountSetFields = {};
+        accountSetFields = (!walletLocator || walletLocator != hostRegAccId) ? { ...accountSetFields, WalletLocator: hostRegAccId } : accountSetFields;
+
+        if (Object.keys(accountSetFields).length !== 0) {
+            await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+                await repAcc.setAccountFields(accountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
+            }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
+        }
+
+        if (trustLines.length === 0) {
+            await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+                await repAcc.setTrustLine(EvernodeConstants.EVR, this.config.evrIssuerAddress, "99999999999999", null, null, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
+            }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
+        }
+
+        let hostAccountSetFields = {};
+        hostAccountSetFields = (!hostWalletLocator || hostWalletLocator != hostReputationAccId) ? { ...hostAccountSetFields, WalletLocator: hostReputationAccId } : hostAccountSetFields;
+        if (Object.keys(hostAccountSetFields).length !== 0) {
+            await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+                await this.xrplAcc.setAccountFields(hostAccountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
+            }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
+        }
+
+        await this.setReputationAcc(reputationAddress, reputationSecret);
+    }
+
+    /**
+     * Set the reputation contract info.
+     * @param {number} peerPort Peer port of the reputation contract instance.
+     * @param {string} publicKey Public key of the reputation contract instance.
+     */
+    async setReputationContractInfo(peerPort, publicKey, moment = null, options = {}) {
+        const repMoment = moment ?? await this.getMoment();
+
+        var buffer = Buffer.alloc(ReputationConstants.REP_INFO_BUFFER_SIZE, 0);
+        Buffer.from(publicKey.toUpperCase(), "hex").copy(buffer, ReputationConstants.REP_INFO_PUBKEY_OFFSET);
+        buffer.writeUInt16LE(peerPort, ReputationConstants.REP_INFO_PEER_PORT_OFFSET);
+        buffer.writeBigUInt64LE(BigInt(repMoment), ReputationConstants.REP_INFO_MOMENT_OFFSET);
+        const domain = buffer.toString('hex');
+
+        let accountSetFields = {};
+        accountSetFields = { ...accountSetFields, Domain: domain };
+
+        if (Object.keys(accountSetFields).length !== 0) {
+            await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+                await this.reputationAcc.setAccountFields(accountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
+            }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
+        }
+    }
+
+    /**
+     * Get reputation info of this host.
+     * @param {number} moment (optional) Moment to get reputation info for.
+     * @returns Reputation info object.
+     */
+    async getReputationInfo(moment = null) {
+        if (!this.reputationAcc)
+            return null;
+
+        return await this._getReputationInfoByAddress(this.reputationAcc.address, moment);
+    }
+
+    /**
+     * Prepare host reputation score to a common format for submission.
+     * @param {object} collectedScores 
+     * @returns Unified reputation score array.
+     */
+    async prepareHostReputationScores(collectedScores = {}) {
+        const myReputationInfo = await this.getReputationInfo();
+        const myOrderId = myReputationInfo.orderedId;
+
+        // Deciding universe.
+        const universeStartIndex = Math.floor(myOrderId / 64) * 64;
+
+        const reputationClient = await HookClientFactory.create(HookTypes.reputation);
+        await reputationClient.connect();
+        let data = {};
+        await Promise.all(Array.from({ length: 64 }, (_, i) => i + universeStartIndex).map(async (i) => {
+            try {
+                const hostReputationInfo = await reputationClient.getReputationInfoByOrderedId(i);
+                if (!hostReputationInfo)
+                    throw 'No reputation info for this order id';
+                data[i.toString()] = {
+                    publicKey: hostReputationInfo.contract.pubkey,
+                    reputationAddress: hostReputationInfo.address,
+                    orderId: i
+                };
+            } catch (error) {
+                data[i.toString()] = { publicKey: "-1", orderId: i };
+            }
+        }));
+        await reputationClient.disconnect();
+
+        return Object.entries(data).map(e => ({
+            ...e[1],
+            scoreValue: collectedScores[e[1]?.publicKey] || 0
+        }));
+    }
+
+    /**
+     * Send reputation scores to the reputation hook.
+     * @param {object} scores [Optional] Score object in { host: score } format.
+     */
+    async sendReputations(scores = null, options = {}) {
+        let buffer = Buffer.alloc(64, 0);
+        if (scores) {
+            const preparedScores = await this.prepareHostReputationScores(scores);
+            let i = 0;
+            for (const reputationScore of preparedScores) {
+                buffer.writeUIntLE(Number(reputationScore.scoreValue), i, 1);
+                i++;
+            }
+        }
+
+        await this.reputationAcc.invoke(this.config.reputationAddress,
+            scores ? { isHex: true, data: buffer.toString('hex') } : null,
+            {
+                hookParams: [
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_SEND_REPUTATION }
+                ],
+                maxLedgerIndex: this.#getMaxLedgerSequence(),
+                ...options.transactionOptions,
+                submissionRef: options.submissionRef
+            });
     }
 
     /**

@@ -6,12 +6,15 @@ let evrIssuerAddress;
 let foundationAddress;
 let registryAddress;
 let heartbeatAddress;
+let reputationAddress;
 const overrideGovernorAddress = '';
 const foundationSecret = "sn3nNMSuyXiqVjrhfQr9JxDhgHmds";
 const initializerAddress = 'rMv668j9M6x2ww4HNEF4AhB8ju77oSxFJD';
 const initializerSecret = 'sn6TNZivVQY9KxXrLy8XdH9oXk3aG';
-const hostAddress = "r3poDzE7vB1JbYmN1ezpQoxMP4QG4TPHW6";
-const hostSecret = "shmHHZdw8hTPjgVy7eJBDcm7DCnHp";
+const hostAddress = "rpRcrjaM3bMc7KM3qVkMTMsLTpV8LhHhTq";
+const hostSecret = "snGKAK7wMqXf47pxnh2hZ56k3nx6q";
+const hostReputationAddress = "r3kDibZG3xoKFLPGU3hL116TjVhjEmcnsp";
+const hostReputationSecret = "ssMmi4o2wHR76f23b1eiCePoauecH";
 const tenantAddress = "r3vbdktYDxVSe7K1oo2McKeBJhQng3uFeH";
 const tenantSecret = "shjBr5yFDNzyUkBiFXjexFYiAsPBS";
 const transfereeAddress = 'rsPxbXNo5XnBpnLZ3yu3ZufCZiA22hS5R7';
@@ -70,6 +73,7 @@ async function app() {
         foundationAddress = governorClient.config.foundationAddress;
         registryAddress = governorClient.config.registryAddress;
         heartbeatAddress = governorClient.config.heartbeatAddress;
+        reputationAddress = governorClient.config.reputationAddress;
 
         /*
          * Process of minting and selling a NFT - V2.
@@ -127,6 +131,9 @@ async function app() {
             // () => initializeConfigs(),
             // () => getHookStates(),
             // () => registerHost(),
+            // () => prepareHostReputation(),
+            // () => getReputationInfo(),
+            // () => sendReputation(),
             // () => getHostInfo(),
             // () => updateInfo(),
             // () => getAllHostsFromLedger(),
@@ -222,11 +229,12 @@ async function getActiveHostsFromLedger() {
 
 async function initializeConfigs() {
     console.log(`-----------Initialize configs`);
-    let paramData = Buffer.alloc(80, 0);
+    let paramData = Buffer.alloc(100, 0);
     codec.decodeAccountID(evrIssuerAddress).copy(paramData);
     codec.decodeAccountID(foundationAddress).copy(paramData, 20);
     codec.decodeAccountID(registryAddress).copy(paramData, 40);
     codec.decodeAccountID(heartbeatAddress).copy(paramData, 60);
+    codec.decodeAccountID(reputationAddress).copy(paramData, 80);
 
     const initAccount = new evernode.XrplAccount(initializerAddress, initializerSecret);
     await initAccount.makePayment(
@@ -266,7 +274,7 @@ async function registerHost(address = hostAddress, secret = hostSecret) {
     const leaseAmount = 0.000001;
 
     console.log("Register...");
-    const instanceCount = 1;
+    const instanceCount = 3;
     await host.register("AU", 10000, 512, 1024, instanceCount, 'Intel', 10, 10, "Test desctiption", "testemail@gmail.com", leaseAmount);
 
     console.log("Lease Offer...");
@@ -277,6 +285,17 @@ async function registerHost(address = hostAddress, secret = hostSecret) {
 
     // Verify the registration.
     return await host.isRegistered();
+}
+
+async function prepareHostReputation(address = hostAddress, secret = hostSecret, reputationAddress = hostReputationAddress, reputationSecret = hostReputationSecret) {
+    const host = await getHostClient(address, secret);
+
+    if (!await host.isRegistered())
+        return;
+
+    console.log(`-----------Prepare host reputation`);
+    await host.prepareReputationAccount(reputationAddress, reputationSecret);
+    return;
 }
 
 async function deregisterHost(address = hostAddress, secret = hostSecret) {
@@ -461,6 +480,21 @@ async function getHostInfo() {
     const hostInfo = await host.getHostInfo();
     console.log(hostInfo);
     return hostInfo;
+}
+
+async function getReputationInfo() {
+    const host = await getHostClient();
+    const reputationInfo = await host.getReputationInfo();
+    console.log(reputationInfo);
+    return reputationInfo;
+}
+
+async function sendReputation() {
+    const host = await getHostClient(hostAddress, hostSecret, hostReputationAddress, hostReputationSecret);
+
+    console.log(`Sending reputation`);
+
+    await host.sendReputations({});
 }
 
 async function pruneDeadHost(address = hostAddress) {
