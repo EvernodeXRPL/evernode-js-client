@@ -937,12 +937,13 @@ class BaseEvernodeClient {
             }
 
             const hostRepAcc = new XrplAccount(hostReputationAddress, null, { xrplApi: this.xrplApi });
-            const [msgKey, rep] = await Promise.all([
-                hostRepAcc.getMessageKey(),
+            const [wl, rep] = await Promise.all([
+                hostRepAcc.getWalletLocator(),
                 hostRepAcc.getDomain()]);
 
-            if (msgKey && rep && rep.length > 0) {
-                const hostAddress = UtilHelpers.deriveAddress(msgKey);
+            if (wl && rep && rep.length > 0) {
+                const hostReputationAccId = wl.slice(0, 20);
+                const hostAddress = codec.encodeAccountID(Buffer.from(hostReputationAccId, 'hex'));
                 const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
 
                 const repBuf = Buffer.from(rep, 'hex');
@@ -994,7 +995,7 @@ class BaseEvernodeClient {
             if (!ledgerEntry)
                 throw `No hook exists with the specified ${hook} hook hash.`;
             else
-                keylets.push(HookHelpers.getKeylet('HOOK_DEFINITION',index));
+                keylets.push(HookHelpers.getKeylet('HOOK_DEFINITION', index));
         }
 
         const uniqueId = StateHelpers.getNewHookCandidateId(hashesBuf);
