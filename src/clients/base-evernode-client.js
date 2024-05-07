@@ -942,7 +942,7 @@ class BaseEvernodeClient {
                 hostRepAcc.getDomain()]);
 
             if (wl && rep && rep.length > 0) {
-                const hostReputationAccId = wl.slice(0, 20);
+                const hostReputationAccId = wl.slice(0, 40);
                 const hostAddress = codec.encodeAccountID(Buffer.from(hostReputationAccId, 'hex'));
                 const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
 
