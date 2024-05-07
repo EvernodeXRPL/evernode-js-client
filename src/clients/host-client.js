@@ -113,6 +113,18 @@ class HostClient extends BaseEvernodeClient {
     }
 
     /**
+     * Get lease token by index.
+     * @param index Index of the token.
+     * @returns Lease token.
+     */
+    async getLeaseByIndex(index) {
+        const token = await EvernodeHelpers.getLeaseByIndex(this.xrplApi, index);
+        if (token.Issuer !== this.xrplAcc.address)
+            return null;
+        return token;
+    }
+
+    /**
      * Get offered and unoffered leases created by the host.
      * @returns Array of lease offer objects.
      */
