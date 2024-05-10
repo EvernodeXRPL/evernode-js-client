@@ -152,7 +152,12 @@ class XrplApi {
                         this.#events.emit(XrplApiEvents.SERVER_DESYNCED, { "event_type": "on_alert", "server_state": serverState });
                     }
                 } catch (e) {
-                    console.log("Error occurred while listening to server de-syncs.", e)
+                    if (e.name === 'TimeoutError') {
+                        console.error("Server timeout detected.");
+                        this.#events.emit(XrplApiEvents.DISCONNECTED, 408);
+                    }
+                    else
+                        console.error("Error occurred while listening to server de-syncs.", e);
                 } finally {
                     clearTimeout(ledgerTimeout);
                 }
