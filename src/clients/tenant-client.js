@@ -22,10 +22,10 @@ class TenantClient extends BaseEvernodeClient {
         super(xrpAddress, xrpSecret, Object.values(TenantEvents), false, options);
     }
 
-    async prepareAccount() {
+    async prepareAccount(options = {}) {
         try {
             if (!await this.xrplAcc.getMessageKey())
-                await this.xrplAcc.setAccountFields({ MessageKey: this.accKeyPair.publicKey });
+                await this.xrplAcc.setAccountFields({ MessageKey: this.accKeyPair.publicKey }, options);
         }
         catch (err) {
             console.log("Error in preparing user xrpl account for Evernode.", err);
@@ -151,20 +151,28 @@ class TenantClient extends BaseEvernodeClient {
 
             let relevantTx = null;
             while (!rejected && !relevantTx) {
-                const txList = await this.xrplAcc.getAccountTrx(tx.details.ledger_index);
-                for (let t of txList) {
-                    t.tx.Memos = TransactionHelper.deserializeMemos(t.tx?.Memos);
-                    t.tx.HookParameters = TransactionHelper.deserializeHookParams(t.tx?.HookParameters);
+                try {
+                    const txList = await this.xrplAcc.getAccountTrx(tx.details.ledger_index);
+                    for (let t of txList) {
+                        t.tx.Memos = TransactionHelper.deserializeMemos(t.tx?.Memos);
+                        t.tx.HookParameters = TransactionHelper.deserializeHookParams(t.tx?.HookParameters);
 
-                    if (t.meta?.delivered_amount)
-                        t.tx.DeliveredAmount = t.meta.delivered_amount;
+                        if (t.meta?.delivered_amount)
+                            t.tx.DeliveredAmount = t.meta.delivered_amount;
 
-                    const res = await this.extractEvernodeEvent(t.tx);
-                    if ((res?.name === EvernodeEvents.AcquireSuccess || res?.name === EvernodeEvents.AcquireError) && res?.data?.acquireRefId === tx.id) {
-                        clearTimeout(failTimeout);
-                        relevantTx = res;
-                        break;
+                        const res = await this.extractEvernodeEvent(t.tx);
+                        if ((res?.name === EvernodeEvents.AcquireSuccess || res?.name === EvernodeEvents.AcquireError) && res?.data?.acquireRefId === tx.id) {
+                            clearTimeout(failTimeout);
+                            relevantTx = res;
+                            break;
+                        }
                     }
+                }
+                catch (e) {
+                    rejected = true;
+                    clearTimeout(failTimeout);
+                    reject({ error: ErrorCodes.ACQUIRE_ERR, reason: 'UNKNOWN', acquireRefId: tx.id });
+                    break;
                 }
                 await new Promise(resolveSleep => setTimeout(resolveSleep, 2000));
             }
@@ -266,20 +274,28 @@ class TenantClient extends BaseEvernodeClient {
 
             let relevantTx = null;
             while (!rejected && !relevantTx) {
-                const txList = await this.xrplAcc.getAccountTrx(tx.details.ledger_index);
-                for (let t of txList) {
-                    t.tx.Memos = TransactionHelper.deserializeMemos(t.tx.Memos);
-                    t.tx.HookParameters = TransactionHelper.deserializeHookParams(t.tx?.HookParameters);
+                try {
+                    const txList = await this.xrplAcc.getAccountTrx(tx.details.ledger_index);
+                    for (let t of txList) {
+                        t.tx.Memos = TransactionHelper.deserializeMemos(t.tx.Memos);
+                        t.tx.HookParameters = TransactionHelper.deserializeHookParams(t.tx?.HookParameters);
 
-                    if (t.meta?.delivered_amount)
-                        t.tx.DeliveredAmount = t.meta.delivered_amount;
+                        if (t.meta?.delivered_amount)
+                            t.tx.DeliveredAmount = t.meta.delivered_amount;
 
-                    const res = await this.extractEvernodeEvent(t.tx);
-                    if ((res?.name === TenantEvents.ExtendSuccess || res?.name === TenantEvents.ExtendError) && res?.data?.extendRefId === tx.id) {
-                        clearTimeout(failTimeout);
-                        relevantTx = res;
-                        break;
+                        const res = await this.extractEvernodeEvent(t.tx);
+                        if ((res?.name === TenantEvents.ExtendSuccess || res?.name === TenantEvents.ExtendError) && res?.data?.extendRefId === tx.id) {
+                            clearTimeout(failTimeout);
+                            relevantTx = res;
+                            break;
+                        }
                     }
+                }
+                catch (e) {
+                    rejected = true;
+                    clearTimeout(failTimeout);
+                    reject({ error: ErrorCodes.EXTEND_ERR, reason: 'UNKNOWN', extendRefId: tx.id });
+                    break;
                 }
                 await new Promise(resolveSleep => setTimeout(resolveSleep, 1000));
             }
@@ -295,7 +311,8 @@ class TenantClient extends BaseEvernodeClient {
                     reject({
                         error: ErrorCodes.EXTEND_ERR,
                         transaction: relevantTx?.data.transaction,
-                        reason: relevantTx?.data.reason
+                        reason: relevantTx?.data.reason,
+                        extendRefId: relevantTx?.data.extendRefId
                     });
                 }
             }

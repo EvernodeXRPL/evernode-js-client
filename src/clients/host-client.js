@@ -119,7 +119,7 @@ class HostClient extends BaseEvernodeClient {
      */
     async getLeaseByIndex(index) {
         const token = await EvernodeHelpers.getLeaseByIndex(this.xrplApi, index);
-        if (token.Issuer !== this.xrplAcc.address)
+        if (token?.Issuer !== this.xrplAcc.address)
             return null;
         return token;
     }
