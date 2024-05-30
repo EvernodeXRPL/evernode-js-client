@@ -59,7 +59,7 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async connect(options = {}) {
-        const res = await super.connect();
+        const res = await super.connect(options);
         await this.setReputationAcc(options.reputationAddress, options.reputationSecret);
         return res;
     }

@@ -41,6 +41,9 @@ class BaseEvernodeClient {
         if (!options.xrplApi && !Defaults.values.xrplApi)
             this.#ownsXrplApi = true;
 
+        if (options.config)
+            this.config = options.config;
+
         this.xrplAcc = new XrplAccount(xrpAddress, xrpSecret, { xrplApi: this.xrplApi });
         this.accKeyPair = xrpSecret && this.xrplAcc.deriveKeypair();
         this.messagePrivateKey = options.messagePrivateKey || (this.accKeyPair ? this.accKeyPair.privateKey : null);
@@ -86,7 +89,7 @@ class BaseEvernodeClient {
      * Connects the client to xrpl server and do the config loading and subscriptions. 'subscribe' is called inside this.
      * @returns boolean value, 'true' if success.
      */
-    async connect() {
+    async connect(options = {}) {
         if (this.connected)
             return true;
 
@@ -96,7 +99,9 @@ class BaseEvernodeClient {
         // identify a network reset from XRPL. 
         await this.xrplAcc.getInfo();
 
-        this.config = await this.#getEvernodeConfig();
+        if (!this.config && !options.skipConfigs)
+            this.config = await this.#getEvernodeConfig();
+
         this.connected = true;
 
         if (this.#autoSubscribe)
@@ -110,6 +115,8 @@ class BaseEvernodeClient {
      */
     async disconnect() {
         await this.unsubscribe();
+
+        this.config = null;
 
         if (this.#ownsXrplApi)
             await this.xrplApi.disconnect();
@@ -185,7 +192,6 @@ class BaseEvernodeClient {
      * @returns An object with all the configuration and their values.
      */
     async #getEvernodeConfig() {
-        let states = await this.getHookStates();
         const configStateKeys = {
             registryAddress: HookStateKeys.REGISTRY_ADDR,
             heartbeatAddress: HookStateKeys.HEARTBEAT_ADDR,
@@ -209,12 +215,12 @@ class BaseEvernodeClient {
         }
         let config = {};
         for (const [key, value] of Object.entries(configStateKeys)) {
-            const stateKey = Buffer.from(value, 'hex');
-            const stateDataBin = StateHelpers.getStateData(states, value);
-            if (stateDataBin) {
-                const stateData = Buffer.from(StateHelpers.getStateData(states, value), 'hex');
-                const decoded = StateHelpers.decodeStateData(stateKey, stateData);
-                config[key] = decoded.value;
+            const index = StateHelpers.getHookStateIndex(this.governorAddress, value);
+            const ledgerEntry = await this.xrplApi.getLedgerEntry(index);
+            const stateData = ledgerEntry?.HookStateData;
+            if (stateData) {
+                const stateDecoded = StateHelpers.decodeStateData(Buffer.from(value, 'hex'), Buffer.from(stateData, 'hex'));
+                config[key] = stateDecoded.value;
             }
         }
         return config;
