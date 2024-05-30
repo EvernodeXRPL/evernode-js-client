@@ -18,7 +18,7 @@ class ReputationClient extends BaseEvernodeClient {
             if (addressInfo?.address) {
                 let data = addressInfo;
 
-                const hostRepAcc = new XrplAccount(address, null, { xrplApi: this.xrplApi });
+                const hostRepAcc = new XrplAccount(addressInfo?.address, null, { xrplApi: this.xrplApi });
                 const [wl, rep] = await Promise.all([
                     hostRepAcc.getWalletLocator(),
                     hostRepAcc.getDomain()]);
