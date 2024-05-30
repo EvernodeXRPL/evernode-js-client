@@ -116,8 +116,6 @@ class BaseEvernodeClient {
     async disconnect() {
         await this.unsubscribe();
 
-        this.config = null;
-
         if (this.#ownsXrplApi)
             await this.xrplApi.disconnect();
     }
