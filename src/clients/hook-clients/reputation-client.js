@@ -9,6 +9,53 @@ class ReputationClient extends BaseEvernodeClient {
         super(options.reputationAddress, null, Object.values(ReputationEvents), false, options);
     }
 
+    async getReputationContractInfoByOrderedId(hostReputationOrderedId, moment = null) {
+        try {
+            const repMoment = moment ?? await this.getMoment();
+            const addressInfo = await this.getReputationAddressByOrderId(hostReputationOrderedId, repMoment);
+            if (addressInfo?.address) {
+                let data = addressInfo;
+
+                const hostRepAcc = new XrplAccount(address, null, { xrplApi: this.xrplApi });
+                const [wl, rep] = await Promise.all([
+                    hostRepAcc.getWalletLocator(),
+                    hostRepAcc.getDomain()]);
+
+                if (wl && rep && rep.length > 0) {
+                    const hostReputationAccId = wl.slice(0, 40);
+                    const hostAddress = codec.encodeAccountID(Buffer.from(hostReputationAccId, 'hex'));
+                    const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
+
+                    const repBuf = Buffer.from(rep, 'hex');
+                    const publicKey = repBuf.slice(0, ReputationConstants.REP_INFO_PEER_PORT_OFFSET).toString('hex').toLocaleLowerCase();
+                    const peerPort = repBuf.readUInt16LE(ReputationConstants.REP_INFO_PEER_PORT_OFFSET);
+                    const instanceMoment = (repBuf.length > ReputationConstants.REP_INFO_MOMENT_OFFSET) ? Number(repBuf.readBigUInt64LE(ReputationConstants.REP_INFO_MOMENT_OFFSET)) : null;
+                    const domain = await hostAcc.getDomain();
+
+                    if (instanceMoment === repMoment) {
+                        data = {
+                            ...data,
+                            contract: {
+                                domain: domain,
+                                pubkey: publicKey,
+                                peerPort: peerPort
+                            }
+                        }
+                    }
+                }
+                return data;
+            }
+
+        }
+        catch (e) {
+            // If the exception is entryNotFound from Rippled there's no entry for the host, So return null.
+            if (e?.data?.error !== 'entryNotFound')
+                throw e;
+        }
+
+        return null;
+    }
+
     /**
      * Get reputation info of given host reputation orderId.
      * @param {number} hostReputationOrderedId Reputation order id of the host.
@@ -18,14 +65,11 @@ class ReputationClient extends BaseEvernodeClient {
     async getReputationInfoByOrderedId(hostReputationOrderedId, moment = null) {
         try {
             const repMoment = moment ?? await this.getMoment();
-            const orderedIdStateKey = StateHelpers.generateHostReputationOrderedIdStateKey(hostReputationOrderedId, repMoment);
-            const orderedIdStateIndex = StateHelpers.getHookStateIndex(this.xrplAcc.address, orderedIdStateKey);
-            const orderedIdLedgerEntry = await this.xrplApi.getLedgerEntry(orderedIdStateIndex);
-            const orderedIdStateData = orderedIdLedgerEntry?.HookStateData;
+            const addressInfo = this.getReputationAddressByOrderId(hostReputationOrderedId, repMoment);
 
-            if (orderedIdStateData) {
-                const orderedIdStateDecoded = StateHelpers.decodeHostReputationOrderedIdState(Buffer.from(orderedIdStateKey, 'hex'), Buffer.from(orderedIdStateData, 'hex'));
-                return await this._getReputationInfoByAddress(orderedIdStateDecoded.address, moment);
+            if (addressInfo?.address) {
+                const info = await this.getReputationInfoByAddress(addressInfo?.address, repMoment);
+                return info ? { ...addressInfo, ...info } : addressInfo;
             }
         }
         catch (e) {

@@ -912,13 +912,63 @@ class BaseEvernodeClient {
         return null;
     }
 
+    async getReputationAddressByOrderId(hostReputationOrderedId, moment = null) {
+        try {
+            const repMoment = moment ?? await this.getMoment();
+            const orderedIdStateKey = StateHelpers.generateHostReputationOrderedIdStateKey(hostReputationOrderedId, repMoment);
+            const orderedIdStateIndex = StateHelpers.getHookStateIndex(this.xrplAcc.address, orderedIdStateKey);
+            const orderedIdLedgerEntry = await this.xrplApi.getLedgerEntry(orderedIdStateIndex);
+            const orderedIdStateData = orderedIdLedgerEntry?.HookStateData;
+
+            if (orderedIdStateData) {
+                const orderedIdStateDecoded = StateHelpers.decodeHostReputationOrderedIdState(Buffer.from(orderedIdStateKey, 'hex'), Buffer.from(orderedIdStateData, 'hex'));
+                return orderedIdStateDecoded;
+            }
+        }
+        catch (e) {
+            // If the exception is entryNotFound from Rippled there's no entry for the host, So return null.
+            if (e?.data?.error !== 'entryNotFound')
+                throw e;
+        }
+
+        return null;
+    }
+
     /**
      * Get reputation info of given host.
      * @param {string} hostReputationAddress Host's reputation address.
      * @param {number} moment (optional) Moment to get reputation info for.
      * @returns Reputation info object.
      */
-    async _getReputationInfoByAddress(hostReputationAddress, moment = null) {
+    async getReputationOrderByAddress(hostReputationAddress, moment = null) {
+        try {
+            const repMoment = moment ?? await this.getMoment();
+            const orderedAddrStateKey = StateHelpers.generateHostReputationOrderAddressStateKey(hostReputationAddress, repMoment);
+            const orderedAddrStateIndex = StateHelpers.getHookStateIndex(this.config.reputationAddress, orderedAddrStateKey);
+            const orderedAddrLedgerEntry = await this.xrplApi.getLedgerEntry(orderedAddrStateIndex);
+            const orderedAddrStateData = orderedAddrLedgerEntry?.HookStateData;
+
+            if (orderedAddrStateData) {
+                const orderedAddrStateDecoded = StateHelpers.decodeHostReputationOrderAddressState(Buffer.from(orderedAddrStateKey, 'hex'), Buffer.from(orderedAddrStateData, 'hex'));
+                return orderedAddrStateDecoded;
+            }
+        }
+        catch (e) {
+            // If the exception is entryNotFound from Rippled there's no entry for the host, So return null.
+            if (e?.data?.error !== 'entryNotFound')
+                throw e;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get reputation info of given host.
+     * @param {string} hostReputationAddress Host's reputation address.
+     * @param {number} moment (optional) Moment to get reputation info for.
+     * @returns Reputation info object.
+     */
+    async getReputationInfoByAddress(hostReputationAddress, moment = null) {
         try {
             const addrStateKey = StateHelpers.generateHostReputationAddrStateKey(hostReputationAddress);
             const addrStateIndex = StateHelpers.getHookStateIndex(this.config.reputationAddress, addrStateKey);
@@ -932,15 +982,6 @@ class BaseEvernodeClient {
             }
 
             const repMoment = moment ?? await this.getMoment();
-            const orderedAddrStateKey = StateHelpers.generateHostReputationOrderAddressStateKey(hostReputationAddress, repMoment);
-            const orderedAddrStateIndex = StateHelpers.getHookStateIndex(this.config.reputationAddress, orderedAddrStateKey);
-            const orderedAddrLedgerEntry = await this.xrplApi.getLedgerEntry(orderedAddrStateIndex);
-            const orderedAddrStateData = orderedAddrLedgerEntry?.HookStateData;
-
-            if (orderedAddrStateData) {
-                const orderedAddrStateDecoded = StateHelpers.decodeHostReputationOrderAddressState(Buffer.from(orderedAddrStateKey, 'hex'), Buffer.from(orderedAddrStateData, 'hex'));
-                data = { ...data, ...orderedAddrStateDecoded };
-            }
 
             const hostRepAcc = new XrplAccount(hostReputationAddress, null, { xrplApi: this.xrplApi });
             const [wl, rep] = await Promise.all([

@@ -295,7 +295,22 @@ class HostClient extends BaseEvernodeClient {
         if (!this.reputationAcc)
             return null;
 
-        return await this._getReputationInfoByAddress(this.reputationAcc.address, moment);
+        try {
+            const repMoment = moment ?? await this.getMoment();
+            const orderInfo = await this.getReputationOrderByAddress(this.reputationAcc.address, repMoment);
+
+            if (orderInfo?.orderedId) {
+                const info = await this.getReputationInfoByAddress(this.reputationAcc.address, repMoment);
+                return info ? { ...orderInfo, ...info } : orderInfo;
+            }
+        }
+        catch (e) {
+            // If the exception is entryNotFound from Rippled there's no entry for the host, So return null.
+            if (e?.data?.error !== 'entryNotFound')
+                throw e;
+        }
+
+        return null;
     }
 
     /**
@@ -304,7 +319,10 @@ class HostClient extends BaseEvernodeClient {
      * @returns Unified reputation score array.
      */
     async prepareHostReputationScores(collectedScores = {}) {
-        const myReputationInfo = await this.getReputationInfo();
+        const myReputationInfo = await this.getReputationOrderByAddress(this.reputationAcc.address);
+        if (!myReputationInfo?.orderedId)
+            throw 'You are not registered for reputation for this moment.';
+
         const myOrderId = myReputationInfo.orderedId;
 
         // Deciding universe.
@@ -315,7 +333,7 @@ class HostClient extends BaseEvernodeClient {
         let data = {};
         await Promise.all(Array.from({ length: 64 }, (_, i) => i + universeStartIndex).map(async (i) => {
             try {
-                const hostReputationInfo = await reputationClient.getReputationInfoByOrderedId(i);
+                const hostReputationInfo = await reputationClient.getReputationContractInfoByOrderedId(i);
                 if (!hostReputationInfo)
                     throw 'No reputation info for this order id';
                 data[i.toString()] = {
