@@ -1,3 +1,4 @@
+const codec = require('ripple-address-codec');
 const { StateHelpers } = require("../../state-helpers");
 const { XrplAccount } = require("../../xrpl-account");
 const { BaseEvernodeClient } = require("../base-evernode-client");
