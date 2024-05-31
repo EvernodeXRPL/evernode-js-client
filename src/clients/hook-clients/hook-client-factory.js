@@ -10,26 +10,39 @@ class HookClientFactory {
      * @param {string} hookType Type of the Required Hook. (Supported Hook types 'GOVERNOR', 'REGISTRY' and 'HEARTBEAT')
      * @returns Instance of requested HookClient type.
      */
-    static async create(hookType) {
+    static async create(hookType, options = {}) {
+        let governorClient;
+        if (hookType !== HookTypes.governor && !options.config) {
+            governorClient = new GovernorClient(options);
+            try {
+                await governorClient.connect();
+                options.config = governorClient.config;
+            } catch (error) {
+                throw (error)
+            } finally {
+                await governorClient.disconnect();
+            }
+        }
+
         let hookClient;
         switch (hookType) {
             case HookTypes.governor: {
-                hookClient = new GovernorClient();
+                hookClient = new GovernorClient(options);
                 break;
             }
             case HookTypes.registry: {
-                const registryAddress = await HookClientFactory.#getAccountAddress(hookType);
-                hookClient = new RegistryClient({ registryAddress: registryAddress });
+                const registryAddress = await HookClientFactory.#getAccountAddress(hookType, options.config);
+                hookClient = new RegistryClient({ ...options, registryAddress: registryAddress });
                 break;
             }
             case HookTypes.heartbeat: {
-                const heartbeatAddress = await HookClientFactory.#getAccountAddress(hookType);
-                hookClient = new HeartbeatClient({ heartbeatAddress: heartbeatAddress });
+                const heartbeatAddress = await HookClientFactory.#getAccountAddress(hookType, options.config);
+                hookClient = new HeartbeatClient({ ...options, heartbeatAddress: heartbeatAddress });
                 break;
             }
             case HookTypes.reputation: {
-                const reputationAddress = await HookClientFactory.#getAccountAddress(hookType);
-                hookClient = new ReputationClient({ reputationAddress: reputationAddress });
+                const reputationAddress = await HookClientFactory.#getAccountAddress(hookType, options.config);
+                hookClient = new ReputationClient({ ...options, reputationAddress: reputationAddress });
                 break;
             }
             default: {
@@ -41,25 +54,13 @@ class HookClientFactory {
         return hookClient;
     }
 
-    static async #getAccountAddress(hookType) {
-        const governorHook = await HookClientFactory.create(HookTypes.governor);
-
-        let configs;
-        try {
-            await governorHook.connect();
-            configs = governorHook.config;
-        } catch (error) {
-            throw (error)
-        } finally {
-            await governorHook.disconnect();
-        }
-
+    static async #getAccountAddress(hookType, config) {
         if (hookType == HookTypes.registry)
-            return configs.registryAddress;
+            return config.registryAddress;
         else if (hookType == HookTypes.heartbeat)
-            return configs.heartbeatAddress;
+            return config.heartbeatAddress;
         else if (hookType == HookTypes.reputation)
-            return configs.reputationAddress;
+            return config.reputationAddress;
     }
 }
 
