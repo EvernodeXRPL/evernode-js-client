@@ -296,13 +296,17 @@ class HostClient extends BaseEvernodeClient {
             return null;
 
         try {
+            let data = {};
             const repMoment = moment ?? await this.getMoment();
             const orderInfo = await this.getReputationOrderByAddress(this.reputationAcc.address, repMoment);
+            if (orderInfo)
+                data = orderInfo;
 
-            if (orderInfo?.orderedId) {
-                const info = await this.getReputationInfoByAddress(this.reputationAcc.address, repMoment);
-                return info ? { ...orderInfo, ...info } : orderInfo;
-            }
+            const info = await this.getReputationInfoByAddress(this.reputationAcc.address, repMoment);
+            if (info)
+                data = { ...info, ...data };
+
+            return Object.keys(data).length > 0 ? data : null;
         }
         catch (e) {
             // If the exception is entryNotFound from Rippled there's no entry for the host, So return null.
@@ -320,7 +324,7 @@ class HostClient extends BaseEvernodeClient {
      */
     async prepareHostReputationScores(collectedScores = {}) {
         const myReputationInfo = await this.getReputationOrderByAddress(this.reputationAcc.address);
-        if (!myReputationInfo?.orderedId)
+        if (!("orderedId" in (myReputationInfo ?? {})))
             throw 'You are not registered for reputation for this moment.';
 
         const myOrderId = myReputationInfo.orderedId;
