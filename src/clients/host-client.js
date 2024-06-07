@@ -65,26 +65,18 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async setReputationAcc(reputationAddress = null, reputationSecret = null) {
-        const wl = await this.xrplAcc.getWalletLocator();
-        if (!wl) {
-            this.reputationAcc = null;
-            this.reputationAccountMode = EvernodeConstants.ReputationAccountMode.None;
-            return;
+        let hostReputationAccId;
+        if (!reputationAddress && !reputationSecret) {
+            hostReputationAccId = (await this.xrplAcc.getWalletLocator())?.slice(0, 40);
+            if (hostReputationAccId)
+                reputationAddress = codec.encodeAccountID(Buffer.from(hostReputationAccId, 'hex'));
         }
 
-        const wlBuf = Buffer.from(wl, 'hex');
-        if (!reputationAddress && !reputationSecret)
-            reputationAddress = codec.encodeAccountID(wlBuf.slice(1, 21));
-
-        if (reputationAddress || reputationSecret) {
+        if (reputationAddress || reputationSecret)
             this.reputationAcc = new XrplAccount(reputationAddress, reputationSecret, { xrplApi: this.xrplApi });
-            this.reputationAccountMode = wlBuf.readUInt8();
-        }
 
-        if (!this.reputationAcc || this.reputationAcc.address === this.xrplAcc.address || this.reputationAcc.address !== reputationAddress) {
+        if (!this.reputationAcc || this.reputationAcc.address === this.xrplAcc.address || this.reputationAcc.address !== reputationAddress)
             this.reputationAcc = null;
-            this.reputationAccountMode = EvernodeConstants.ReputationAccountMode.None;
-        }
     }
 
     /**
@@ -276,6 +268,14 @@ class HostClient extends BaseEvernodeClient {
      * @param {string} publicKey Public key of the reputation contract instance.
      */
     async setReputationContractInfo(peerPort, publicKey, moment = null, options = {}) {
+        const wl = await this.xrplAcc.getWalletLocator();
+        if (!wl)
+            throw 'This host is not opted in for reputation.';
+
+        const repAccMode = Buffer.from(wl, 'hex').readUInt8();
+        if (repAccMode === EvernodeConstants.ReputationAccountMode.None)
+            throw 'Invalid reputation account mode.';
+
         const repMoment = moment ?? await this.getMoment();
 
         var buffer = Buffer.alloc(ReputationConstants.REP_INFO_BUFFER_SIZE, 0);
@@ -286,9 +286,9 @@ class HostClient extends BaseEvernodeClient {
 
         let accountSetFields = null;
         let hookParams = null;
-        if (this.reputationAccountMode === EvernodeConstants.ReputationAccountMode.OneToOne)
+        if (repAccMode === EvernodeConstants.ReputationAccountMode.OneToOne)
             accountSetFields = { Domain: infoHex };
-        else if (this.reputationAccountMode === EvernodeConstants.ReputationAccountMode.OnToMany) {
+        else if (repAccMode === EvernodeConstants.ReputationAccountMode.OnToMany) {
             hookParams = {
                 hookParams: [
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.REPUTATION_CONTRACT_INFO_UPDATE },
