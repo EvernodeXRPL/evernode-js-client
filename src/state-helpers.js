@@ -160,10 +160,10 @@ class StateHelpers {
         return state.data;
     }
 
-    static decodeHostReputationAddressState(stateKeyBuf, stateDataBuf) {
+    static decodeReputationHostAddressState(stateKeyBuf, stateDataBuf) {
         const keyOffset = STATE_KEY_SIZE - ACCOUNT_ID_SIZE;
         const data = {
-            address: codec.encodeAccountID(stateKeyBuf.slice(keyOffset)),
+            hostAddress: codec.encodeAccountID(stateKeyBuf.slice(keyOffset)),
             lastRegisteredMoment: Number(stateDataBuf.readBigUInt64LE(HOST_REP_LAST_REG_MOMENT_OFFSET)),
             scoreNumerator: Number(stateDataBuf.readBigUInt64LE(HOST_REP_SCORE_NUMERATOR_OFFSET)),
             scoreDenominator: Number(stateDataBuf.readBigUInt64LE(HOST_REP_SCORE_DENOMINATOR_OFFSET))
@@ -171,22 +171,22 @@ class StateHelpers {
         return data;
     }
 
-    static decodeHostReputationOrderAddressState(stateKeyBuf, stateDataBuf) {
+    static decodeReputationHostOrderAddressState(stateKeyBuf, stateDataBuf) {
         const keyOffset = STATE_KEY_SIZE - ACCOUNT_ID_SIZE - 8;
         const data = {
             moment: Number(stateKeyBuf.readBigUInt64LE(keyOffset)),
-            address: codec.encodeAccountID(stateKeyBuf.slice(keyOffset + 8)),
+            hostAddress: codec.encodeAccountID(stateKeyBuf.slice(keyOffset + 8)),
             orderedId: Number(stateDataBuf.readBigUInt64LE(0))
         }
         return data;
     }
 
-    static decodeHostReputationOrderedIdState(stateKeyBuf, stateDataBuf) {
+    static decodeReputationHostOrderedIdState(stateKeyBuf, stateDataBuf) {
         const keyOffset = STATE_KEY_SIZE - 16;
         const data = {
             moment: Number(stateKeyBuf.readBigUInt64LE(keyOffset)),
             orderedId: Number(stateKeyBuf.readBigUInt64LE(keyOffset + 8)),
-            address: codec.encodeAccountID(stateDataBuf.slice(0))
+            hostAddress: codec.encodeAccountID(stateDataBuf.slice(0))
         }
         return data;
     }
@@ -645,14 +645,14 @@ class StateHelpers {
         return stateKeyBuf.toString('hex').toUpperCase();
     }
 
-    static generateHostReputationAddrStateKey(address) {
+    static generateReputationHostAddrStateKey(address) {
         const buf = Buffer.alloc(STATE_KEY_SIZE, 0);
         Buffer.from(codec.decodeAccountID(address), "hex").copy(buf, buf.length - ACCOUNT_ID_SIZE);
 
         return buf.toString('hex').toUpperCase();
     }
 
-    static generateHostReputationOrderAddressStateKey(address, moment) {
+    static generateReputationHostOrderAddressStateKey(address, moment) {
         const buf = Buffer.alloc(STATE_KEY_SIZE, 0);
         const offset = buf.length - ACCOUNT_ID_SIZE - 8;
         buf.writeBigUInt64LE(BigInt(moment), offset);
@@ -661,7 +661,7 @@ class StateHelpers {
         return buf.toString('hex').toUpperCase();
     }
 
-    static generateHostReputationOrderedIdStateKey(orderedId, moment) {
+    static generateReputationHostOrderedIdStateKey(orderedId, moment) {
         let buf = Buffer.alloc(STATE_KEY_SIZE, 0);
         const offset = buf.length - 16;
         buf.writeBigUInt64LE(BigInt(moment), offset);
@@ -674,6 +674,14 @@ class StateHelpers {
         let buf = Buffer.alloc(STATE_KEY_SIZE, 0);
         const offset = buf.length - 8;
         buf.writeBigUInt64LE(BigInt(moment), offset);
+
+        return buf.toString('hex').toUpperCase();
+    }
+
+    static generateReputationContractInfoStateKey(address) {
+        const buf = Buffer.alloc(STATE_KEY_SIZE, 0);
+        const offset = buf.length - ACCOUNT_ID_SIZE;
+        Buffer.from(codec.decodeAccountID(address), "hex").copy(buf, offset);
 
         return buf.toString('hex').toUpperCase();
     }

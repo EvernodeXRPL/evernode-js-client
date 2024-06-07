@@ -65,18 +65,26 @@ class HostClient extends BaseEvernodeClient {
     }
 
     async setReputationAcc(reputationAddress = null, reputationSecret = null) {
-        let hostReputationAccId;
-        if (!reputationAddress && !reputationSecret) {
-            hostReputationAccId = (await this.xrplAcc.getWalletLocator())?.slice(0, 40);
-            if (hostReputationAccId)
-                reputationAddress = codec.encodeAccountID(Buffer.from(hostReputationAccId, 'hex'));
+        const wl = await this.xrplAcc.getWalletLocator();
+        if (!wl) {
+            this.reputationAcc = null;
+            this.reputationAccountMode = EvernodeConstants.ReputationAccountMode.None;
+            return;
         }
 
-        if (reputationAddress || reputationSecret)
-            this.reputationAcc = new XrplAccount(reputationAddress, reputationSecret, { xrplApi: this.xrplApi });
+        const wlBuf = Buffer.from(wl, 'hex');
+        if (!reputationAddress && !reputationSecret)
+            reputationAddress = codec.encodeAccountID(wlBuf.slice(1, 21));
 
-        if (!this.reputationAcc || this.reputationAcc.address === this.xrplAcc.address || this.reputationAcc.address !== reputationAddress)
+        if (reputationAddress || reputationSecret) {
+            this.reputationAcc = new XrplAccount(reputationAddress, reputationSecret, { xrplApi: this.xrplApi });
+            this.reputationAccountMode = wlBuf.readUInt8();
+        }
+
+        if (!this.reputationAcc || this.reputationAcc.address === this.xrplAcc.address || this.reputationAcc.address !== reputationAddress) {
             this.reputationAcc = null;
+            this.reputationAccountMode = EvernodeConstants.ReputationAccountMode.None;
+        }
     }
 
     /**
@@ -274,16 +282,28 @@ class HostClient extends BaseEvernodeClient {
         Buffer.from(publicKey.toUpperCase(), "hex").copy(buffer, ReputationConstants.REP_INFO_PUBKEY_OFFSET);
         buffer.writeUInt16LE(peerPort, ReputationConstants.REP_INFO_PEER_PORT_OFFSET);
         buffer.writeBigUInt64LE(BigInt(repMoment), ReputationConstants.REP_INFO_MOMENT_OFFSET);
-        const domain = buffer.toString('hex');
+        const infoHex = buffer.toString('hex').toUpperCase();
 
-        let accountSetFields = {};
-        accountSetFields = { ...accountSetFields, Domain: domain };
+        let accountSetFields = null;
+        let hookParams = null;
+        if (this.reputationAccountMode === EvernodeConstants.ReputationAccountMode.OneToOne)
+            accountSetFields = { Domain: infoHex };
+        else if (this.reputationAccountMode === EvernodeConstants.ReputationAccountMode.OnToMany) {
+            hookParams = {
+                hookParams: [
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.REPUTATION_CONTRACT_INFO_UPDATE },
+                    { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: infoHex }
+                ],
+                ...options.transactionOptions
+            }
+        }
 
-        if (Object.keys(accountSetFields).length !== 0) {
+        if (accountSetFields || hookParams) {
             await this.#submitWithRetry(async (feeUplift, submissionRef) => {
                 await this.reputationAcc.setAccountFields(accountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
-            }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
+            }, { ...(hookParams ? hookParams : {}), ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
         }
+
     }
 
     /**
@@ -298,11 +318,11 @@ class HostClient extends BaseEvernodeClient {
         try {
             let data = {};
             const repMoment = moment ?? await this.getMoment();
-            const orderInfo = await this.getReputationOrderByAddress(this.reputationAcc.address, repMoment);
+            const orderInfo = await this.getReputationOrderByAddress(this.xrplAcc.address, repMoment);
             if (orderInfo)
                 data = orderInfo;
 
-            const info = await this.getReputationInfoByAddress(this.reputationAcc.address, repMoment);
+            const info = await this.getReputationInfoByAddress(this.xrplAcc.address, repMoment);
             if (info)
                 data = { ...info, ...data };
 
@@ -323,7 +343,7 @@ class HostClient extends BaseEvernodeClient {
      * @returns Unified reputation score array.
      */
     async prepareHostReputationScores(collectedScores = {}) {
-        const myReputationInfo = await this.getReputationOrderByAddress(this.reputationAcc.address);
+        const myReputationInfo = await this.getReputationOrderByAddress(this.xrplAcc.address);
         if (!("orderedId" in (myReputationInfo ?? {})))
             throw 'You are not registered for reputation for this moment.';
 
@@ -341,8 +361,7 @@ class HostClient extends BaseEvernodeClient {
                 if (!hostReputationInfo)
                     throw 'No reputation info for this order id';
                 data[i.toString()] = {
-                    publicKey: hostReputationInfo.contract.pubkey,
-                    reputationAddress: hostReputationInfo.address,
+                    publicKey: hostReputationInfo.contract?.pubkey ?? "-1",
                     orderId: i
                 };
             } catch (error) {

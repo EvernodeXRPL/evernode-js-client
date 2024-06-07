@@ -5,6 +5,7 @@ const EvernodeConstants = {
     LEASE_TOKEN_VERSION_PREFIX_HEX: '4C5456', // LTV (Lease_Token_Version)
     LEASE_TOKEN_VERSION: 1,
     HOOK_NAMESPACE: '01EAF09326B4911554384121FF56FA8FECC215FDDE2EC35D9E59F2C53EC665A0',
+    HOST_REPUTATION_HOOK_NAMESPACE: '2BC6C2BBAC00E254AA5F2E855AD6F25BFF556EE8EEC9C82918EBCFA01FD05507',
     NOW_IN_EVRS: "0.00000001",
     HOOKS: [
         "Governor",
@@ -12,6 +13,11 @@ const EvernodeConstants = {
         "Heartbeat",
         "Reputation"
     ],
+    ReputationAccountMode: {
+        None: 0,
+        OneToOne: 1,
+        OnToMany: 2
+    },
     CandidateVote: {
         Reject: 0,
         Support: 1
@@ -36,6 +42,7 @@ const EvernodeConstants = {
 }
 
 const EventTypes = {
+    // Governor hook events.
     ACQUIRE_LEASE: 'evnAcquireLease',
     ACQUIRE_SUCCESS: 'evnAcquireSuccess',
     ACQUIRE_ERROR: 'evnAcquireError',
@@ -64,7 +71,12 @@ const EventTypes = {
     GOVERNANCE_MODE_CHANGE: 'evnGovernanceModeChange',
     LINKED_CANDIDATE_REMOVE: 'evnRemoveLinkedCandidate',
     HOST_UPDATE_REPUTATION: 'evnHostUpdateReputation',
-    HOST_SEND_REPUTATION: 'evnHostSendReputation'
+
+    // Reputation hook events.
+    HOST_SEND_REPUTATION: 'evnHostSendReputation',
+
+    // Host reputation hook events.
+    REPUTATION_CONTRACT_INFO_UPDATE: 'evnRepConInfoUpdate'
 }
 
 const MemoFormats = {
