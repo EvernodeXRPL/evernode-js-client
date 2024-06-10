@@ -77,7 +77,7 @@ class HostClient extends BaseEvernodeClient {
     async setReputationAcc(reputationAddress = null, reputationSecret = null) {
         let hostReputationAccId;
         if (!reputationAddress && !reputationSecret) {
-            hostReputationAccId = (await this.xrplAcc.getWalletLocator())?.slice(0, 40);
+            hostReputationAccId = (await this.xrplAcc.getWalletLocator())?.slice(2, 42);
             if (hostReputationAccId)
                 reputationAddress = codec.encodeAccountID(Buffer.from(hostReputationAccId, 'hex'));
         }
