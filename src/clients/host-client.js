@@ -243,8 +243,8 @@ class HostClient extends BaseEvernodeClient {
             repAcc.getWalletLocator(),
             this.xrplAcc.getWalletLocator()]);
 
-        const hostRegAccId = (codec.decodeAccountID(this.xrplAcc.address).toString('hex').toUpperCase()).padEnd(64, '0');
-        const hostReputationAccId = (codec.decodeAccountID(repAcc.address).toString('hex').toUpperCase()).padEnd(64, '0');
+        const hostRegAccId = '01'+(codec.decodeAccountID(this.xrplAcc.address).toString('hex').toUpperCase()).padEnd(62, '0');
+        const hostReputationAccId = '01'+(codec.decodeAccountID(repAcc.address).toString('hex').toUpperCase()).padEnd(62, '0');
 
         let accountSetFields = {};
         accountSetFields = (!walletLocator || walletLocator != hostRegAccId) ? { ...accountSetFields, WalletLocator: hostRegAccId } : accountSetFields;
@@ -355,7 +355,7 @@ class HostClient extends BaseEvernodeClient {
     async prepareHostReputationScores(collectedScores = {}) {
         const myReputationInfo = await this.getReputationOrderByAddress(this.xrplAcc.address);
         if (!("orderedId" in (myReputationInfo ?? {})))
-            throw 'You are not registered for reputation for this moment.';
+            return null;
 
         const myOrderId = myReputationInfo.orderedId;
 
@@ -391,21 +391,27 @@ class HostClient extends BaseEvernodeClient {
      * @param {object} scores [Optional] Score object in { host: score } format.
      */
     async sendReputations(scores = null, options = {}) {
-        let buffer = Buffer.alloc(64, 0);
+        let buffer = null;
         if (scores) {
             const preparedScores = await this.prepareHostReputationScores(scores);
-            let i = 0;
-            for (const reputationScore of preparedScores) {
-                buffer.writeUIntLE(Number(reputationScore.scoreValue), i, 1);
-                i++;
+            if (preparedScores) {
+                buffer = Buffer.alloc(64, 0);
+                let i = 0;
+                for (const reputationScore of preparedScores) {
+                    buffer.writeUIntLE(Number(reputationScore.scoreValue), i, 1);
+                    i++;
+                }
             }
         }
 
+        const paramData = codec.decodeAccountID(this.xrplAcc.address);
+
         await this.reputationAcc.invoke(this.config.reputationAddress,
-            scores ? { isHex: true, data: buffer.toString('hex') } : null,
+            buffer ? { isHex: true, data: buffer.toString('hex') } : null,
             {
                 hookParams: [
-                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_SEND_REPUTATION }
+                    { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_SEND_REPUTATION },
+                    { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: paramData.toString('hex').toUpperCase() }
                 ],
                 maxLedgerIndex: this.#getMaxLedgerSequence(),
                 ...options.transactionOptions,
