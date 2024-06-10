@@ -28,8 +28,6 @@ const REPUTATION_VALUE_PARAM_OFFSET = 20;
 
 // HOST_DEREG
 // By reputation address <host_address(20)><token_id(32)><error(1)>
-const HOST_DEREG_FROM_REP_TOKEN_ID_PARAM_OFFSET = 20;
-const HOST_DEREG_FROM_REP_ERROR_PARAM_OFFSET = 52;
 const HOST_DEREG_FROM_REP_PARAM_SIZE = 53;
 
 class BaseEvernodeClient {

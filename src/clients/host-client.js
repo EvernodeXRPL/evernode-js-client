@@ -795,6 +795,7 @@ class HostClient extends BaseEvernodeClient {
         const regUriToken = await this.getRegistrationUriToken();
         const paramBuf = Buffer.alloc(fromRep ? HOST_DEREG_FROM_REP_PARAM_SIZE : HOST_DEREG_PARAM_SIZE, 0);
 
+        let deregAcc;
         if (fromRep) {
             deregAcc = this.reputationAcc;
             codec.decodeAccountID(this.xrplAcc.address).copy(paramBuf, 0);
