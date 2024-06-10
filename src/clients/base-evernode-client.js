@@ -26,6 +26,12 @@ const DUD_HOST_CANDID_ADDRESS_OFFSET = 12;
 const REPUTATION_HOST_ADDRESS_PARAM_OFFSET = 0;
 const REPUTATION_VALUE_PARAM_OFFSET = 20;
 
+// HOST_DEREG
+// By reputation address <host_address(20)><token_id(32)><error(1)>
+const HOST_DEREG_FROM_REP_TOKEN_ID_PARAM_OFFSET = 20;
+const HOST_DEREG_FROM_REP_ERROR_PARAM_OFFSET = 52;
+const HOST_DEREG_FROM_REP_PARAM_SIZE = 53;
+
 class BaseEvernodeClient {
 
     #watchEvents;
@@ -363,7 +369,7 @@ class BaseEvernodeClient {
                 name: EvernodeEvents.HostDeregistered,
                 data: {
                     transaction: tx,
-                    host: tx.Account
+                    host: eventData.length === HOST_DEREG_FROM_REP_PARAM_SIZE ? codec.encodeAccountID(Buffer.from(eventData, 'hex').slice(0, 20)) : tx.Account
                 }
             }
         }

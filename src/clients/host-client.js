@@ -32,6 +32,16 @@ const HOST_EMAIL_ADDRESS_PARAM_OFFSET = 88;
 const HOST_LEASE_AMOUNT_PARAM_OFFSET = 128;
 const HOST_REG_PARAM_SIZE = 136;
 
+// HOST_DEREG
+// By host address <token_id(32)><error(1)>
+const HOST_DEREG_ERROR_PARAM_OFFSET = 32;
+const HOST_DEREG_PARAM_SIZE = 33;
+
+// By reputation address <host_address(20)><token_id(32)><error(1)>
+const HOST_DEREG_FROM_REP_TOKEN_ID_PARAM_OFFSET = 20;
+const HOST_DEREG_FROM_REP_ERROR_PARAM_OFFSET = 52;
+const HOST_DEREG_FROM_REP_PARAM_SIZE = 53;
+
 const HOST_UPDATE_TOKEN_ID_PARAM_OFFSET = 0;
 const HOST_UPDATE_COUNTRY_CODE_PARAM_OFFSET = 32;
 const HOST_UPDATE_CPU_MICROSEC_PARAM_OFFSET = 34;
@@ -781,16 +791,28 @@ class HostClient extends BaseEvernodeClient {
         if (!(await this.isRegistered()))
             throw "Host not registered."
 
+        const fromRep = options.fromReputationAccount;
         const regUriToken = await this.getRegistrationUriToken();
-        const paramBuf = Buffer.alloc(33, 0);
-        Buffer.from(regUriToken.index, "hex").copy(paramBuf, 0);
+        const paramBuf = Buffer.alloc(fromRep ? HOST_DEREG_FROM_REP_PARAM_SIZE : HOST_DEREG_PARAM_SIZE, 0);
+
+        if (fromRep) {
+            deregAcc = this.reputationAcc;
+            codec.decodeAccountID(this.xrplAcc.address).copy(paramBuf, 0);
+
+            if (!deregAcc)
+                throw 'No reputation account is configured.';
+        }
+        else
+            deregAcc = this.xrplAcc;
+
+        Buffer.from(regUriToken.index, "hex").copy(paramBuf, fromRep ? HOST_DEREG_FROM_REP_TOKEN_ID_PARAM_OFFSET : 0);
         if (error) {
             // <token_id(32)><error(1)>
-            paramBuf.writeUInt8(1, 32);
+            paramBuf.writeUInt8(1, fromRep ? HOST_DEREG_FROM_REP_ERROR_PARAM_OFFSET : HOST_DEREG_ERROR_PARAM_OFFSET);
         }
 
         await this.#submitWithRetry(async (feeUplift, submissionRef) => {
-            await this.xrplAcc.makePayment(this.config.registryAddress,
+            await deregAcc.makePayment(this.config.registryAddress,
                 XrplConstants.MIN_DROPS,
                 null,
                 null,
