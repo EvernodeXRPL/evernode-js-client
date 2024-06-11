@@ -979,7 +979,7 @@ class BaseEvernodeClient {
     async getReputationContractInfoByAddress(hostAddress = this.xrplAcc.address, moment = null) {
         try {
             const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
-            const [hostWl, domain] = await Promise.all[hostAcc.getWalletLocator(), hostAcc.getDomain()];
+            const [hostWl, domain] = await Promise.all([hostAcc.getWalletLocator(), hostAcc.getDomain()]);
 
             if (hostWl) {
                 const hostWlBuf = Buffer.from(hostWl, 'hex');
@@ -1028,33 +1028,19 @@ class BaseEvernodeClient {
     /**
      * Get reputation info of given host.
      * @param {string} hostsAddress Host address.
-     * @param {number} moment (optional) Moment to get reputation info for.
      * @returns Reputation info object.
      */
-    async getReputationInfoByAddress(hostAddress = this.xrplAcc.address, moment = null) {
+    async getReputationInfoByAddress(hostAddress = this.xrplAcc.address) {
         try {
             const addrStateKey = StateHelpers.generateReputationHostAddrStateKey(hostAddress);
             const addrStateIndex = StateHelpers.getHookStateIndex(this.config.reputationAddress, addrStateKey);
             const addrLedgerEntry = await this.xrplApi.getLedgerEntry(addrStateIndex);
             const addrStateData = addrLedgerEntry?.HookStateData;
-            let data = {};
 
             if (addrStateData) {
                 const addrStateDecoded = StateHelpers.decodeReputationHostAddressState(Buffer.from(addrStateKey, 'hex'), Buffer.from(addrStateData, 'hex'));
-                data = addrStateDecoded;
+                return addrStateDecoded;
             }
-
-            const repMoment = moment ?? await this.getMoment();
-            const contract = await this.getReputationContractInfoByAddress(hostAddress, repMoment);
-
-            if (contract) {
-                data = {
-                    ...data,
-                    contract: contract
-                }
-            }
-
-            return Object.keys(data).length > 0 ? data : null;
         }
         catch (e) {
             // If the exception is entryNotFound from Rippled there's no entry for the host, So return null.

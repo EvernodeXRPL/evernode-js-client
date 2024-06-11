@@ -57,7 +57,7 @@ class ReputationClient extends BaseEvernodeClient {
             const addressInfo = this.getReputationAddressByOrderedId(orderedId, repMoment);
 
             if (addressInfo?.hostAddress) {
-                const info = await this.getReputationInfoByAddress(addressInfo?.hostAddress, repMoment);
+                const info = await this.getReputationInfoByAddress(addressInfo?.hostAddress);
                 return info ? { ...addressInfo, ...info } : addressInfo;
             }
         }

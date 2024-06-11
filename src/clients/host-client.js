@@ -332,9 +332,17 @@ class HostClient extends BaseEvernodeClient {
             if (orderInfo)
                 data = orderInfo;
 
-            const info = await this.getReputationInfoByAddress(this.xrplAcc.address, repMoment);
+            const info = await this.getReputationInfoByAddress(this.xrplAcc.address);
             if (info)
                 data = { ...info, ...data };
+
+            const contract = await this.getReputationContractInfoByAddress(this.xrplAcc.address, repMoment);
+            if (contract) {
+                data = {
+                    ...data,
+                    contract: contract
+                }
+            }
 
             return Object.keys(data).length > 0 ? data : null;
         }
