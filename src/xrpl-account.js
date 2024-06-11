@@ -161,12 +161,15 @@ class XrplAccount {
          * 
          */
 
-        if (Object.keys(fields).length === 0)
+        if (!options?.allowEmptyAccountSet && Object.keys(fields).length === 0)
             throw "AccountSet fields cannot be empty.";
+
+        delete options?.allowEmptyAccountSet;
 
         const tx = {
             TransactionType: XrplTransactionTypes.ACCOUNT_SET,
-            Account: this.address
+            Account: this.address,
+            HookParameters: TransactionHelper.formatHookParams(options.hookParams)
         };
 
         for (const [key, value] of Object.entries(fields)) {
