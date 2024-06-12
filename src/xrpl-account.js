@@ -172,7 +172,7 @@ class XrplAccount {
             HookParameters: TransactionHelper.formatHookParams(options.hookParams)
         };
 
-        for (const [key, value] of Object.entries(fields)) {
+        for (const [key, value] of Object.entries(fields ?? {})) {
 
             switch (key) {
                 case 'Domain':
