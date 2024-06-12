@@ -16,7 +16,7 @@ const EvernodeConstants = {
     ReputationAccountMode: {
         None: 0,
         OneToOne: 1,
-        OnToMany: 2
+        OneToMany: 2
     },
     CandidateVote: {
         Reject: 0,

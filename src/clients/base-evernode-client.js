@@ -995,7 +995,7 @@ class BaseEvernodeClient {
                         repBuf = Buffer.from(rep, 'hex');
                 }
                 // 1 - M Reputation account
-                else if (hostWlBuf.readUInt8() === EvernodeConstants.ReputationAccountMode.OnToMany) {
+                else if (hostWlBuf.readUInt8() === EvernodeConstants.ReputationAccountMode.OneToMany) {
                     const stateKey = StateHelpers.generateReputationContractInfoStateKey(hostAddress);
                     const stateIndex = StateHelpers.getHookStateIndex(reputationAddress, stateKey, EvernodeConstants.HOST_REPUTATION_HOOK_NAMESPACE);
                     const ledgerEntry = await this.xrplApi.getLedgerEntry(stateIndex);
