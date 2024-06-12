@@ -267,8 +267,10 @@ class HostClient extends BaseEvernodeClient {
                     update = true;
                     mode = EvernodeConstants.ReputationAccountMode.OneToOne;
                 }
-                else
+                else {
                     update = false;
+                    mode = repAccMode;
+                }
             }
             // If reputation is configured as OneToMany.
             else if (repAccMode === EvernodeConstants.ReputationAccountMode.OneToMany) {
@@ -282,8 +284,10 @@ class HostClient extends BaseEvernodeClient {
                     update = true;
                     mode = EvernodeConstants.ReputationAccountMode.OneToMany;
                 }
-                else
+                else {
                     update = false;
+                    mode = repAccMode;
+                }
             }
             // If reputation address has invalid mode we can use as OneToOne.
             else {
@@ -298,7 +302,7 @@ class HostClient extends BaseEvernodeClient {
         }
 
         // If account mode is given, Override the mode.
-        if (accountMode && accountMode != EvernodeConstants.ReputationAccountMode.None) {
+        if (accountMode && accountMode != EvernodeConstants.ReputationAccountMode.None && accountMode != mode) {
             update = true;
             mode = accountMode;
         }
