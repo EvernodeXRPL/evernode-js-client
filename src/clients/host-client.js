@@ -236,15 +236,20 @@ class HostClient extends BaseEvernodeClient {
      * @param {string} reputationAddress Address of the reputation account.
      * @param {string} reputationSecret Secret of the reputation account.
      */
-    async prepareReputationAccount(reputationAddress, reputationSecret, options = {}) {
+    async prepareReputationAccount(reputationAddress, reputationSecret, accountMode = EvernodeConstants.ReputationAccountMode.OneToOne, options = {}) {
         const repAcc = new XrplAccount(reputationAddress, reputationSecret, { xrplApi: this.xrplApi });
         const [trustLines, walletLocator, hostWalletLocator] = await Promise.all([
             repAcc.getTrustLines(EvernodeConstants.EVR, this.config.evrIssuerAddress),
             repAcc.getWalletLocator(),
             this.xrplAcc.getWalletLocator()]);
 
-        const hostRegAccId = '01'+(codec.decodeAccountID(this.xrplAcc.address).toString('hex').toUpperCase()).padEnd(62, '0');
-        const hostReputationAccId = '01'+(codec.decodeAccountID(repAcc.address).toString('hex').toUpperCase()).padEnd(62, '0');
+        const hostRegAccId = (accountMode == EvernodeConstants.ReputationAccountMode.OnToMany)
+            ? '02' + "".padStart(62, "0")
+            : '01' + (codec.decodeAccountID(this.xrplAcc.address).toString('hex').toUpperCase()).padEnd(62, '0');
+
+        const hostReputationAccId = (accountMode == EvernodeConstants.ReputationAccountMode.OnToMany)
+            ? '02' + (codec.decodeAccountID(repAcc.address).toString('hex').toUpperCase()).padEnd(62, '0')
+            : '01' + (codec.decodeAccountID(repAcc.address).toString('hex').toUpperCase()).padEnd(62, '0');
 
         let accountSetFields = {};
         accountSetFields = (!walletLocator || walletLocator != hostRegAccId) ? { ...accountSetFields, WalletLocator: hostRegAccId } : accountSetFields;
