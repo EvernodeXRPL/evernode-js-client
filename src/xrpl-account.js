@@ -161,7 +161,7 @@ class XrplAccount {
          * 
          */
 
-        if (!options?.allowEmptyAccountSet && Object.keys(fields).length === 0)
+        if (!options?.allowEmptyAccountSet && Object.keys(fields ?? {}).length === 0)
             throw "AccountSet fields cannot be empty.";
 
         delete options?.allowEmptyAccountSet;

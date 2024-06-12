@@ -383,7 +383,7 @@ class HostClient extends BaseEvernodeClient {
 
         if (accountSetFields || hookParams) {
             await this.#submitWithRetry(async (feeUplift, submissionRef) => {
-                await this.reputationAcc.setAccountFields(accountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
+                await this.reputationAcc.setAccountFields(accountSetFields, { allowEmptyAccountSet: !accountSetFields, maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
             }, { ...(hookParams ? hookParams : {}), ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
         }
 
