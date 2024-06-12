@@ -376,15 +376,14 @@ class HostClient extends BaseEvernodeClient {
                 hookParams: [
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.REPUTATION_CONTRACT_INFO_UPDATE },
                     { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: `${hostAccIdHex}${infoHex}` }
-                ],
-                ...options.transactionOptions
+                ]
             }
         }
 
         if (accountSetFields || hookParams) {
             await this.#submitWithRetry(async (feeUplift, submissionRef) => {
-                await this.reputationAcc.setAccountFields(accountSetFields, { allowEmptyAccountSet: !accountSetFields, maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
-            }, { ...(hookParams ? hookParams : {}), ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
+                await this.reputationAcc.setAccountFields(accountSetFields, { ...(hookParams ? hookParams : {}), allowEmptyAccountSet: !accountSetFields, maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
+            }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
         }
 
     }
