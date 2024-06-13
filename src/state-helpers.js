@@ -106,11 +106,15 @@ const NETWORK_BUSYNESS_DETECT_PERIOD_OFFSET = 0;
 const NETWORK_BUSYNESS_DETECT_AVERAGE_OFFSET = 4;
 
 const STATE_KEY_TYPES = {
+    // Governor hook.
     TOKEN_ID: 2,
     HOST_ADDR: 3,
     TRANSFEREE_ADDR: 4,
     CANDIDATE_OWNER: 5,
-    CANDIDATE_ID: 6
+    CANDIDATE_ID: 6,
+
+    // Host reputation hook.
+    REPUTATION_CONTRACT_INFO: 2,
 }
 
 const MOMENT_TYPES = {
@@ -680,6 +684,8 @@ class StateHelpers {
 
     static generateReputationContractInfoStateKey(address) {
         const buf = Buffer.alloc(STATE_KEY_SIZE, 0);
+        Buffer.from(EVERNODE_PREFIX, "utf-8").copy(buf, 0);
+        buf.writeUInt8(STATE_KEY_TYPES.REPUTATION_CONTRACT_INFO, 3);
         const offset = buf.length - ACCOUNT_ID_SIZE;
         Buffer.from(codec.decodeAccountID(address), "hex").copy(buf, offset);
 
