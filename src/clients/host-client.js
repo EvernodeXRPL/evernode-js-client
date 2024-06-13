@@ -280,7 +280,7 @@ class HostClient extends BaseEvernodeClient {
                     mode = EvernodeConstants.ReputationAccountMode.OneToMany;
                 }
                 // If the new host address is not similar to the configured. We should update it.
-                else if (this.reputationAcc.address !== prepedRepAddress) {
+                else if (repAcc.address !== prepedRepAddress) {
                     update = true;
                     mode = EvernodeConstants.ReputationAccountMode.OneToMany;
                 }
