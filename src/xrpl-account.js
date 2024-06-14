@@ -161,7 +161,7 @@ class XrplAccount {
          * 
          */
 
-        if (!options?.allowEmptyAccountSet && Object.keys(fields).length === 0)
+        if (!options?.allowEmptyAccountSet && Object.keys(fields ?? {}).length === 0)
             throw "AccountSet fields cannot be empty.";
 
         delete options?.allowEmptyAccountSet;
@@ -172,7 +172,7 @@ class XrplAccount {
             HookParameters: TransactionHelper.formatHookParams(options.hookParams)
         };
 
-        for (const [key, value] of Object.entries(fields)) {
+        for (const [key, value] of Object.entries(fields ?? {})) {
 
             switch (key) {
                 case 'Domain':

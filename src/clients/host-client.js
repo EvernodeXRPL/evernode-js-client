@@ -236,28 +236,105 @@ class HostClient extends BaseEvernodeClient {
      * @param {string} reputationAddress Address of the reputation account.
      * @param {string} reputationSecret Secret of the reputation account.
      */
-    async prepareReputationAccount(reputationAddress, reputationSecret, accountMode = EvernodeConstants.ReputationAccountMode.OneToOne, options = {}) {
+    async prepareReputationAccount(reputationAddress, reputationSecret, accountMode = null, options = {}) {
         const repAcc = new XrplAccount(reputationAddress, reputationSecret, { xrplApi: this.xrplApi });
         const [trustLines, walletLocator, hostWalletLocator] = await Promise.all([
             repAcc.getTrustLines(EvernodeConstants.EVR, this.config.evrIssuerAddress),
             repAcc.getWalletLocator(),
             this.xrplAcc.getWalletLocator()]);
 
-        const hostRegAccId = (accountMode == EvernodeConstants.ReputationAccountMode.OnToMany)
-            ? '02' + "".padStart(62, "0")
-            : '01' + (codec.decodeAccountID(this.xrplAcc.address).toString('hex').toUpperCase()).padEnd(62, '0');
+        let update = true;
+        let mode = EvernodeConstants.ReputationAccountMode.None;
 
-        const hostReputationAccId = (accountMode == EvernodeConstants.ReputationAccountMode.OnToMany)
-            ? '02' + (codec.decodeAccountID(repAcc.address).toString('hex').toUpperCase()).padEnd(62, '0')
-            : '01' + (codec.decodeAccountID(repAcc.address).toString('hex').toUpperCase()).padEnd(62, '0');
+        const walletLocatorBuf = walletLocator ? Buffer.from(walletLocator, 'hex') : null;
+        const hostWalletLocatorBuf = hostWalletLocator ? Buffer.from(hostWalletLocator, 'hex') : null;
+        const repAccMode = walletLocatorBuf ? walletLocatorBuf.readUInt8() : null;
+        const prepedHostAddress = walletLocatorBuf ? codec.encodeAccountID(walletLocatorBuf.slice(1, 21)) : null;
+        const hostAccMode = hostWalletLocatorBuf ? hostWalletLocatorBuf.readUInt8() : null;
+        const prepedRepAddress = hostWalletLocatorBuf ? codec.encodeAccountID(hostWalletLocatorBuf.slice(1, 21)) : null;
 
-        let accountSetFields = {};
-        accountSetFields = (!walletLocator || walletLocator != hostRegAccId) ? { ...accountSetFields, WalletLocator: hostRegAccId } : accountSetFields;
+        // Check if this reputation address is already configured.
+        if (walletLocatorBuf) {
+            // If reputation is configured as OneToOne.
+            if (repAccMode === EvernodeConstants.ReputationAccountMode.OneToOne) {
+                // If the new host address is not similar to the configured, This will be a new addition. So, we should change the mode to OneToMany.
+                if (this.xrplAcc.address !== prepedHostAddress) {
+                    update = true;
+                    mode = EvernodeConstants.ReputationAccountMode.OneToMany;
+                }
+                // If host is configured in invalid mode, We should update it.
+                else if (this.xrplAcc.address === prepedHostAddress && hostAccMode !== EvernodeConstants.ReputationAccountMode.OneToOne) {
+                    update = true;
+                    mode = EvernodeConstants.ReputationAccountMode.OneToOne;
+                }
+                else {
+                    update = false;
+                    mode = repAccMode;
+                }
+            }
+            // If reputation is configured as OneToMany.
+            else if (repAccMode === EvernodeConstants.ReputationAccountMode.OneToMany) {
+                // If host address reference is not empty, We should fix it.
+                if (!Buffer.alloc(20, 0).equals(walletLocatorBuf.slice(1, 21))) {
+                    update = true;
+                    mode = EvernodeConstants.ReputationAccountMode.OneToMany;
+                }
+                // If the new host address is not similar to the configured. We should update it.
+                else if (repAcc.address !== prepedRepAddress) {
+                    update = true;
+                    mode = EvernodeConstants.ReputationAccountMode.OneToMany;
+                }
+                else {
+                    update = false;
+                    mode = repAccMode;
+                }
+            }
+            // If reputation address has invalid mode we can use as OneToOne.
+            else {
+                update = true;
+                mode = EvernodeConstants.ReputationAccountMode.OneToOne;
+            }
+        }
+        // If reputation address is not configured we can use as OneToOne.
+        else {
+            update = true;
+            mode = EvernodeConstants.ReputationAccountMode.OneToOne;
+        }
 
-        if (Object.keys(accountSetFields).length !== 0) {
-            await this.#submitWithRetry(async (feeUplift, submissionRef) => {
-                await repAcc.setAccountFields(accountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
-            }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
+        // If account mode is given, Override the mode.
+        if (accountMode && accountMode != EvernodeConstants.ReputationAccountMode.None && accountMode != mode) {
+            update = true;
+            mode = accountMode;
+        }
+
+        // Update the modes if required.
+        if (update) {
+            const hostRegAccId = (mode == EvernodeConstants.ReputationAccountMode.OneToMany)
+                ? '02' + "".padStart(62, "0")
+                : '01' + (codec.decodeAccountID(this.xrplAcc.address).toString('hex').toUpperCase()).padEnd(62, '0');
+
+            const hostReputationAccId = (mode == EvernodeConstants.ReputationAccountMode.OneToMany)
+                ? '02' + (codec.decodeAccountID(repAcc.address).toString('hex').toUpperCase()).padEnd(62, '0')
+                : '01' + (codec.decodeAccountID(repAcc.address).toString('hex').toUpperCase()).padEnd(62, '0');
+
+            let accountSetFields = {};
+            accountSetFields = (!walletLocator || walletLocator != hostRegAccId) ? { ...accountSetFields, WalletLocator: hostRegAccId } : accountSetFields;
+
+            if (Object.keys(accountSetFields).length !== 0) {
+                await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+                    await repAcc.setAccountFields(accountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
+                }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
+            }
+
+            let hostAccountSetFields = {};
+            hostAccountSetFields = (!hostWalletLocator || hostWalletLocator != hostReputationAccId) ? { ...hostAccountSetFields, WalletLocator: hostReputationAccId } : hostAccountSetFields;
+            if (Object.keys(hostAccountSetFields).length !== 0) {
+                await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+                    await this.xrplAcc.setAccountFields(hostAccountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
+                }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
+            }
+
+            await this.setReputationAcc(reputationAddress, reputationSecret);
         }
 
         if (trustLines.length === 0) {
@@ -265,16 +342,6 @@ class HostClient extends BaseEvernodeClient {
                 await repAcc.setTrustLine(EvernodeConstants.EVR, this.config.evrIssuerAddress, "99999999999999", null, null, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
             }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
         }
-
-        let hostAccountSetFields = {};
-        hostAccountSetFields = (!hostWalletLocator || hostWalletLocator != hostReputationAccId) ? { ...hostAccountSetFields, WalletLocator: hostReputationAccId } : hostAccountSetFields;
-        if (Object.keys(hostAccountSetFields).length !== 0) {
-            await this.#submitWithRetry(async (feeUplift, submissionRef) => {
-                await this.xrplAcc.setAccountFields(hostAccountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
-            }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
-        }
-
-        await this.setReputationAcc(reputationAddress, reputationSecret);
     }
 
     /**
@@ -303,21 +370,20 @@ class HostClient extends BaseEvernodeClient {
         let hookParams = null;
         if (repAccMode === EvernodeConstants.ReputationAccountMode.OneToOne)
             accountSetFields = { Domain: infoHex };
-        else if (repAccMode === EvernodeConstants.ReputationAccountMode.OnToMany) {
+        else if (repAccMode === EvernodeConstants.ReputationAccountMode.OneToMany) {
             const hostAccIdHex = codec.decodeAccountID(this.xrplAcc.address).toString('hex').toUpperCase();
             hookParams = {
                 hookParams: [
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.REPUTATION_CONTRACT_INFO_UPDATE },
                     { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: `${hostAccIdHex}${infoHex}` }
-                ],
-                ...options.transactionOptions
+                ]
             }
         }
 
         if (accountSetFields || hookParams) {
             await this.#submitWithRetry(async (feeUplift, submissionRef) => {
-                await this.reputationAcc.setAccountFields(accountSetFields, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
-            }, { ...(hookParams ? hookParams : {}), ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
+                await this.reputationAcc.setAccountFields(accountSetFields, { ...(hookParams ? hookParams : {}), allowEmptyAccountSet: !accountSetFields, maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
+            }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
         }
 
     }
