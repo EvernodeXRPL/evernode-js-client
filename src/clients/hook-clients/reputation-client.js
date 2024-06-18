@@ -12,38 +12,24 @@ class ReputationClient extends BaseEvernodeClient {
         super(options.reputationAddress, null, Object.values(ReputationEvents), false, options);
     }
 
-    async getReputationContractInfoByOrderedId(hostReputationOrderedId, moment = null) {
+    /**
+     * Get reputation contract info of given host reputation orderedId.
+     * @param {number} orderedId Reputation order id of the host.
+     * @param {number} moment (optional) Moment to get reputation contract info for.
+     * @returns Reputation contract info object.
+     */
+    async getReputationContractInfoByOrderedId(orderedId, moment = null) {
         try {
             const repMoment = moment ?? await this.getMoment();
-            const addressInfo = await this.getReputationAddressByOrderId(hostReputationOrderedId, repMoment);
-            if (addressInfo?.address) {
+            const addressInfo = await this.getReputationAddressByOrderedId(orderedId, repMoment);
+            if (addressInfo?.hostAddress) {
                 let data = addressInfo;
 
-                const hostRepAcc = new XrplAccount(addressInfo?.address, null, { xrplApi: this.xrplApi });
-                const [wl, rep] = await Promise.all([
-                    hostRepAcc.getWalletLocator(),
-                    hostRepAcc.getDomain()]);
-
-                if (wl && rep && rep.length > 0) {
-                    const hostReputationAccId = wl.slice(0, 40);
-                    const hostAddress = codec.encodeAccountID(Buffer.from(hostReputationAccId, 'hex'));
-                    const hostAcc = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
-
-                    const repBuf = Buffer.from(rep, 'hex');
-                    const publicKey = repBuf.slice(0, ReputationConstants.REP_INFO_PEER_PORT_OFFSET).toString('hex').toLocaleLowerCase();
-                    const peerPort = repBuf.readUInt16LE(ReputationConstants.REP_INFO_PEER_PORT_OFFSET);
-                    const instanceMoment = (repBuf.length > ReputationConstants.REP_INFO_MOMENT_OFFSET) ? Number(repBuf.readBigUInt64LE(ReputationConstants.REP_INFO_MOMENT_OFFSET)) : null;
-                    const domain = await hostAcc.getDomain();
-
-                    if (instanceMoment === repMoment) {
-                        data = {
-                            ...data,
-                            contract: {
-                                domain: domain,
-                                pubkey: publicKey,
-                                peerPort: peerPort
-                            }
-                        }
+                const contract = await this.getReputationContractInfoByAddress(addressInfo?.hostAddress, repMoment);
+                if (contract) {
+                    data = {
+                        ...data,
+                        contract: contract
                     }
                 }
                 return data;
@@ -60,18 +46,18 @@ class ReputationClient extends BaseEvernodeClient {
     }
 
     /**
-     * Get reputation info of given host reputation orderId.
-     * @param {number} hostReputationOrderedId Reputation order id of the host.
+     * Get reputation info of given host reputation orderedId.
+     * @param {number} orderedId Reputation order id of the host.
      * @param {number} moment (optional) Moment to get reputation info for.
      * @returns Reputation info object.
      */
-    async getReputationInfoByOrderedId(hostReputationOrderedId, moment = null) {
+    async getReputationInfoByOrderedId(orderedId, moment = null) {
         try {
             const repMoment = moment ?? await this.getMoment();
-            const addressInfo = this.getReputationAddressByOrderId(hostReputationOrderedId, repMoment);
+            const addressInfo = this.getReputationAddressByOrderedId(orderedId, repMoment);
 
-            if (addressInfo?.address) {
-                const info = await this.getReputationInfoByAddress(addressInfo?.address, repMoment);
+            if (addressInfo?.hostAddress) {
+                const info = await this.getReputationInfoByAddress(addressInfo?.hostAddress);
                 return info ? { ...addressInfo, ...info } : addressInfo;
             }
         }
