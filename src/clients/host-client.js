@@ -572,9 +572,16 @@ class HostClient extends BaseEvernodeClient {
             }
         }
 
-        const uriToken = await this.xrplAcc.getURITokenByUri(uri);
+        let uriToken = await this.xrplAcc.getURITokenByUri(uri);
+        // If uri token is not found in first tre, Retry again.
+        if (!uriToken) {
+            console.log(`URI token not found, Retrying in 1 second.`)
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            uriToken =  await this.xrplAcc.getURITokenByUri(uri);
+        }
+        
         if (!uriToken)
-            throw "Offer lease NFT creation error.";
+            throw "Offer lease URI token not found.";
 
         await this.#submitWithRetry(async (feeUplift, submissionRef) => {
             await this.xrplAcc.sellURIToken(uriToken.index,
