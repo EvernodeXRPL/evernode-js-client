@@ -724,23 +724,21 @@ class XrplAccount {
     }
 
     async getURITokenByUri(uri, isHexUri = false) {
-        const tokens = await this.getURITokens();
-        const hexUri = isHexUri ? uri : TransactionHelper.asciiToHex(uri).toUpperCase();
-        return tokens.find(t => t.URI == hexUri);
+        const index = this.generateIssuedURITokenId(uri, isHexUri);
+        const entry = await this.xrplApi.getLedgerEntry(index);
+        if (!entry || entry.LedgerEntryType !== 'URIToken')
+            return null;
+        return entry;
     }
 
 
-    generateIssuedURITokenId(uri) {
+    generateIssuedURITokenId(uri, isHexUri = false) {
         if (uri.length < 1 || uri.length > 256)
             throw 'Invalid URI';
 
         const URITOKEN_LEDGER_TYPE_PREFIX = 85; // Decimal value of ASCII 'U'
         const accIdHex = (codec.decodeAccountID(this.address)).toString('hex').toUpperCase();
-        let uriHex = '';
-        for (let n in uri) {
-            let digit = uri.charCodeAt(n).toString(16).toUpperCase();
-            uriHex += (digit.length == 1 ? '0' : '') + digit
-        }
+        const uriHex = isHexUri ? uri : TransactionHelper.asciiToHex(uri).toUpperCase();
 
         let hash = crypto.createHash('sha512');
 

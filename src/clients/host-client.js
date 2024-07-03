@@ -11,6 +11,7 @@ const { XflHelpers } = require('../xfl-helpers');
 const { EvernodeHelpers } = require('../evernode-helpers');
 const { StateHelpers } = require('../state-helpers');
 const { TransactionHelper } = require('../transaction-helper');
+const { UtilHelpers } = require('../util-helpers');
 
 const OFFER_WAIT_TIMEOUT = 60;
 
@@ -507,89 +508,109 @@ class HostClient extends BaseEvernodeClient {
      * @param {string} outboundIPAddress Assigned IP Address.
      */
     async offerLease(leaseIndex, leaseAmount, tosHash, outboundIPAddress = null, options = {}) {
+        const leases = await this.getLeases();
+        const decoded = (leases ?? []).map((l) => {
+            return {
+                token: l,
+                info: UtilHelpers.decodeLeaseTokenUri(l.URI)
+            }
+        });
+        let existing = decoded.find(l => l.info.leaseIndex == leaseIndex);
 
-        // <prefix><version tag ("LTV"+uint8)><lease index (uint16)><half of tos hash><lease amount (int64)><identifier (uint32)><ip data>
-        // Lengths of sub sections.
-        const prefixLen = EvernodeConstants.LEASE_TOKEN_PREFIX_HEX.length / 2;
-        const versionPrefixLen = EvernodeConstants.LEASE_TOKEN_VERSION_PREFIX_HEX.length / 2;
-        const versionLen = versionPrefixLen + 2; // ("LTV"<Version Number>)
-        const indexLen = 2;
-        const halfToSLen = tosHash.length / 4;
-        const leaseAmountLen = 8;
-        const identifierLen = 4;
-        const ipDataLen = 17;
+        let uriToken;
+        if (!existing) {
+            // <prefix><version tag ("LTV"+uint8)><lease index (uint16)><half of tos hash><lease amount (int64)><identifier (uint32)><ip data>
+            // Lengths of sub sections.
+            const prefixLen = EvernodeConstants.LEASE_TOKEN_PREFIX_HEX.length / 2;
+            const versionPrefixLen = EvernodeConstants.LEASE_TOKEN_VERSION_PREFIX_HEX.length / 2;
+            const versionLen = versionPrefixLen + 2; // ("LTV"<Version Number>)
+            const indexLen = 2;
+            const halfToSLen = tosHash.length / 4;
+            const leaseAmountLen = 8;
+            const identifierLen = 4;
+            const ipDataLen = 17;
 
-        // Offsets of sub sections
-        const versionPrefixOffset = prefixLen;
-        const versionOffset = prefixLen + versionPrefixLen;
-        const indexOffset = prefixLen + versionLen;
-        const halfTosHashOffset = prefixLen + versionLen + indexLen;
-        const leaseAmountOffset = prefixLen + versionLen + indexLen + halfToSLen;
-        const identifierOffset = prefixLen + versionLen + indexLen + halfToSLen + leaseAmountLen;
-        const ipDataOffset = prefixLen + versionLen + indexLen + halfToSLen + leaseAmountLen + identifierLen;
+            // Offsets of sub sections
+            const versionPrefixOffset = prefixLen;
+            const versionOffset = prefixLen + versionPrefixLen;
+            const indexOffset = prefixLen + versionLen;
+            const halfTosHashOffset = prefixLen + versionLen + indexLen;
+            const leaseAmountOffset = prefixLen + versionLen + indexLen + halfToSLen;
+            const identifierOffset = prefixLen + versionLen + indexLen + halfToSLen + leaseAmountLen;
+            const ipDataOffset = prefixLen + versionLen + indexLen + halfToSLen + leaseAmountLen + identifierLen;
 
-        const uriBuf = Buffer.alloc((prefixLen + versionLen + indexLen + halfToSLen + leaseAmountLen + identifierLen + ipDataLen));
+            const uriBuf = Buffer.alloc((prefixLen + versionLen + indexLen + halfToSLen + leaseAmountLen + identifierLen + ipDataLen));
 
-        Buffer.from(EvernodeConstants.LEASE_TOKEN_PREFIX_HEX, 'hex').copy(uriBuf);
-        Buffer.from(EvernodeConstants.LEASE_TOKEN_VERSION_PREFIX_HEX, 'hex').copy(uriBuf, versionPrefixOffset, 0, versionPrefixLen);
-        uriBuf.writeUInt16BE(EvernodeConstants.LEASE_TOKEN_VERSION, versionOffset);
-        uriBuf.writeUInt16BE(leaseIndex, indexOffset);
-        Buffer.from(tosHash, 'hex').copy(uriBuf, halfTosHashOffset, 0, halfToSLen);
-        uriBuf.writeBigInt64BE(XflHelpers.getXfl(leaseAmount.toString()), leaseAmountOffset);
-        uriBuf.writeUInt32BE((await this.xrplAcc.getSequence()), identifierOffset);
+            Buffer.from(EvernodeConstants.LEASE_TOKEN_PREFIX_HEX, 'hex').copy(uriBuf);
+            Buffer.from(EvernodeConstants.LEASE_TOKEN_VERSION_PREFIX_HEX, 'hex').copy(uriBuf, versionPrefixOffset, 0, versionPrefixLen);
+            uriBuf.writeUInt16BE(EvernodeConstants.LEASE_TOKEN_VERSION, versionOffset);
+            uriBuf.writeUInt16BE(leaseIndex, indexOffset);
+            Buffer.from(tosHash, 'hex').copy(uriBuf, halfTosHashOffset, 0, halfToSLen);
+            uriBuf.writeBigInt64BE(XflHelpers.getXfl(leaseAmount.toString()), leaseAmountOffset);
+            uriBuf.writeUInt32BE((await this.xrplAcc.getSequence()), identifierOffset);
 
-        if (outboundIPAddress) {
-            if (outboundIPAddress.includes(":")) {
-                uriBuf.writeUInt8(IPV6_FAMILY, ipDataOffset);
-                const ipBuf = Buffer.from(outboundIPAddress.split(':').map(v => {
-                    const bytes = [];
-                    for (let i = 0; i < v.length; i += 2) {
-                        bytes.push(parseInt(v.substr(i, 2), 16));
-                    }
-                    return bytes;
-                }).flat());
+            if (outboundIPAddress) {
+                if (outboundIPAddress.includes(":")) {
+                    uriBuf.writeUInt8(IPV6_FAMILY, ipDataOffset);
+                    const ipBuf = Buffer.from(outboundIPAddress.split(':').map(v => {
+                        const bytes = [];
+                        for (let i = 0; i < v.length; i += 2) {
+                            bytes.push(parseInt(v.substr(i, 2), 16));
+                        }
+                        return bytes;
+                    }).flat());
 
-                ipBuf.copy(uriBuf, ipDataOffset + 1, 0, ipDataLen);
-            } else {
-                throw "Invalid outbound IP address was provided";
+                    ipBuf.copy(uriBuf, ipDataOffset + 1, 0, ipDataLen);
+                } else {
+                    throw "Invalid outbound IP address was provided";
+                }
+            }
+
+            const uri = uriBuf.toString('base64');
+
+            try {
+                await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+                    await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: false }, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
+                }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
+            } catch (e) {
+                // Re-minting the URIToken after burning that sold URIToken.
+                if (e.code === "tecDUPLICATE") {
+                    const uriTokenId = this.xrplAcc.generateIssuedURITokenId(uri);
+                    console.log(`Burning URIToken related to a previously sold lease.`);
+                    await this.xrplAcc.burnURIToken(uriTokenId, { maxLedgerIndex: this.#getMaxLedgerSequence() });
+                    console.log("Re-mint the URIToken for the new lease offer.")
+                    await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: false }, { maxLedgerIndex: this.#getMaxLedgerSequence() });
+                }
+            }
+
+            uriToken = await this.xrplAcc.getURITokenByUri(uri);
+            // If uri token is not found in first try, Retry again.
+            if (!uriToken) {
+                console.log(`URI token not found, Retrying in 1 second.`)
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                uriToken = await this.xrplAcc.getURITokenByUri(uri);
             }
         }
-
-        const uri = uriBuf.toString('base64');
-
-        try {
-            await this.#submitWithRetry(async (feeUplift, submissionRef) => {
-                await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: false }, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
-            }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
-        } catch (e) {
-            // Re-minting the URIToken after burning that sold URIToken.
-            if (e.code === "tecDUPLICATE") {
-                const uriTokenId = this.xrplAcc.generateIssuedURITokenId(uri);
-                console.log(`Burning URIToken related to a previously sold lease.`);
-                await this.xrplAcc.burnURIToken(uriTokenId, { maxLedgerIndex: this.#getMaxLedgerSequence() });
-                console.log("Re-mint the URIToken for the new lease offer.")
-                await this.xrplAcc.mintURIToken(uri, null, { isBurnable: true, isHexUri: false }, { maxLedgerIndex: this.#getMaxLedgerSequence() });
-            }
+        else {
+            uriToken = existing.token;
+            console.log(`Found exiting lease for index ${leaseIndex}. Minting skipped.`);
         }
 
-        let uriToken = await this.xrplAcc.getURITokenByUri(uri);
-        // If uri token is not found in first try, Retry again.
-        if (!uriToken) {
-            console.log(`URI token not found, Retrying in 1 second.`)
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            uriToken =  await this.xrplAcc.getURITokenByUri(uri);
-        }
-        
         // Throw if still not found.
         if (!uriToken)
             throw "Offer lease URI token not found.";
 
-        await this.#submitWithRetry(async (feeUplift, submissionRef) => {
-            await this.xrplAcc.sellURIToken(uriToken.index,
-                leaseAmount.toString(),
-                EvernodeConstants.EVR,
-                this.config.evrIssuerAddress, null, null, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
-        }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
+        if (!uriToken.Amount) {
+            await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+                await this.xrplAcc.sellURIToken(uriToken.index,
+                    leaseAmount.toString(),
+                    EvernodeConstants.EVR,
+                    this.config.evrIssuerAddress, null, null, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
+            }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
+        }
+        else {
+            console.log(`Found exiting offer for the lease ${uriToken.uriTokenId}. Offer skipped.`);
+        }
     }
 
     /**
