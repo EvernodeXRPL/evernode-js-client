@@ -705,9 +705,15 @@ class HostClient extends BaseEvernodeClient {
      * @param {string} uriTokenId Hex URI token id of the lease.
      */
     async expireLease(uriTokenId, options = {}) {
-        await this.#submitWithRetry(async (feeUplift, submissionRef) => {
-            await this.xrplAcc.burnURIToken(uriTokenId, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
-        }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
+        const uriToken = await this.xrplApi.getURITokenByIndex(uriTokenId);
+        if (uriToken) {
+            await this.#submitWithRetry(async (feeUplift, submissionRef) => {
+                await this.xrplAcc.burnURIToken(uriTokenId, { maxLedgerIndex: this.#getMaxLedgerSequence(), feeUplift: feeUplift, submissionRef: submissionRef });
+            }, { ...(options.retryOptions ? options.retryOptions : {}), submissionRef: options.submissionRef });
+        }
+        else {
+            console.log(`Uri token ${uriTokenId} not found or already burned. Burn skipped.`);
+        }
     }
 
     /**

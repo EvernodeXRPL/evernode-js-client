@@ -540,6 +540,13 @@ class XrplApi {
         }
     }
 
+    async getURITokenByIndex(index) {
+        const entry = await this.getLedgerEntry(index);
+        if (!entry || entry.LedgerEntryType !== 'URIToken')
+            return null;
+        return entry;
+    }
+
     async getTxnInfo(txnHash, options) {
         const resp = (await this.#handleClientRequest({ command: 'tx', transaction: txnHash, binary: false, ...options }));
         return resp?.result;

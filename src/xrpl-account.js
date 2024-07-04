@@ -725,10 +725,7 @@ class XrplAccount {
 
     async getURITokenByUri(uri, isHexUri = false) {
         const index = this.generateIssuedURITokenId(uri, isHexUri);
-        const entry = await this.xrplApi.getLedgerEntry(index);
-        if (!entry || entry.LedgerEntryType !== 'URIToken')
-            return null;
-        return entry;
+        return await this.xrplApi.getURITokenByIndex(index);
     }
 
 
