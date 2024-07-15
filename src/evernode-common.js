@@ -104,6 +104,7 @@ const ErrorReasons = {
 }
 
 const ReputationConstants = {
+    SCORE_VERSION: 1,
     REP_INFO_BUFFER_SIZE: 43,
     REP_INFO_PUBKEY_OFFSET: 0,
     REP_INFO_PEER_PORT_OFFSET: 33,
