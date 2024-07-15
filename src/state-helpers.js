@@ -81,6 +81,9 @@ const HOST_ACCUMULATED_REWARD_OFFSET = 116;
 const HOST_REP_LAST_REG_MOMENT_OFFSET = 0;
 const HOST_REP_SCORE_NUMERATOR_OFFSET = 8;
 const HOST_REP_SCORE_DENOMINATOR_OFFSET = 16;
+const HOST_REP_SCORE_OFFSET = 24;
+const HOST_REP_LAST_RESET_MOMENT_OFFSET = 32;
+const HOST_REP_LAST_SCORED_MOMENT_OFFSET = 40;
 
 const PREV_HOST_ADDRESS_OFFSET = 0;
 const TRANSFER_LEDGER_IDX_OFFSET = 20;
@@ -170,7 +173,10 @@ class StateHelpers {
             hostAddress: codec.encodeAccountID(stateKeyBuf.slice(keyOffset)),
             lastRegisteredMoment: Number(stateDataBuf.readBigUInt64LE(HOST_REP_LAST_REG_MOMENT_OFFSET)),
             scoreNumerator: Number(stateDataBuf.readBigUInt64LE(HOST_REP_SCORE_NUMERATOR_OFFSET)),
-            scoreDenominator: Number(stateDataBuf.readBigUInt64LE(HOST_REP_SCORE_DENOMINATOR_OFFSET))
+            scoreDenominator: Number(stateDataBuf.readBigUInt64LE(HOST_REP_SCORE_DENOMINATOR_OFFSET)),
+            score: stateDataBuf.length > HOST_REP_SCORE_OFFSET ? Number(stateDataBuf.readBigUInt64LE(HOST_REP_SCORE_OFFSET)) : null,
+            lastResetMoment: stateDataBuf.length > HOST_REP_LAST_RESET_MOMENT_OFFSET ? Number(stateDataBuf.readBigUInt64LE(HOST_REP_LAST_RESET_MOMENT_OFFSET)) : null,
+            lastScoredMoment: stateDataBuf.length > HOST_REP_LAST_SCORED_MOMENT_OFFSET ? Number(stateDataBuf.readBigUInt64LE(HOST_REP_LAST_SCORED_MOMENT_OFFSET)) : null,
         }
         return data;
     }

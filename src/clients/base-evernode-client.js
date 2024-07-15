@@ -1038,7 +1038,9 @@ class BaseEvernodeClient {
             const addrStateData = addrLedgerEntry?.HookStateData;
 
             if (addrStateData) {
-                const addrStateDecoded = StateHelpers.decodeReputationHostAddressState(Buffer.from(addrStateKey, 'hex'), Buffer.from(addrStateData, 'hex'));
+                let addrStateDecoded = StateHelpers.decodeReputationHostAddressState(Buffer.from(addrStateKey, 'hex'), Buffer.from(addrStateData, 'hex'));
+                const curMoment = await this.getMoment();
+                addrStateDecoded.valid = !!(addrStateDecoded.lastScoredMoment && (curMoment - addrStateDecoded.lastScoredMoment) <= ReputationConstants.SCORE_EXPIRY_MOMENT_COUNT);
                 return addrStateDecoded;
             }
         }
