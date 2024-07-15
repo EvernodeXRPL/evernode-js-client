@@ -485,7 +485,7 @@ class HostClient extends BaseEvernodeClient {
             }
         }
 
-        buffer.writeUIntLE(ReputationConstants.SCORE_VERSION);
+        buffer.writeUIntLE(ReputationConstants.SCORE_VERSION, 0, 1);
 
         const paramData = codec.decodeAccountID(this.xrplAcc.address);
 
