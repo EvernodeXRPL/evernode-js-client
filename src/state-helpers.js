@@ -84,6 +84,7 @@ const HOST_REP_SCORE_DENOMINATOR_OFFSET = 16;
 const HOST_REP_SCORE_OFFSET = 24;
 const HOST_REP_LAST_RESET_MOMENT_OFFSET = 32;
 const HOST_REP_LAST_SCORED_MOMENT_OFFSET = 40;
+const HOST_REP_LAST_UNIVERSE_SIZE_OFFSET = 48;
 
 const PREV_HOST_ADDRESS_OFFSET = 0;
 const TRANSFER_LEDGER_IDX_OFFSET = 20;
@@ -177,6 +178,7 @@ class StateHelpers {
             score: stateDataBuf.length > HOST_REP_SCORE_OFFSET ? Number(stateDataBuf.readBigUInt64LE(HOST_REP_SCORE_OFFSET)) : null,
             lastResetMoment: stateDataBuf.length > HOST_REP_LAST_RESET_MOMENT_OFFSET ? Number(stateDataBuf.readBigUInt64LE(HOST_REP_LAST_RESET_MOMENT_OFFSET)) : null,
             lastScoredMoment: stateDataBuf.length > HOST_REP_LAST_SCORED_MOMENT_OFFSET ? Number(stateDataBuf.readBigUInt64LE(HOST_REP_LAST_SCORED_MOMENT_OFFSET)) : null,
+            lastUniverseSize: stateDataBuf.length > HOST_REP_LAST_UNIVERSE_SIZE_OFFSET ? Number(stateDataBuf.readBigUInt64LE(HOST_REP_LAST_UNIVERSE_SIZE_OFFSET)) : null,
         }
         return data;
     }
