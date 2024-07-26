@@ -469,19 +469,21 @@ class HostClient extends BaseEvernodeClient {
 
     /**
      * Send reputation scores to the reputation hook.
+     * @param {object} clusterSize Size of the cluster.
      * @param {object} scores [Optional] Score object in { host: score } format.
      */
-    async sendReputations(scores = null, options = {}) {
+    async sendReputations(clusterSize, scores = null, options = {}) {
         let buffer = Buffer.alloc(1);
         if (scores) {
             const preparedScores = await this.prepareHostReputationScores(scores);
             if (preparedScores) {
-                buffer = Buffer.alloc(65, 0);
+                buffer = Buffer.alloc(66, 0);
                 let i = 0;
                 for (const reputationScore of preparedScores) {
                     buffer.writeUIntLE(Number(reputationScore.scoreValue), i + 1, 1);
                     i++;
                 }
+                buffer.writeUIntLE(clusterSize, 65, 1);
             }
         }
 
