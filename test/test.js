@@ -494,7 +494,7 @@ async function sendReputation() {
 
     console.log(`Sending reputation`);
 
-    await host.sendReputations(1, {});
+    await host.sendReputations(1, 1, {});
 }
 
 async function pruneDeadHost(address = hostAddress) {
