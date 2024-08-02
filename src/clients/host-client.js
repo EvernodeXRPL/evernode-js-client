@@ -469,10 +469,11 @@ class HostClient extends BaseEvernodeClient {
 
     /**
      * Send reputation scores to the reputation hook.
-     * @param {object} clusterSize Size of the cluster.
+     * @param {number} scoreVersion Version of the scores.
+     * @param {number} clusterSize Size of the cluster.
      * @param {object} scores [Optional] Score object in { host: score } format.
      */
-    async sendReputations(clusterSize, scores = null, options = {}) {
+    async sendReputations(scoreVersion, clusterSize, scores = null, options = {}) {
         let buffer = Buffer.alloc(1);
         if (scores) {
             const preparedScores = await this.prepareHostReputationScores(scores);
@@ -487,7 +488,7 @@ class HostClient extends BaseEvernodeClient {
             }
         }
 
-        buffer.writeUIntLE(ReputationConstants.SCORE_VERSION, 0, 1);
+        buffer.writeUIntLE(scoreVersion, 0, 1);
 
         const paramData = codec.decodeAccountID(this.xrplAcc.address);
 
