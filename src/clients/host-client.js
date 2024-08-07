@@ -430,58 +430,43 @@ class HostClient extends BaseEvernodeClient {
 
     /**
      * Prepare host reputation score to a common format for submission.
-     * @param {object} collectedScores 
-     * @returns Unified reputation score array.
-     */
-    async prepareHostReputationScores(collectedScores = {}) {
-        const myReputationInfo = await this.getReputationOrderByAddress(this.xrplAcc.address);
-        if (!("orderedId" in (myReputationInfo ?? {})))
-            return null;
-
-        const myOrderId = myReputationInfo.orderedId;
-
-        // Deciding universe.
-        const universeStartIndex = Math.floor(myOrderId / 64) * 64;
-
-        const reputationClient = await HookClientFactory.create(HookTypes.reputation);
-        await reputationClient.connect();
-        let data = {};
-        await Promise.all(Array.from({ length: 64 }, (_, i) => i + universeStartIndex).map(async (i) => {
-            try {
-                const hostReputationInfo = await reputationClient.getReputationContractInfoByOrderedId(i);
-                if (!hostReputationInfo)
-                    throw 'No reputation info for this order id';
-                data[i.toString()] = {
-                    publicKey: hostReputationInfo.contract?.pubkey ?? "-1",
-                    orderId: i
-                };
-            } catch (error) {
-                data[i.toString()] = { publicKey: "-1", orderId: i };
-            }
-        }));
-        await reputationClient.disconnect();
-
-        return Object.entries(data).map(e => ({
-            ...e[1],
-            scoreValue: collectedScores[e[1]?.publicKey] || 0
-        }));
-    }
-
-    /**
-     * Send reputation scores to the reputation hook.
      * @param {number} scoreVersion Version of the scores.
      * @param {number} clusterSize Size of the cluster.
-     * @param {object} scores [Optional] Score object in { host: score } format.
+     * @param {object} collectedScores [Optional] Score object in { host: score } format.
+     * @returns Unified reputation score buffer.
      */
-    async sendReputations(scoreVersion, clusterSize, scores = null, options = {}) {
+    async prepareHostReputationScores(scoreVersion, clusterSize, collectedScores = null) {
         let buffer = Buffer.alloc(1);
-        if (scores) {
-            const preparedScores = await this.prepareHostReputationScores(scores);
-            if (preparedScores) {
+        if (collectedScores) {
+            const myReputationInfo = await this.getReputationOrderByAddress(this.xrplAcc.address);
+            if (("orderedId" in (myReputationInfo ?? {}))) {
+                const myOrderId = myReputationInfo.orderedId;
+
+                // Deciding universe.
+                const universeStartIndex = Math.floor(myOrderId / 64) * 64;
+
+                const reputationClient = await HookClientFactory.create(HookTypes.reputation);
+                await reputationClient.connect();
+                let data = {};
+                await Promise.all(Array.from({ length: 64 }, (_, i) => i + universeStartIndex).map(async (i) => {
+                    try {
+                        const hostReputationInfo = await reputationClient.getReputationContractInfoByOrderedId(i);
+                        if (!hostReputationInfo)
+                            throw 'No reputation info for this order id';
+                        data[i.toString()] = {
+                            publicKey: hostReputationInfo.contract?.pubkey ?? "-1",
+                            orderId: i
+                        };
+                    } catch (error) {
+                        data[i.toString()] = { publicKey: "-1", orderId: i };
+                    }
+                }));
+                await reputationClient.disconnect();
+
                 buffer = Buffer.alloc(66, 0);
                 let i = 0;
-                for (const reputationScore of preparedScores) {
-                    buffer.writeUIntLE(Number(reputationScore.scoreValue), i + 1, 1);
+                for (const e of Object.entries(data)) {
+                    buffer.writeUIntLE(Number(collectedScores[e[1]?.publicKey] || 0), i + 1, 1);
                     i++;
                 }
                 buffer.writeUIntLE(clusterSize, 65, 1);
@@ -490,10 +475,18 @@ class HostClient extends BaseEvernodeClient {
 
         buffer.writeUIntLE(scoreVersion, 0, 1);
 
+        return buffer;
+    }
+
+    /**
+     * Send reputation scores to the reputation hook.
+     * @param {string} bufferHex Prepared score buffer as hex string.
+     */
+    async sendReputations(bufferHex, options = {}) {
         const paramData = codec.decodeAccountID(this.xrplAcc.address);
 
         await this.reputationAcc.invoke(this.config.reputationAddress,
-            buffer ? { isHex: true, data: buffer.toString('hex') } : null,
+            bufferHex ? { isHex: true, data: bufferHex } : null,
             {
                 hookParams: [
                     { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.HOST_SEND_REPUTATION },
