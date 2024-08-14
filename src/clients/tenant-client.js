@@ -364,15 +364,11 @@ class TenantClient extends BaseEvernodeClient {
     async terminateLease(uriTokenId, options = {}) {
         const uriToken = await this.xrplApi.getURITokenByIndex(uriTokenId);
         if (uriToken && uriToken.Owner === this.xrplAcc.address) {
-            await this.xrplAcc.sellURIToken(uriTokenId,
-                XrplConstants.MIN_DROPS,
-                null,
-                null,
-                uriToken.Issuer,
-                null,
+            await this.xrplAcc.makePayment(uriToken.Issuer, XrplConstants.MIN_DROPS, null, null, null,
                 {
                     hookParams: [
-                        { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.TERMINATE_LEASE }
+                        { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.TERMINATE_LEASE },
+                        { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: uriTokenId }
                     ],
                     ...options.transactionOptions
                 });

@@ -301,19 +301,6 @@ class BaseEvernodeClient {
                 }
             }
         }
-        else if (tx.TransactionType === XrplTransactionTypes.URI_TOKEN_CREATE_SELL_OFFER && eventType === EventTypes.TERMINATE_LEASE &&
-            tx.Amount?.issuer === tx.Destination && tx.Amount?.currency === EvernodeConstants.EVR) {
-
-            return {
-                name: EvernodeEvents.TerminateLease,
-                data: {
-                    transaction: tx,
-                    tenant: tx.Account,
-                    uriTokenId: tx.URITokenID,
-                    amount: tx.Amount
-                }
-            }
-        }
         else if (eventType === EventTypes.ACQUIRE_SUCCESS && eventData && tx.Memos.length &&
             tx.Memos[0].type === EventTypes.ACQUIRE_SUCCESS && tx.Memos[0].data) {
 
@@ -414,6 +401,20 @@ class BaseEvernodeClient {
                     tenant: tx.Account,
                     currency: tx.Amount.currency,
                     payment: (tx.Flags & xrpl.PaymentFlags.tfPartialPayment) ? parseFloat(tx.DeliveredAmount.value) : parseFloat(tx.Amount.value),
+                    uriTokenId: uriTokenId
+                }
+            }
+        }
+        else if (eventType === EventTypes.TERMINATE_LEASE && eventData) {
+            
+            let uriTokenId = eventData;
+
+            return {
+                name: EvernodeEvents.TerminateLease,
+                data: {
+                    transaction: tx,
+                    terminateRefId: tx.hash,
+                    tenant: tx.Account,
                     uriTokenId: uriTokenId
                 }
             }

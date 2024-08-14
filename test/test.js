@@ -147,6 +147,7 @@ async function app() {
             // () => extendLease("success"),
             // () => extendLease("error"),
             // () => extendLease("timeout"),
+            // () => terminateLease(),
             // () => deregisterHost(),
             // () => pruneDeadHost(),
             // () => transferHost(),
@@ -356,7 +357,7 @@ async function acquire(scenario) {
                 const leaseIndex = decodedToken.leaseIndex;
                 const outboundIP = decodedToken.outboundIP;
 
-                await host.expireLease(r.nfTokenId, r.tenant);
+                await host.expireLease(r.uriTokenId, r.tenant);
                 await host.offerLease(leaseIndex, r.leaseAmount, tosHash, outboundIP);
                 await host.acquireError(r.acquireRefId, r.tenant, r.leaseAmount, "dummy_error");
             }
@@ -413,6 +414,40 @@ async function extendLease(scenario) {
     }
     catch (err) {
         console.log("Tenant recieved extend error: ", err.reason)
+    }
+}
+
+async function terminateLease() {
+    console.log(`-----------Terminate`);
+
+    const tenant = await getTenantClient();
+    await tenant.prepareAccount();
+
+    // Setup host to watch for incoming terminate.
+    const host = await getHostClient();
+
+    host.on(evernode.HostEvents.TerminateLease, async (r) => {
+        console.log(`Host received terminate request for: '${r.uriTokenId}'`);
+
+        console.log(`Host terminating instance...`);
+        const uriToken = (await (new evernode.XrplAccount(r.tenant)).getURITokens())?.find(n => n.index == r.uriTokenId);
+        const decodedToken = evernode.UtilHelpers.decodeLeaseTokenUri(uriToken.URI);
+        const leaseIndex = decodedToken.leaseIndex;
+        const outboundIP = decodedToken.outboundIP;
+        const leaseAmount = decodedToken.leaseAmount;
+
+        await host.expireLease(r.uriTokenId, r.tenant);
+        await host.offerLease(leaseIndex, leaseAmount, tosHash, outboundIP);
+    })
+
+    try {
+        const tokenIDs = (await tenant.xrplAcc.getURITokens()).filter(uriToken => evernode.EvernodeHelpers.isValidURI(uriToken.URI, evernode.EvernodeConstants.LEASE_TOKEN_PREFIX_HEX)).map(n => n.index);
+        await tenant.terminateLease(tokenIDs[0]);
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        console.log(`Terminated: ${tokenIDs[0]}`);
+    }
+    catch (err) {
+        console.log("Tenant recieved terminate error: ", err)
     }
 }
 //////////////////////////////////////////////////////////////////////////////////////
