@@ -2,7 +2,7 @@ const codec = require('ripple-address-codec');
 const { Buffer } = require('buffer');
 const { XrplApi } = require('../xrpl-api');
 const { XrplAccount } = require('../xrpl-account');
-const { XrplApiEvents, XrplConstants } = require('../xrpl-common');
+const { XrplApiEvents, XrplConstants, XrplTransactionTypes } = require('../xrpl-common');
 const { EvernodeEvents, EventTypes, MemoFormats, EvernodeConstants, HookStateKeys, HookParamKeys, RegExp, ReputationConstants } = require('../evernode-common');
 const { Defaults } = require('../defaults');
 const { EncryptionHelper } = require('../encryption-helper');
@@ -268,7 +268,7 @@ class BaseEvernodeClient {
             eventType = tx.HookParameters.find(p => p.name === HookParamKeys.PARAM_EVENT_TYPE_KEY)?.value;
             eventData = tx.HookParameters.find(p => p.name === HookParamKeys.PARAM_EVENT_DATA_KEY)?.value ?? '';
         }
-        if (tx.TransactionType === 'URITokenBuy' && eventType === EventTypes.ACQUIRE_LEASE && tx.Memos.length &&
+        if (tx.TransactionType === XrplTransactionTypes.URI_TOKEN_BUY_OFFER && eventType === EventTypes.ACQUIRE_LEASE && tx.Memos.length &&
             tx.Memos[0].type === EventTypes.ACQUIRE_LEASE && tx.Memos[0].format === MemoFormats.BASE64 && tx.Memos[0].data) {
 
             // If our account is the destination host account, then decrypt the payload if it is encrypted.
@@ -301,7 +301,6 @@ class BaseEvernodeClient {
                 }
             }
         }
-
         else if (eventType === EventTypes.ACQUIRE_SUCCESS && eventData && tx.Memos.length &&
             tx.Memos[0].type === EventTypes.ACQUIRE_SUCCESS && tx.Memos[0].data) {
 
@@ -402,6 +401,20 @@ class BaseEvernodeClient {
                     tenant: tx.Account,
                     currency: tx.Amount.currency,
                     payment: (tx.Flags & xrpl.PaymentFlags.tfPartialPayment) ? parseFloat(tx.DeliveredAmount.value) : parseFloat(tx.Amount.value),
+                    uriTokenId: uriTokenId
+                }
+            }
+        }
+        else if (eventType === EventTypes.TERMINATE_LEASE && eventData) {
+            
+            let uriTokenId = eventData;
+
+            return {
+                name: EvernodeEvents.TerminateLease,
+                data: {
+                    transaction: tx,
+                    terminateRefId: tx.hash,
+                    tenant: tx.Account,
                     uriTokenId: uriTokenId
                 }
             }

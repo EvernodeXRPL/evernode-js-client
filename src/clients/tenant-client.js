@@ -6,6 +6,7 @@ const { XrplAccount } = require('../xrpl-account');
 const { UtilHelpers } = require('../util-helpers');
 const { EvernodeHelpers } = require('../evernode-helpers');
 const { TransactionHelper } = require('../transaction-helper');
+const { XrplConstants } = require('../xrpl-common');
 
 const DEFAULT_WAIT_TIMEOUT = 300000;
 
@@ -354,6 +355,27 @@ class TenantClient extends BaseEvernodeClient {
                 }
             }
         });
+    }
+
+    /**
+     * Terminate the lease instance.
+     * @param {string} uriTokenId Hex URI token id of the lease.
+     */
+    async terminateLease(uriTokenId, options = {}) {
+        const uriToken = await this.xrplApi.getURITokenByIndex(uriTokenId);
+        if (uriToken && uriToken.Owner === this.xrplAcc.address) {
+            await this.xrplAcc.makePayment(uriToken.Issuer, XrplConstants.MIN_DROPS, null, null, null,
+                {
+                    hookParams: [
+                        { name: HookParamKeys.PARAM_EVENT_TYPE_KEY, value: EventTypes.TERMINATE_LEASE },
+                        { name: HookParamKeys.PARAM_EVENT_DATA_KEY, value: uriTokenId }
+                    ],
+                    ...options.transactionOptions
+                });
+        }
+        else {
+            console.log(`Uri token ${uriTokenId} not found or already burned. Burn skipped.`);
+        }
     }
 }
 

@@ -17,7 +17,8 @@ const OFFER_WAIT_TIMEOUT = 60;
 
 const HostEvents = {
     AcquireLease: EvernodeEvents.AcquireLease,
-    ExtendLease: EvernodeEvents.ExtendLease
+    ExtendLease: EvernodeEvents.ExtendLease,
+    TerminateLease: EvernodeEvents.TerminateLease,
 }
 
 const HOST_COUNTRY_CODE_PARAM_OFFSET = 0;
