@@ -31,6 +31,9 @@ const getDefinitions = async () => {
     });
 }
 
+/**
+ * Defaults class is responsible for retrieving and overriding the default Evernode network configurations.
+ */
 class Defaults {
     /**
      * Load defaults from the public definitions json.

@@ -17,12 +17,29 @@ const TenantEvents = {
     ExtendError: EvernodeEvents.ExtendError,
 }
 
+/**
+ * TenantClient class to manage tenant operations.
+ * It extends the BaseEvernodeClient.
+ * 
+ * @extends BaseEvernodeClient
+ */
 class TenantClient extends BaseEvernodeClient {
 
+    /**
+     * Creates an instance of TenantClient.
+     * 
+     * @param {string} xrpAddress - The XRP address to associate with this client.
+     * @param {string} xrpSecret - The secret (private key) associated with the XRP address.
+     * @param {Object} [options={}] - Additional configuration options for the TenantClient.
+     */
     constructor(xrpAddress, xrpSecret, options = {}) {
         super(xrpAddress, xrpSecret, Object.values(TenantEvents), false, options);
     }
 
+    /**
+     * Prepare the tenant account with account fields and trust lines.
+     * @param {Object} [options={}] - Optional configuration for the account setup.
+     */
     async prepareAccount(options = {}) {
         try {
             if (!await this.xrplAcc.getMessageKey())
@@ -33,6 +50,13 @@ class TenantClient extends BaseEvernodeClient {
         }
     }
 
+    /**
+     * Retrieves and validates a lease host based on the given host address.
+     * 
+     * @param {string} hostAddress - The XRP Ledger address of the host.
+     * @returns {Promise<Object>} - Returns the host object if valid and active.
+     * @throws Will throw an error if the host is invalid, inactive, or not registered.
+     */
     async getLeaseHost(hostAddress) {
         const host = new XrplAccount(hostAddress, null, { xrplApi: this.xrplApi });
         // Find an owned URI token with matching Evernode host NFT prefix.

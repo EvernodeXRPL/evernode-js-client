@@ -11,6 +11,12 @@ const RegistryEvents = {
     HostReputationUpdated: EvernodeEvents.HostReputationUpdated
 }
 
+/**
+ * RegistryClient is responsible for managing registry operations in Evernode.
+ * It interacts with the XRP Ledger using the registry address and listens for specific registry events.
+ * 
+ * @extends BaseEvernodeClient
+ */
 class RegistryClient extends BaseEvernodeClient {
 
     constructor(options = {}) {
@@ -18,8 +24,8 @@ class RegistryClient extends BaseEvernodeClient {
     }
 
     /**
-     * Gets all the active hosts registered in ledger.
-     * @returns The list of active hosts.
+     * Retrieves all active hosts registered in the ledger.
+     * @returns {Promise<Array>} - A promise that resolves to an array of active hosts.
      */
     async getActiveHostsFromLedger() {
         const hosts = await this.getAllHostsFromLedger();
