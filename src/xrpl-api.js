@@ -111,7 +111,7 @@ class XrplApi {
             await client.removeAllListeners();
         }
         catch { }
-        
+
         client.on('error', (errorCode, errorMessage) => {
             console.log(errorCode + ': ' + errorMessage);
         });
@@ -355,10 +355,9 @@ class XrplApi {
         while ((!count || count > 0) && (!checked || resp?.result?.marker)) {
             checked = true;
             requestObj.limit = count ? Math.min(count, MAX_PAGE_LIMIT) : MAX_PAGE_LIMIT;
-            if (resp?.result?.marker){
+            if (resp?.result?.marker) {
                 requestObj.marker = resp?.result?.marker;
-                if(count<resp?.result?.lines?.length){
-                    console.log("breaking the loop")
+                if (count < resp?.result?.lines?.length) {
                     break;
                 }
             }
