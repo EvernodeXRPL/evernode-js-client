@@ -10,7 +10,6 @@ const NFT_PAGE_LEDGER_ENTRY_TYPE_HEX = '0050';
 class EvernodeHelpers {
     /**
      * Retrieves URI tokens that are valid leases for the specified XRPL account.
-     *
      * @param {Object} xrplAcc - The XRPL account object.
      * @returns {Promise<Array<Object>>} A promise that resolves to an array of URI tokens that are valid leases.
      */
@@ -21,7 +20,6 @@ class EvernodeHelpers {
 
     /**
      * Retrieves a lease by its index from the XRPL ledger.
-     *
      * @param {XrplApi} xrplApi - The XRPL API object.
      * @param {string} index - The ledger entry index.
      * @returns {Promise<Object|null>} A promise that resolves to the lease entry or null if not found or invalid.
@@ -35,7 +33,6 @@ class EvernodeHelpers {
 
     /**
      * Retrieves all leases that have offers (i.e., an associated amount) for the specified XRPL account.
-     *
      * @param {Object} xrplAcc - The XRPL account object.
      * @returns {Promise<Array<Object>>} A promise that resolves to an array of URI tokens with offers.
      */
@@ -46,7 +43,6 @@ class EvernodeHelpers {
 
     /**
      * Retrieves leases that do not have offers (i.e., no amount associated) for the specified XRPL account.
-     *
      * @param {Object} xrplAcc - The XRPL account object.
      * @returns {Promise<Array<Object>>} A promise that resolves to an array of unoffered URI tokens.
      */
@@ -57,7 +53,6 @@ class EvernodeHelpers {
 
     /**
      * Finds the NFT page and location of a specific NFToken in the XRPL ledger.
-     *
      * @param {string} nfTokenId - The ID of the NFToken.
      * @param {Object} xrplAcc - The XRPL account object.
      * @param {Object} xrplApi - The XRPL API object.
@@ -96,7 +91,6 @@ class EvernodeHelpers {
 
     /**
      * Calculates the reward quota for a specific epoch.
-     *
      * @param {number} epoch - The epoch number.
      * @param {number} firstEpochRewardQuota - The reward quota for the first epoch.
      * @returns {number} The calculated reward quota for the specified epoch.
@@ -108,7 +102,6 @@ class EvernodeHelpers {
 
     /**
      * Checks if a given URI is valid based on a pattern and token category.
-     *
      * @param {string} uri - The URI to validate.
      * @param {string} pattern - The pattern to match the URI against.
      * @param {string} [tokenCategory=URITokenTypes.LEASE_URI_TOKEN] - The token category (default is a lease URI token).

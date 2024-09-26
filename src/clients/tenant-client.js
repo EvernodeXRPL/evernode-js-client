@@ -20,14 +20,12 @@ const TenantEvents = {
 /**
  * TenantClient class to manage tenant operations.
  * It extends the BaseEvernodeClient.
- * 
  * @extends BaseEvernodeClient
  */
 class TenantClient extends BaseEvernodeClient {
 
     /**
      * Creates an instance of TenantClient.
-     * 
      * @param {string} xrpAddress - The XRP address to associate with this client.
      * @param {string} xrpSecret - The secret (private key) associated with the XRP address.
      * @param {Object} [options={}] - Additional configuration options for the TenantClient.
@@ -52,7 +50,6 @@ class TenantClient extends BaseEvernodeClient {
 
     /**
      * Retrieves and validates a lease host based on the given host address.
-     * 
      * @param {string} hostAddress - The XRP Ledger address of the host.
      * @returns {Promise<Object>} - Returns the host object if valid and active.
      * @throws Will throw an error if the host is invalid, inactive, or not registered.

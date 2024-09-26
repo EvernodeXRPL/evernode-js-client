@@ -79,7 +79,6 @@ class EncryptionHelper {
 
     /**
      * Encrypts a message using the given public key.
-     *
      * @param {string} publicKey - The public key to use for encryption.
      * @param {Object} message - The message object to be encrypted.
      * @param {Object} [options={}] - Optional encryption parameters.
@@ -95,7 +94,6 @@ class EncryptionHelper {
 
     /**
      * Decrypts an encrypted message using the given private key.
-     *
      * @param {string} privateKey - The private key to use for decryption.
      * @param {string} encrypted - The encrypted message string.
      * @returns {Promise<Object|null>} A promise that resolves to the decrypted message as an object, or null if decryption fails.

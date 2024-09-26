@@ -33,12 +33,10 @@ const updateJSDocUtil = () => {
     if (utilFileContent.includes(oldUtilFunction)) {
         utilFileContent = utilFileContent.replace(oldUtilFunction, newUtilFunction);
         fs.writeFileSync(jsdocUtilDumperPath, utilFileContent, 'utf8');
-        console.log('JSDoc utility function modified successful!');
+        console.log('JSDoc utility function modified successfully!');
     } else {
         console.log('JSDoc obsolete utility function is not found.');
     }
 };
-
-
 
 updateJSDocUtil();

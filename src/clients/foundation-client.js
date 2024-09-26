@@ -18,14 +18,12 @@ const FoundationEvents = {}
 /**
  * FoundationClient class to manage and interact with foundation operations.
  * It extends the BaseEvernodeClient.
- * 
  * @extends BaseEvernodeClient
  */
 class FoundationClient extends BaseEvernodeClient {
 
     /**
      * Creates an instance of FoundationClient.
-     * 
      * @param {string} xrpAddress - The XRP address to associate with this client.
      * @param {string} xrpSecret - The secret (private key) associated with the XRP address.
      * @param {Object} [options={}] - Additional configuration options for the FoundationClient.

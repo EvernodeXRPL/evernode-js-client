@@ -67,7 +67,6 @@ const TX_RETRY_INTERVAL = 10000;
 /**
  * HostClient class to manage host operations.
  * It extends the BaseEvernodeClient.
- * 
  * @extends BaseEvernodeClient
  */
 class HostClient extends BaseEvernodeClient {

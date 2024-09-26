@@ -10,7 +10,6 @@ class XflHelpers {
 
     /**
      * Retrieves the exponent of the XFL float number.
-     *
      * @param {bigint} xfl - The XFL float number.
      * @returns {bigint} The exponent of the XFL float number.
      * @throws {string} Throws an error if the XFL float number is negative.
@@ -25,7 +24,6 @@ class XflHelpers {
 
     /**
      * Retrieves the mantissa of the XFL float number.
-     *
      * @param {bigint} xfl - The XFL float number.
      * @returns {bigint} The mantissa of the XFL float number.
      * @throws {string} Throws an error if the XFL float number is negative.
@@ -40,7 +38,6 @@ class XflHelpers {
 
     /**
      * Checks if the XFL float number is negative.
-     *
      * @param {bigint} xfl - The XFL float number.
      * @returns {boolean} `true` if the XFL float number is negative, otherwise `false`.
      * @throws {string} Throws an error if the XFL float number is negative.
@@ -55,7 +52,6 @@ class XflHelpers {
 
     /**
      * Converts an XFL float number to its string representation.
-     *
      * @param {bigint} xfl - The XFL float number.
      * @returns {string} The string representation of the XFL float number.
      * @throws {string} Throws an error if the XFL float number is negative.
@@ -88,7 +84,6 @@ class XflHelpers {
 
     /**
      * Converts a string representation of a float number to an XFL float number.
-     *
      * @param {string} floatStr - The string representation of the float number.
      * @returns {bigint} The XFL float number.
      */

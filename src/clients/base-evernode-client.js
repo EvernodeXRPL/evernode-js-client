@@ -32,7 +32,6 @@ const HOST_DEREG_FROM_REP_PARAM_SIZE = 53;
 
 /**
  * Creates an instance of BaseEvernodeClient.
- * 
  * @param {string} xrpAddress - The XRP address associated with the client.
  * @param {string} xrpSecret - The XRP secret associated with the client.
  * @param {Array<string>} watchEvents - An array of event names to watch.
