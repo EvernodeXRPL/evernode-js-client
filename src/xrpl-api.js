@@ -354,7 +354,11 @@ class XrplApi {
 
         while ((!count || count > 0) && (!checked || resp?.result?.marker)) {
             checked = true;
-            requestObj.limit = count ? Math.min(count, MAX_PAGE_LIMIT) : MAX_PAGE_LIMIT;
+            if (requestObj.command === 'account_lines') {
+                requestObj.limit = 1000;
+            } else {
+                requestObj.limit = count ? Math.min(count, MAX_PAGE_LIMIT) : MAX_PAGE_LIMIT;
+            }
             if (resp?.result?.marker)
                 requestObj.marker = resp?.result?.marker;
             else
