@@ -152,7 +152,7 @@ Detach the listener event.
 Connects the client to xrpl server and do the config loading and subscriptions. 'subscribe' is called inside this.
 
 **Kind**: instance method of [<code>BaseEvernodeClient</code>](#BaseEvernodeClient)  
-**Returns**: Returns `true` if the connection is successful.  
+**Returns**: Boolean value `true` if the connection is successful.  
 <a name="BaseEvernodeClient+disconnect"></a>
 
 ### baseEvernodeClient.disconnect()
@@ -583,7 +583,7 @@ Connects the client to xrpl server and do the config loading and subscriptions. 
 
 **Kind**: instance method of [<code>FoundationClient</code>](#FoundationClient)  
 **Overrides**: [<code>connect</code>](#BaseEvernodeClient+connect)  
-**Returns**: Returns `true` if the connection is successful.  
+**Returns**: Boolean value `true` if the connection is successful.  
 <a name="BaseEvernodeClient+disconnect"></a>
 
 ### foundationClient.disconnect()
@@ -907,7 +907,7 @@ Connects the client to xrpl server and do the config loading and subscriptions. 
 
 **Kind**: instance method of [<code>HeartbeatClient</code>](#HeartbeatClient)  
 **Overrides**: [<code>connect</code>](#BaseEvernodeClient+connect)  
-**Returns**: Returns `true` if the connection is successful.  
+**Returns**: Boolean value `true` if the connection is successful.  
 <a name="BaseEvernodeClient+disconnect"></a>
 
 ### heartbeatClient.disconnect()
@@ -1262,7 +1262,7 @@ Connects the client to xrpl server and do the config loading and subscriptions. 
 
 **Kind**: instance method of [<code>RegistryClient</code>](#RegistryClient)  
 **Overrides**: [<code>connect</code>](#BaseEvernodeClient+connect)  
-**Returns**: Returns `true` if the connection is successful.  
+**Returns**: Boolean value `true` if the connection is successful.  
 <a name="BaseEvernodeClient+disconnect"></a>
 
 ### registryClient.disconnect()
@@ -2041,7 +2041,7 @@ Connects the client to xrpl server and do the config loading and subscriptions. 
 
 **Kind**: instance method of [<code>HostClient</code>](#HostClient)  
 **Overrides**: [<code>connect</code>](#BaseEvernodeClient+connect)  
-**Returns**: Returns `true` if the connection is successful.  
+**Returns**: Boolean value `true` if the connection is successful.  
 <a name="BaseEvernodeClient+disconnect"></a>
 
 ### hostClient.disconnect()
@@ -2540,7 +2540,7 @@ Connects the client to xrpl server and do the config loading and subscriptions. 
 
 **Kind**: instance method of [<code>TenantClient</code>](#TenantClient)  
 **Overrides**: [<code>connect</code>](#BaseEvernodeClient+connect)  
-**Returns**: Returns `true` if the connection is successful.  
+**Returns**: Boolean value `true` if the connection is successful.  
 <a name="BaseEvernodeClient+disconnect"></a>
 
 ### tenantClient.disconnect()

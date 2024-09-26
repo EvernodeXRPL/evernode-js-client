@@ -753,7 +753,7 @@ class XrplApi {
      * @param {string} txHash - Transaction Hash
      * @param {number} lastLedger - Last ledger sequence of the transaction.
      * @param {object} submissionResult - Result of the submission.
-     * @returns Returns the applied transaction object.
+     * @returns The applied transaction object.
      */
     async #waitForFinalTransactionOutcome(txHash, lastLedger, submissionResult) {
         if (lastLedger == null)

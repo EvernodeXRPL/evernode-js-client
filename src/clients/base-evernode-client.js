@@ -104,7 +104,7 @@ class BaseEvernodeClient {
 
     /**
      * Connects the client to xrpl server and do the config loading and subscriptions. 'subscribe' is called inside this.
-     * @returns Returns `true` if the connection is successful.
+     * @returns Boolean value `true` if the connection is successful.
      */
     async connect(options = {}) {
         if (this.connected)
