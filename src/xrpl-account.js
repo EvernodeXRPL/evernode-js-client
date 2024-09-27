@@ -164,7 +164,6 @@ class XrplAccount {
      */
     async getTrustLines(currency, issuer) {
         const lines = await this.xrplApi.getTrustlines(this.address, {
-            limit: 399,
             peer: issuer
         });
         return currency ? lines.filter(l => l.currency === currency) : lines;

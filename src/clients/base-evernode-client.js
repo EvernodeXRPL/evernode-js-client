@@ -1066,8 +1066,6 @@ class BaseEvernodeClient {
 
             if (addrStateData) {
                 let addrStateDecoded = StateHelpers.decodeReputationHostAddressState(Buffer.from(addrStateKey, 'hex'), Buffer.from(addrStateData, 'hex'));
-                const curMoment = await this.getMoment();
-                addrStateDecoded.valid = !!(addrStateDecoded.lastScoredMoment && (curMoment - addrStateDecoded.lastScoredMoment) <= ReputationConstants.SCORE_EXPIRY_MOMENT_COUNT);
                 return addrStateDecoded;
             }
         }
