@@ -1,6 +1,6 @@
 src/defaults.js
 src/clients/hook-clients/registry-client.js
-rc/clients/hook-clients/governor-client.js
+src/clients/hook-clients/governor-client.js
 src/clients/hook-clients/heartbeat-client.js
 src/clients/hook-clients/hook-client-factory.js
 src/clients/base-evernode-client.js

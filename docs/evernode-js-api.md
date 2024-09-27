@@ -9,6 +9,10 @@
 <dd><p>FoundationClient class to manage and interact with foundation operations.
 It extends the BaseEvernodeClient.</p>
 </dd>
+<dt><a href="#GovernorClient">GovernorClient</a> ⇐ <code><a href="#BaseEvernodeClient">BaseEvernodeClient</a></code></dt>
+<dd><p>GovernorClient is responsible for managing governor operations in Evernode.
+It interacts with the XRP Ledger using the governor address and listens for specific governor events.</p>
+</dd>
 <dt><a href="#HeartbeatClient">HeartbeatClient</a> ⇐ <code><a href="#BaseEvernodeClient">BaseEvernodeClient</a></code></dt>
 <dd><p>HeartbeatClient is responsible for managing heartbeat operations in Evernode.
 It interacts with the XRP Ledger using the heartbeat address and listens for specific heartbeat events.</p>
@@ -817,6 +821,330 @@ Get reputation contract info of given host.
 Get reputation info of given host.
 
 **Kind**: instance method of [<code>FoundationClient</code>](#FoundationClient)  
+**Overrides**: [<code>getReputationInfoByAddress</code>](#BaseEvernodeClient+getReputationInfoByAddress)  
+**Returns**: Reputation info object.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| hostsAddress | <code>string</code> | Host address. |
+
+<a name="GovernorClient"></a>
+
+## GovernorClient ⇐ [<code>BaseEvernodeClient</code>](#BaseEvernodeClient)
+GovernorClient is responsible for managing governor operations in Evernode.
+It interacts with the XRP Ledger using the governor address and listens for specific governor events.
+
+**Kind**: global class  
+**Extends**: [<code>BaseEvernodeClient</code>](#BaseEvernodeClient)  
+
+* [GovernorClient](#GovernorClient) ⇐ [<code>BaseEvernodeClient</code>](#BaseEvernodeClient)
+    * [.on(event, handler)](#BaseEvernodeClient+on)
+    * [.once(event, handler)](#BaseEvernodeClient+once)
+    * [.off(event, handler)](#BaseEvernodeClient+off)
+    * [.connect()](#BaseEvernodeClient+connect) ⇒
+    * [.disconnect()](#BaseEvernodeClient+disconnect)
+    * [.subscribe()](#BaseEvernodeClient+subscribe)
+    * [.unsubscribe()](#BaseEvernodeClient+unsubscribe)
+    * [.getEVRBalance()](#BaseEvernodeClient+getEVRBalance) ⇒
+    * [.getHookStates()](#BaseEvernodeClient+getHookStates) ⇒
+    * [.getMoment(index)](#BaseEvernodeClient+getMoment) ⇒
+    * [.getMomentStartIndex(index)](#BaseEvernodeClient+getMomentStartIndex) ⇒
+    * [.refreshConfig()](#BaseEvernodeClient+refreshConfig)
+    * [.extractEvernodeEvent(tx)](#BaseEvernodeClient+extractEvernodeEvent) ⇒
+    * [.getHostInfo(hostAddress)](#BaseEvernodeClient+getHostInfo) ⇒
+    * [.getAllHostsFromLedger()](#BaseEvernodeClient+getAllHostsFromLedger) ⇒
+    * [.getAllCandidatesFromLedger()](#BaseEvernodeClient+getAllCandidatesFromLedger) ⇒
+    * [.pruneDeadHost(hostAddress)](#BaseEvernodeClient+pruneDeadHost)
+    * [.getCandidateByOwner(ownerAddress)](#BaseEvernodeClient+getCandidateByOwner) ⇒
+    * [.getDudHostCandidatesByOwner(ownerAddress)](#BaseEvernodeClient+getDudHostCandidatesByOwner) ⇒
+    * [.getCandidateById(candidateId)](#BaseEvernodeClient+getCandidateById) ⇒
+    * [.getDudHostVoteInfo(hostAddress)](#BaseEvernodeClient+getDudHostVoteInfo) ⇒
+    * [.getPilotedModeVoteInfo()](#BaseEvernodeClient+getPilotedModeVoteInfo) ⇒
+    * [.getReputationAddressByOrderedId(orderedId, moment)](#BaseEvernodeClient+getReputationAddressByOrderedId) ⇒
+    * [.getReputationOrderByAddress(hostAddress, moment)](#BaseEvernodeClient+getReputationOrderByAddress) ⇒
+    * [.getReputationContractInfoByAddress(hostsAddress, moment)](#BaseEvernodeClient+getReputationContractInfoByAddress) ⇒
+    * [.getReputationInfoByAddress(hostsAddress)](#BaseEvernodeClient+getReputationInfoByAddress) ⇒
+
+<a name="BaseEvernodeClient+on"></a>
+
+### governorClient.on(event, handler)
+Listens to the subscribed events. This will listen for the event without detaching the handler until it's 'off'.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>on</code>](#BaseEvernodeClient+on)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| event | <code>string</code> | The name of the event to listen for. |
+| handler | <code>function</code> | The callback function to handle the event. The function takes the event object as a parameter. |
+
+<a name="BaseEvernodeClient+once"></a>
+
+### governorClient.once(event, handler)
+Listens to the subscribed events. This will listen only once and detach the handler.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>once</code>](#BaseEvernodeClient+once)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| event | <code>string</code> | Event name. |
+| handler | <code>function</code> | Callback function to handle the event. |
+
+<a name="BaseEvernodeClient+off"></a>
+
+### governorClient.off(event, handler)
+Detach the listener event.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>off</code>](#BaseEvernodeClient+off)  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| event | <code>string</code> |  | Event name. |
+| handler | <code>function</code> | <code></code> | (optional) Can be sent if a specific handler need to be detached. All the handlers will be detached if not specified. |
+
+<a name="BaseEvernodeClient+connect"></a>
+
+### governorClient.connect() ⇒
+Connects the client to xrpl server and do the config loading and subscriptions. 'subscribe' is called inside this.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>connect</code>](#BaseEvernodeClient+connect)  
+**Returns**: Boolean value `true` if the connection is successful.  
+<a name="BaseEvernodeClient+disconnect"></a>
+
+### governorClient.disconnect()
+Disconnects the client to xrpl server and do the un-subscriptions. 'unsubscribe' is called inside this.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>disconnect</code>](#BaseEvernodeClient+disconnect)  
+<a name="BaseEvernodeClient+subscribe"></a>
+
+### governorClient.subscribe()
+Subscribes to the client events.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>subscribe</code>](#BaseEvernodeClient+subscribe)  
+<a name="BaseEvernodeClient+unsubscribe"></a>
+
+### governorClient.unsubscribe()
+Unsubscribes from the client events.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>unsubscribe</code>](#BaseEvernodeClient+unsubscribe)  
+<a name="BaseEvernodeClient+getEVRBalance"></a>
+
+### governorClient.getEVRBalance() ⇒
+Get the EVR balance in the account.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>getEVRBalance</code>](#BaseEvernodeClient+getEVRBalance)  
+**Returns**: The available EVR amount as a string.  
+<a name="BaseEvernodeClient+getHookStates"></a>
+
+### governorClient.getHookStates() ⇒
+Get all XRPL hook states in the registry account.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>getHookStates</code>](#BaseEvernodeClient+getHookStates)  
+**Returns**: The list of hook states, including Evernode configuration and hosts.  
+<a name="BaseEvernodeClient+getMoment"></a>
+
+### governorClient.getMoment(index) ⇒
+Get the moment from the given index (timestamp).
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>getMoment</code>](#BaseEvernodeClient+getMoment)  
+**Returns**: The moment of the given index (timestamp) as a number. Returns the current moment if the timestamp is not provided.  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| index | <code>number</code> | <code></code> | [Optional] Index (timestamp) to get the moment value. |
+
+<a name="BaseEvernodeClient+getMomentStartIndex"></a>
+
+### governorClient.getMomentStartIndex(index) ⇒
+Get start index (timestamp) of the moment.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>getMomentStartIndex</code>](#BaseEvernodeClient+getMomentStartIndex)  
+**Returns**: The index (timestamp) of the moment as a 'number'. Returns the current moment's start index (timestamp) if ledger index parameter is not given.  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| index | <code>number</code> | <code></code> | [Optional] Index (timestamp) to get the moment start index. |
+
+<a name="BaseEvernodeClient+refreshConfig"></a>
+
+### governorClient.refreshConfig()
+Loads the configs from XRPL hook and updates the in-memory config.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>refreshConfig</code>](#BaseEvernodeClient+refreshConfig)  
+<a name="BaseEvernodeClient+extractEvernodeEvent"></a>
+
+### governorClient.extractEvernodeEvent(tx) ⇒
+Extracts the transaction info from a given transaction.
+Note: You need to deserialize HookParameters before passing the transaction to this function.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>extractEvernodeEvent</code>](#BaseEvernodeClient+extractEvernodeEvent)  
+**Returns**: The event object in format `{name: string, data: Object}`. Returns `null` if the event is not handled.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| tx | <code>object</code> | The transaction object to be deserialized and extracted. |
+
+<a name="BaseEvernodeClient+getHostInfo"></a>
+
+### governorClient.getHostInfo(hostAddress) ⇒
+Get the registered host information.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>getHostInfo</code>](#BaseEvernodeClient+getHostInfo)  
+**Returns**: The registered host information object. Returns null if not registered.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| hostAddress | <code>string</code> | [Optional] Address of the host. |
+
+<a name="BaseEvernodeClient+getAllHostsFromLedger"></a>
+
+### governorClient.getAllHostsFromLedger() ⇒
+Get the hosts registered in Evernode.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>getAllHostsFromLedger</code>](#BaseEvernodeClient+getAllHostsFromLedger)  
+**Returns**: The list of hosts.  
+<a name="BaseEvernodeClient+getAllCandidatesFromLedger"></a>
+
+### governorClient.getAllCandidatesFromLedger() ⇒
+Get the governor in Evernode.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>getAllCandidatesFromLedger</code>](#BaseEvernodeClient+getAllCandidatesFromLedger)  
+**Returns**: The list of candidates.  
+<a name="BaseEvernodeClient+pruneDeadHost"></a>
+
+### governorClient.pruneDeadHost(hostAddress)
+Remove a host which is inactive for a long period. The inactivity is checked by Evernode it self and only pruned if inactive thresholds are met.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>pruneDeadHost</code>](#BaseEvernodeClient+pruneDeadHost)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| hostAddress | <code>string</code> | XRPL address of the host to be pruned. |
+
+<a name="BaseEvernodeClient+getCandidateByOwner"></a>
+
+### governorClient.getCandidateByOwner(ownerAddress) ⇒
+Get proposed new hook candidate info.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>getCandidateByOwner</code>](#BaseEvernodeClient+getCandidateByOwner)  
+**Returns**: The candidate information. Returns null if no candidate.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ownerAddress | <code>string</code> | [Optional] Address of the owner. |
+
+<a name="BaseEvernodeClient+getDudHostCandidatesByOwner"></a>
+
+### governorClient.getDudHostCandidatesByOwner(ownerAddress) ⇒
+Get proposed dud host candidates.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>getDudHostCandidatesByOwner</code>](#BaseEvernodeClient+getDudHostCandidatesByOwner)  
+**Returns**: An array of candidate information. Returns empty array if no candidates.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ownerAddress | <code>string</code> | | Address of the owner |
+
+<a name="BaseEvernodeClient+getCandidateById"></a>
+
+### governorClient.getCandidateById(candidateId) ⇒
+Get candidate info.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>getCandidateById</code>](#BaseEvernodeClient+getCandidateById)  
+**Returns**: The candidate information. Returns null if no candidate.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| candidateId | <code>string</code> | Id of the candidate. |
+
+<a name="BaseEvernodeClient+getDudHostVoteInfo"></a>
+
+### governorClient.getDudHostVoteInfo(hostAddress) ⇒
+Get reported dud host info.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>getDudHostVoteInfo</code>](#BaseEvernodeClient+getDudHostVoteInfo)  
+**Returns**: The dud host candidate information. Returns null if no candidate.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| hostAddress | <code>string</code> | [Optional] Address of the dud host. |
+
+<a name="BaseEvernodeClient+getPilotedModeVoteInfo"></a>
+
+### governorClient.getPilotedModeVoteInfo() ⇒
+Get piloted mode vote info.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>getPilotedModeVoteInfo</code>](#BaseEvernodeClient+getPilotedModeVoteInfo)  
+**Returns**: The piloted mode candidate information. Returns null if no candidate.  
+<a name="BaseEvernodeClient+getReputationAddressByOrderedId"></a>
+
+### governorClient.getReputationAddressByOrderedId(orderedId, moment) ⇒
+Get reputation order info of given orderedId.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>getReputationAddressByOrderedId</code>](#BaseEvernodeClient+getReputationAddressByOrderedId)  
+**Returns**: Reputation address info object.  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| orderedId | <code>number</code> |  | Order id of the host. |
+| moment | <code>number</code> | <code></code> | (optional) Moment to get reputation info for. |
+
+<a name="BaseEvernodeClient+getReputationOrderByAddress"></a>
+
+### governorClient.getReputationOrderByAddress(hostAddress, moment) ⇒
+Get reputation order info of given host.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>getReputationOrderByAddress</code>](#BaseEvernodeClient+getReputationOrderByAddress)  
+**Returns**: Reputation order info object.  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| hostAddress | <code>string</code> |  | (optional) Host address. |
+| moment | <code>number</code> | <code></code> | (optional) Moment to get reputation info for. |
+
+<a name="BaseEvernodeClient+getReputationContractInfoByAddress"></a>
+
+### governorClient.getReputationContractInfoByAddress(hostsAddress, moment) ⇒
+Get reputation contract info of given host.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
+**Overrides**: [<code>getReputationContractInfoByAddress</code>](#BaseEvernodeClient+getReputationContractInfoByAddress)  
+**Returns**: Reputation contract info object.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| hostsAddress | <code>string</code> | Host address. |
+| moment | <code>number</code> | (optional) Moment to get reputation contract info for. |
+
+<a name="BaseEvernodeClient+getReputationInfoByAddress"></a>
+
+### governorClient.getReputationInfoByAddress(hostsAddress) ⇒
+Get reputation info of given host.
+
+**Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
 **Overrides**: [<code>getReputationInfoByAddress</code>](#BaseEvernodeClient+getReputationInfoByAddress)  
 **Returns**: Reputation info object.  
 
