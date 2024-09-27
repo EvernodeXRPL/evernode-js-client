@@ -1,8 +1,16 @@
 const { MemoFormats, HookParamKeys } = require('./evernode-common');
 
+/**
+ * Provides various utility functions for working with Xahau Transactions.
+ */
 class TransactionHelper {
 
-    // Convert memos from our object type to xrpl lib object type.
+    /**
+     * Converts an array of memos from the internal format to the XRPL library format.
+     * 
+     * @param {Array<Object>} memos - An array of memo objects in the internal format.
+     * @returns {Array<Object>} An array of memo objects in the XRPL library format.
+     */
     static formatMemos(memos) {
         return memos ? memos.filter(m => m.type).map(m => {
             const data = (m.format === MemoFormats.HEX) ? m.data :
@@ -17,7 +25,12 @@ class TransactionHelper {
         }) : [];
     }
 
-    // Convert memos from xrpl lib object type to our object type.
+    /**
+     * Converts an array of memos from the XRPL library format to the internal format.
+     * 
+     * @param {Array<Object>} memos - An array of memo objects in the XRPL library format.
+     * @returns {Array<Object>} An array of memo objects in the internal format.
+     */
     static deserializeMemos(memos) {
         if (!memos)
             return [];
@@ -34,7 +47,12 @@ class TransactionHelper {
         })
     }
 
-    // Convert hook params from our object type to xrpl lib object type.
+    /**
+     * Converts an array of hook parameters from the internal format to the XRPL library format.
+     * 
+     * @param {Array<Object>} params - An array of hook parameter objects in the internal format.
+     * @returns {Array<Object>} An array of hook parameter objects in the XRPL library format.
+     */
     static formatHookParams(params) {
         return params ? params.filter(m => m.name).map(m => {
             return {
@@ -48,7 +66,12 @@ class TransactionHelper {
         }) : [];
     }
 
-    // Convert hook params from xrpl lib object type to our object type.
+    /**
+     * Converts an array of hook parameters from the XRPL library format to the internal format.
+     * 
+     * @param {Array<Object>} params - An array of hook parameter objects in the XRPL library format.
+     * @returns {Array<Object>} An array of hook parameter objects in the internal format.
+     */
     static deserializeHookParams(params) {
         if (!params)
             return [];
@@ -63,6 +86,12 @@ class TransactionHelper {
         })
     }
 
+    /**
+     * Converts a hexadecimal string to an ASCII string.
+     * 
+     * @param {string} hex - The hexadecimal string to be converted.
+     * @returns {string} The resulting ASCII string.
+     */
     static hexToASCII(hex) {
         if (!hex)
             return "";
@@ -70,6 +99,12 @@ class TransactionHelper {
         return Buffer.from(hex, 'hex').toString();
     }
 
+    /**
+     * Converts an ASCII string to a hexadecimal string.
+     * 
+     * @param {string} str - The ASCII string to be converted.
+     * @returns {string} The resulting hexadecimal string.
+     */
     static asciiToHex(str) {
         if (!str)
             return "";

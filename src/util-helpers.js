@@ -5,9 +5,17 @@ const { EvernodeConstants } = require('./evernode-common');
 const { TransactionHelper } = require('./transaction-helper');
 const { EvernodeHelpers } = require('./evernode-helpers');
 
-// Utility helper functions.
+/**
+ * Provides utility helper functions for various operations.
+ */
 class UtilHelpers {
 
+    /**
+     * Decodes a lease token URI into its integrant parts.
+     * 
+     * @param {string} hexUri - The lease token URI in hexadecimal format.
+     * @returns {Object} An object containing the decoded lease token URI's version, leaseIndex, halfTos, leaseAmount, identifier, and outboundIP
+     */
     static decodeLeaseTokenUri(hexUri) {
         // Get the lease index from the token's URI.
         // <prefix><version>lease index 16)><half of tos hash><lease amount (int64)><identifier (uint32)><(ip numeric array)>
@@ -45,6 +53,12 @@ class UtilHelpers {
         }
     }
 
+    /**
+     * Gets the current Unix time.
+     * 
+     * @param {string} [format="sec"] - The format of the time. If "sec", returns the time in seconds; otherwise, returns the time in milliseconds.
+     * @returns {number} The current Unix time in the specified format.
+     */
     static getCurrentUnixTime(format = "sec") {
         const time = Date.now();
         switch (format) {
@@ -55,10 +69,22 @@ class UtilHelpers {
         }
     }
 
+    /**
+     * Derives a keypair from a given secret.
+     * 
+     * @param {string} secret - The secret used to derive the keypair.
+     * @returns {Object} An object containing the derived keypair.
+     */
     static deriveKeypair(secret) {
         return kp.deriveKeypair(secret);
     }
 
+    /**
+     * Derives an address from a given public key.
+     * 
+     * @param {string} publicKey - The public key used to derive the address.
+     * @returns {string} The derived address.
+     */
     static deriveAddress(publicKey) {
         return kp.deriveAddress(publicKey);
     }

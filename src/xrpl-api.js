@@ -25,6 +25,9 @@ const NETWORK_MODES = {
 const FUNCTIONING_SERVER_STATES = ['full', 'validating', 'proposing']
 const LEDGER_DESYNC_TIME = 20000
 
+/**
+ * Class representing an XRPL API client.
+ */
 class XrplApi {
 
     #primaryServer;
@@ -40,6 +43,13 @@ class XrplApi {
     #xrplClientOptions;
     #autoReconnect;
 
+    /**
+     * @param {string|null} rippledServer - The URL of the primary rippled server or null if not used.
+     * @param {Object} [options={}] - Optional configuration options.
+     * @param {Array<string>} [options.fallbackRippledServers=[]] - List of fallback server URLs.
+     * @param {Object} [options.xrplClientOptions={}] - Options for the xrpl client.
+     * @param {boolean} [options.autoReconnect=true] - Whether to automatically reconnect.
+     */
     constructor(rippledServer = null, options = {}) {
         if (rippledServer == '-') {
             this.#primaryServer = null;
@@ -389,14 +399,29 @@ class XrplApi {
         }
     }
 
+    /**
+     * Adds an event listener for a specified event.
+     * @param {string} event - The event to listen for.
+     * @param {Function} handler - The function to call when the event occurs.
+     */
     on(event, handler) {
         this.#events.on(event, handler);
     }
 
+    /**
+     * Adds a one-time event listener for a specified event.
+     * @param {string} event - The event to listen for.
+     * @param {Function} handler - The function to call when the event occurs.
+     */
     once(event, handler) {
         this.#events.once(event, handler);
     }
 
+    /**
+     * Removes an event listener for a specified event.
+     * @param {string} event - The event to stop listening for.
+     * @param {Function} [handler=null] - The function to remove or null to remove all handlers.
+     */
     off(event, handler = null) {
         this.#events.off(event, handler);
     }
@@ -408,6 +433,10 @@ class XrplApi {
         return true;
     }
 
+    /**
+     * Connects to the XRPL API.
+     * @returns {Promise<void>}
+     */
     async connect() {
         this.#isPermanentlyDisconnected = false;
 
@@ -418,6 +447,10 @@ class XrplApi {
         this.xrplHelper = new XrplHelpers(definitions.result);
     }
 
+    /**
+     * Disconnects from the XRPL API.
+     * @returns {Promise<void>}
+     */
     async disconnect() {
         await this.#acquireConnection();
 
@@ -449,6 +482,12 @@ class XrplApi {
         }
     }
 
+    /**
+     * Checks if the given public key is valid for the specified address.
+     * @param {string} publicKey - The public key to check.
+     * @param {string} address - The address to check against.
+     * @returns {Promise<boolean>} Returns true if the public key is valid for the address.
+     */
     async isValidKeyForAddress(publicKey, address) {
         const info = await this.getAccountInfo(address);
         const accountFlags = xrpl.parseAccountRootFlags(info.Flags);
@@ -463,6 +502,11 @@ class XrplApi {
             return derivedPubKeyAddress === address || (regularKey && derivedPubKeyAddress === regularKey);
     }
 
+    /**
+     * Checks if an account exists at the specified address.
+     * @param {string} address - The account address.
+     * @returns {Promise<boolean>} Returns true if the account exists.
+     */
     async isAccountExists(address) {
         try {
             await this.#handleClientRequest({ command: 'account_info', account: address });
@@ -474,64 +518,143 @@ class XrplApi {
         }
     }
 
+    /**
+     * Gets the server state at the specified ledger index.
+     * @param {string} [ledgerIdx="current"] - The ledger index to get the state for.
+     * @returns {Promise<string>} The server state.
+     */
     async getServerState(ledgerIdx = "current") {
         const resp = (await this.#handleClientRequest({ command: 'server_state', ledger_index: ledgerIdx }));
         return resp?.result?.state?.server_state;
     }
 
+    /**
+     * Gets account information for a specified address.
+     * @param {string} address - The account address.
+     * @returns {Promise<Object>} The account information.
+     */
     async getAccountInfo(address) {
         const resp = (await this.#handleClientRequest({ command: 'account_info', account: address }));
         return resp?.result?.account_data;
     }
 
+    /**
+     * Gets the server definitions.
+     * @returns {Promise<Object>} The server definitions.
+     */
     async getServerDefinition() {
         const resp = (await this.#handleClientRequest({ command: 'server_definitions' }));
         return resp?.result;
     }
 
+    /**
+     * Gets information about the server.
+     * @returns {Promise<Object>} The server information.
+     */
     async getServerInfo() {
         const resp = (await this.#handleClientRequest({ command: 'server_info' }));
         return resp?.result;
     }
 
+    /**
+     * Gets account objects for a specified address.
+     * @param {string} address - The account address.
+     * @param {Object} [options={}] - Optional parameters for the request.
+     * @returns {Promise<Array<Object>>} The account objects.
+     */
     async getAccountObjects(address, options) {
         return this.#requestWithPaging({ command: 'account_objects', account: address, ...options }, API_REQ_TYPE.ACCOUNT_OBJECTS);
     }
 
+    /**
+     * Gets namespace entries for a specified address and namespace ID.
+     * @param {string} address - The account address.
+     * @param {string} namespaceId - The namespace ID.
+     * @param {Object} [options={}] - Optional parameters for the request.
+     * @returns {Promise<Array<Object>>} The namespace entries.
+     */
     async getNamespaceEntries(address, namespaceId, options) {
         return this.#requestWithPaging({ command: 'account_namespace', account: address, namespace_id: namespaceId, ...options }, API_REQ_TYPE.NAMESPACE_ENTRIES);
     }
 
+    /**
+     * Gets NFT offers for a specified address.
+     * @param {string} address - The account address.
+     * @param {Object} [options={}] - Optional parameters for the request.
+     * @returns {Promise<Array<Object>>} The NFT offers.
+     */
     async getNftOffers(address, options) {
         const offers = await this.getAccountObjects(address, options);
         // TODO: Pass rippled filter parameter when xrpl.js supports it.
         return offers.filter(o => o.LedgerEntryType == 'NFTokenOffer');
     }
 
+    /**
+     * Gets trustlines for a specified address.
+     * @param {string} address - The account address.
+     * @param {Object} [options={}] - Optional parameters for the request.
+     * @returns {Promise<Array<Object>>} The trustlines.
+     */
     async getTrustlines(address, options) {
         return this.#requestWithPaging({ command: 'account_lines', account: address, ledger_index: "validated", ...options }, API_REQ_TYPE.LINES);
     }
 
+    /**
+     * Gets account transactions for a specified address.
+     * @param {string} address - The account address.
+     * @param {Object} [options={}] - Optional parameters for the request.
+     * @returns {Promise<Array<Object>>} The account transactions.
+     */
     async getAccountTrx(address, options) {
         return this.#requestWithPaging({ command: 'account_tx', account: address, ...options }, API_REQ_TYPE.TRANSACTIONS);
     }
 
+    /**
+     * Gets NFTs for a specified address.
+     * @param {string} address - The account address.
+     * @param {Object} [options={}] - Optional parameters for the request.
+     * @returns {Promise<Array<Object>>} The NFTs.
+     */
     async getNfts(address, options) {
         return this.#requestWithPaging({ command: 'account_nfts', account: address, ledger_index: "validated", ...options }, API_REQ_TYPE.ACCOUNT_NFTS);
     }
 
+    /**
+     * Gets offers for a specified address.
+     * @param {string} address - The account address.
+     * @param {Object} [options={}] - Optional parameters for the request.
+     * @returns {Promise<Array<Object>>} The offers.
+     */
     async getOffers(address, options) {
         return this.#requestWithPaging({ command: 'account_offers', account: address, ledger_index: "validated", ...options }, API_REQ_TYPE.OFFERS);
     }
 
+    /**
+     * Gets sell offers for a specified NFT token ID.
+     * @param {string} nfTokenId - The NFT token ID.
+     * @param {Object} [options={}] - Optional parameters for the request.
+     * @returns {Promise<Array<Object>>} The sell offers.
+     */
     async getSellOffers(nfTokenId, options = {}) {
         return this.#requestWithPaging({ command: 'nft_sell_offers', nft_id: nfTokenId, ledger_index: "validated", ...options }, API_REQ_TYPE.OFFERS);
     }
 
+    /**
+     * Gets buy offers for a specified NFT token ID.
+     * @param {string} nfTokenId - The NFT token ID.
+     * @param {Object} [options={}] - Optional parameters for the request.
+     * @returns {Promise<Array<Object>>} The buy offers.
+     */
     async getBuyOffers(nfTokenId, options = {}) {
         return this.#requestWithPaging({ command: 'nft_buy_offers', nft_id: nfTokenId, ledger_index: "validated", ...options }, API_REQ_TYPE.OFFERS);
     }
 
+    /**
+     * Gets ledger entry by index.
+     * @param {string} index - The ledger index.
+     * @param {Object} [options={}] - Optional parameters for the request.
+     * @returns {Promise<Object|null>} The ledger entry or null if not found.
+     */
     async getLedgerEntry(index, options) {
         try {
             const resp = (await this.#handleClientRequest({ command: 'ledger_entry', index: index, ledger_index: "validated", ...options }));
@@ -544,6 +667,11 @@ class XrplApi {
         }
     }
 
+    /**
+     * Gets the URI token by index.
+     * @param {string} index - The index of the URI token.
+     * @returns {Promise<Object|null>} The URI token entry or null if not found.
+     */
     async getURITokenByIndex(index) {
         const entry = await this.getLedgerEntry(index);
         if (!entry || entry.LedgerEntryType !== 'URIToken')
@@ -551,16 +679,34 @@ class XrplApi {
         return entry;
     }
 
+    /**
+     * Gets transaction information.
+     * @param {string} txnHash - The hash of the transaction.
+     * @param {Object} options - Optional parameters for the request.
+     * @returns {Promise<Object>} The transaction information.
+     */
     async getTxnInfo(txnHash, options) {
         const resp = (await this.#handleClientRequest({ command: 'tx', transaction: txnHash, binary: false, ...options }));
         return resp?.result;
     }
 
+    /**
+     * Subscribes to address updates.
+     * @param {string} address - The address to subscribe to.
+     * @param {Function} handler - The handler function for address updates.
+     * @returns {Promise<void>}
+     */
     async subscribeToAddress(address, handler) {
         this.#addressSubscriptions.push({ address: address, handler: handler });
         await this.#handleClientRequest({ command: 'subscribe', accounts: [address] });
     }
 
+    /**
+     * Unsubscribes from address updates.
+     * @param {string} address - The address to unsubscribe from.
+     * @param {Function} handler - The handler function to remove.
+     * @returns {Promise<void>}
+     */
     async unsubscribeFromAddress(address, handler) {
         for (let i = this.#addressSubscriptions.length - 1; i >= 0; i--) {
             const sub = this.#addressSubscriptions[i];
@@ -570,6 +716,11 @@ class XrplApi {
         await this.#handleClientRequest({ command: 'unsubscribe', accounts: [address] });
     }
 
+    /**
+     * Gets the transaction fee.
+     * @param {string} txBlob - The transaction blob.
+     * @returns {Promise<number>} The transaction fee.
+     */
     async getTransactionFee(txBlob) {
         const fees = await this.#handleClientRequest({ command: 'fee', tx_blob: txBlob });
         return fees?.result?.drops?.base_fee;
@@ -581,7 +732,7 @@ class XrplApi {
 
     /**
      * Get the transaction results if validated.
-     * @param {string} txHash Hash of the transaction to check.
+     * @param {string} txHash - Hash of the transaction to check.
      * @returns Validated results of the transaction.
      */
     async getTransactionValidatedResults(txHash) {
@@ -603,10 +754,10 @@ class XrplApi {
 
     /**
      * Watching to acquire the transaction submission. (Waits until txn. is applied to the ledger.)
-     * @param {string} txHash Transaction Hash
-     * @param {number} lastLedger Last ledger sequence of the transaction.
-     * @param {object} submissionResult Result of the submission.
-     * @returns Returns the applied transaction object.
+     * @param {string} txHash - Transaction Hash
+     * @param {number} lastLedger - Last ledger sequence of the transaction.
+     * @param {object} submissionResult - Result of the submission.
+     * @returns The applied transaction object.
      */
     async #waitForFinalTransactionOutcome(txHash, lastLedger, submissionResult) {
         if (lastLedger == null)
@@ -645,8 +796,8 @@ class XrplApi {
 
     /**
      * Arrange the transaction result to a standard format.
-     * @param {object} tx Submitted Transaction
-     * @param {object} submissionResult Response related to that transaction.
+     * @param {object} tx - Submitted Transaction
+     * @param {object} submissionResult - Response related to that transaction.
      * @returns prepared response of the transaction result.
      */
     async #prepareResponse(tx, submissionResult) {
@@ -673,8 +824,8 @@ class XrplApi {
 
     /**
      * Submit a multi-signature transaction and wait for validation.
-     * @param {object} tx Multi-signed transaction object.
-     * @param {object} submissionRef [Optional] Reference object to take submission references.
+     * @param {object} tx - Multi-signed transaction object.
+     * @param {object} submissionRef - [Optional] Reference object to take submission references.
      * @returns response object of the validated transaction.
      */
     async submitMultisignedAndWait(tx, submissionRef = {}) {
@@ -685,7 +836,7 @@ class XrplApi {
 
     /**
      * Only submit a multi-signature transaction.
-     * @param {object} tx Multi-signed transaction object.
+     * @param {object} tx - Multi-signed transaction object.
      * @returns response object of the submitted transaction.
      */
     async submitMultisigned(tx) {
@@ -695,8 +846,8 @@ class XrplApi {
 
     /**
      * Submit a single-signature transaction.
-     * @param {string} tx_blob Signed transaction object.
-     * @param {object} submissionRef [Optional] Reference object to take submission references.
+     * @param {string} tx_blob - Signed transaction object.
+     * @param {object} submissionRef - [Optional] Reference object to take submission references.
      * @returns response object of the validated transaction.
      */
     async submitAndWait(tx, tx_blob, submissionRef = {}) {
@@ -706,7 +857,7 @@ class XrplApi {
 
     /**
      * Only submit a single-signature transaction.
-     * @param {string} tx_blob Signed transaction object.
+     * @param {string} tx_blob - Signed transaction object.
      * @returns response object of the submitted transaction.
      */
     async submit(tx_blob) {
@@ -714,11 +865,12 @@ class XrplApi {
     }
 
     /**
-     * Join the given the array of signed transactions into one multi-signed transaction.
-     * For more details: https://js.xrpl.org/functions/multisign.html 
+     * Joins the given array of signed transactions into one multi-signed transaction.
+     * For more details: https://js.xrpl.org/functions/multisign.html
      * 
-     * @param {(string | Transaction)[]} transactions An array of signed Transactions (in object or blob form) to combine into a single signed Transaction.
-     * @returns A single signed Transaction string which has all Signers from transactions within it.
+     * @param {Array<string|object>} transactions - An array of signed transactions, either as serialized strings or transaction objects, to combine into a single multi-signed transaction.
+     * @returns {string} A single multi-signed transaction in string format that contains all signers from the input transactions.
+     * @throws {Error} If the transactions array is empty.
      */
     multiSign(transactions) {
         if (transactions.length > 0) {

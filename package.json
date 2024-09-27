@@ -11,7 +11,9 @@
     "lint": "./node_modules/.bin/eslint src/**/*.js",
     "build": "npm run lint && ncc build src/index.js -e elliptic -e xrpl -e ripple-address-codec -e ripple-binary-codec -e ripple-keypairs -o dist/ && cp evernode-license.pdf dist/",
     "bundle": "npm run build && ./clean-pkg.sh",
-    "publish": "npm run bundle && cp npm-readme.md dist/README.md && npm publish ./dist"
+    "publish": "npm run bundle && cp npm-readme.md dist/README.md && npm publish ./dist",
+    "docs-init": "node docs/init-docs.js",
+    "docs": "echo '# Evernode JS API Documentation' > docs/evernode-js-api.md && xargs jsdoc2md < docs/filelist >> docs/evernode-js-api.md"
   },
   "dependencies": {
     "elliptic": "6.5.4",
@@ -23,6 +25,7 @@
     "xrpl-accountlib": "3.2.9"
   },
   "devDependencies": {
-    "eslint": "8.3.0"
+    "eslint": "8.3.0",
+    "jsdoc-to-markdown": "9.0.1"
   }
 }

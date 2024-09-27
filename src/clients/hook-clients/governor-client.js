@@ -16,6 +16,12 @@ const GovernorEvents = {
     LinkedDudHostCandidateRemoved: EvernodeEvents.LinkedDudHostCandidateRemoved
 }
 
+/**
+ * GovernorClient is responsible for managing governor operations in Evernode.
+ * It interacts with the XRP Ledger using the governor address and listens for specific governor events.
+ * 
+ * @extends BaseEvernodeClient
+ */
 class GovernorClient extends BaseEvernodeClient {
     constructor(options = {}) {
         super((options.governorAddress || Defaults.values.governorAddress), null, Object.values(GovernorEvents), false, options);

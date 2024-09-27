@@ -4,11 +4,17 @@ const { GovernorClient } = require("./governor-client");
 const { HeartbeatClient } = require("./heartbeat-client");
 const { ReputationClient } = require("./reputation-client");
 
+/**
+ * A factory class for creating different types of hook clients based on the provided hook type.
+ * @class
+ */
 class HookClientFactory {
     /**
      * Creates a hook client from given type.
-     * @param {string} hookType Type of the Required Hook. (Supported Hook types 'GOVERNOR', 'REGISTRY' and 'HEARTBEAT')
-     * @returns Instance of requested HookClient type.
+     * @param {string} hookType Type of the Required Hook. (Supported Hook types 'GOVERNOR', 'REGISTRY', 'HEARTBEAT' and 'REPUTATION')
+     * @param {Object} [options={}] - Optional configuration for the hook client.
+     * @returns {Promise<Object|null>} - Returns a promise that resolves to an instance of the requested HookClient type, or `null` if the type is unsupported.
+     * @throws {Error} Will throw an error if there is an issue connecting to the GovernorClient or obtaining the necessary configuration.
      */
     static async create(hookType, options = {}) {
         let governorClient;

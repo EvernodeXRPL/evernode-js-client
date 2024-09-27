@@ -56,6 +56,9 @@ class secp256k1 {
     }
 }
 
+/**
+ * EncryptionHelper class is responsible for encrypt and decrypt functions for messages.
+ */
 class EncryptionHelper {
     static contentFormat = 'base64';
     static keyFormat = 'hex';
@@ -74,6 +77,13 @@ class EncryptionHelper {
         return format === this.secp256k1KeyType ? secp256k1 : ed25519;
     }
 
+    /**
+     * Encrypts a message using the given public key.
+     * @param {string} publicKey - The public key to use for encryption.
+     * @param {Object} message - The message object to be encrypted.
+     * @param {Object} [options={}] - Optional encryption parameters.
+     * @returns {Promise<string|null>} A promise that resolves to the encrypted message in base64 format, or null if encryption fails.
+     */
     static async encrypt(publicKey, message, options = {}) {
         const publicKeyBuf = Buffer.from(publicKey, this.keyFormat);
         const messageBuf = Buffer.from(JSON.stringify(message));
@@ -82,6 +92,12 @@ class EncryptionHelper {
         return result ? result.toString(this.contentFormat) : null;
     }
 
+    /**
+     * Decrypts an encrypted message using the given private key.
+     * @param {string} privateKey - The private key to use for decryption.
+     * @param {string} encrypted - The encrypted message string.
+     * @returns {Promise<Object|null>} A promise that resolves to the decrypted message as an object, or null if decryption fails.
+     */
     static async decrypt(privateKey, encrypted) {
         const privateKeyBuf = Buffer.from(privateKey, this.keyFormat);
         const encryptedBuf = Buffer.from(encrypted, this.contentFormat);

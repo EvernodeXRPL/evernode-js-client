@@ -30,6 +30,19 @@ const REPUTATION_VALUE_PARAM_OFFSET = 20;
 // By reputation address <host_address(20)><token_id(32)><error(1)>
 const HOST_DEREG_FROM_REP_PARAM_SIZE = 53;
 
+/**
+ * Creates an instance of BaseEvernodeClient.
+ * @param {string} xrpAddress - The XRP address associated with the client.
+ * @param {string} xrpSecret - The XRP secret associated with the client.
+ * @param {Array<string>} watchEvents - An array of event names to watch.
+ * @param {boolean} [autoSubscribe=false] - Whether to automatically subscribe to events.
+ * @param {Object} [options={}] - Optional configuration options.
+ * @param {string} [options.governorAddress] - The governor address. Defaults to a predefined value if not provided.
+ * @param {XrplApi} [options.xrplApi] - An instance of XrplApi. If not provided, a new instance will be created.
+ * @param {string} [options.rippledServer] - The URL of the rippled server to use if a new XrplApi instance is created.
+ * @param {Object} [options.config] - Optional configuration settings.
+ * @param {string} [options.messagePrivateKey] - The private key for message encryption, if required.
+ */
 class BaseEvernodeClient {
 
     #watchEvents;
@@ -64,8 +77,8 @@ class BaseEvernodeClient {
 
     /**
      * Listens to the subscribed events. This will listen for the event without detaching the handler until it's 'off'.
-     * @param {string} event Event name.
-     * @param {function(event)} handler Callback function to handle the event.
+     * @param {string} event - The name of the event to listen for.
+     * @param {function} handler - The callback function to handle the event. The function takes the event object as a parameter.
      */
     on(event, handler) {
         this.events.on(event, handler);
@@ -91,7 +104,7 @@ class BaseEvernodeClient {
 
     /**
      * Connects the client to xrpl server and do the config loading and subscriptions. 'subscribe' is called inside this.
-     * @returns boolean value, 'true' if success.
+     * @returns Boolean value `true` if the connection is successful.
      */
     async connect(options = {}) {
         if (this.connected)
@@ -140,7 +153,7 @@ class BaseEvernodeClient {
 
     /**
      * Get the EVR balance in the account.
-     * @returns The available EVR amount as a 'string'.
+     * @returns The available EVR amount as a string.
      */
     async getEVRBalance() {
         const lines = await this.xrplAcc.getTrustLines(EvernodeConstants.EVR, this.config.evrIssuerAddress);
@@ -152,7 +165,7 @@ class BaseEvernodeClient {
 
     /**
      * Get all XRPL hook states in the registry account.
-     * @returns The list of hook states including Evernode configuration and hosts.
+     * @returns The list of hook states, including Evernode configuration and hosts.
      */
     async getHookStates() {
         const regAcc = new XrplAccount(this.governorAddress, null, { xrplApi: this.xrplApi });
@@ -166,7 +179,7 @@ class BaseEvernodeClient {
     /**
      * Get the moment from the given index (timestamp).
      * @param {number} index [Optional] Index (timestamp) to get the moment value.
-     * @returns The moment of the given index (timestamp) as 'number'. Returns current moment if index (timestamp) is not given.
+     * @returns The moment of the given index (timestamp) as a number. Returns the current moment if the timestamp is not provided.
      */
     async getMoment(index = null) {
         const i = index || UtilHelpers.getCurrentUnixTime();
@@ -191,7 +204,7 @@ class BaseEvernodeClient {
 
     /**
      * Get Evernode configuration
-     * @returns An object with all the configuration and their values.
+     * @returns An object containing all the configuration keys and their corresponding values.
      */
     async #getEvernodeConfig() {
         const configStateKeys = {
@@ -257,9 +270,10 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Extracts the transaction info from a given transaction..
-     * @param {object} tx Transaction to be deserialized and extracted.
-     * @returns The event object in the format {name: '', data: {}}. Returns null if not handled. Note: You need to deserialize HookParameters before passing the transaction to this function.
+     * Extracts the transaction info from a given transaction.
+     * Note: You need to deserialize HookParameters before passing the transaction to this function.
+     * @param {object} tx - The transaction object to be deserialized and extracted.
+     * @returns {} The event object in format `{name: string, data: Object}`. Returns `null` if the event is not handled. 
      */
     async extractEvernodeEvent(tx) {
         let eventType;
@@ -1070,6 +1084,7 @@ class BaseEvernodeClient {
      * @param {string} shortName Short name for the proposal candidate.
      * @param {*} options [Optional] transaction options.
      * @returns Proposed candidate id.
+     * @ignore
      */
     async _propose(hashes, shortName, options = {}) {
         const hashesBuf = Buffer.from(hashes, 'hex');
@@ -1120,6 +1135,7 @@ class BaseEvernodeClient {
      * @param {string} candidateId Id of the candidate in hex format.
      * @param {*} options [Optional] transaction options.
      * @returns Transaction result.
+     * @ignore
      */
     async _withdraw(candidateId, options = {}) {
         const candidateIdBuf = Buffer.from(candidateId, 'hex');
@@ -1142,6 +1158,7 @@ class BaseEvernodeClient {
      * @param {string} hostAddress Address of the dud host.
      * @param {*} options [Optional] transaction options.
      * @returns Transaction result.
+     * @ignore
      */
     async _reportDudHost(hostAddress, options = {}) {
         const candidateId = StateHelpers.getDudHostCandidateId(hostAddress);
