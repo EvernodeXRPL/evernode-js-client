@@ -10,6 +10,13 @@ const { XrplConstants } = require('../xrpl-common');
 
 const DEFAULT_WAIT_TIMEOUT = 300000;
 
+/**
+ * Following tenant-specific events can be subscribed from Evernode client instances.
+ * @property {string} AcquireSuccess - Triggered when the tenant receives an acquire success response.
+ * @property {string} AcquireError - Triggered when the tenant receives an acquire error response.
+ * @property {string} ExtendSuccess - Triggered when the tenant receives an extend success response.
+ * @property {string} ExtendError - Triggered when the tenant receives an extend error response.
+ */
 const TenantEvents = {
     AcquireSuccess: EvernodeEvents.AcquireSuccess,
     AcquireError: EvernodeEvents.AcquireError,
@@ -26,9 +33,16 @@ class TenantClient extends BaseEvernodeClient {
 
     /**
      * Creates an instance of TenantClient.
-     * @param {string} xrpAddress - The XRP address to associate with this client.
-     * @param {string} xrpSecret - The secret (private key) associated with the XRP address.
-     * @param {Object} [options={}] - Additional configuration options for the TenantClient.
+     * @param {string} xrpAddress - Xahau wallet address of the tenant.
+     * @param {string} xrpSecret - Secret key of the tenant's Xahau wallet.
+     * @param {Object} [options={}] - (Optional) A JSON object of options that can include the following properties.
+     * @param {string} [options.governorAddress] - (Optional) The Governor Hook Account Xahau address.
+     * @param {string} [options.rippledServer] - (Optional) The Rippled server URL.
+     * @example
+     * const client = new TenantClient("rKfHBc8e1VemZPLZoPXB7HjSKU2QjkRfP", "sszyYJ79AdUUF6dR7QfD9ARWfVuz3", {
+     *     governorAddress: "rGVHr1PrfL93UAjyw3DWZoi9adz2sLp2yL",
+     *     rippledServer: "wss://hooks-testnet-v3.xrpl-labs.com"
+     * });
      */
     constructor(xrpAddress, xrpSecret, options = {}) {
         super(xrpAddress, xrpSecret, Object.values(TenantEvents), false, options);
@@ -219,11 +233,70 @@ class TenantClient extends BaseEvernodeClient {
     }
 
     /**
-     * Acquire an instance from a host
-     * @param {string} hostAddress XRPL address of the host to acquire the lease.
-     * @param {object} requirement The instance requirements and configuration.
-     * @param {object} options [Optional] Options for the XRPL transaction.
-     * @returns An object including transaction details,instance info, and acquireReference Id.
+     * Acquires an available instance on a specified host.
+     * @async
+     * @param {string} hostAddress - The wallet address of the host where the HotPocket instance will be created.
+     * @param {Object} requirement - The details necessary for creating the instance.
+     * @param {string} requirement.owner_pubkey - The public key of the tenant.
+     * @param {string} requirement.contract_id - The unique contract identifier.
+     * @param {string} requirement.image - The image used to create the HotPocket instance.
+     * @param {Object} requirement.config - Configuration object for the instance.
+     * @param {Object} [options={}] - Optional configurations for the transaction.
+     * @param {number} [options.timeout=60000] - Timeout for the transaction in milliseconds.
+     * @param {string} [options.leaseOfferIndex] - The index of the preferred lease offer from the host.
+     * @param {Object} [options.transactionOptions] - Options for the URITokenBuy transaction as defined in the Xahau documentation.
+     * 
+     * @returns {Promise<Object>} Resolves with an object containing the transaction details and instance details.
+     * @returns {Object} transaction - Information about the transaction.
+     * @returns {string} transaction.Account - The address of the account initiating the transaction.
+     * @returns {string} transaction.Amount - The amount of currency transferred.
+     * @returns {string} transaction.Destination - The tenant's account address.
+     * @returns {string} transaction.Fee - The fee paid for the transaction, in EVR drops.
+     * @returns {number} transaction.LastLedgerSequence - The latest ledger sequence for the transaction.
+     * @returns {Object[]} transaction.Memos - Array of memo objects.
+     * @returns {string} transaction.hash - The SHA-512 hash of the transaction.
+     * @returns {number} transaction.ledger_index - The ledger index containing the transaction.
+     * @returns {string} transaction.DeliveredAmount - The actual amount delivered to the destination.
+     * 
+     * @returns {Object} instance - Information about the acquired instance.
+     * @returns {string} instance.name - The unique identifier (URITokenID) of the instance.
+     * @returns {string} instance.pubkey - The public key of the instance.
+     * @returns {string} instance.contract_id - The unique contract identifier.
+     * @returns {string} instance.peer_port - The port used for peer communication.
+     * @returns {string} instance.user_port - The port used for user communication.
+     * @returns {string} instance.domain - The public domain of the host server.
+     * 
+     * @returns {string} acquireRefId - The reference ID for the acquisition.
+     * 
+     * @throws {Error} Throws an error if the acquisition fails.
+     * @throws {Object} error - The error object with details about the failure.
+     * @throws {string} error.error - The error code ('ACQUIRE_ERR').
+     * @throws {string} error.reason - The reason for the acquisition failure.
+     * @throws {Object} error.transaction - The transaction details associated with the failed acquisition.
+     * @throws {string} error.transaction.Account - The tenant's account address.
+     * @throws {Object} error.transaction.Amount - The refund details.
+     * @throws {string} error.transaction.Amount.currency - The currency type (e.g., 'EVR').
+     * @throws {string} error.transaction.Amount.issuer - The issuer of the currency.
+     * @throws {string} error.transaction.Amount.value - The value of the refunded amount.
+     * @throws {string} error.transaction.Destination - The tenant's account address.
+     * @throws {string} error.transaction.Fee - The transaction fee.
+     * @throws {Object[]} error.transaction.HookParameters - Contains event name and event data.
+     * @throws {string} error.transaction.HookParameters[].name - The event name (in hex format).
+     * @throws {string} error.transaction.HookParameters[].value - The event data (in hex format).
+     * @throws {string} error.acquireRefId - The reference ID for the failed acquisition request.
+     * 
+     * @example
+     * const result = await tenant.acquireLease(
+     *   "rnET2YR19WDP4vB8XtDhcF2J4afqMM6xim",
+     *   {
+     *     owner_pubkey: "ed5cb83404120ac759609819591ef839b7d222c84f1f08b3012f490586159d2b50",
+     *     contract_id: "dc411912-bcdd-4f73-af43-32ec45844b9a",
+     *     image: "evernodedev/sashimono:hp.latest-ubt.20.04-njs.16",
+     *     config: {}
+     *   },
+     *   { timeout: 10000 }
+     * );
+     * console.log("Tenant received instance:", result);
      */
     acquireLease(hostAddress, requirement, options = {}) {
         return new Promise(async (resolve, reject) => {

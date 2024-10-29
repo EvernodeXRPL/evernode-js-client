@@ -51,6 +51,8 @@ class Defaults {
     /**
      * Override Evernode default configs.
      * @param {object} newDefaults Configurations to override `{ governorAddress: '{string} governor xrpl address', rippledServer: '{string} rippled server url', xrplApi: '{XrplApi} xrpl instance', stateIndexId: '{string} firestore index', networkID: '{number} rippled network id' }`
+     * @returns {void}
+     * @example Defaults.set({governorAddress: 'rGVHr1PrfL93UAjyw3DWZoi9adz2sLp2yL'});
      */
     static set(newDefaults) {
         Object.assign(DefaultValues, newDefaults)
@@ -59,6 +61,7 @@ class Defaults {
     /**
      * Read Evernode default configs.
      * @returns The Object of Evernode configs
+     * @example const defaults = Defaults.values;
      */
     static get values() {
         return { ...DefaultValues };

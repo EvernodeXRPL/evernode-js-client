@@ -11,6 +11,15 @@ const ReputationEvents = {}
  */
 class ReputationClient extends BaseEvernodeClient {
 
+    /**
+     * Creates an instance of ReputationClient.
+     * @param {Object} [options={}] - A JSON object of options for initializing the ReputationClient.
+     * @param {string} options.reputationAddress - The Reputation Hook Account Xahau address.
+     * @example
+     * const reputationClient = new reputationAddress({
+     *     reputationAddress: 'rQUhXd7sopuga3taru3jfvc1BgVbscrb1X',
+     * });
+     */
     constructor(options = {}) {
         super(options.reputationAddress, null, Object.values(ReputationEvents), false, options);
     }

@@ -105,6 +105,7 @@ class BaseEvernodeClient {
     /**
      * Connects the client to xrpl server and do the config loading and subscriptions. 'subscribe' is called inside this.
      * @returns Boolean value `true` if the connection is successful.
+     * @example const status = await client.connect();
      */
     async connect(options = {}) {
         if (this.connected)
@@ -129,6 +130,7 @@ class BaseEvernodeClient {
 
     /**
      * Disconnects the client to xrpl server and do the un-subscriptions. 'unsubscribe' is called inside this.
+     * @example await client.disconnect();
      */
     async disconnect() {
         await this.unsubscribe();

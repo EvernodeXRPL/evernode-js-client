@@ -61,6 +61,26 @@ It extends the BaseEvernodeClient.</p>
 </dd>
 </dl>
 
+## Constants
+
+<dl>
+<dt><a href="#GovernorEvents">GovernorEvents</a></dt>
+<dd><p>Following governor-specific events can be subscribed from Evernode client instances.</p>
+</dd>
+<dt><a href="#HeartbeatEvents">HeartbeatEvents</a></dt>
+<dd><p>Following heartbeat-specific events can be subscribed from Evernode client instances.</p>
+</dd>
+<dt><a href="#RegistryEvents">RegistryEvents</a></dt>
+<dd><p>Following registry-specific events can be subscribed from Evernode client instances.</p>
+</dd>
+<dt><a href="#HostEvents">HostEvents</a></dt>
+<dd><p>Following host-specific events can be subscribed from Evernode client instances.</p>
+</dd>
+<dt><a href="#TenantEvents">TenantEvents</a></dt>
+<dd><p>Following tenant-specific events can be subscribed from Evernode client instances.</p>
+</dd>
+</dl>
+
 <a name="BaseEvernodeClient"></a>
 
 ## BaseEvernodeClient
@@ -157,12 +177,20 @@ Connects the client to xrpl server and do the config loading and subscriptions. 
 
 **Kind**: instance method of [<code>BaseEvernodeClient</code>](#BaseEvernodeClient)  
 **Returns**: Boolean value `true` if the connection is successful.  
+**Example**  
+```js
+const status = await client.connect();
+```
 <a name="BaseEvernodeClient+disconnect"></a>
 
 ### baseEvernodeClient.disconnect()
 Disconnects the client to xrpl server and do the un-subscriptions. 'unsubscribe' is called inside this.
 
 **Kind**: instance method of [<code>BaseEvernodeClient</code>](#BaseEvernodeClient)  
+**Example**  
+```js
+await client.disconnect();
+```
 <a name="BaseEvernodeClient+subscribe"></a>
 
 ### baseEvernodeClient.subscribe()
@@ -588,6 +616,10 @@ Connects the client to xrpl server and do the config loading and subscriptions. 
 **Kind**: instance method of [<code>FoundationClient</code>](#FoundationClient)  
 **Overrides**: [<code>connect</code>](#BaseEvernodeClient+connect)  
 **Returns**: Boolean value `true` if the connection is successful.  
+**Example**  
+```js
+const status = await client.connect();
+```
 <a name="BaseEvernodeClient+disconnect"></a>
 
 ### foundationClient.disconnect()
@@ -595,6 +627,10 @@ Disconnects the client to xrpl server and do the un-subscriptions. 'unsubscribe'
 
 **Kind**: instance method of [<code>FoundationClient</code>](#FoundationClient)  
 **Overrides**: [<code>disconnect</code>](#BaseEvernodeClient+disconnect)  
+**Example**  
+```js
+await client.disconnect();
+```
 <a name="BaseEvernodeClient+subscribe"></a>
 
 ### foundationClient.subscribe()
@@ -838,6 +874,7 @@ It interacts with the XRP Ledger using the governor address and listens for spec
 **Extends**: [<code>BaseEvernodeClient</code>](#BaseEvernodeClient)  
 
 * [GovernorClient](#GovernorClient) ⇐ [<code>BaseEvernodeClient</code>](#BaseEvernodeClient)
+    * [new GovernorClient([options])](#new_GovernorClient_new)
     * [.on(event, handler)](#BaseEvernodeClient+on)
     * [.once(event, handler)](#BaseEvernodeClient+once)
     * [.off(event, handler)](#BaseEvernodeClient+off)
@@ -865,6 +902,23 @@ It interacts with the XRP Ledger using the governor address and listens for spec
     * [.getReputationContractInfoByAddress(hostsAddress, moment)](#BaseEvernodeClient+getReputationContractInfoByAddress) ⇒
     * [.getReputationInfoByAddress(hostsAddress)](#BaseEvernodeClient+getReputationInfoByAddress) ⇒
 
+<a name="new_GovernorClient_new"></a>
+
+### new GovernorClient([options])
+Creates an instance of GovernorClient.
+
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| [options] | <code>Object</code> | <code>{}</code> | A JSON object of options for initializing the GovernorClient. |
+| [options.governorAddress] | <code>string</code> |  | (Optional) The Governor Hook Account Xahau address.  If not provided, the address from the 'Defaults' configuration will be used. |
+
+**Example**  
+```js
+const governorClient = new GovernorClient({
+    governorAddress: "rGVHr1PrfL93UAjyw3DWZoi9adz2sLp2yL"
+});
+```
 <a name="BaseEvernodeClient+on"></a>
 
 ### governorClient.on(event, handler)
@@ -912,6 +966,10 @@ Connects the client to xrpl server and do the config loading and subscriptions. 
 **Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
 **Overrides**: [<code>connect</code>](#BaseEvernodeClient+connect)  
 **Returns**: Boolean value `true` if the connection is successful.  
+**Example**  
+```js
+const status = await client.connect();
+```
 <a name="BaseEvernodeClient+disconnect"></a>
 
 ### governorClient.disconnect()
@@ -919,6 +977,10 @@ Disconnects the client to xrpl server and do the un-subscriptions. 'unsubscribe'
 
 **Kind**: instance method of [<code>GovernorClient</code>](#GovernorClient)  
 **Overrides**: [<code>disconnect</code>](#BaseEvernodeClient+disconnect)  
+**Example**  
+```js
+await client.disconnect();
+```
 <a name="BaseEvernodeClient+subscribe"></a>
 
 ### governorClient.subscribe()
@@ -1162,6 +1224,7 @@ It interacts with the XRP Ledger using the heartbeat address and listens for spe
 **Extends**: [<code>BaseEvernodeClient</code>](#BaseEvernodeClient)  
 
 * [HeartbeatClient](#HeartbeatClient) ⇐ [<code>BaseEvernodeClient</code>](#BaseEvernodeClient)
+    * [new HeartbeatClient([options])](#new_HeartbeatClient_new)
     * [.on(event, handler)](#BaseEvernodeClient+on)
     * [.once(event, handler)](#BaseEvernodeClient+once)
     * [.off(event, handler)](#BaseEvernodeClient+off)
@@ -1189,6 +1252,25 @@ It interacts with the XRP Ledger using the heartbeat address and listens for spe
     * [.getReputationContractInfoByAddress(hostsAddress, moment)](#BaseEvernodeClient+getReputationContractInfoByAddress) ⇒
     * [.getReputationInfoByAddress(hostsAddress)](#BaseEvernodeClient+getReputationInfoByAddress) ⇒
 
+<a name="new_HeartbeatClient_new"></a>
+
+### new HeartbeatClient([options])
+Creates an instance of HeartbeatClient.
+
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| [options] | <code>Object</code> | <code>{}</code> | A JSON object of options for initializing the HeartbeatClient. |
+| options.heartbeatAddress | <code>string</code> |  | The Heartbeat Hook Account Xahau address. |
+| [options.rippledServer] | <code>string</code> |  | (Optional) The Rippled server URL. |
+
+**Example**  
+```js
+const heartbeatClient = new HeartbeatClient({
+    heartbeatAddress: 'raPSFU999HcwpyRojdNh2i96T22gY9fgxL',
+    rippledServer: 'wss://hooks-testnet-v3.xrpl-labs.com'
+});
+```
 <a name="BaseEvernodeClient+on"></a>
 
 ### heartbeatClient.on(event, handler)
@@ -1236,6 +1318,10 @@ Connects the client to xrpl server and do the config loading and subscriptions. 
 **Kind**: instance method of [<code>HeartbeatClient</code>](#HeartbeatClient)  
 **Overrides**: [<code>connect</code>](#BaseEvernodeClient+connect)  
 **Returns**: Boolean value `true` if the connection is successful.  
+**Example**  
+```js
+const status = await client.connect();
+```
 <a name="BaseEvernodeClient+disconnect"></a>
 
 ### heartbeatClient.disconnect()
@@ -1243,6 +1329,10 @@ Disconnects the client to xrpl server and do the un-subscriptions. 'unsubscribe'
 
 **Kind**: instance method of [<code>HeartbeatClient</code>](#HeartbeatClient)  
 **Overrides**: [<code>disconnect</code>](#BaseEvernodeClient+disconnect)  
+**Example**  
+```js
+await client.disconnect();
+```
 <a name="BaseEvernodeClient+subscribe"></a>
 
 ### heartbeatClient.subscribe()
@@ -1482,6 +1572,16 @@ Get reputation info of given host.
 A factory class for creating different types of hook clients based on the provided hook type.
 
 **Kind**: global class  
+**Summary**: In Evernode, there are three distinct types of hooks:
+
+- Governor Hook
+- Registry Hook
+- Heartbeat Hook
+- Reputation Hook
+
+Each of these hooks is associated with a separate Xahau account. Therefore, in various scenarios, it becomes necessary to create client instances to engage with these hooks.
+This section aims to enhance your comprehension of the available hook clients in Evernode. It will provide you with detailed specifications and guidance on how to utilize them effectively within Evernode.
+The Hook Client Factory provides a common interface for creating hook clients. Developers can instantiate hook clients with minimal effort.  
 <a name="HookClientFactory.create"></a>
 
 ### HookClientFactory.create(hookType, [options]) ⇒ <code>Promise.&lt;(Object\|null)&gt;</code>
@@ -1499,6 +1599,14 @@ Creates a hook client from given type.
 | hookType | <code>string</code> |  | Type of the Required Hook. (Supported Hook types 'GOVERNOR', 'REGISTRY', 'HEARTBEAT' and 'REPUTATION') |
 | [options] | <code>Object</code> | <code>{}</code> | Optional configuration for the hook client. |
 
+**Example**  
+```js
+Defaults.set({governorAddress: "rGVHr1PrfL93UAjyw3DWZoi9adz2sLp2yL"});
+const governorClient = await HookClientFactory.create(HookTypes.governor);
+const registryClient = await HookClientFactory.create(HookTypes.registry);
+const heartbeatClient = await HookClientFactory.create(HookTypes.heartbeat);
+const reputationClient = await HookClientFactory.create(HookTypes.reputation);
+```
 <a name="RegistryClient"></a>
 
 ## RegistryClient ⇐ [<code>BaseEvernodeClient</code>](#BaseEvernodeClient)
@@ -1509,6 +1617,7 @@ It interacts with the XRP Ledger using the registry address and listens for spec
 **Extends**: [<code>BaseEvernodeClient</code>](#BaseEvernodeClient)  
 
 * [RegistryClient](#RegistryClient) ⇐ [<code>BaseEvernodeClient</code>](#BaseEvernodeClient)
+    * [new RegistryClient([options])](#new_RegistryClient_new)
     * [.getActiveHostsFromLedger()](#RegistryClient+getActiveHostsFromLedger) ⇒ <code>Promise.&lt;Array&gt;</code>
     * [.on(event, handler)](#BaseEvernodeClient+on)
     * [.once(event, handler)](#BaseEvernodeClient+once)
@@ -1537,6 +1646,25 @@ It interacts with the XRP Ledger using the registry address and listens for spec
     * [.getReputationContractInfoByAddress(hostsAddress, moment)](#BaseEvernodeClient+getReputationContractInfoByAddress) ⇒
     * [.getReputationInfoByAddress(hostsAddress)](#BaseEvernodeClient+getReputationInfoByAddress) ⇒
 
+<a name="new_RegistryClient_new"></a>
+
+### new RegistryClient([options])
+Creates an instance of RegistryClient.
+
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| [options] | <code>Object</code> | <code>{}</code> | A JSON object of options for initializing the RegistryClient. |
+| options.registryAddress | <code>string</code> |  | The Registry Hook Account Xahau address. |
+| [options.rippledServer] | <code>string</code> |  | (Optional) The Rippled server URL. |
+
+**Example**  
+```js
+const registryClient = new RegistryClient({
+    registryAddress: 'rQUhXd7sopuga3taru3jfvc1BgVbscrb1X',
+    rippledServer: 'wss://hooks-testnet-v3.xrpl-labs.com'
+});
+```
 <a name="RegistryClient+getActiveHostsFromLedger"></a>
 
 ### registryClient.getActiveHostsFromLedger() ⇒ <code>Promise.&lt;Array&gt;</code>
@@ -1591,6 +1719,10 @@ Connects the client to xrpl server and do the config loading and subscriptions. 
 **Kind**: instance method of [<code>RegistryClient</code>](#RegistryClient)  
 **Overrides**: [<code>connect</code>](#BaseEvernodeClient+connect)  
 **Returns**: Boolean value `true` if the connection is successful.  
+**Example**  
+```js
+const status = await client.connect();
+```
 <a name="BaseEvernodeClient+disconnect"></a>
 
 ### registryClient.disconnect()
@@ -1598,6 +1730,10 @@ Disconnects the client to xrpl server and do the un-subscriptions. 'unsubscribe'
 
 **Kind**: instance method of [<code>RegistryClient</code>](#RegistryClient)  
 **Overrides**: [<code>disconnect</code>](#BaseEvernodeClient+disconnect)  
+**Example**  
+```js
+await client.disconnect();
+```
 <a name="BaseEvernodeClient+subscribe"></a>
 
 ### registryClient.subscribe()
@@ -2370,6 +2506,10 @@ Connects the client to xrpl server and do the config loading and subscriptions. 
 **Kind**: instance method of [<code>HostClient</code>](#HostClient)  
 **Overrides**: [<code>connect</code>](#BaseEvernodeClient+connect)  
 **Returns**: Boolean value `true` if the connection is successful.  
+**Example**  
+```js
+const status = await client.connect();
+```
 <a name="BaseEvernodeClient+disconnect"></a>
 
 ### hostClient.disconnect()
@@ -2377,6 +2517,10 @@ Disconnects the client to xrpl server and do the un-subscriptions. 'unsubscribe'
 
 **Kind**: instance method of [<code>HostClient</code>](#HostClient)  
 **Overrides**: [<code>disconnect</code>](#BaseEvernodeClient+disconnect)  
+**Example**  
+```js
+await client.disconnect();
+```
 <a name="BaseEvernodeClient+subscribe"></a>
 
 ### hostClient.subscribe()
@@ -2626,7 +2770,7 @@ It extends the BaseEvernodeClient.
     * [.acquireLeaseSubmit(hostAddress, requirement, options)](#TenantClient+acquireLeaseSubmit) ⇒
     * [.prepareAcquireLeaseTransaction(hostAddress, requirement, options)](#TenantClient+prepareAcquireLeaseTransaction) ⇒
     * [.watchAcquireResponse(tx, options)](#TenantClient+watchAcquireResponse) ⇒
-    * [.acquireLease(hostAddress, requirement, options)](#TenantClient+acquireLease) ⇒
+    * [.acquireLease(hostAddress, requirement, [options])](#TenantClient+acquireLease) ⇒ <code>Promise.&lt;Object&gt;</code> \| <code>Object</code> \| <code>string</code> \| <code>string</code> \| <code>string</code> \| <code>string</code> \| <code>number</code> \| <code>Array.&lt;Object&gt;</code> \| <code>string</code> \| <code>number</code> \| <code>string</code> \| <code>Object</code> \| <code>string</code> \| <code>string</code> \| <code>string</code> \| <code>string</code> \| <code>string</code> \| <code>string</code> \| <code>string</code>
     * [.extendLeaseSubmit(hostAddress, amount, tokenID, options)](#TenantClient+extendLeaseSubmit) ⇒
     * [.prepareExtendLeaseTransaction(hostAddress, amount, tokenID, options)](#TenantClient+prepareExtendLeaseTransaction) ⇒
     * [.watchExtendResponse(tx, options)](#TenantClient+watchExtendResponse) ⇒
@@ -2667,10 +2811,19 @@ Creates an instance of TenantClient.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| xrpAddress | <code>string</code> |  | The XRP address to associate with this client. |
-| xrpSecret | <code>string</code> |  | The secret (private key) associated with the XRP address. |
-| [options] | <code>Object</code> | <code>{}</code> | Additional configuration options for the TenantClient. |
+| xrpAddress | <code>string</code> |  | Xahau wallet address of the tenant. |
+| xrpSecret | <code>string</code> |  | Secret key of the tenant's Xahau wallet. |
+| [options] | <code>Object</code> | <code>{}</code> | (Optional) A JSON object of options that can include the following properties. |
+| [options.governorAddress] | <code>string</code> |  | (Optional) The Governor Hook Account Xahau address. |
+| [options.rippledServer] | <code>string</code> |  | (Optional) The Rippled server URL. |
 
+**Example**  
+```js
+const client = new TenantClient("rKfHBc8e1VemZPLZoPXB7HjSKU2QjkRfP", "sszyYJ79AdUUF6dR7QfD9ARWfVuz3", {
+    governorAddress: "rGVHr1PrfL93UAjyw3DWZoi9adz2sLp2yL",
+    rippledServer: "wss://hooks-testnet-v3.xrpl-labs.com"
+});
+```
 <a name="TenantClient+prepareAccount"></a>
 
 ### tenantClient.prepareAccount([options])
@@ -2741,18 +2894,58 @@ Watch for the acquire-success response after the acquire request is made.
 
 <a name="TenantClient+acquireLease"></a>
 
-### tenantClient.acquireLease(hostAddress, requirement, options) ⇒
-Acquire an instance from a host
+### tenantClient.acquireLease(hostAddress, requirement, [options]) ⇒ <code>Promise.&lt;Object&gt;</code> \| <code>Object</code> \| <code>string</code> \| <code>string</code> \| <code>string</code> \| <code>string</code> \| <code>number</code> \| <code>Array.&lt;Object&gt;</code> \| <code>string</code> \| <code>number</code> \| <code>string</code> \| <code>Object</code> \| <code>string</code> \| <code>string</code> \| <code>string</code> \| <code>string</code> \| <code>string</code> \| <code>string</code> \| <code>string</code>
+Acquires an available instance on a specified host.
 
 **Kind**: instance method of [<code>TenantClient</code>](#TenantClient)  
-**Returns**: An object including transaction details,instance info, and acquireReference Id.  
+**Returns**: <code>Promise.&lt;Object&gt;</code> - Resolves with an object containing the transaction details and instance details.<code>Object</code> - transaction - Information about the transaction.<code>string</code> - transaction.Account - The address of the account initiating the transaction.<code>string</code> - transaction.Amount - The amount of currency transferred.<code>string</code> - transaction.Destination - The tenant's account address.<code>string</code> - transaction.Fee - The fee paid for the transaction, in EVR drops.<code>number</code> - transaction.LastLedgerSequence - The latest ledger sequence for the transaction.<code>Array.&lt;Object&gt;</code> - transaction.Memos - Array of memo objects.<code>string</code> - transaction.hash - The SHA-512 hash of the transaction.<code>number</code> - transaction.ledger_index - The ledger index containing the transaction.<code>string</code> - transaction.DeliveredAmount - The actual amount delivered to the destination.<code>Object</code> - instance - Information about the acquired instance.<code>string</code> - instance.name - The unique identifier (URITokenID) of the instance.<code>string</code> - instance.pubkey - The public key of the instance.<code>string</code> - instance.contract_id - The unique contract identifier.<code>string</code> - instance.peer_port - The port used for peer communication.<code>string</code> - instance.user_port - The port used for user communication.<code>string</code> - instance.domain - The public domain of the host server.<code>string</code> - acquireRefId - The reference ID for the acquisition.  
+**Throws**:
 
-| Param | Type | Description |
-| --- | --- | --- |
-| hostAddress | <code>string</code> | XRPL address of the host to acquire the lease. |
-| requirement | <code>object</code> | The instance requirements and configuration. |
-| options | <code>object</code> | [Optional] Options for the XRPL transaction. |
+- <code>Error</code> Throws an error if the acquisition fails.
+- <code>Object</code> error - The error object with details about the failure.
+- <code>string</code> error.error - The error code ('ACQUIRE_ERR').
+- <code>string</code> error.reason - The reason for the acquisition failure.
+- <code>Object</code> error.transaction - The transaction details associated with the failed acquisition.
+- <code>string</code> error.transaction.Account - The tenant's account address.
+- <code>Object</code> error.transaction.Amount - The refund details.
+- <code>string</code> error.transaction.Amount.currency - The currency type (e.g., 'EVR').
+- <code>string</code> error.transaction.Amount.issuer - The issuer of the currency.
+- <code>string</code> error.transaction.Amount.value - The value of the refunded amount.
+- <code>string</code> error.transaction.Destination - The tenant's account address.
+- <code>string</code> error.transaction.Fee - The transaction fee.
+- <code>Array.&lt;Object&gt;</code> error.transaction.HookParameters - Contains event name and event data.
+- <code>string</code> error.transaction.HookParameters[].name - The event name (in hex format).
+- <code>string</code> error.transaction.HookParameters[].value - The event data (in hex format).
+- <code>string</code> error.acquireRefId - The reference ID for the failed acquisition request.
 
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| hostAddress | <code>string</code> |  | The wallet address of the host where the HotPocket instance will be created. |
+| requirement | <code>Object</code> |  | The details necessary for creating the instance. |
+| requirement.owner_pubkey | <code>string</code> |  | The public key of the tenant. |
+| requirement.contract_id | <code>string</code> |  | The unique contract identifier. |
+| requirement.image | <code>string</code> |  | The image used to create the HotPocket instance. |
+| requirement.config | <code>Object</code> |  | Configuration object for the instance. |
+| [options] | <code>Object</code> | <code>{}</code> | Optional configurations for the transaction. |
+| [options.timeout] | <code>number</code> | <code>60000</code> | Timeout for the transaction in milliseconds. |
+| [options.leaseOfferIndex] | <code>string</code> |  | The index of the preferred lease offer from the host. |
+| [options.transactionOptions] | <code>Object</code> |  | Options for the URITokenBuy transaction as defined in the Xahau documentation. |
+
+**Example**  
+```js
+const result = await tenant.acquireLease(
+  "rnET2YR19WDP4vB8XtDhcF2J4afqMM6xim",
+  {
+    owner_pubkey: "ed5cb83404120ac759609819591ef839b7d222c84f1f08b3012f490586159d2b50",
+    contract_id: "dc411912-bcdd-4f73-af43-32ec45844b9a",
+    image: "evernodedev/sashimono:hp.latest-ubt.20.04-njs.16",
+    config: {}
+  },
+  { timeout: 10000 }
+);
+console.log("Tenant received instance:", result);
+```
 <a name="TenantClient+extendLeaseSubmit"></a>
 
 ### tenantClient.extendLeaseSubmit(hostAddress, amount, tokenID, options) ⇒
@@ -2869,6 +3062,10 @@ Connects the client to xrpl server and do the config loading and subscriptions. 
 **Kind**: instance method of [<code>TenantClient</code>](#TenantClient)  
 **Overrides**: [<code>connect</code>](#BaseEvernodeClient+connect)  
 **Returns**: Boolean value `true` if the connection is successful.  
+**Example**  
+```js
+const status = await client.connect();
+```
 <a name="BaseEvernodeClient+disconnect"></a>
 
 ### tenantClient.disconnect()
@@ -2876,6 +3073,10 @@ Disconnects the client to xrpl server and do the un-subscriptions. 'unsubscribe'
 
 **Kind**: instance method of [<code>TenantClient</code>](#TenantClient)  
 **Overrides**: [<code>disconnect</code>](#BaseEvernodeClient+disconnect)  
+**Example**  
+```js
+await client.disconnect();
+```
 <a name="BaseEvernodeClient+subscribe"></a>
 
 ### tenantClient.subscribe()
@@ -3119,7 +3320,7 @@ Defaults class is responsible for retrieving and overriding the default Evernode
 * [Defaults](#Defaults)
     * [.values](#Defaults.values) ⇒
     * [.useNetwork(network)](#Defaults.useNetwork)
-    * [.set(newDefaults)](#Defaults.set)
+    * [.set(newDefaults)](#Defaults.set) ⇒ <code>void</code>
 
 <a name="Defaults.values"></a>
 
@@ -3128,6 +3329,10 @@ Read Evernode default configs.
 
 **Kind**: static property of [<code>Defaults</code>](#Defaults)  
 **Returns**: The Object of Evernode configs  
+**Example**  
+```js
+const defaults = Defaults.values;
+```
 <a name="Defaults.useNetwork"></a>
 
 ### Defaults.useNetwork(network)
@@ -3141,7 +3346,7 @@ Load defaults from the public definitions json.
 
 <a name="Defaults.set"></a>
 
-### Defaults.set(newDefaults)
+### Defaults.set(newDefaults) ⇒ <code>void</code>
 Override Evernode default configs.
 
 **Kind**: static method of [<code>Defaults</code>](#Defaults)  
@@ -3150,6 +3355,10 @@ Override Evernode default configs.
 | --- | --- | --- |
 | newDefaults | <code>object</code> | Configurations to override `{ governorAddress: '{string} governor xrpl address', rippledServer: '{string} rippled server url', xrplApi: '{XrplApi} xrpl instance', stateIndexId: '{string} firestore index', networkID: '{number} rippled network id' }` |
 
+**Example**  
+```js
+Defaults.set({governorAddress: 'rGVHr1PrfL93UAjyw3DWZoi9adz2sLp2yL'});
+```
 <a name="EncryptionHelper"></a>
 
 ## EncryptionHelper
@@ -5186,4 +5395,86 @@ For more details: https://js.xrpl.org/functions/multisign.html
 | Param | Type | Description |
 | --- | --- | --- |
 | transactions | <code>Array.&lt;(string\|object)&gt;</code> | An array of signed transactions, either as serialized strings or transaction objects, to combine into a single multi-signed transaction. |
+
+<a name="GovernorEvents"></a>
+
+## GovernorEvents
+Following governor-specific events can be subscribed from Evernode client instances.
+
+**Kind**: global constant  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| Initialized | <code>string</code> | Triggered when governor receives a hook initialization. |
+| CandidateProposed | <code>string</code> | Triggered when governor receives a new candidate proposal. |
+| CandidateWithdrawn | <code>string</code> | Triggered when candidate withdrawal is requested. |
+| ChildHookUpdated | <code>string</code> | Triggered when registry or heartbeat hook is updated. |
+| GovernanceModeChanged | <code>string</code> | Triggered when governor receives a request to change the governance mode. |
+| DudHostReported | <code>string</code> | Triggered when dud host is reported. |
+| DudHostRemoved | <code>string</code> | Triggered when dud host is removed. |
+| DudHostStatusChanged | <code>string</code> | Triggered when dud host candidate election status is changed. |
+| FallbackToPiloted | <code>string</code> | Triggered when governance mode is changed to piloted mode. |
+| NewHookStatusChanged | <code>string</code> | Triggered when new hook candidate election status is changed. |
+| LinkedDudHostCandidateRemoved | <code>string</code> | Triggered when a host related to dud host candidate is removed by de-registration/transfer or prune. |
+
+<a name="HeartbeatEvents"></a>
+
+## HeartbeatEvents
+Following heartbeat-specific events can be subscribed from Evernode client instances.
+
+**Kind**: global constant  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| Heartbeat | <code>string</code> | Triggered when a heartbeat from a host is received. |
+| FoundationVoted | <code>string</code> | Triggered when foundation vote for a candidate is received. |
+
+<a name="RegistryEvents"></a>
+
+## RegistryEvents
+Following registry-specific events can be subscribed from Evernode client instances.
+
+**Kind**: global constant  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| HostRegistered | <code>string</code> | Triggered when host registration event is received to the registry. |
+| HostDeregistered | <code>string</code> | Triggered when host de-registration event is received to the registry. |
+| HostRegUpdated | <code>string</code> | Triggered when host sends an update info request. |
+| DeadHostPrune | <code>string</code> | Triggered when dead host prune request is received to the registry. |
+| HostTransfer | <code>string</code> | Triggered when host transfer is requested by the host. |
+| HostRebate | <code>string</code> | Triggered when host rebate is requested by the host. |
+| HostReputationUpdated | <code>string</code> | Triggered when host reputation is updated. |
+
+<a name="HostEvents"></a>
+
+## HostEvents
+Following host-specific events can be subscribed from Evernode client instances.
+
+**Kind**: global constant  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| AcquireLease | <code>string</code> | Triggered when the host receives a lease acquire request. |
+| ExtendLease | <code>string</code> | Triggered when the host receives a lease extend request. |
+| TerminateLease | <code>string</code> | Triggered when the host receives a lease termination request. |
+
+<a name="TenantEvents"></a>
+
+## TenantEvents
+Following tenant-specific events can be subscribed from Evernode client instances.
+
+**Kind**: global constant  
+**Properties**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| AcquireSuccess | <code>string</code> | Triggered when the tenant receives an acquire success response. |
+| AcquireError | <code>string</code> | Triggered when the tenant receives an acquire error response. |
+| ExtendSuccess | <code>string</code> | Triggered when the tenant receives an extend success response. |
+| ExtendError | <code>string</code> | Triggered when the tenant receives an extend error response. |
 

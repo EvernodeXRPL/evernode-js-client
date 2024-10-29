@@ -15,6 +15,12 @@ const { UtilHelpers } = require('../util-helpers');
 
 const OFFER_WAIT_TIMEOUT = 60;
 
+/**
+ * Following host-specific events can be subscribed from Evernode client instances.
+ * @property {string} AcquireLease - Triggered when the host receives a lease acquire request.
+ * @property {string} ExtendLease - Triggered when the host receives a lease extend request.
+ * @property {string} TerminateLease - Triggered when the host receives a lease termination request.
+ */
 const HostEvents = {
     AcquireLease: EvernodeEvents.AcquireLease,
     ExtendLease: EvernodeEvents.ExtendLease,
