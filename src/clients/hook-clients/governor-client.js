@@ -33,7 +33,6 @@ const GovernorEvents = {
 /**
  * GovernorClient is responsible for managing governor operations in Evernode.
  * It interacts with the XRP Ledger using the governor address and listens for specific governor events.
- * 
  * @extends BaseEvernodeClient
  */
 class GovernorClient extends BaseEvernodeClient {

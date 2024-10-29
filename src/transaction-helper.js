@@ -7,7 +7,6 @@ class TransactionHelper {
 
     /**
      * Converts an array of memos from the internal format to the XRPL library format.
-     * 
      * @param {Array<Object>} memos - An array of memo objects in the internal format.
      * @returns {Array<Object>} An array of memo objects in the XRPL library format.
      */
@@ -27,7 +26,6 @@ class TransactionHelper {
 
     /**
      * Converts an array of memos from the XRPL library format to the internal format.
-     * 
      * @param {Array<Object>} memos - An array of memo objects in the XRPL library format.
      * @returns {Array<Object>} An array of memo objects in the internal format.
      */
@@ -49,7 +47,6 @@ class TransactionHelper {
 
     /**
      * Converts an array of hook parameters from the internal format to the XRPL library format.
-     * 
      * @param {Array<Object>} params - An array of hook parameter objects in the internal format.
      * @returns {Array<Object>} An array of hook parameter objects in the XRPL library format.
      */
@@ -68,7 +65,6 @@ class TransactionHelper {
 
     /**
      * Converts an array of hook parameters from the XRPL library format to the internal format.
-     * 
      * @param {Array<Object>} params - An array of hook parameter objects in the XRPL library format.
      * @returns {Array<Object>} An array of hook parameter objects in the internal format.
      */
@@ -88,7 +84,6 @@ class TransactionHelper {
 
     /**
      * Converts a hexadecimal string to an ASCII string.
-     * 
      * @param {string} hex - The hexadecimal string to be converted.
      * @returns {string} The resulting ASCII string.
      */
@@ -101,7 +96,6 @@ class TransactionHelper {
 
     /**
      * Converts an ASCII string to a hexadecimal string.
-     * 
      * @param {string} str - The ASCII string to be converted.
      * @returns {string} The resulting hexadecimal string.
      */

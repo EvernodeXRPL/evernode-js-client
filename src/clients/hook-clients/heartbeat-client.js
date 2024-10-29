@@ -14,7 +14,6 @@ const HeartbeatEvents = {
 /**
  * HeartbeatClient is responsible for managing heartbeat operations in Evernode.
  * It interacts with the XRP Ledger using the heartbeat address and listens for specific heartbeat events.
- * 
  * @extends BaseEvernodeClient
  */
 class HeartbeatClient extends BaseEvernodeClient {

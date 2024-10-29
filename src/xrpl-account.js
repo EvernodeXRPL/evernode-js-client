@@ -282,15 +282,6 @@ class XrplAccount {
      * @returns {Promise<Object>} The prepared AccountSet transaction.
      */
     async prepareSetAccountFields(fields, options = {}) {
-        /**
-         * Example for fields
-         * 
-         * fields = {
-         *  Domain : "www.mydomain.com",
-         *  Flags : { asfDefaultRipple: false, asfDisableMaster: true } 
-         * }
-         * 
-         */
 
         if (!options?.allowEmptyAccountSet && Object.keys(fields ?? {}).length === 0)
             throw "AccountSet fields cannot be empty.";

@@ -12,7 +12,6 @@ class UtilHelpers {
 
     /**
      * Decodes a lease token URI into its integrant parts.
-     * 
      * @param {string} hexUri - The lease token URI in hexadecimal format.
      * @returns {Object} An object containing the decoded lease token URI's version, leaseIndex, halfTos, leaseAmount, identifier, and outboundIP
      */
@@ -55,7 +54,6 @@ class UtilHelpers {
 
     /**
      * Gets the current Unix time.
-     * 
      * @param {string} [format="sec"] - The format of the time. If "sec", returns the time in seconds; otherwise, returns the time in milliseconds.
      * @returns {number} The current Unix time in the specified format.
      */
@@ -71,7 +69,6 @@ class UtilHelpers {
 
     /**
      * Derives a keypair from a given secret.
-     * 
      * @param {string} secret - The secret used to derive the keypair.
      * @returns {Object} An object containing the derived keypair.
      */
@@ -81,7 +78,6 @@ class UtilHelpers {
 
     /**
      * Derives an address from a given public key.
-     * 
      * @param {string} publicKey - The public key used to derive the address.
      * @returns {string} The derived address.
      */

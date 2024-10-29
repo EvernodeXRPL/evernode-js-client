@@ -24,7 +24,6 @@ const RegistryEvents = {
 /**
  * RegistryClient is responsible for managing registry operations in Evernode.
  * It interacts with the XRP Ledger using the registry address and listens for specific registry events.
- * 
  * @extends BaseEvernodeClient
  */
 class RegistryClient extends BaseEvernodeClient {

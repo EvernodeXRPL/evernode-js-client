@@ -245,7 +245,6 @@ class TenantClient extends BaseEvernodeClient {
      * @param {number} [options.timeout=60000] - Timeout for the transaction in milliseconds.
      * @param {string} [options.leaseOfferIndex] - The index of the preferred lease offer from the host.
      * @param {Object} [options.transactionOptions] - Options for the URITokenBuy transaction as defined in the Xahau documentation.
-     * 
      * @returns {Promise<Object>} Resolves with an object containing the transaction details and instance details.
      * @returns {Object} transaction - Information about the transaction.
      * @returns {string} transaction.Account - The address of the account initiating the transaction.
@@ -257,7 +256,6 @@ class TenantClient extends BaseEvernodeClient {
      * @returns {string} transaction.hash - The SHA-512 hash of the transaction.
      * @returns {number} transaction.ledger_index - The ledger index containing the transaction.
      * @returns {string} transaction.DeliveredAmount - The actual amount delivered to the destination.
-     * 
      * @returns {Object} instance - Information about the acquired instance.
      * @returns {string} instance.name - The unique identifier (URITokenID) of the instance.
      * @returns {string} instance.pubkey - The public key of the instance.
@@ -265,9 +263,7 @@ class TenantClient extends BaseEvernodeClient {
      * @returns {string} instance.peer_port - The port used for peer communication.
      * @returns {string} instance.user_port - The port used for user communication.
      * @returns {string} instance.domain - The public domain of the host server.
-     * 
      * @returns {string} acquireRefId - The reference ID for the acquisition.
-     * 
      * @throws {Error} Throws an error if the acquisition fails.
      * @throws {Object} error - The error object with details about the failure.
      * @throws {string} error.error - The error code ('ACQUIRE_ERR').
@@ -284,7 +280,6 @@ class TenantClient extends BaseEvernodeClient {
      * @throws {string} error.transaction.HookParameters[].name - The event name (in hex format).
      * @throws {string} error.transaction.HookParameters[].value - The event data (in hex format).
      * @throws {string} error.acquireRefId - The reference ID for the failed acquisition request.
-     * 
      * @example
      * const result = await tenant.acquireLease(
      *   "rnET2YR19WDP4vB8XtDhcF2J4afqMM6xim",
