@@ -5,6 +5,9 @@ const DefinitionsUrl = 'https://raw.githubusercontent.com/EvernodeXRPL/evernode-
 const DefaultValues = {
     xrplApi: null
 }
+/**
+ * The four Evernode hook types. governor,registry, heartbeat and reputation.
+ */
 
 const HookTypes = {
     governor: 'GOVERNOR',

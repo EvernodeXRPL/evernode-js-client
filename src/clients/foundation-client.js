@@ -13,6 +13,9 @@ const REPUTATION_HOST_ADDRESS_PARAM_OFFSET = 0;
 const REPUTATION_VALUE_PARAM_OFFSET = 20;
 const REPUTATION_PARAM_SIZE = 21;
 
+/**
+ * Foundation Events
+ */
 const FoundationEvents = {}
 
 /**

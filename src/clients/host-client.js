@@ -93,6 +93,11 @@ class HostClient extends BaseEvernodeClient {
         return res;
     }
 
+    /**
+     * Set reputation account detatils.
+     * @param {string} [reputationAddress = null] - XRPL address of the reputation account.
+     * @param {string} [reputationSecret = null] - XRPL secret of the reputation account.
+     */
     async setReputationAcc(reputationAddress = null, reputationSecret = null) {
         let hostReputationAccId;
         if (!reputationAddress && !reputationSecret) {
@@ -143,7 +148,7 @@ class HostClient extends BaseEvernodeClient {
 
     /**
      * Get lease token by index.
-     * @param index Index of the token.
+     * @param {string}index Index of the token.
      * @returns Lease token.
      */
     async getLeaseByIndex(index) {
