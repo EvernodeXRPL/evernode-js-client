@@ -38,6 +38,7 @@ const GovernorEvents = {
 class GovernorClient extends BaseEvernodeClient {
     /**
      * Creates an instance of GovernorClient.
+     * Note: - If `governorAddress` is not specified, the GovernorClient class will default to using the governorAddress set in the `'Defaults'` configuration.
      * @param {Object} [options={}] - A JSON object of options for initializing the GovernorClient.
      * @param {string} [options.governorAddress] - (Optional) The Governor Hook Account Xahau address. 
      * If not provided, the address from the 'Defaults' configuration will be used.

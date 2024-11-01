@@ -37,11 +37,15 @@ class TenantClient extends BaseEvernodeClient {
      * @param {string} xrpSecret - Secret key of the tenant's Xahau wallet.
      * @param {Object} [options={}] - (Optional) A JSON object of options that can include the following properties.
      * @param {string} [options.governorAddress] - (Optional) The Governor Hook Account Xahau address.
+     * You can provide your own governorAddress.
      * @param {string} [options.rippledServer] - (Optional) The Rippled server URL.
+     * You can provide your own rippledServer URL.
      * @example
-     * const client = new TenantClient("rKfHBc8e1VemZPLZoPXB7HjSKU2QjkRfP", "sszyYJ79AdUUF6dR7QfD9ARWfVuz3", {
-     *     governorAddress: "rGVHr1PrfL93UAjyw3DWZoi9adz2sLp2yL",
-     *     rippledServer: "wss://hooks-testnet-v3.xrpl-labs.com"
+     * const tenantAddress = "rKfHBc8e1VemZPLZoPXB7HjSKU2QjkRfP";
+     * const tenantSecret = "sszyYJ79AdUUF6dR7QfD9ARWfVuz3";
+     * const client = new TenantClient(tenantAddress, tenantSecret, {
+     *  governorAddress: "rGVHr1PrfL93UAjyw3DWZoi9adz2sLp2yL",
+     *  rippledServer: "wss://hooks-testnet-v3.xrpl-labs.com"
      * });
      */
     constructor(xrpAddress, xrpSecret, options = {}) {
@@ -233,18 +237,24 @@ class TenantClient extends BaseEvernodeClient {
     }
 
     /**
-     * Acquires an available instance on a specified host.
+     * Acquires an available instance on a specified host. This function can takes three parameters ans is as follows.
      * @async
      * @param {string} hostAddress - The wallet address of the host where the HotPocket instance will be created.
      * @param {Object} requirement - The details necessary for creating the instance.
      * @param {string} requirement.owner_pubkey - The public key of the tenant.
      * @param {string} requirement.contract_id - The unique contract identifier.
      * @param {string} requirement.image - The image used to create the HotPocket instance.
-     * @param {Object} requirement.config - Configuration object for the instance.
+     * @param {Object} requirement.config - Configuration object for the instance. 
+     * Note: Providing all the configurations herewith can cause _'TRANSACTION_FAILURE'_ error due to exceeding the maximum allowed memo size for now.
+     * For more details about '_config' object , please refer to https://docs.evernode.org/en/latest/sdk/hotpocket/reference/configuration.html.
      * @param {Object} [options={}] - Optional configurations for the transaction.
      * @param {number} [options.timeout=60000] - Timeout for the transaction in milliseconds.
+     * This is optional and defaults to 60000 unless provided.
      * @param {string} [options.leaseOfferIndex] - The index of the preferred lease offer from the host.
+     * An avaialble offer index will be taken unless this field is provided.
      * @param {Object} [options.transactionOptions] - Options for the URITokenBuy transaction as defined in the Xahau documentation.
+     * During the acquiring process, an URITokenBuy transaction takes place.
+     * Therefore the fields defined in the official Xahau documentation for the URITokenBuy transaction can be specified within this object.
      * @returns {Promise<Object>} Resolves with an object containing the transaction details and instance details.
      * @returns {Object} transaction - Information about the transaction.
      * @returns {string} transaction.Account - The address of the account initiating the transaction.

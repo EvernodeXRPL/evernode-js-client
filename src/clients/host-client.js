@@ -148,7 +148,7 @@ class HostClient extends BaseEvernodeClient {
 
     /**
      * Get lease token by index.
-     * @param {string}index Index of the token.
+     * @param {number}index Index of the token.
      * @returns Lease token.
      */
     async getLeaseByIndex(index) {
