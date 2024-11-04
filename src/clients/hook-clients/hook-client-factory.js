@@ -7,7 +7,7 @@ const { ReputationClient } = require("./reputation-client");
 /**
  * A factory class for creating different types of hook clients based on the provided hook type.
  * @summary
- * In Evernode, there are three distinct types of hooks:
+ * In Evernode, there are four distinct types of hooks:
  * 
  * - Governor Hook
  * - Registry Hook
@@ -28,10 +28,21 @@ class HookClientFactory {
      * @returns {Promise<Object|null>} - Returns a promise that resolves to an instance of the requested HookClient type, or `null` if the type is unsupported.
      * @throws {Error} Will throw an error if there is an issue connecting to the GovernorClient or obtaining the necessary configuration.
      * @example
-     * Defaults.set({governorAddress: "rGVHr1PrfL93UAjyw3DWZoi9adz2sLp2yL"});
+     * // Set the Default configuration.
+     * Defaults.set({
+     *     governorAddress: "rGVHr1PrfL93UAjyw3DWZoi9adz2sLp2yL"
+     * });
+     * 
+     * // Instantiate a Governor client for the provided Governor Address via HookClientFactory.
      * const governorClient = await HookClientFactory.create(HookTypes.governor);
+     * 
+     * // Instantiate a Registry client that is associated with the provided Governor Address via HookClientFactory.
      * const registryClient = await HookClientFactory.create(HookTypes.registry);
+     * 
+     * // Instantiate a Heartbeat client that is associated with the provided Governor Address via HookClientFactory.
      * const heartbeatClient = await HookClientFactory.create(HookTypes.heartbeat);
+     * 
+     * // Instantiate a Reputation client that is associated with the provided Governor Address via HookClientFactory.
      * const reputationClient = await HookClientFactory.create(HookTypes.reputation);
      */
     static async create(hookType, options = {}) {
@@ -77,7 +88,7 @@ class HookClientFactory {
 
         return hookClient;
     }
-
+ 
     static async #getAccountAddress(hookType, config) {
         if (hookType == HookTypes.registry)
             return config.registryAddress;

@@ -723,10 +723,41 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get the registered host information.
+     * Gets the registered host information.
      * @param {string} hostAddress [Optional] Address of the host.
      * @returns The registered host information object. Returns null if not registered.
-     */
+     * @example 
+     * //request
+     * const hostInfo = await client.getHostInfo('r3tSGeDFJaz8GEVmM6oUuYTAiNdDJhitCt');
+     * 
+     * //example response
+     * {
+     *     address: '<string> Xahau account address of the host',
+     *     uriTokenId: '<string> Registration URI Token ID of the host',
+     *     countryCode: '<string> Host machine\'s origin country code',
+     *     description: '<string> IP address or the DNS of the host',
+     *     registrationLedger: '<number> Host machine registered Xahau ledger',
+     *     registrationFee: '<number> Registration fee paid by the host when it\'s registered',
+     *     maxInstances: '<number> Max number of instances that can be created in the host',
+     *     activeInstances: '<number> Max number of instances that can be created in the host',
+     *     lastHeartbeatIndex: '<number> Timestamp that the last heartbeat is received',
+     *     version: '<string> Sashimono version installed in the host machine>',
+     *     isATransferer: '<number> 1 - If transfer is initiated for the host, 0 - If not',
+     *     lastVoteCandidateIdx: '<number> Index of the candidate which host has recently voted',
+     *     lastVoteTimestamp: '<number> Timestamp when the host sent the last vote',
+     *     supportVoteSent: '<number> 1 - If host sent a support vote for the moment, 0 - If not',
+     *     registrationTimestamp: '<number> Timestamp when the host was registered',
+     *     active: '<boolean> Boolean indicating whether the host is active or not',
+     *     cpuModelName: '<string> CPU model of the host machine',
+     *     cpuCount: '<number> CPU count of the host machine',
+     *     cpuMHz: '<number> CPU speed of the host',
+     *     cpuMicrosec: '<number> CPU time in micro seconds allocated for Evernode',
+     *     ramMb: '<number> Host machine\'s Evernode allocated RAM in MBs',
+     *     diskMb: '<number> Disk space allocated for Evernode in the host',
+     *     email: '<string> Disk space allocated for Evernode in the host',
+     *     accumulatedRewardAmount: '<number> Currently accumulated reward amount that foundation owed to the host' 
+     * }     
+    */
     async getHostInfo(hostAddress = this.xrplAcc.address) {
         try {
             const addrStateKey = StateHelpers.generateHostAddrStateKey(hostAddress);
