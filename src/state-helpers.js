@@ -42,6 +42,7 @@ const FOUNDATION_LAST_VOTED_TIMESTAMP_OFFSET = 21;
 const ELECTED_PROPOSAL_UNIQUE_ID_OFFSET = 29;
 const PROPOSAL_ELECTED_TIMESTAMP_OFFSET = 61;
 const UPDATED_HOOK_COUNT_OFFSET = 69;
+const PREV_MOMENT_VOTER_BASE_COUNT_OFFSET = 70;
 
 const FEE_BASE_AVG_OFFSET = 0;
 const FEE_BASE_AVG_CHANGED_IDX_OFFSET = 4;
@@ -105,6 +106,8 @@ const CANDIDATE_LAST_VOTE_TIMESTAMP_OFFSET = 64;
 const CANDIDATE_STATUS_OFFSET = 72;
 const CANDIDATE_STATUS_CHANGE_TIMESTAMP_OFFSET = 73;
 const CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET = 81;
+const CANDIDATE_ELECT_PURGE_LAST_TRY_TIMESTAMP_OFFSET = 82;
+const CANDIDATE_COMPLETE_ACKNOWLEDGED_OFFSET = 90;
 
 const NETWORK_BUSYNESS_DETECT_PERIOD_OFFSET = 0;
 const NETWORK_BUSYNESS_DETECT_AVERAGE_OFFSET = 4;
@@ -315,7 +318,9 @@ class StateHelpers {
             lastVoteTimestamp: Number(stateDataBuf.readBigUInt64LE(CANDIDATE_LAST_VOTE_TIMESTAMP_OFFSET)),
             status: status,
             statusChangeTimestamp: Number(stateDataBuf.readBigUInt64LE(CANDIDATE_STATUS_CHANGE_TIMESTAMP_OFFSET)),
-            foundationVoteStatus: stateDataBuf.readUInt8(CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET) === EvernodeConstants.CandidateStatuses.CANDIDATE_SUPPORTED ? 'supported' : 'rejected'
+            foundationVoteStatus: stateDataBuf.readUInt8(CANDIDATE_FOUNDATION_VOTE_STATUS_OFFSET) === EvernodeConstants.CandidateStatuses.CANDIDATE_SUPPORTED ? 'supported' : 'rejected',
+            electPurgeLastTryTimestamp: Number(stateDataBuf.readBigUInt64LE(CANDIDATE_ELECT_PURGE_LAST_TRY_TIMESTAMP_OFFSET)),
+            completeAcknowledged: !!(stateDataBuf.readUInt8(CANDIDATE_COMPLETE_ACKNOWLEDGED_OFFSET)),
         }
     }
 
@@ -534,7 +539,8 @@ class StateHelpers {
                     foundationLastVotedTimestamp: Number(stateData.readBigUInt64LE(FOUNDATION_LAST_VOTED_TIMESTAMP_OFFSET)),
                     electedProposalUniqueId: stateData.slice(ELECTED_PROPOSAL_UNIQUE_ID_OFFSET, PROPOSAL_ELECTED_TIMESTAMP_OFFSET).toString('hex').toUpperCase(),
                     proposalElectedTimestamp: Number(stateData.readBigUInt64LE(PROPOSAL_ELECTED_TIMESTAMP_OFFSET)),
-                    updatedHookCount: stateData.readUInt8(UPDATED_HOOK_COUNT_OFFSET)
+                    updatedHookCount: stateData.readUInt8(UPDATED_HOOK_COUNT_OFFSET),
+                    prevMomentVoteBaseCount: stateData.length > PREV_MOMENT_VOTER_BASE_COUNT_OFFSET ? stateData.readUInt32LE(PREV_MOMENT_VOTER_BASE_COUNT_OFFSET) : 0,
                 }
             }
         }
