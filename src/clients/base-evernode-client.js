@@ -315,25 +315,9 @@ class BaseEvernodeClient {
      * name: 'HostRegUpdated',
      * data: {
      *     transaction: {
-     *         Account: 'rKrSVLgaKQANTSEv1bY4cT4PVThCzFXpX6',
-     *         Amount: '1',
-     *         Destination: 'rQUhXd7sopuga3taru3jfvc1BgVbscrb1X',
-     *         Fee: '11872',
-     *         Flags: 0,
-     *             HookParameters: [Array],
-     *             LastLedgerSequence: 3872428,
-     *             Memos: [],
-     *             NetworkID: 21338,
-     *             Sequence: 2996616,
-     *             SigningPubKey: '0309EAAD262DD00DFD62583BDBBE2CC1C599A6C4BD9D1009AACE65DF36D77FD3B5',
-     *             TransactionType: 'Payment',
-     *             TxnSignature: '304502210081A9B31F86330FEC74B5AAC6480ECD579AFB08E90286F99BE8F09C8484130D1C0220022572EA86A974A23C64221885C4A9E9C88B2FDEB4F98E74FF00927529801C93',
-     *             date: 739869360,
-     *             hash: 'C9807D7B23DF7017F0A24A6C22FDE27655AC17EDFF70328B0F3E5D77A3D47ADA',
-     *             inLedger: 3872420,
-     *             ledger_index: 3872420
-     *         },
-     *         host: 'rKrSVLgaKQANTSEv1bY4cT4PVThCzFXpX6'
+     *      host: 'rKrSVLgaKQANTSEv1bY4cT4PVThCzFXpX6',
+     *      Amount: '1',
+     *      ...
      *     }
      * }
      * 
