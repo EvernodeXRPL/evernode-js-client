@@ -1,7 +1,10 @@
+/**
+ * Evernode constants
+*/
 const EvernodeConstants = {
     EVR: 'EVR',
     TOKEN_PREFIX_HEX: '657672686F7374', // evrhost
-    LEASE_TOKEN_PREFIX_HEX: '6576726C65617365', // evrlease
+    LEASE_TOKEN_PREFIX_HEX: '6576726C65617365', // evrlease 
     LEASE_TOKEN_VERSION_PREFIX_HEX: '4C5456', // LTV (Lease_Token_Version)
     LEASE_TOKEN_VERSION: 1,
     HOOK_NAMESPACE: '01EAF09326B4911554384121FF56FA8FECC215FDDE2EC35D9E59F2C53EC665A0',
@@ -41,6 +44,9 @@ const EvernodeConstants = {
     }
 }
 
+/**
+ * Event types list in Evernode
+*/
 const EventTypes = {
     // Governor hook events.
     ACQUIRE_LEASE: 'evnAcquireLease',
@@ -80,6 +86,9 @@ const EventTypes = {
     REPUTATION_CONTRACT_INFO_UPDATE: 'evnRepConInfoUpdate'
 }
 
+/**
+ * Memo formats supported for use in transactions
+ */
 const MemoFormats = {
     TEXT: 'text/plain',
     JSON: 'text/json',
@@ -87,12 +96,18 @@ const MemoFormats = {
     HEX: 'hex'
 }
 
+/**
+ * Error codes supported
+ */
 const ErrorCodes = {
     ACQUIRE_ERR: 'ACQUIRE_ERR',
     EXTEND_ERR: 'EXTEND_ERR',
     PROPOSE_ERR: 'PROPOSE_ERR',
 }
 
+/**
+ * Common reasons for errors that may occur
+ */
 const ErrorReasons = {
     TRANSACTION_FAILURE: 'TRANSACTION_FAILURE',
     NO_OFFER: 'NO_OFFER',
@@ -104,6 +119,9 @@ const ErrorReasons = {
     NO_STATE_KEY: 'NO_STATE_KEY'
 }
 
+/**
+ * Reputation system constants used in the reputation calculation mechanisms
+ */
 const ReputationConstants = {
     REP_INFO_BUFFER_SIZE: 43,
     REP_INFO_PUBKEY_OFFSET: 0,
@@ -112,8 +130,11 @@ const ReputationConstants = {
     SCORE_EXPIRY_MOMENT_COUNT: 2
 }
 
-// All keys are prefixed with 'EVR' (0x455652)
-// Config keys sub-prefix: 0x01
+/**
+ * Keys used to access and configure Evernode hook states
+ * All keys are prefixed with 'EVR' (0x455652)
+ * Config keys sub-prefix: 0x01
+ */
 const HookStateKeys = {
     // Configuration.
     EVR_ISSUER_ADDR: "4556520100000000000000000000000000000000000000000000000000000001",
@@ -150,7 +171,10 @@ const HookStateKeys = {
     PREFIX_CANDIDATE_ID: "45565206",
 }
 
-// All keys are prefixed with 'EVR' (0x455652)
+/**
+ * Keys used to access specific parameters within Evernode hooks
+ * All keys are prefixed with 'EVR' (0x455652)
+ */
 const HookParamKeys = {
     PARAM_STATE_HOOK_KEY: "4556520100000000000000000000000000000000000000000000000000000001",
     PARAM_EVENT_TYPE_KEY: "4556520100000000000000000000000000000000000000000000000000000002",
@@ -158,6 +182,9 @@ const HookParamKeys = {
     PARAM_EVENT_DATA2_KEY: "4556520100000000000000000000000000000000000000000000000000000004",
 }
 
+/**
+ * Events emitted by Evernode
+ */
 const EvernodeEvents = {
     HostRegistered: "HostRegistered",
     HostDeregistered: "HostDeregistered",
@@ -189,11 +216,17 @@ const EvernodeEvents = {
     HostReputationUpdated: "HostReputationUpdated"
 }
 
+/**
+ * Types of URI tokens used within Evernode
+ */
 const URITokenTypes = {
     LEASE_URI_TOKEN: 1,
     REGISTRATION_URI_TOKEN: 2
 }
 
+/**
+ * Regular expressions for validating data formats
+ */
 const RegExp = {
     PublicPrivateKey: /^[0-9A-Fa-f]{66}$/
 }

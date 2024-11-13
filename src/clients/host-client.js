@@ -15,6 +15,12 @@ const { UtilHelpers } = require('../util-helpers');
 
 const OFFER_WAIT_TIMEOUT = 60;
 
+/**
+ * Following host-specific events can be subscribed from Evernode client instances.
+ * @property {string} AcquireLease - Triggered when the host receives a lease acquire request.
+ * @property {string} ExtendLease - Triggered when the host receives a lease extend request.
+ * @property {string} TerminateLease - Triggered when the host receives a lease termination request.
+ */
 const HostEvents = {
     AcquireLease: EvernodeEvents.AcquireLease,
     ExtendLease: EvernodeEvents.ExtendLease,
@@ -73,7 +79,6 @@ class HostClient extends BaseEvernodeClient {
 
     /**
      * Creates an instance of HostClient.
-     * 
      * @param {string} xrpAddress - The XRP address to associate with this client.
      * @param {string} xrpSecret - The secret (private key) associated with the XRP address.
      * @param {Object} [options={}] - Additional configuration options for the HostClient.
@@ -88,6 +93,11 @@ class HostClient extends BaseEvernodeClient {
         return res;
     }
 
+    /**
+     * Set reputation account detatils.
+     * @param {string} [reputationAddress = null] - XRPL address of the reputation account.
+     * @param {string} [reputationSecret = null] - XRPL secret of the reputation account.
+     */
     async setReputationAcc(reputationAddress = null, reputationSecret = null) {
         let hostReputationAccId;
         if (!reputationAddress && !reputationSecret) {
@@ -138,7 +148,7 @@ class HostClient extends BaseEvernodeClient {
 
     /**
      * Get lease token by index.
-     * @param index Index of the token.
+     * @param {number}index Index of the token.
      * @returns Lease token.
      */
     async getLeaseByIndex(index) {

@@ -79,6 +79,7 @@ class BaseEvernodeClient {
      * Listens to the subscribed events. This will listen for the event without detaching the handler until it's 'off'.
      * @param {string} event - The name of the event to listen for.
      * @param {function} handler - The callback function to handle the event. The function takes the event object as a parameter.
+     * @example client.on(EvernodeEvents.HostRegistered, (ev) => {});
      */
     on(event, handler) {
         this.events.on(event, handler);
@@ -88,6 +89,7 @@ class BaseEvernodeClient {
     * Listens to the subscribed events. This will listen only once and detach the handler.
     * @param {string} event Event name.
     * @param {function(event)} handler Callback function to handle the event.
+    * @example client.once(EvernodeEvents.HostRegistered, (ev) => {});
     */
     once(event, handler) {
         this.events.once(event, handler);
@@ -97,14 +99,16 @@ class BaseEvernodeClient {
      * Detach the listener event.
      * @param {string} event Event name.
      * @param {function(event)} handler (optional) Can be sent if a specific handler need to be detached. All the handlers will be detached if not specified.
+     * @example client.off(EvernodeEvents.HostRegistered);
      */
     off(event, handler = null) {
         this.events.off(event, handler);
     }
 
     /**
-     * Connects the client to xrpl server and do the config loading and subscriptions. 'subscribe' is called inside this.
+     * Connects the client to Xahau server and do the config loading and subscriptions. 'subscribe' is called inside this.
      * @returns Boolean value `true` if the connection is successful.
+     * @example const status = await client.connect();
      */
     async connect(options = {}) {
         if (this.connected)
@@ -129,6 +133,7 @@ class BaseEvernodeClient {
 
     /**
      * Disconnects the client to xrpl server and do the un-subscriptions. 'unsubscribe' is called inside this.
+     * @example await client.disconnect();
      */
     async disconnect() {
         await this.unsubscribe();
@@ -139,6 +144,7 @@ class BaseEvernodeClient {
 
     /**
      * Subscribes to the client events.
+     * @example await client.subscribe();
      */
     async subscribe() {
         await this.xrplAcc.subscribe();
@@ -146,6 +152,7 @@ class BaseEvernodeClient {
 
     /**
      * Unsubscribes from the client events.
+     * @example await client.unsubscribe();
      */
     async unsubscribe() {
         await this.xrplAcc.unsubscribe();
@@ -154,6 +161,7 @@ class BaseEvernodeClient {
     /**
      * Get the EVR balance in the account.
      * @returns The available EVR amount as a string.
+     * @example const balance = await client.getEVRBalance();
      */
     async getEVRBalance() {
         const lines = await this.xrplAcc.getTrustLines(EvernodeConstants.EVR, this.config.evrIssuerAddress);
@@ -164,8 +172,28 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get all XRPL hook states in the registry account.
+     * Get all Xahau hook states in the registry account.
      * @returns The list of hook states, including Evernode configuration and hosts.
+     * @example
+     * [
+     *     {
+     *        key: '4556520100000000000000000000000000000000000000000000000000000008',
+     *        data: '0A0014000000C04E00000000001800'
+     *    },
+     *    {
+     *        key: '45565202E32B63CB70A23A5CB00E3CB58C8FAEF20F1FC0E81988ADD1286F254D',
+     *        data: '2A42190773386D16A047F2A7433B0283303F1437496E74656C2852292058656F6E285229204350552045352D3236383020763220322E383047487A000200EF0A00350C0088130000409C000078727034457665727340676D61696C2E636F6D000000000000000000000000000000000000000000B1AADC421B001255'
+     *    },
+     * ]
+     * 
+     * //Response Fields:
+     * | Name | Type   | Description                         |
+     * | ---- | ------ | ----------------------------------- |
+     * | key  | string | Hex string hook state key buffer.   |
+     * | data | string | Hex string of the hook data buffer. |
+     * 
+     * //example :- const states = await client.getHookStates();
+
      */
     async getHookStates() {
         const regAcc = new XrplAccount(this.governorAddress, null, { xrplApi: this.xrplApi });
@@ -180,7 +208,8 @@ class BaseEvernodeClient {
      * Get the moment from the given index (timestamp).
      * @param {number} index [Optional] Index (timestamp) to get the moment value.
      * @returns The moment of the given index (timestamp) as a number. Returns the current moment if the timestamp is not provided.
-     */
+     * @example const moment = await client.getMoment();
+    */
     async getMoment(index = null) {
         const i = index || UtilHelpers.getCurrentUnixTime();
         const m = this.config.momentBaseInfo.baseTransitionMoment + Math.floor((i - this.config.momentBaseInfo.baseIdx) / this.config.momentSize);
@@ -243,6 +272,8 @@ class BaseEvernodeClient {
 
     /**
      * Loads the configs from XRPL hook and updates the in-memory config.
+     * @returns void
+     * @example await client.refreshConfig();
      */
     async refreshConfig() {
         this.config = await this.#getEvernodeConfig();
@@ -274,6 +305,27 @@ class BaseEvernodeClient {
      * Note: You need to deserialize HookParameters before passing the transaction to this function.
      * @param {object} tx - The transaction object to be deserialized and extracted.
      * @returns {} The event object in format `{name: string, data: Object}`. Returns `null` if the event is not handled. 
+     * @example
+     *     tx.Memos = TransactionHelper.deserializeMemos(tx?.Memos);
+     *    tx.HookParameters = TransactionHelper.deserializeHookParams(tx?.HookParameters);
+     *    const extracted = await client.extractEvernodeEvent(tx);
+     * 
+     * //example response
+     * {
+     * name: 'HostRegUpdated',
+     * data: {
+     *     transaction: {
+     *      host: 'rKrSVLgaKQANTSEv1bY4cT4PVThCzFXpX6',
+     *      Amount: '1',
+     *      ...
+     *     }
+     * }
+     * 
+     * | Name        | Type   | Description                                   |
+     * | ----------- | ------ | --------------------------------------------- |
+     * | name        | string | [Event name](#events).                        |
+     * | transaction | object | The original transaction from the Xahau ledger. |
+     * // There will be more properties in the response which are according to the event type.
      */
     async extractEvernodeEvent(tx) {
         let eventType;
@@ -655,10 +707,41 @@ class BaseEvernodeClient {
     }
 
     /**
-     * Get the registered host information.
+     * Gets the registered host information.
      * @param {string} hostAddress [Optional] Address of the host.
      * @returns The registered host information object. Returns null if not registered.
-     */
+     * @example 
+     * //request
+     * const hostInfo = await client.getHostInfo('r3tSGeDFJaz8GEVmM6oUuYTAiNdDJhitCt');
+     * 
+     * //example response
+     * {
+     *     address: '<string> Xahau account address of the host',
+     *     uriTokenId: '<string> Registration URI Token ID of the host',
+     *     countryCode: '<string> Host machine\'s origin country code',
+     *     description: '<string> IP address or the DNS of the host',
+     *     registrationLedger: '<number> Host machine registered Xahau ledger',
+     *     registrationFee: '<number> Registration fee paid by the host when it\'s registered',
+     *     maxInstances: '<number> Max number of instances that can be created in the host',
+     *     activeInstances: '<number> Max number of instances that can be created in the host',
+     *     lastHeartbeatIndex: '<number> Timestamp that the last heartbeat is received',
+     *     version: '<string> Sashimono version installed in the host machine>',
+     *     isATransferer: '<number> 1 - If transfer is initiated for the host, 0 - If not',
+     *     lastVoteCandidateIdx: '<number> Index of the candidate which host has recently voted',
+     *     lastVoteTimestamp: '<number> Timestamp when the host sent the last vote',
+     *     supportVoteSent: '<number> 1 - If host sent a support vote for the moment, 0 - If not',
+     *     registrationTimestamp: '<number> Timestamp when the host was registered',
+     *     active: '<boolean> Boolean indicating whether the host is active or not',
+     *     cpuModelName: '<string> CPU model of the host machine',
+     *     cpuCount: '<number> CPU count of the host machine',
+     *     cpuMHz: '<number> CPU speed of the host',
+     *     cpuMicrosec: '<number> CPU time in micro seconds allocated for Evernode',
+     *     ramMb: '<number> Host machine\'s Evernode allocated RAM in MBs',
+     *     diskMb: '<number> Disk space allocated for Evernode in the host',
+     *     email: '<string> Disk space allocated for Evernode in the host',
+     *     accumulatedRewardAmount: '<number> Currently accumulated reward amount that foundation owed to the host' 
+     * }     
+    */
     async getHostInfo(hostAddress = this.xrplAcc.address) {
         try {
             const addrStateKey = StateHelpers.generateHostAddrStateKey(hostAddress);
@@ -756,6 +839,7 @@ class BaseEvernodeClient {
     /**
      * Remove a host which is inactive for a long period. The inactivity is checked by Evernode it self and only pruned if inactive thresholds are met.
      * @param {string} hostAddress XRPL address of the host to be pruned.
+     * @example await client.pruneDeadHost('rPvhbE9hNgSCb6tgMCoDwsxRgewxcvD7jk');
      */
     async pruneDeadHost(hostAddress) {
         if (this.xrplAcc.address === this.config.registryAddress)

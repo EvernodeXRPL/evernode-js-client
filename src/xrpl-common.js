@@ -1,3 +1,6 @@
+/**
+ * Events emitted by XRPL API to track ledger and transaction activities
+ */
 const XrplApiEvents = {
     LEDGER: 'ledger',
     DISCONNECTED: 'disconnected',
@@ -9,6 +12,9 @@ const XrplApiEvents = {
     SERVER_DESYNCED: 'desynced'
 }
 
+/**
+ * Constants used within the XRPL network and transactions
+ */
 const XrplConstants = {
     MAX_LEDGER_OFFSET: 10,
     XRP: 'XRP',
@@ -17,6 +23,9 @@ const XrplConstants = {
     MIN_DROPS: '1'
 }
 
+/**
+ * Types of transactions supported in XRPL
+ */
 const XrplTransactionTypes = {
     INVOKE: 'Invoke',
     PAYMENT: 'Payment',
