@@ -3,9 +3,17 @@ const maxMantissa = 9999999999999999n
 const minExponent = -96
 const maxExponent = 80
 
-// Helper class to handle XFL float numbers.
+/**
+ * Helper class for handling XFL (Extended Floating-Point) float numbers.
+ */
 class XflHelpers {
 
+    /**
+     * Retrieves the exponent of the XFL float number.
+     * @param {bigint} xfl - The XFL float number.
+     * @returns {bigint} The exponent of the XFL float number.
+     * @throws {string} Throws an error if the XFL float number is negative.
+     */
     static getExponent(xfl) {
         if (xfl < 0n)
             throw "Invalid XFL";
@@ -14,6 +22,12 @@ class XflHelpers {
         return ((xfl >> 54n) & 0xFFn) - 97n;
     }
 
+    /**
+     * Retrieves the mantissa of the XFL float number.
+     * @param {bigint} xfl - The XFL float number.
+     * @returns {bigint} The mantissa of the XFL float number.
+     * @throws {string} Throws an error if the XFL float number is negative.
+     */
     static getMantissa(xfl) {
         if (xfl < 0n)
             throw "Invalid XFL";
@@ -22,6 +36,12 @@ class XflHelpers {
         return xfl - ((xfl >> 54n) << 54n);
     }
 
+    /**
+     * Checks if the XFL float number is negative.
+     * @param {bigint} xfl - The XFL float number.
+     * @returns {boolean} `true` if the XFL float number is negative, otherwise `false`.
+     * @throws {string} Throws an error if the XFL float number is negative.
+     */
     static isNegative(xfl) {
         if (xfl < 0n)
             throw "Invalid XFL";
@@ -30,6 +50,12 @@ class XflHelpers {
         return ((xfl >> 62n) & 1n) == 0n;
     }
 
+    /**
+     * Converts an XFL float number to its string representation.
+     * @param {bigint} xfl - The XFL float number.
+     * @returns {string} The string representation of the XFL float number.
+     * @throws {string} Throws an error if the XFL float number is negative.
+     */
     static toString(xfl) {
         if (xfl < 0n)
             throw "Invalid XFL";
@@ -56,6 +82,11 @@ class XflHelpers {
         return (this.isNegative(xfl) ? '-' : '') + finalResult.replace(/\.+$/, '');
     }
 
+    /**
+     * Converts a string representation of a float number to an XFL float number.
+     * @param {string} floatStr - The string representation of the float number.
+     * @returns {bigint} The XFL float number.
+     */
     static getXfl(floatStr) {
         let exponent;
         let mantissa;

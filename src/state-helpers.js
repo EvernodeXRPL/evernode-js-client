@@ -148,6 +148,9 @@ const HOST_EMAIL_ADDRESS_LEN = 40;
 const STATE_KEY_SIZE = 32;
 const ACCOUNT_ID_SIZE = 20;
 
+/**
+ * Provides various utility functions for working with States.
+ */
 class StateHelpers {
     static StateTypes = {
         TOKEN_ID: 'tokenId',
@@ -163,6 +166,12 @@ class StateHelpers {
         SEC: "SEC"
     }
 
+    /**
+     * Retrieves the state data for a specific key from an array of states.
+     * @param {Array} states - Array of state objects.
+     * @param {string} key - Key for the state data.
+     * @returns {Object|null} The state data or null if not found.
+     */
     static getStateData(states, key) {
         const state = states.find(s => key === s.key);
         if (!state)
@@ -171,6 +180,12 @@ class StateHelpers {
         return state.data;
     }
 
+    /**
+     * Decodes reputation host address state from buffers.
+     * @param {Buffer} stateKeyBuf - Buffer containing the state key.
+     * @param {Buffer} stateDataBuf - Buffer containing the state data.
+     * @returns {Object} Decoded state data including host address and reputation metrics.
+     */
     static decodeReputationHostAddressState(stateKeyBuf, stateDataBuf) {
         const keyOffset = STATE_KEY_SIZE - ACCOUNT_ID_SIZE;
         const data = {
@@ -186,6 +201,12 @@ class StateHelpers {
         return data;
     }
 
+    /**
+     * Decodes reputation host order address state from buffers.
+     * @param {Buffer} stateKeyBuf - Buffer containing the state key.
+     * @param {Buffer} stateDataBuf - Buffer containing the state data.
+     * @returns {Object} Decoded state data including moment and ordered ID.
+     */
     static decodeReputationHostOrderAddressState(stateKeyBuf, stateDataBuf) {
         const keyOffset = STATE_KEY_SIZE - ACCOUNT_ID_SIZE - 8;
         const data = {
@@ -196,6 +217,12 @@ class StateHelpers {
         return data;
     }
 
+    /**
+     * Decodes reputation host ordered ID state from buffers.
+     * @param {Buffer} stateKeyBuf - Buffer containing the state key.
+     * @param {Buffer} stateDataBuf - Buffer containing the state data.
+     * @returns {Object} Decoded state data including moment and ordered ID.
+     */
     static decodeReputationHostOrderedIdState(stateKeyBuf, stateDataBuf) {
         const keyOffset = STATE_KEY_SIZE - 16;
         const data = {
@@ -206,6 +233,12 @@ class StateHelpers {
         return data;
     }
 
+    /**
+     * Decodes reputation host count state from buffers.
+     * @param {Buffer} stateKeyBuf - Buffer containing the state key.
+     * @param {Buffer} stateDataBuf - Buffer containing the state data.
+     * @returns {Object} Decoded state data including moment and count.
+     */
     static decodeReputationHostCountState(stateKeyBuf, stateDataBuf) {
         const keyOffset = STATE_KEY_SIZE - 8;
         const data = {
@@ -215,6 +248,13 @@ class StateHelpers {
         return data;
     }
 
+    /**
+     * Decodes a host address state from buffers.
+     * 
+     * @param {Buffer} stateKeyBuf - The buffer containing the state key.
+     * @param {Buffer} stateDataBuf - The buffer containing the state data.
+     * @returns {Object} The decoded host address state.
+     */
     static decodeHostAddressState(stateKeyBuf, stateDataBuf) {
         let data = {
             address: codec.encodeAccountID(stateKeyBuf.slice(12)),
@@ -250,6 +290,12 @@ class StateHelpers {
         return data;
     }
 
+    /**
+     * Decodes a token ID state from a buffer.
+     * 
+     * @param {Buffer} stateDataBuf - The buffer containing the state data.
+     * @returns {Object} The decoded token ID state.
+     */
     static decodeTokenIdState(stateDataBuf) {
         return {
             address: codec.encodeAccountID(stateDataBuf.slice(HOST_ADDRESS_OFFSET, HOST_CPU_MODEL_NAME_OFFSET)),
@@ -264,6 +310,13 @@ class StateHelpers {
         }
     }
 
+    /**
+     * Decodes a transferee address state from buffers.
+     * 
+     * @param {Buffer} stateKeyBuf - The buffer containing the state key.
+     * @param {Buffer} stateDataBuf - The buffer containing the state data.
+     * @returns {Object} The decoded transferee address state.
+     */
     static decodeTransfereeAddrState(stateKeyBuf, stateDataBuf) {
         const prevHostClassicAddress = codec.encodeAccountID(stateDataBuf.slice(PREV_HOST_ADDRESS_OFFSET, TRANSFER_LEDGER_IDX_OFFSET));
         return {
@@ -275,6 +328,13 @@ class StateHelpers {
         }
     }
 
+    /**
+     * Decodes a candidate owner state from buffers.
+     * 
+     * @param {Buffer} stateKeyBuf - The buffer containing the state key.
+     * @param {Buffer} stateDataBuf - The buffer containing the state data.
+     * @returns {Object} The decoded candidate owner state.
+     */
     static decodeCandidateOwnerState(stateKeyBuf, stateDataBuf) {
         let data = {
             ownerAddress: codec.encodeAccountID(stateKeyBuf.slice(12)),
@@ -288,6 +348,12 @@ class StateHelpers {
         return data;
     }
 
+    /**
+     * Decodes a candidate ID state from a buffer.
+     * 
+     * @param {Buffer} stateDataBuf - The buffer containing the state data.
+     * @returns {Object} The decoded candidate ID state.
+     */
     static decodeCandidateIdState(stateDataBuf) {
         let status = '';
         switch (stateDataBuf.readUInt8(CANDIDATE_STATUS_OFFSET)) {
@@ -324,6 +390,13 @@ class StateHelpers {
         }
     }
 
+    /**
+     * Decodes state data based on the state key and state data buffers.
+     * 
+     * @param {Buffer} stateKey - The buffer containing the state key.
+     * @param {Buffer} stateData - The buffer containing the state data.
+     * @returns {Object} The decoded state data with type information.
+     */
     static decodeStateData(stateKey, stateData) {
         const hexKey = stateKey.toString('hex').toUpperCase();
         if (Buffer.from(HookStateKeys.PREFIX_HOST_ADDR, 'hex').compare(stateKey, 0, 4) === 0) {
@@ -570,6 +643,13 @@ class StateHelpers {
             throw { type: 'Validation Error', message: 'Invalid state key.' };
     }
 
+    /**
+     * Decodes a state key into a type and key.
+     * 
+     * @param {Buffer} stateKey - The buffer containing the state key.
+     * @returns {Object} An object containing the key as a hexadecimal string and its type.
+     * @throws {Object} Throws a Validation Error if the state key is invalid.
+     */
     static decodeStateKey(stateKey) {
         const hexKey = stateKey.toString('hex').toUpperCase();
         if (Buffer.from(HookStateKeys.PREFIX_HOST_ADDR, 'hex').compare(stateKey, 0, 4) === 0) {
@@ -639,6 +719,12 @@ class StateHelpers {
             throw { type: 'Validation Error', message: 'Invalid state key.' };
     }
 
+    /**
+     * Generates a state key for a token ID.
+     * 
+     * @param {string} uriToken - The URI token in hexadecimal format.
+     * @returns {string} The generated state key as a hexadecimal string.
+     */
     static generateTokenIdStateKey(uriToken) {
         // 1 byte - Key Type.
         let buf = Buffer.alloc(1, 0);
@@ -649,6 +735,12 @@ class StateHelpers {
         return stateKeyBuf.toString('hex').toUpperCase();
     }
 
+    /**
+     * Generates a state key for a host address.
+     * 
+     * @param {string} address - The host address.
+     * @returns {string} The generated state key as a hexadecimal string.
+     */
     static generateHostAddrStateKey(address) {
         // 1 byte - Key Type.
         // 8 bytes - Zeros.
@@ -663,6 +755,12 @@ class StateHelpers {
         return stateKeyBuf.toString('hex').toUpperCase();
     }
 
+    /**
+     * Generates a state key for a reputation host address.
+     * 
+     * @param {string} address - The reputation host address.
+     * @returns {string} The generated state key as a hexadecimal string.
+     */
     static generateReputationHostAddrStateKey(address) {
         const buf = Buffer.alloc(STATE_KEY_SIZE, 0);
         Buffer.from(codec.decodeAccountID(address), "hex").copy(buf, buf.length - ACCOUNT_ID_SIZE);
@@ -670,6 +768,13 @@ class StateHelpers {
         return buf.toString('hex').toUpperCase();
     }
 
+    /**
+     * Generates a state key for a reputation host order address.
+     * 
+     * @param {string} address - The reputation host address.
+     * @param {number} moment - The moment timestamp.
+     * @returns {string} The generated state key as a hexadecimal string.
+     */
     static generateReputationHostOrderAddressStateKey(address, moment) {
         const buf = Buffer.alloc(STATE_KEY_SIZE, 0);
         const offset = buf.length - ACCOUNT_ID_SIZE - 8;
@@ -679,6 +784,13 @@ class StateHelpers {
         return buf.toString('hex').toUpperCase();
     }
 
+    /**
+     * Generates a state key for a reputation host ordered ID.
+     * 
+     * @param {string} orderedId - The ordered ID.
+     * @param {number} moment - The moment timestamp.
+     * @returns {string} The generated state key as a hexadecimal string.
+     */
     static generateReputationHostOrderedIdStateKey(orderedId, moment) {
         let buf = Buffer.alloc(STATE_KEY_SIZE, 0);
         const offset = buf.length - 16;
@@ -688,6 +800,12 @@ class StateHelpers {
         return buf.toString('hex').toUpperCase();
     }
 
+    /**
+     * Generates a state key for a reputation host count.
+     * 
+     * @param {number} moment - The moment timestamp.
+     * @returns {string} The generated state key as a hexadecimal string.
+     */
     static generateReputationHostCountStateKey(moment) {
         let buf = Buffer.alloc(STATE_KEY_SIZE, 0);
         const offset = buf.length - 8;
@@ -696,6 +814,12 @@ class StateHelpers {
         return buf.toString('hex').toUpperCase();
     }
 
+    /**
+     * Generates a state key for reputation contract information.
+     * 
+     * @param {string} address - The contract address.
+     * @returns {string} The generated state key as a hexadecimal string.
+     */
     static generateReputationContractInfoStateKey(address) {
         const buf = Buffer.alloc(STATE_KEY_SIZE, 0);
         Buffer.from(EVERNODE_PREFIX, "utf-8").copy(buf, 0);
@@ -706,6 +830,12 @@ class StateHelpers {
         return buf.toString('hex').toUpperCase();
     }
 
+    /**
+     * Generates a state key for a transferee address.
+     * 
+     * @param {string} address - The transferee address.
+     * @returns {string} The generated state key as a hexadecimal string.
+     */
     static generateTransfereeAddrStateKey(address) {
         // 1 byte - Key Type.
         // 8 bytes - Zeros.
@@ -720,6 +850,12 @@ class StateHelpers {
         return stateKeyBuf.toString('hex').toUpperCase();
     }
 
+    /**
+     * Generates a state key for a candidate ID.
+     * 
+     * @param {string} uniqueId - The unique candidate ID.
+     * @returns {string} The generated state key as a hexadecimal string.
+     */
     static generateCandidateIdStateKey(uniqueId) {
         // 1 byte - Key Type.
         let buf = Buffer.alloc(1, 0);
@@ -730,6 +866,12 @@ class StateHelpers {
         return stateKeyBuf.toString('hex').toUpperCase();
     }
 
+    /**
+     * Generates a state key for a candidate owner.
+     * 
+     * @param {string} owner - The candidate owner address.
+     * @returns {string} The generated state key as a hexadecimal string.
+     */
     static generateCandidateOwnerStateKey(owner) {
         // 1 byte - Key Type.
         // 8 bytes - Zeros.
@@ -744,6 +886,14 @@ class StateHelpers {
         return stateKeyBuf.toString('hex').toUpperCase();
     }
 
+    /**
+     * Gets the hook state index for a specific hook account and state key.
+     * 
+     * @param {string} hookAccount - The hook account address.
+     * @param {string} stateKey - The state key as a hexadecimal string.
+     * @param {string} [hookNamespace=EvernodeConstants.HOOK_NAMESPACE] - The hook namespace.
+     * @returns {string} The hook state index as a hexadecimal string.
+     */
     static getHookStateIndex(hookAccount, stateKey, hookNamespace = EvernodeConstants.HOOK_NAMESPACE) {
         const typeBuf = Buffer.alloc(2, 0);
         typeBuf.writeInt16BE(HOOK_STATE_LEDGER_TYPE_PREFIX);
@@ -764,6 +914,12 @@ class StateHelpers {
         return digest.substring(0, 64).toUpperCase();
     }
 
+    /**
+     * Generates a new hook candidate ID based on hash buffers.
+     * 
+     * @param {Buffer} hashesBuf - The buffer containing the hash data.
+     * @returns {string} The generated candidate ID as a hexadecimal string.
+     */
     static getNewHookCandidateId(hashesBuf) {
         const idBuf = Buffer.alloc(32, 0);
         idBuf.writeUInt8(EvernodeConstants.CandidateTypes.NewHook, 4);
@@ -771,6 +927,11 @@ class StateHelpers {
         return idBuf.toString('hex').toUpperCase();
     }
 
+    /**
+     * Generates a candidate ID for the piloted mode.
+     * 
+     * @returns {string} The generated candidate ID as a hexadecimal string.
+     */
     static getPilotedModeCandidateId() {
         const idBuf = Buffer.alloc(32, 0);
         idBuf.writeUInt8(EvernodeConstants.CandidateTypes.PilotedMode, 4);
@@ -778,6 +939,12 @@ class StateHelpers {
         return idBuf.toString('hex').toUpperCase();
     }
 
+    /**
+     * Generates a candidate ID for a dud host.
+     * 
+     * @param {string} hostAddress - The host address.
+     * @returns {string} The generated candidate ID as a hexadecimal string.
+     */
     static getDudHostCandidateId(hostAddress) {
         const idBuf = Buffer.alloc(32, 0);
         idBuf.writeUInt8(EvernodeConstants.CandidateTypes.DudHost, 4);
@@ -785,6 +952,12 @@ class StateHelpers {
         return idBuf.toString('hex').toUpperCase();
     }
 
+    /**
+     * Retrieves the candidate type from a candidate ID.
+     * 
+     * @param {string} candidateId - The candidate ID as a hexadecimal string.
+     * @returns {number} The candidate type.
+     */
     static getCandidateType(candidateId) {
         return Buffer.from(candidateId, 'hex').readUInt8(4);
     }
