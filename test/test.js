@@ -52,7 +52,7 @@ const clients = [];
 
 async function app() {
 
-    // Use a singleton xrplApi for all tests..
+    // Use a singleton xrplApi for all tests.
     await evernode.Defaults.useNetwork('devnet');
     const xrplApi = new evernode.XrplApi(null, { autoReconnect: true });
     evernode.Defaults.set({
