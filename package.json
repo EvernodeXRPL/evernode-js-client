@@ -16,7 +16,7 @@
     "docs": "echo '# Evernode JS API Documentation' > docs/evernode-js-api.md && xargs jsdoc2md < docs/filelist >> docs/evernode-js-api.md"
   },
   "dependencies": {
-    "elliptic": "6.5.4",
+    "elliptic": "6.6.1",
     "libsodium-wrappers": "0.7.10",
     "ripple-address-codec": "4.2.0",
     "ripple-keypairs": "1.1.0",
