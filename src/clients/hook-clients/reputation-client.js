@@ -3,6 +3,12 @@ const { BaseEvernodeClient } = require("../base-evernode-client");
 
 const ReputationEvents = {}
 
+/**
+ * ReputationClient is responsible for managing reputation operations in Evernode.
+ * It interacts with the XRP Ledger using the reputation address and listens for specific reputation events.
+ * 
+ * @extends BaseEvernodeClient
+ */
 class ReputationClient extends BaseEvernodeClient {
 
     constructor(options = {}) {

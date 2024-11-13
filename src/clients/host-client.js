@@ -64,8 +64,20 @@ const IPV6_FAMILY = 6;
 const MAX_HOST_LEDGER_OFFSET = 30;
 const TX_RETRY_INTERVAL = 10000;
 
+/**
+ * HostClient class to manage host operations.
+ * It extends the BaseEvernodeClient.
+ * @extends BaseEvernodeClient
+ */
 class HostClient extends BaseEvernodeClient {
 
+    /**
+     * Creates an instance of HostClient.
+     * 
+     * @param {string} xrpAddress - The XRP address to associate with this client.
+     * @param {string} xrpSecret - The secret (private key) associated with the XRP address.
+     * @param {Object} [options={}] - Additional configuration options for the HostClient.
+     */
     constructor(xrpAddress, xrpSecret, options = {}) {
         super(xrpAddress, xrpSecret, Object.values(HostEvents), true, options);
     }
