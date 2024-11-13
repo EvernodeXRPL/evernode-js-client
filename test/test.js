@@ -133,6 +133,7 @@ async function app() {
             // () => registerHost(),
             // () => prepareHostReputation(),
             // () => getReputationInfo(),
+            // () => setReputationContractInfo(),
             // () => sendReputation(),
             // () => getHostInfo(),
             // () => updateInfo(),
@@ -517,6 +518,15 @@ async function getHostInfo() {
     return hostInfo;
 }
 
+async function setReputationContractInfo() {
+    const host = await getHostClient(hostAddress, hostSecret, hostReputationAddress, hostReputationSecret);
+    const curMoment = await host.getMoment();
+
+    console.log(`Setting reputation info`);
+
+    await host.setReputationContractInfo(20265, 'ed5cb83404120ac759609819591ef839b7d222c84f1f08b3012f490586159d2b50', curMoment + 1);
+}
+
 async function getReputationInfo() {
     const host = await getHostClient();
     const reputationInfo = await host.getReputationInfo();
@@ -529,7 +539,8 @@ async function sendReputation() {
 
     console.log(`Sending reputation`);
 
-    await host.sendReputations(1, 1, {});
+    const scoreBuf = await host.prepareHostReputationScores(3);
+    await host.sendReputations(scoreBuf?.toString('hex'));
 }
 
 async function pruneDeadHost(address = hostAddress) {
