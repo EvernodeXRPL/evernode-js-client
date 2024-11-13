@@ -250,7 +250,6 @@ class StateHelpers {
 
     /**
      * Decodes a host address state from buffers.
-     * 
      * @param {Buffer} stateKeyBuf - The buffer containing the state key.
      * @param {Buffer} stateDataBuf - The buffer containing the state data.
      * @returns {Object} The decoded host address state.
@@ -292,7 +291,6 @@ class StateHelpers {
 
     /**
      * Decodes a token ID state from a buffer.
-     * 
      * @param {Buffer} stateDataBuf - The buffer containing the state data.
      * @returns {Object} The decoded token ID state.
      */
@@ -312,7 +310,6 @@ class StateHelpers {
 
     /**
      * Decodes a transferee address state from buffers.
-     * 
      * @param {Buffer} stateKeyBuf - The buffer containing the state key.
      * @param {Buffer} stateDataBuf - The buffer containing the state data.
      * @returns {Object} The decoded transferee address state.
@@ -330,7 +327,6 @@ class StateHelpers {
 
     /**
      * Decodes a candidate owner state from buffers.
-     * 
      * @param {Buffer} stateKeyBuf - The buffer containing the state key.
      * @param {Buffer} stateDataBuf - The buffer containing the state data.
      * @returns {Object} The decoded candidate owner state.
@@ -350,7 +346,6 @@ class StateHelpers {
 
     /**
      * Decodes a candidate ID state from a buffer.
-     * 
      * @param {Buffer} stateDataBuf - The buffer containing the state data.
      * @returns {Object} The decoded candidate ID state.
      */
@@ -392,7 +387,6 @@ class StateHelpers {
 
     /**
      * Decodes state data based on the state key and state data buffers.
-     * 
      * @param {Buffer} stateKey - The buffer containing the state key.
      * @param {Buffer} stateData - The buffer containing the state data.
      * @returns {Object} The decoded state data with type information.
@@ -645,7 +639,6 @@ class StateHelpers {
 
     /**
      * Decodes a state key into a type and key.
-     * 
      * @param {Buffer} stateKey - The buffer containing the state key.
      * @returns {Object} An object containing the key as a hexadecimal string and its type.
      * @throws {Object} Throws a Validation Error if the state key is invalid.
@@ -721,7 +714,6 @@ class StateHelpers {
 
     /**
      * Generates a state key for a token ID.
-     * 
      * @param {string} uriToken - The URI token in hexadecimal format.
      * @returns {string} The generated state key as a hexadecimal string.
      */
@@ -737,7 +729,6 @@ class StateHelpers {
 
     /**
      * Generates a state key for a host address.
-     * 
      * @param {string} address - The host address.
      * @returns {string} The generated state key as a hexadecimal string.
      */
@@ -757,7 +748,6 @@ class StateHelpers {
 
     /**
      * Generates a state key for a reputation host address.
-     * 
      * @param {string} address - The reputation host address.
      * @returns {string} The generated state key as a hexadecimal string.
      */
@@ -770,7 +760,6 @@ class StateHelpers {
 
     /**
      * Generates a state key for a reputation host order address.
-     * 
      * @param {string} address - The reputation host address.
      * @param {number} moment - The moment timestamp.
      * @returns {string} The generated state key as a hexadecimal string.
@@ -786,7 +775,6 @@ class StateHelpers {
 
     /**
      * Generates a state key for a reputation host ordered ID.
-     * 
      * @param {string} orderedId - The ordered ID.
      * @param {number} moment - The moment timestamp.
      * @returns {string} The generated state key as a hexadecimal string.
@@ -802,7 +790,6 @@ class StateHelpers {
 
     /**
      * Generates a state key for a reputation host count.
-     * 
      * @param {number} moment - The moment timestamp.
      * @returns {string} The generated state key as a hexadecimal string.
      */
@@ -816,7 +803,6 @@ class StateHelpers {
 
     /**
      * Generates a state key for reputation contract information.
-     * 
      * @param {string} address - The contract address.
      * @returns {string} The generated state key as a hexadecimal string.
      */
@@ -832,7 +818,6 @@ class StateHelpers {
 
     /**
      * Generates a state key for a transferee address.
-     * 
      * @param {string} address - The transferee address.
      * @returns {string} The generated state key as a hexadecimal string.
      */
@@ -852,7 +837,6 @@ class StateHelpers {
 
     /**
      * Generates a state key for a candidate ID.
-     * 
      * @param {string} uniqueId - The unique candidate ID.
      * @returns {string} The generated state key as a hexadecimal string.
      */
@@ -868,7 +852,6 @@ class StateHelpers {
 
     /**
      * Generates a state key for a candidate owner.
-     * 
      * @param {string} owner - The candidate owner address.
      * @returns {string} The generated state key as a hexadecimal string.
      */
@@ -888,7 +871,6 @@ class StateHelpers {
 
     /**
      * Gets the hook state index for a specific hook account and state key.
-     * 
      * @param {string} hookAccount - The hook account address.
      * @param {string} stateKey - The state key as a hexadecimal string.
      * @param {string} [hookNamespace=EvernodeConstants.HOOK_NAMESPACE] - The hook namespace.
@@ -916,7 +898,6 @@ class StateHelpers {
 
     /**
      * Generates a new hook candidate ID based on hash buffers.
-     * 
      * @param {Buffer} hashesBuf - The buffer containing the hash data.
      * @returns {string} The generated candidate ID as a hexadecimal string.
      */
@@ -929,7 +910,6 @@ class StateHelpers {
 
     /**
      * Generates a candidate ID for the piloted mode.
-     * 
      * @returns {string} The generated candidate ID as a hexadecimal string.
      */
     static getPilotedModeCandidateId() {
@@ -941,7 +921,6 @@ class StateHelpers {
 
     /**
      * Generates a candidate ID for a dud host.
-     * 
      * @param {string} hostAddress - The host address.
      * @returns {string} The generated candidate ID as a hexadecimal string.
      */
@@ -954,7 +933,6 @@ class StateHelpers {
 
     /**
      * Retrieves the candidate type from a candidate ID.
-     * 
      * @param {string} candidateId - The candidate ID as a hexadecimal string.
      * @returns {number} The candidate type.
      */

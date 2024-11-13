@@ -139,9 +139,9 @@ class XrplAccount {
     }
 
     /**
- * Retrieves the wallet locator from the account info.
- * @returns {Promise<string|null>} The wallet locator or null if not found.
- */
+     * Retrieves the wallet locator from the account info.
+     * @returns {Promise<string|null>} The wallet locator or null if not found.
+     */
     async getWalletLocator() {
         return (await this.getInfo())?.WalletLocator;
     }
@@ -282,15 +282,6 @@ class XrplAccount {
      * @returns {Promise<Object>} The prepared AccountSet transaction.
      */
     async prepareSetAccountFields(fields, options = {}) {
-        /**
-         * Example for fields
-         * 
-         * fields = {
-         *  Domain : "www.mydomain.com",
-         *  Flags : { asfDefaultRipple: false, asfDisableMaster: true } 
-         * }
-         * 
-         */
 
         if (!options?.allowEmptyAccountSet && Object.keys(fields ?? {}).length === 0)
             throw "AccountSet fields cannot be empty.";
@@ -390,13 +381,13 @@ class XrplAccount {
         return await this.signAndSubmit(preparedTxn, options.submissionRef);
     }
 
-/**
- * Prepares an invoke transaction.
- * @param {string} toAddr The destination address.
- * @param {Object|null} [blobObj=null] Blob object containing data and whether it's in hex.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} The prepared invoke transaction.
- */
+    /**
+     * Prepares an invoke transaction.
+     * @param {string} toAddr The destination address.
+     * @param {Object|null} [blobObj=null] Blob object containing data and whether it's in hex.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} The prepared invoke transaction.
+     */
     async prepareInvoke(toAddr, blobObj = null, options = {}) {
 
         var txObj = {
@@ -416,31 +407,31 @@ class XrplAccount {
         return await this.#prepareSubmissionTransaction(txObj, options);
     }
 
-/**
- * Makes a payment to the specified address.
- * @param {string} toAddr The destination address.
- * @param {number|string} amount The amount to send.
- * @param {string|null} [currency=null] Optional currency code.
- * @param {string|null} [issuer=null] Optional issuer for non-XRP currencies.
- * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} The result of the sign and submit operation.
- */
+    /**
+     * Makes a payment to the specified address.
+     * @param {string} toAddr The destination address.
+     * @param {number|string} amount The amount to send.
+     * @param {string|null} [currency=null] Optional currency code.
+     * @param {string|null} [issuer=null] Optional issuer for non-XRP currencies.
+     * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} The result of the sign and submit operation.
+     */
     async makePayment(toAddr, amount, currency = null, issuer = null, memos = null, options = {}) {
         const preparedTxn = await this.prepareMakePayment(toAddr, amount, currency, issuer, memos, options);
         return await this.signAndSubmit(preparedTxn, options.submissionRef);
     }
 
-/**
- * Prepares a payment transaction.
- * @param {string} toAddr The destination address.
- * @param {number|string} amount The amount to send.
- * @param {string|null} [currency=null] Optional currency code.
- * @param {string|null} [issuer=null] Optional issuer for non-XRP currencies.
- * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} The prepared payment transaction.
- */
+    /**
+     * Prepares a payment transaction.
+     * @param {string} toAddr The destination address.
+     * @param {number|string} amount The amount to send.
+     * @param {string|null} [currency=null] Optional currency code.
+     * @param {string|null} [issuer=null] Optional issuer for non-XRP currencies.
+     * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} The prepared payment transaction.
+     */
     async prepareMakePayment(toAddr, amount, currency = null, issuer = null, memos = null, options = {}) {
 
         const amountObj = makeAmountObject(amount, currency, issuer);
@@ -455,31 +446,31 @@ class XrplAccount {
         }, options);
     }
 
-/**
- * Sets a trust line with the specified parameters.
- * @param {string} currency The currency code for the trust line.
- * @param {string} issuer The issuer of the currency.
- * @param {string} limit The limit for the trust line.
- * @param {boolean} [allowRippling=false] Whether to allow rippling.
- * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} The result of the sign and submit operation.
- */
+    /**
+     * Sets a trust line with the specified parameters.
+     * @param {string} currency The currency code for the trust line.
+     * @param {string} issuer The issuer of the currency.
+     * @param {string} limit The limit for the trust line.
+     * @param {boolean} [allowRippling=false] Whether to allow rippling.
+     * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} The result of the sign and submit operation.
+     */
     async setTrustLine(currency, issuer, limit, allowRippling = false, memos = null, options = {}) {
         const preparedTxn = await this.prepareSetTrustLine(currency, issuer, limit, allowRippling, memos, options);
         return await this.signAndSubmit(preparedTxn, options.submissionRef);
     }
 
-/**
- * Prepares a trust line transaction.
- * @param {string} currency The currency code for the trust line.
- * @param {string} issuer The issuer of the currency.
- * @param {string} limit The limit for the trust line.
- * @param {boolean} [allowRippling=false] Whether to allow rippling.
- * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} The prepared trust line transaction.
- */
+    /**
+     * Prepares a trust line transaction.
+     * @param {string} currency The currency code for the trust line.
+     * @param {string} issuer The issuer of the currency.
+     * @param {string} limit The limit for the trust line.
+     * @param {boolean} [allowRippling=false] Whether to allow rippling.
+     * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} The prepared trust line transaction.
+     */
     async prepareSetTrustLine(currency, issuer, limit, allowRippling = false, memos = null, options = {}) {
 
         if (typeof limit !== 'string')
@@ -503,25 +494,25 @@ class XrplAccount {
         return await this.#prepareSubmissionTransaction(tx, options);
     }
 
-/**
- * Sets the regular key for the account.
- * @param {string} regularKey The regular key to set.
- * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} The result of the sign and submit operation.
- */
+    /**
+     * Sets the regular key for the account.
+     * @param {string} regularKey The regular key to set.
+     * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} The result of the sign and submit operation.
+     */
     async setRegularKey(regularKey, memos = null, options = {}) {
         const preparedTxn = await this.prepareSetRegularKey(regularKey, memos, options);
         return await this.signAndSubmit(preparedTxn, options.submissionRef);
     }
 
-/**
- * Prepares a transaction to set the regular key for the account.
- * @param {string} regularKey The regular key to set.
- * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} The prepared regular key transaction.
- */
+    /**
+     * Prepares a transaction to set the regular key for the account.
+     * @param {string} regularKey The regular key to set.
+     * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} The prepared regular key transaction.
+     */
     async prepareSetRegularKey(regularKey, memos = null, options = {}) {
 
         return await this.#prepareSubmissionTransaction({
@@ -533,17 +524,23 @@ class XrplAccount {
         }, options);
     }
 
+    /**
+     * Cashes a check for the account.
+     * @param {Object} check The check object with details.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} The result of the sign and submit operation.
+     */
     async cashCheck(check, options = {}) {
         const preparedTxn = await this.prepareCashCheck(check, options);
         return await this.signAndSubmit(preparedTxn, options.submissionRef);
     }
 
-/**
- * Cashes a check for the account.
- * @param {Object} check The check object with details.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} The result of the sign and submit operation.
- */
+    /**
+     * prepeare Cash a check for the account.
+     * @param {Object} check The check object with details.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} The result of the prepare operation.
+     */
     async prepareCashCheck(check, options = {}) {
         const checkIDhasher = crypto.createHash('sha512')
         checkIDhasher.update(Buffer.from('0043', 'hex'))
@@ -566,38 +563,38 @@ class XrplAccount {
         }, options);
     }
 
-/**
- * Creates an offer to sell assets.
- * @param {number|string} sellAmount The amount to sell.
- * @param {string} sellCurrency The currency code of the asset to sell.
- * @param {string} sellIssuer The issuer of the asset to sell.
- * @param {number|string} forAmount The amount to receive.
- * @param {string} forCurrency The currency code of the asset to receive.
- * @param {string|null} [forIssuer=null] The issuer of the asset to receive.
- * @param {number} [expiration=4294967295] The expiration time for the offer.
- * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} The result of the sign and submit operation.
- */
+    /**
+     * Creates an offer to sell assets.
+     * @param {number|string} sellAmount The amount to sell.
+     * @param {string} sellCurrency The currency code of the asset to sell.
+     * @param {string} sellIssuer The issuer of the asset to sell.
+     * @param {number|string} forAmount The amount to receive.
+     * @param {string} forCurrency The currency code of the asset to receive.
+     * @param {string|null} [forIssuer=null] The issuer of the asset to receive.
+     * @param {number} [expiration=4294967295] The expiration time for the offer.
+     * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} The result of the sign and submit operation.
+     */
     async offerSell(sellAmount, sellCurrency, sellIssuer, forAmount, forCurrency, forIssuer = null, expiration = 4294967295, memos = null, options = {}) {
         const preparedTxn = await this.prepareOfferSell(sellAmount, sellCurrency, sellIssuer, forAmount, forCurrency, forIssuer, expiration, memos, options);
         return await this.signAndSubmit(preparedTxn, options.submissionRef);
     }
 
 
-/**
- * Prepares a transaction to sell assets.
- * @param {number|string} sellAmount The amount to sell.
- * @param {string} sellCurrency The currency code of the asset to sell.
- * @param {string} sellIssuer The issuer of the asset to sell.
- * @param {number|string} forAmount The amount to receive.
- * @param {string} forCurrency The currency code of the asset to receive.
- * @param {string|null} [forIssuer=null] The issuer of the asset to receive.
- * @param {number} [expiration=4294967295] The expiration time for the offer.
- * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} The prepared offer sell transaction.
- */
+    /**
+     * Prepares a transaction to sell assets.
+     * @param {number|string} sellAmount The amount to sell.
+     * @param {string} sellCurrency The currency code of the asset to sell.
+     * @param {string} sellIssuer The issuer of the asset to sell.
+     * @param {number|string} forAmount The amount to receive.
+     * @param {string} forCurrency The currency code of the asset to receive.
+     * @param {string|null} [forIssuer=null] The issuer of the asset to receive.
+     * @param {number} [expiration=4294967295] The expiration time for the offer.
+     * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} The prepared offer sell transaction.
+     */
     async prepareOfferSell(sellAmount, sellCurrency, sellIssuer, forAmount, forCurrency, forIssuer = null, expiration = 4294967295, memos = null, options = {}) {
 
         const sellAmountObj = makeAmountObject(sellAmount, sellCurrency, sellIssuer);
@@ -614,37 +611,37 @@ class XrplAccount {
         }, options);
     }
 
-/**
- * Creates an offer to buy assets.
- * @param {number|string} buyAmount The amount to buy.
- * @param {string} buyCurrency The currency code of the asset to buy.
- * @param {string} buyIssuer The issuer of the asset to buy.
- * @param {number|string} forAmount The amount to give in exchange.
- * @param {string} forCurrency The currency code of the asset to give in exchange.
- * @param {string|null} [forIssuer=null] The issuer of the asset to give in exchange.
- * @param {number} [expiration=4294967295] The expiration time for the offer.
- * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} The result of the sign and submit operation.
- */
+    /**
+     * Creates an offer to buy assets.
+     * @param {number|string} buyAmount The amount to buy.
+     * @param {string} buyCurrency The currency code of the asset to buy.
+     * @param {string} buyIssuer The issuer of the asset to buy.
+     * @param {number|string} forAmount The amount to give in exchange.
+     * @param {string} forCurrency The currency code of the asset to give in exchange.
+     * @param {string|null} [forIssuer=null] The issuer of the asset to give in exchange.
+     * @param {number} [expiration=4294967295] The expiration time for the offer.
+     * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} The result of the sign and submit operation.
+     */
     async offerBuy(buyAmount, buyCurrency, buyIssuer, forAmount, forCurrency, forIssuer = null, expiration = 4294967295, memos = null, options = {}) {
         const preparedTxn = await this.prepareOfferBuy(buyAmount, buyCurrency, buyIssuer, forAmount, forCurrency, forIssuer, expiration, memos, options);
         return await this.signAndSubmit(preparedTxn, options.submissionRef);
     }
 
-/**
- * Prepares an offer to buy assets.
- * @param {number|string} buyAmount The amount to buy.
- * @param {string} buyCurrency The currency code of the asset to buy.
- * @param {string} buyIssuer The issuer of the asset to buy.
- * @param {number|string} forAmount The amount to give in exchange.
- * @param {string} forCurrency The currency code of the asset to give in exchange.
- * @param {string|null} [forIssuer=null] The issuer of the asset to give in exchange.
- * @param {number} [expiration=4294967295] The expiration time for the offer.
- * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} The prepared offer buy transaction.
- */
+    /**
+     * Prepares an offer to buy assets.
+     * @param {number|string} buyAmount The amount to buy.
+     * @param {string} buyCurrency The currency code of the asset to buy.
+     * @param {string} buyIssuer The issuer of the asset to buy.
+     * @param {number|string} forAmount The amount to give in exchange.
+     * @param {string} forCurrency The currency code of the asset to give in exchange.
+     * @param {string|null} [forIssuer=null] The issuer of the asset to give in exchange.
+     * @param {number} [expiration=4294967295] The expiration time for the offer.
+     * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} The prepared offer buy transaction.
+     */
     async prepareOfferBuy(buyAmount, buyCurrency, buyIssuer, forAmount, forCurrency, forIssuer = null, expiration = 4294967295, memos = null, options = {}) {
 
         const buyAmountObj = makeAmountObject(buyAmount, buyCurrency, buyIssuer);
@@ -661,25 +658,25 @@ class XrplAccount {
         }, options);
     }
 
-/**
- * Cancels an existing offer.
- * @param {number} offerSequence The sequence number of the offer to cancel.
- * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} The result of the sign and submit operation.
- */
+    /**
+     * Cancels an existing offer.
+     * @param {number} offerSequence The sequence number of the offer to cancel.
+     * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} The result of the sign and submit operation.
+     */
     async cancelOffer(offerSequence, memos = null, options = {}) {
         const preparedTxn = await this.prepareCancelOffer(offerSequence, memos, options);
         return await this.signAndSubmit(preparedTxn, options.submissionRef);
     }
 
-/**
- * Prepares a transaction to cancel an offer.
- * @param {number} offerSequence The sequence number of the offer to cancel.
- * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} The prepared offer cancel transaction.
- */
+    /**
+     * Prepares a transaction to cancel an offer.
+     * @param {number} offerSequence The sequence number of the offer to cancel.
+     * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} The prepared offer cancel transaction.
+     */
     async prepareCancelOffer(offerSequence, memos = null, options = {}) {
         return await this.#prepareSubmissionTransaction({
             TransactionType: XrplTransactionTypes.OFFER_CANCEL,
@@ -826,11 +823,11 @@ class XrplAccount {
         }
     }
 
-/**
- * Subscribes to the XRPL address stream for transaction updates.
- * Ensures only one subscription is active at a time.
- * @returns {Promise<void>}
- */
+    /**
+     * Subscribes to the XRPL address stream for transaction updates.
+     * Ensures only one subscription is active at a time.
+     * @returns {Promise<void>}
+     */
     async subscribe() {
         // Subscribe only once. Otherwise event handlers will be duplicated.
         if (this.#subscribed)
@@ -841,10 +838,10 @@ class XrplAccount {
         this.#subscribed = true;
     }
 
-/**
- * Unsubscribes from the XRPL address stream.
- * @returns {Promise<void>}
- */
+    /**
+     * Unsubscribes from the XRPL address stream.
+     * @returns {Promise<void>}
+     */
     async unsubscribe() {
         if (!this.#subscribed)
             return;
@@ -853,11 +850,11 @@ class XrplAccount {
         this.#subscribed = false;
     }
 
-/**
- * Submits a signed raw transaction.
- * @param {string} txBlob Signed and encoded transaction as a hex string.
- * @returns {Promise<Object>} Result of the transaction submission.
- */
+    /**
+     * Submits a signed raw transaction.
+     * @param {string} txBlob Signed and encoded transaction as a hex string.
+     * @returns {Promise<Object>} Result of the transaction submission.
+     */
     submitTransactionBlob(txBlob) {
 
         // Returned format.
@@ -899,39 +896,39 @@ class XrplAccount {
         });
     }
 
-/**
- * Signs the given transaction and returns the signed blob and its hash.
- * @param {Object} tx Transaction object.
- * @param {boolean} [isMultiSign=false] Whether the transaction is for multisigning.
- * @returns {Object} The signed transaction hash and blob. Format: {hash: string, tx_blob: string}
- */
+    /**
+     * Signs the given transaction and returns the signed blob and its hash.
+     * @param {Object} tx Transaction object.
+     * @param {boolean} [isMultiSign=false] Whether the transaction is for multisigning.
+     * @returns {Object} The signed transaction hash and blob. Format: {hash: string, tx_blob: string}
+     */
     sign(tx, isMultiSign = false) {
         return this.xrplApi.xrplHelper.sign(tx, this.secret, isMultiSign)
     }
 
     // URIToken related methods
 
-/**
- * Mints a URI token.
- * @param {string} uri The URI to mint as a token.
- * @param {string|null} [digest=null] The optional digest for the token.
- * @param {Object} [flags={}] Flags to control token properties (e.g., isBurnable).
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} Result of the mint transaction.
- */
+    /**
+     * Mints a URI token.
+     * @param {string} uri The URI to mint as a token.
+     * @param {string|null} [digest=null] The optional digest for the token.
+     * @param {Object} [flags={}] Flags to control token properties (e.g., isBurnable).
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} Result of the mint transaction.
+     */
     async mintURIToken(uri, digest = null, flags = {}, options = {}) {
         const preparedTxn = await this.prepareMintURIToken(uri, digest, flags, options);
         return await this.signAndSubmit(preparedTxn, options.submissionRef);
     }
 
-/**
- * Prepares the minting of a URI token.
- * @param {string} uri The URI to mint as a token.
- * @param {string|null} [digest=null] The optional digest for the token.
- * @param {Object} [flags={}] Flags to control token properties.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} The prepared mint transaction.
- */
+    /**
+     * Prepares the minting of a URI token.
+     * @param {string} uri The URI to mint as a token.
+     * @param {string|null} [digest=null] The optional digest for the token.
+     * @param {Object} [flags={}] Flags to control token properties.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} The prepared mint transaction.
+     */
     async prepareMintURIToken(uri, digest = null, flags = {}, options = {}) {
         const tx = {
             Account: this.address,
@@ -946,23 +943,23 @@ class XrplAccount {
         return await this.#prepareSubmissionTransaction(tx, options);
     }
 
-/**
- * Burns a URI token.
- * @param {string} uriTokenID The ID of the URI token to burn.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} Result of the burn transaction.
- */
+    /**
+     * Burns a URI token.
+     * @param {string} uriTokenID The ID of the URI token to burn.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} Result of the burn transaction.
+     */
     async burnURIToken(uriTokenID, options = {}) {
         const preparedTxn = await this.prepareBurnURIToken(uriTokenID, options);
         return await this.signAndSubmit(preparedTxn, options.submissionRef);
     }
 
-/**
- * Prepares the burning of a URI token.
- * @param {string} uriTokenID The ID of the URI token to burn.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} The prepared burn transaction.
- */
+    /**
+     * Prepares the burning of a URI token.
+     * @param {string} uriTokenID The ID of the URI token to burn.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} The prepared burn transaction.
+     */
     async prepareBurnURIToken(uriTokenID, options = {}) {
         const tx = {
             Account: this.address,
@@ -972,33 +969,33 @@ class XrplAccount {
         return await this.#prepareSubmissionTransaction(tx, options);
     }
 
-/**
- * Creates a sell offer for a URI token.
- * @param {string} uriTokenID The ID of the URI token to sell.
- * @param {string|number} amount The amount to sell the token for.
- * @param {string} currency The currency code for the sale.
- * @param {string|null} [issuer=null] The issuer of the currency.
- * @param {string|null} [toAddr=null] The address of the buyer.
- * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} Result of the sell transaction.
- */
+    /**
+     * Creates a sell offer for a URI token.
+     * @param {string} uriTokenID The ID of the URI token to sell.
+     * @param {string|number} amount The amount to sell the token for.
+     * @param {string} currency The currency code for the sale.
+     * @param {string|null} [issuer=null] The issuer of the currency.
+     * @param {string|null} [toAddr=null] The address of the buyer.
+     * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} Result of the sell transaction.
+     */
     async sellURIToken(uriTokenID, amount, currency, issuer = null, toAddr = null, memos = null, options = {}) {
         const preparedTxn = await this.prepareSellURIToken(uriTokenID, amount, currency, issuer, toAddr, memos, options);
         return await this.signAndSubmit(preparedTxn, options.submissionRef);
     }
 
-/**
- * Prepares a sell offer for a URI token.
- * @param {string} uriTokenID The ID of the URI token to sell.
- * @param {string|number} amount The amount to sell the token for.
- * @param {string} currency The currency code for the sale.
- * @param {string|null} [issuer=null] The issuer of the currency.
- * @param {string|null} [toAddr=null] The address of the buyer.
- * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} The prepared sell offer transaction.
- */
+    /**
+     * Prepares a sell offer for a URI token.
+     * @param {string} uriTokenID The ID of the URI token to sell.
+     * @param {string|number} amount The amount to sell the token for.
+     * @param {string} currency The currency code for the sale.
+     * @param {string|null} [issuer=null] The issuer of the currency.
+     * @param {string|null} [toAddr=null] The address of the buyer.
+     * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} The prepared sell offer transaction.
+     */
     async prepareSellURIToken(uriTokenID, amount, currency, issuer = null, toAddr = null, memos = null, options = {}) {
         const amountObj = makeAmountObject(amount, currency, issuer);
         const tx = {
@@ -1020,25 +1017,25 @@ class XrplAccount {
         return await this.#prepareSubmissionTransaction(tx, options);
     }
 
-/**
- * Buys a URI token.
- * @param {Object} uriToken The URI token object to buy.
- * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} Result of the buy transaction.
- */
+    /**
+     * Buys a URI token.
+     * @param {Object} uriToken The URI token object to buy.
+     * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} Result of the buy transaction.
+     */
     async buyURIToken(uriToken, memos = null, options = {}) {
         const preparedTxn = await this.prepareBuyURIToken(uriToken, memos, options);
         return await this.signAndSubmit(preparedTxn, options.submissionRef);
     }
 
-/**
- * Prepares a buy offer for a URI token.
- * @param {Object} uriToken The URI token object to buy.
- * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} The prepared buy offer transaction.
- */
+    /**
+     * Prepares a buy offer for a URI token.
+     * @param {Object} uriToken The URI token object to buy.
+     * @param {Array|null} [memos=null] Optional memos to attach to the transaction.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} The prepared buy offer transaction.
+     */
     async prepareBuyURIToken(uriToken, memos = null, options = {}) {
         const tx = {
             Account: this.address,
@@ -1056,23 +1053,23 @@ class XrplAccount {
         return await this.#prepareSubmissionTransaction(tx, options);
     }
 
-/**
- * Clears a sell offer for a URI token.
- * @param {string} uriTokenID The ID of the URI token offer to clear.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} Result of the clear offer transaction.
- */
+    /**
+     * Clears a sell offer for a URI token.
+     * @param {string} uriTokenID The ID of the URI token offer to clear.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} Result of the clear offer transaction.
+     */
     async clearURITokenOffer(uriTokenID, options = {}) {
         const preparedTxn = await this.prepareClearURITokenOffer(uriTokenID, options);
         return await this.signAndSubmit(preparedTxn, options.submissionRef);
     }
 
-/**
- * Prepares the clearing of a sell offer for a URI token.
- * @param {string} uriTokenID The ID of the URI token offer to clear.
- * @param {Object} [options={}] Additional options for the transaction.
- * @returns {Promise<Object>} The prepared clear offer transaction.
- */
+    /**
+     * Prepares the clearing of a sell offer for a URI token.
+     * @param {string} uriTokenID The ID of the URI token offer to clear.
+     * @param {Object} [options={}] Additional options for the transaction.
+     * @returns {Promise<Object>} The prepared clear offer transaction.
+     */
     async prepareClearURITokenOffer(uriTokenID, options = {}) {
         return await this.#prepareSubmissionTransaction({
             Account: this.address,
@@ -1081,33 +1078,33 @@ class XrplAccount {
         }, options);
     }
 
-/**
- * Retrieves all URI tokens associated with the account.
- * @param {Object} options Additional options for the retrieval.
- * @returns {Promise<Array>} List of URI tokens.
- */
+    /**
+     * Retrieves all URI tokens associated with the account.
+     * @param {Object} options Additional options for the retrieval.
+     * @returns {Promise<Array>} List of URI tokens.
+     */
     async getURITokens(options) {
         const obj = await this.getAccountObjects(options);
         return obj.filter(t => t.LedgerEntryType == 'URIToken');
     }
 
-/**
- * Retrieves a URI token by its URI.
- * @param {string} uri The URI of the token to retrieve.
- * @param {boolean} [isHexUri=false] Whether the URI is in hex format.
- * @returns {Promise<Object>} The URI token object.
- */
+    /**
+     * Retrieves a URI token by its URI.
+     * @param {string} uri The URI of the token to retrieve.
+     * @param {boolean} [isHexUri=false] Whether the URI is in hex format.
+     * @returns {Promise<Object>} The URI token object.
+     */
     async getURITokenByUri(uri, isHexUri = false) {
         const index = this.generateIssuedURITokenId(uri, isHexUri);
         return await this.xrplApi.getURITokenByIndex(index);
     }
 
-/**
- * Generates the issued URI token ID from a given URI.
- * @param {string} uri The URI to generate the token ID from.
- * @param {boolean} [isHexUri=false] Whether the URI is in hex format.
- * @returns {string} The generated URI token ID.
- */
+    /**
+     * Generates the issued URI token ID from a given URI.
+     * @param {string} uri The URI to generate the token ID from.
+     * @param {boolean} [isHexUri=false] Whether the URI is in hex format.
+     * @returns {string} The generated URI token ID.
+     */
     generateIssuedURITokenId(uri, isHexUri = false) {
         if (uri.length < 1 || uri.length > 256)
             throw 'Invalid URI';

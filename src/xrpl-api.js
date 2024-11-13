@@ -867,7 +867,6 @@ class XrplApi {
     /**
      * Joins the given array of signed transactions into one multi-signed transaction.
      * For more details: https://js.xrpl.org/functions/multisign.html
-     * 
      * @param {Array<string|object>} transactions - An array of signed transactions, either as serialized strings or transaction objects, to combine into a single multi-signed transaction.
      * @returns {string} A single multi-signed transaction in string format that contains all signers from the input transactions.
      * @throws {Error} If the transactions array is empty.
