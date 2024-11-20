@@ -357,12 +357,12 @@ async function startHostHeartbeatSender(address, secret, i) {
             await scheduler();
         }, momentSize * 1000);
         var vote = null;
-        // if (i % 2 == 0) {
-        //     vote = evernode.EvernodeConstants.CandidateVote.Reject;
-        // }
-        // else if (i % 3 == 0) {
-        vote = evernode.EvernodeConstants.CandidateVote.Support;
-        // }
+        if (i % 2 == 0) {
+            vote = evernode.EvernodeConstants.CandidateVote.Reject;
+        }
+        else if (i % 3 == 0) {
+            vote = evernode.EvernodeConstants.CandidateVote.Support;
+        }
         for (const candidateId of candidateIds) {
             await host.heartbeat(!vote ? {} : { vote: vote, candidate: candidateId }).catch((e) => { console.error(address, e) });
         }
