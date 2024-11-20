@@ -54,7 +54,8 @@ async function main() {
 
     }
     catch (e) {
-        console.error(e.toString(), `\nEnvironment variables:
+        const readableErr = e.toString();
+        console.error(readableErr !== '[object Object]' ? readableErr : e, `\nEnvironment variables:
     ENVIRONMENT (mainnet|testnet|devnet)
     GOVERNOR (Governor address to override)
     XAHAUD (XAHAUD node URL)\n`);

@@ -31,14 +31,13 @@ async function main() {
         console.log(`Network: ${environment}, Governor: ${evernode.Defaults.values.governorAddress}`);
         console.log(`\nRunning command: ${cmd}\n`);
 
+        await init();
         switch (cmd) {
             case 'mode-change':
                 const mode = process.argv[3];
-                await init();
                 await changeGovernanceMode(foundationClient, mode);
                 break;
             case 'config':
-                await init();
                 getConfig(foundationClient);
                 break;
             case 'vote':
@@ -61,7 +60,8 @@ async function main() {
         }
     }
     catch (e) {
-        console.error(e.toString(), `\nEnvironment variables:
+        const readableErr = e.toString();
+        console.error(readableErr !== '[object Object]' ? readableErr : e, `\nEnvironment variables:
     ENVIRONMENT (mainnet|testnet|devnet)
     GOVERNOR (Governor address to override)
     EV_LABS_ADDRESS (Evernode labs account address)
@@ -69,7 +69,6 @@ async function main() {
     XAHAUD (XAHAUD node URL)\n`);
     }
     finally {
-
         if (foundationClient)
             await foundationClient.disconnect();
     }
@@ -92,32 +91,24 @@ async function voteForCandidate(foundationClient, id, vote) {
     if (!vote || !votes.includes(vote))
         throw new Error(`Unknown governance vote: ${vote} options are: ${votes.join(', ')}`);
     const converted = evernode.EvernodeConstants.CandidateVote[vote];
-    if (id) {
-        await init();
+    if (id)
         await foundationClient.vote(id, converted);
-    }
     else
         throw new Error('No candidate specified `vote <candidate-id> <vote(support|reject)>`');
 }
 
 async function proposeCandidate(foundationClient, type, value, name) {
-    if (type === '--new-hook' && value && name) {
-        await init();
+    if (type === '--new-hook' && value && name)
         await foundationClient.propose(value, name);
-    }
-    else if (type === '--dud-host' && value) {
-        await init();
+    else if (type === '--dud-host' && value)
         await foundationClient.reportDudHost(value);
-    }
     else
         throw new Error('No candidate specified `propose <candidate-type(--new-hook|--dud-host)> <candidate-value(hook-hashes|dud-host-address)> <name(except-for-dud-host)>`');
 }
 
 async function withdraw(foundationClient, id) {
-    if (id) {
-        await init();
+    if (id)
         await foundationClient.withdraw(id);
-    }
     else
         throw new Error('No candidate specified `withdraw <candidate-id>`');
 }

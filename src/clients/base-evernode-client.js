@@ -1175,7 +1175,7 @@ class BaseEvernodeClient {
     async _propose(hashes, shortName, options = {}) {
         const hashesBuf = Buffer.from(hashes, 'hex');
         if (!hashesBuf || hashesBuf.length != 128)
-            throw 'Invalid hashes: Hashes should contain all three Governor, Registry, Heartbeat, Reputation hook hashes.';
+            throw 'Invalid hashes: Hashes should contain all four Governor, Registry, Heartbeat, Reputation hook hashes.';
 
         // Check whether hook hashes exist in the definition.
         let keylets = [];
