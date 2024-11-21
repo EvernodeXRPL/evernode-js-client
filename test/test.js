@@ -46,7 +46,7 @@ const signerQuorum = 1;
 
 const tosHash = "757A0237B44D8B2BBB04AE2BAD5813858E0AECD2F0B217075E27E0630BA74314";
 
-const hookCandidates = "E2F7D833DF05EE69C6F4244F2E6C9B9D2745EAD1EC7503FA2B5102E24DA2C6F91ADCDEF05B87BC22565647A2676B9961DD75C20212BE9E98E7A7EBC8A9BCF72B33BDC163ACFFE34EDE3C607DDF295B239A0A3C0506372072B370DB3786359938";
+const hookCandidates = "DD68B11C3176CA0DD3ED815F0147807C9865C04A42AB257EC089715E49B0EF4A2D5BDDA4A3230EA1664144C7411AB810F1BEA56A1116AC2F01E151864A7D5E2FD0F101EC1EC870512CA9B8E67D8DDAF00E3F4AB036DAFA7F5E1C4211B44BB965838C6941AB5B5460AEC46A535B98A9A55A6CEBF9F5CE74F48BA58E065FBB7899";
 
 const clients = [];
 
@@ -133,6 +133,7 @@ async function app() {
             // () => registerHost(),
             // () => prepareHostReputation(),
             // () => getReputationInfo(),
+            // () => setReputationContractInfo(),
             // () => sendReputation(),
             // () => getHostInfo(),
             // () => updateInfo(),
@@ -517,6 +518,15 @@ async function getHostInfo() {
     return hostInfo;
 }
 
+async function setReputationContractInfo() {
+    const host = await getHostClient(hostAddress, hostSecret, hostReputationAddress, hostReputationSecret);
+    const curMoment = await host.getMoment();
+
+    console.log(`Setting reputation info`);
+
+    await host.setReputationContractInfo(20265, 'ed5cb83404120ac759609819591ef839b7d222c84f1f08b3012f490586159d2b50', curMoment + 1);
+}
+
 async function getReputationInfo() {
     const host = await getHostClient();
     const reputationInfo = await host.getReputationInfo();
@@ -529,7 +539,8 @@ async function sendReputation() {
 
     console.log(`Sending reputation`);
 
-    await host.sendReputations(1, 1, {});
+    const scoreBuf = await host.prepareHostReputationScores(3);
+    await host.sendReputations(scoreBuf?.toString('hex'));
 }
 
 async function pruneDeadHost(address = hostAddress) {

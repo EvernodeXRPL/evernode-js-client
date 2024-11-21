@@ -820,20 +820,22 @@ class BaseEvernodeClient {
      */
     async getAllCandidatesFromLedger() {
         const states = await this.getHookStates();
-        let candidates = [];
+        let candidates = {};
 
         for (const state of states) {
             const stateKey = Buffer.from(state.key, 'hex');
             if (state.data) {
                 const stateData = Buffer.from(state.data, 'hex');
                 const decoded = StateHelpers.decodeStateData(stateKey, stateData);
-                if (decoded.type == StateHelpers.StateTypes.CANDIDATE_ID) {
-                    candidates.push(decoded);
+                if (decoded.type == StateHelpers.StateTypes.CANDIDATE_ID || decoded.type == StateHelpers.StateTypes.CANDIDATE_OWNER) {
+                    const key = decoded.idKey ?? decoded.key;
+                    delete decoded.idKey;
+                    candidates[key] = { ...(candidates[key] ?? {}), ...decoded };
                 }
             }
         }
 
-        return candidates;
+        return Object.values(candidates);
     }
 
     /**
@@ -1173,7 +1175,7 @@ class BaseEvernodeClient {
     async _propose(hashes, shortName, options = {}) {
         const hashesBuf = Buffer.from(hashes, 'hex');
         if (!hashesBuf || hashesBuf.length != 128)
-            throw 'Invalid hashes: Hashes should contain all three Governor, Registry, Heartbeat, Reputation hook hashes.';
+            throw 'Invalid hashes: Hashes should contain all four Governor, Registry, Heartbeat, Reputation hook hashes.';
 
         // Check whether hook hashes exist in the definition.
         let keylets = [];
